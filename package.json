@@ -15,7 +15,9 @@
     "data:build": "tsx scripts/build-data.ts",
     "canario": "tsx scripts/canario.ts",
     "peticiones": "tsx scripts/peticiones.ts",
-    "campo": "tsx scripts/campo.ts"
+    "campo": "tsx scripts/campo.ts",
+    "visual": "playwright test",
+    "visual:instrumento": "playwright test e2e/instrumento.spec.ts"
   },
   "dependencies": {
     "next": "16.2.10",
@@ -24,14 +26,17 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pngjs": "^6.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "fflate": "^0.8",
+    "pngjs": "^7.0.0",
     "tailwindcss": "^4",
     "tsx": "^4",
     "typescript": "^5",

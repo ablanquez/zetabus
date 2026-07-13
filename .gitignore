@@ -45,10 +45,12 @@
 !/postcss.config.mjs
 !/eslint.config.mjs
 !/vitest.config.ts
+!/playwright.config.ts
 !/AGENTS.md
 !/CLAUDE.md
 !/scripts/
 !/tests/
+!/e2e/
 !/src/
 #    ⛔ src/generated/ es ARTEFACTO DE BUILD: sale del GTFS, que no se
 #    versiona. Versionarlo sería subir el GTFS por la puerta de atrás,
@@ -124,6 +126,16 @@ tiempos-*.json
 *.pdf
 PPT.zip
 PCAP.zip
+
+# ── ARTEFACTOS DE LA VERIFICACIÓN VISUAL ───────────────────────────
+#    Las capturas se REGENERAN con `npm run visual`. Versionarlas sería meter
+#    megas de PNG en el historial de un repo público para siempre, y encima
+#    quedarían viejas al día siguiente. El instrumento va al repo; sus fotos, no.
+/capturas/
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright/
 
 # ── RUIDO ──────────────────────────────────────────────────────────
 node_modules/
