@@ -107,6 +107,18 @@ credentials*.json
 poste-*.json
 tiempos-*.json
 
+#    ⚠️ EXCEPCIÓN, Y SE EXPLICA PORQUE ESTA LISTA OBLIGA A EXPLICARLA.
+#    La regla `**/cache/` de arriba está para bloquear DATOS raspados. Pero
+#    casa, POR NOMBRE, con `src/cache/`, que es CÓDIGO: la caché de dos pisos
+#    del motor vivo. Bloqueó el commit, que es exactamente lo que esta lista
+#    tiene que hacer: fallar ruidosamente y obligar a una decisión a mano.
+#
+#    La excepción es ESTRECHA a propósito —una ruta exacta, no un patrón— para
+#    que el cinturón `**/cache/` siga cubriendo cualquier `cache/` que aparezca
+#    en el futuro sin que nadie lo haya previsto. El día que alguien cree un
+#    `data/algo/cache/` con respuestas de Avanza dentro, seguirá bloqueado.
+!/src/cache/
+
 # ── ⛔ PLIEGOS: el Anexo 7 son 230 páginas de PERSONAL ADSCRITO ─────
 #    Datos de empleados. Ni siquiera se descargan a este árbol.
 *.pdf
