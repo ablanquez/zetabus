@@ -76,6 +76,11 @@ const artifact = {
   lines: gtfs.lines,
   directions: gtfs.directions,
   posteByStopId: gtfs.posteByStopId,
+  // La flota viaja HORNEADA en el artefacto, no se lee de `data/` en runtime.
+  // En producción el bundle no lleva `data/`, y un `readFileSync` que funciona
+  // en `next dev` y falla en el servidor es la peor clase de bug: el que solo
+  // aparece cuando ya lo ha visto alguien.
+  flota: fleet.perfiles,
 };
 writeFileSync(`${OUT}/gtfs.json`, JSON.stringify(artifact));
 writeFileSync(

@@ -46,6 +46,8 @@ const CLASSES = new Set<BusClass>(['sencillo', 'articulado', 'microbus_pmrs']);
 export interface Fleet {
   /** `null` si el coche no está en el maestro. **SIN DATOS**, no un defecto. */
   get(id: VehicleId): BusProfile | null;
+  /** Para hornear la flota en el artefacto de build. En runtime no se lee disco. */
+  readonly perfiles: Readonly<Record<string, BusProfile>>;
   readonly size: number;
   readonly controls: readonly ControlReport[];
 }
@@ -146,6 +148,7 @@ export function loadFleet(path: string): Fleet {
 
   return {
     get: (id: VehicleId) => byId.get(String(id)) ?? null, // ← null = SIN DATOS
+    perfiles: Object.fromEntries(byId),
     size: byId.size,
     controls: [ctl],
   };
