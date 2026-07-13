@@ -12,10 +12,14 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gtfs:fetch": "tsx scripts/fetch-gtfs.ts",
-    "data:build": "tsx scripts/build-data.ts"
+    "data:build": "tsx scripts/build-data.ts",
+    "canario": "tsx scripts/canario.ts",
+    "peticiones": "tsx scripts/peticiones.ts",
+    "campo": "tsx scripts/campo.ts"
   },
   "dependencies": {
     "next": "16.2.10",
+    "node-html-parser": "^9.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
@@ -24,14 +28,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "fflate": "^0.8",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "vitest": "^3",
     "tsx": "^4",
-    "dotenv": "^17",
-    "fflate": "^0.8"
+    "typescript": "^5",
+    "vitest": "^3"
   },
   "description": "Visor en vivo del autobús urbano de Zaragoza",
   "license": "Apache-2.0",
