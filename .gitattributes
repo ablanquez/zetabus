@@ -1,0 +1,12 @@
+# Normaliza finales de línea. Se desarrolla en Windows; el repo guarda LF.
+* text=auto eol=lf
+
+*.md    text eol=lf
+*.json  text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+
+*.zip   binary
+*.pdf   binary
+*.png   binary
+*.jpg   binary

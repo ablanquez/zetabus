@@ -1,0 +1,107 @@
+# ═══════════════════════════════════════════════════════════════════
+#  ZETABUS · .gitignore COMO LISTA BLANCA
+# ═══════════════════════════════════════════════════════════════════
+#  Se ignora TODO por defecto. Lo que entra al repo, entra A MANO.
+#
+#  ¿Por qué al revés que en todos los sitios?
+#  Una lista negra falla en SILENCIO: el día que aparece un fichero
+#  que nadie previó (un volcado, una respuesta de la API cacheada, un
+#  .env con otro nombre), se cuela. Y en un repo PÚBLICO eso no se
+#  deshace: queda en el historial para siempre.
+#  Una lista blanca falla RUIDOSAMENTE: el fichero simplemente no
+#  aparece en `git status`, y quien lo quiera dentro tiene que venir
+#  aquí y decirlo.
+#
+#  Si añades algo, añádelo aquí. Y piensa por qué.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── 1. IGNORAR TODO ────────────────────────────────────────────────
+/*
+
+# ── 2. LO QUE SÍ ENTRA, EN LA RAÍZ ─────────────────────────────────
+!/.gitignore
+!/.gitattributes
+!/.env.example
+!/LICENSE
+!/NOTICE
+!/THIRD-PARTY-NOTICES.md
+!/README.md
+
+# ── 3. DOCUMENTACIÓN — entra entera ────────────────────────────────
+#    Los informes de auditoría NO son basura de proceso: son la prueba
+#    de que se investigó la fuente antes de improvisar.
+!/docs/
+
+# ── 4. DATOS — entra SOLO lo que es nuestro o es público ───────────
+!/data/
+/data/*
+!/data/README.md
+!/data/flota-avanza-zaragoza.json
+
+#    Fichero heredado. NO es producto: es material de auditoría.
+#    Se conserva porque tapa 53 vehículos que el registro oficial no
+#    tiene, y porque fue comparando contra él como supimos que 62
+#    longitudes estaban mal. Ver docs/LECCIONES.md · L3.
+!/data/referencia/
+
+#    El GTFS NO se versiona. Solo su instrucción de descarga.
+#    Motivo en data/gtfs/README.md — no es legal, es de frescura.
+!/data/gtfs/
+/data/gtfs/*
+!/data/gtfs/README.md
+
+# ═══════════════════════════════════════════════════════════════════
+#  5. DENEGACIÓN EXPLÍCITA — el cinturón sobre los tirantes
+#
+#  La lista blanca ya lo cubre todo. Esto está aquí para que, si
+#  alguien añade un `!` de más ahí arriba, el daño no llegue a
+#  producirse. Estas reglas van LAS ÚLTIMAS: en git, gana la última
+#  que casa.
+# ═══════════════════════════════════════════════════════════════════
+
+# ── SECRETOS ───────────────────────────────────────────────────────
+#    La ApiKey del NAP vive en .env.local y NO SALE DE AHÍ.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+credentials*.json
+
+# ── ⛔ DATOS RASPADOS DE TERCEROS — NUNCA, BAJO NINGÚN CONCEPTO ─────
+#    Respuestas de gps.avanzabus.com, de admin-ajax.php, y los KML.
+#    Consumirlos en runtime es ser un cliente. Republicarlos en un
+#    repo público e indexado es REDISTRIBUIR el dato de una empresa
+#    privada, sin licencia y sin permiso. No es lo mismo.
+#    Ver README.md · "Qué datos ajenos no viven aquí".
+/.cache/
+/data/cache/
+**/cache/
+*.kml
+poste-*.json
+tiempos-*.json
+
+# ── ⛔ PLIEGOS: el Anexo 7 son 230 páginas de PERSONAL ADSCRITO ─────
+#    Datos de empleados. Ni siquiera se descargan a este árbol.
+*.pdf
+PPT.zip
+PCAP.zip
+
+# ── RUIDO ──────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.tmp
