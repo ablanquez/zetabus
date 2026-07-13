@@ -35,7 +35,12 @@ describe('⚠️ AQUÍ NO SE TRUNCA UN DATO. NUNCA.', () => {
     // autobús y en el nombre de la parada.
     const culpables: string[] = [];
     for (const f of UI) {
-      const c = readFileSync(f, 'utf8');
+      // ⚠️ SE MIRA EL CÓDIGO, NO LOS COMENTARIOS. Este test se puso rojo por la
+      //    palabra `truncate` que aparece DENTRO del comentario que la PROHÍBE.
+      //    Un test que no distingue el código de la prosa que lo explica no
+      //    comprueba el código: hace `grep`. (Segunda vez que caigo en esto en el
+      //    mismo fichero. Queda escrito para que no haya una tercera.)
+      const c = sinComentarios(readFileSync(f, 'utf8'));
       // Se permite en `globals.css`, donde está la REGLA que lo prohíbe.
       if (f.endsWith('globals.css')) continue;
       if (/\btruncate\b/.test(c)) culpables.push(`${f} → truncate`);

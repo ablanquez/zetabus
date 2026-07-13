@@ -36,14 +36,18 @@ export type Fingimiento =
   /** Un autobús que NO está en el maestro de flota → SIN DATOS. */
   | 'sin-ficha'
   /** Un autobús con `confianza: sin_verificar` (53 de 403 son así). */
-  | 'sin-verificar';
+  | 'sin-verificar'
+  /** DOS líneas en el mismo poste. Sin esto, el filtro no se puede probar:
+   *  con una sola línea, apagarla y "Ninguna" hacen exactamente lo mismo y el
+   *  test pasaría sin haber comprobado que el filtro FILTRA. */
+  | 'dos-lineas';
 
 // ⚠️ NO hay un fingimiento para "nombre de parada larguísimo": no hace falta
 //    inventarlo. El poste 823 se llama "Vía Hispanidad N.º 73 / Nuestra Señora
 //    De Los ángeles" — 53 caracteres, y es real. Fingir un caso que ya existe en
 //    los datos sería probar mi invención en lugar de la realidad.
 export const FINGIMIENTOS: readonly Fingimiento[] = [
-  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar',
+  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'dos-lineas',
 ];
 
 export const demoEncendido = (): boolean => process.env.ZETABUS_DEMO === '1';
@@ -114,8 +118,18 @@ const SIN_VERIFICAR = respuesta([
   { coche: '4889', linea: '035', destino: 'PARQUE GOYA', eta: 9 },
 ]);
 
+/** Dos líneas, cuatro autobuses. Para poder PULSAR el filtro y ver qué se apaga. */
+const DOS_LINEAS = respuesta([
+  { coche: '4889', linea: '035', destino: 'PARQUE GOYA', eta: 1 },
+  { coche: '4114', linea: '035', destino: 'PARQUE GOYA', eta: 8 },
+  { coche: '4132', linea: '029', destino: 'SAN GREGORIO', eta: 3 },
+  { coche: '4131', linea: '029', destino: 'SAN GREGORIO', eta: 12 },
+]);
+
 export function transporteFingido(f: Fingimiento): Transporte {
   switch (f) {
+    case 'dos-lineas':
+      return async () => ({ status: 200, texto: DOS_LINEAS });
     case 'sin-verificar':
       return async () => ({ status: 200, texto: SIN_VERIFICAR });
     case 'caido':

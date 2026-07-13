@@ -168,3 +168,57 @@ export function perfilDe(coche: string): BusProfile | null {
 
 export const idLinea = haceLineId;
 export const idParada = haceStopId;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ⭐ LOS TRANSBORDOS. Clonado de la referencia, y es ORO PURO.
+//
+//  En su itinerario, cada parada lleva los chips de LAS OTRAS LÍNEAS que pasan
+//  por ahí. Lo medí jugando con ella: la línea 21 tiene 34 paradas y **61 chips
+//  de transbordo**. Te dice dónde cambiar de línea SIN SALIR DEL ITINERARIO.
+//
+//  ⚠️ Y no lo vi leyendo su código. Solo se ve pulsando. Es la L7 otra vez: leí
+//     una capa (el CSS), medí otra (la geometría), y nunca usé la tercera (la
+//     interacción). Lo mejor de su pantalla vivía justo ahí.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const lineasPorParada = new Map<string, Set<string>>();
+for (const d of A.directions) {
+  for (const sid of d.official.stops) {
+    let s = lineasPorParada.get(sid);
+    if (!s) { s = new Set(); lineasPorParada.set(sid, s); }
+    s.add(d.lineId);
+  }
+}
+
+/** Las OTRAS líneas que pasan por esta parada. Sin la actual. Ordenadas. */
+export function transbordosDe(paradaId: StopId, exceptoLinea: LineId): readonly Line[] {
+  const ids = lineasPorParada.get(String(paradaId));
+  if (!ids) return [];
+  return [...ids]
+    .filter((id) => id !== String(exceptoLinea))
+    .map((id) => lineaPorId.get(id))
+    .filter((l): l is Line => l !== undefined)
+    .sort((a, b) => a.shortName.localeCompare(b.shortName, 'es', { numeric: true }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ⭐ LOS GRUPOS DE LÍNEA. También clonado: Diurnas / Lanzaderas / Circulares /
+//  Búhos. Su índice los agrupa así y es la manera correcta de leer 44 líneas.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type GrupoLinea = 'diurna' | 'lanzadera' | 'circular' | 'buho';
+
+export const GRUPOS: { readonly clave: GrupoLinea; readonly titulo: string; readonly nota: string }[] = [
+  { clave: 'diurna', titulo: 'Diurnas', nota: 'las de todos los días' },
+  { clave: 'circular', titulo: 'Circulares', nota: 'dan la vuelta: un solo sentido' },
+  { clave: 'lanzadera', titulo: 'Lanzaderas', nota: 'refuerzo puntual' },
+  { clave: 'buho', titulo: 'Búhos', nota: 'de madrugada' },
+];
+
+export function grupoDe(l: Line): GrupoLinea {
+  const s = l.shortName;
+  if (/^N/i.test(s)) return 'buho';
+  if (/^Ci/i.test(s)) return 'circular';
+  if (/^C\d/i.test(s)) return 'lanzadera';
+  return 'diurna';
+}

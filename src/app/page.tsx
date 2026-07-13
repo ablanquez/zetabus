@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Buscador, type Entrada } from '@/components/Buscador';
-import { idParada, lineas, paradas, posteDe } from '@/engine/topologia';
+import { GRUPOS, grupoDe, idParada, lineas, paradas, posteDe } from '@/engine/topologia';
 
 /**
  * LA PORTADA. Buscador arriba, y las 44 líneas debajo.
@@ -42,30 +42,47 @@ export default function Home() {
     <div>
       <Buscador entradas={entradas} />
 
-      <h2 className="mt-8 mb-2 text-[13px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-        Las {lineas().length} líneas
-      </h2>
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {lineas().map((l) => (
-          <li key={String(l.id)}>
-            <Link
-              href={`/linea/${encodeURIComponent(l.shortName)}`}
-              className="flex min-h-[56px] items-center gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
-            >
-              {/* COLOR DE LÍNEA = IDENTIDAD. Nunca estado. */}
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[13px] font-black"
-                style={{ backgroundColor: l.color, color: l.textColor }}
-                aria-hidden="true"
-              >
-                {l.shortName}
-              </span>
-              {/* SIN TRUNCAR. Si no cabe, baja de línea. */}
-              <span className="text-[13px] font-semibold leading-snug sin-recortar">{l.longName}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* ⭐ EL ÍNDICE AGRUPADO. Clonado de la referencia: DIURNAS / CIRCULARES /
+          LANZADERAS / BÚHOS. Cuarenta y cuatro tarjetas sueltas no se leen; cuatro
+          grupos de once, sí. Y cada grupo dice QUÉ ES, porque "Ci3" no se explica
+          solo y "N5" tampoco. */}
+      {GRUPOS.map((g) => {
+        const delGrupo = lineas().filter((l) => grupoDe(l) === g.clave);
+        if (delGrupo.length === 0) return null;
+        return (
+          <section key={g.clave} className="mt-7" data-papel="grupo-lineas" data-grupo={g.clave}>
+            <h2 className="mb-0.5 text-[13px] font-black uppercase tracking-wide">
+              {g.titulo}{' '}
+              <span className="font-bold text-[var(--color-tinta-tenue)]">({delGrupo.length})</span>
+            </h2>
+            <p className="mb-2 text-[11px] text-[var(--color-tinta-tenue)] sin-recortar">{g.nota}</p>
+
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {delGrupo.map((l) => (
+                <li key={String(l.id)}>
+                  <Link
+                    href={`/linea/${encodeURIComponent(l.shortName)}`}
+                    className="flex min-h-[56px] items-center gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
+                  >
+                    {/* COLOR DE LÍNEA = IDENTIDAD. Nunca estado. */}
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[13px] font-black"
+                      style={{ backgroundColor: l.color, color: l.textColor }}
+                      aria-hidden="true"
+                    >
+                      {l.shortName}
+                    </span>
+                    {/* SIN TRUNCAR. Si no cabe, baja de línea. */}
+                    <span className="text-[13px] font-semibold leading-snug sin-recortar">
+                      {l.longName}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }

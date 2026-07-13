@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LlegadasDeParada } from '@/engine/llegadas';
 import type { Observacion } from '@/core';
 import { FichaVehiculo } from './FichaVehiculo';
@@ -127,6 +127,51 @@ export function LlegadasVivas({
   const rancio = edad >= RANCIO_S || obs.estado === 'rancio';
   const fallando = estado.tipo === 'refresco-fallido';
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  ⭐ EL FILTRO DE LÍNEAS. CLONADO DE LA REFERENCIA, Y ES LO MEJOR QUE TIENEN.
+  //
+  //  Lo descubrí PULSANDO, no leyendo. Medido en su pantalla:
+  //
+  //      pulso "Ninguna"   → lista 4 → 0 filas  ·  mapa 5 → 1 marcadores
+  //      pulso "Todas"     → lista → 4          ·  mapa → 5
+  //      apago una línea   → lista 4 → 2        ·  mapa 5 → 3
+  //
+  //  ⭐ UN SOLO ESTADO GOBIERNA LAS DOS VISTAS. No hay dos filtros que haya que
+  //    mantener en sincronía: hay UNO, y las dos vistas lo leen. Por eso no se
+  //    pueden desincronizar: no hay nada que desincronizar.
+  //
+  //  ⚠️ Y por eso `apagadas` vive AQUÍ y no dentro de la lista: cuando llegue el
+  //     mapa (Tanda 5) se enchufa a este mismo estado y funciona solo. Si lo
+  //     hubiera metido dentro de la lista, habría que sacarlo después — y ese
+  //     "después" es donde se cuelan las desincronías.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const [apagadas, setApagadas] = useState<ReadonlySet<string>>(new Set());
+
+  const lineasDelPoste = useMemo(() => {
+    if (obs.estado !== 'ok' && obs.estado !== 'rancio') return [];
+    const vistas = new Map<string, { etiqueta: string; color: string | null }>();
+    for (const l of obs.datos.llegadas) {
+      const k = l.linea ?? l.etiquetaCruda;
+      if (!vistas.has(k)) vistas.set(k, { etiqueta: k, color: l.color });
+    }
+    return [...vistas.values()].sort((a, b) =>
+      a.etiqueta.localeCompare(b.etiqueta, 'es', { numeric: true }),
+    );
+  }, [obs]);
+
+  const visibles = useMemo(() => {
+    if (obs.estado !== 'ok' && obs.estado !== 'rancio') return null;
+    return obs.datos.llegadas.filter((l) => !apagadas.has(l.linea ?? l.etiquetaCruda));
+  }, [obs, apagadas]);
+
+  const alternar = (etiqueta: string) =>
+    setApagadas((prev) => {
+      const s = new Set(prev);
+      if (s.has(etiqueta)) s.delete(etiqueta);
+      else s.add(etiqueta);
+      return s;
+    });
+
   return (
     <section aria-label="Próximas llegadas">
       {/* ⭐ LA BARRA DE FRESCURA. Lo primero que se lee después de los minutos. */}
@@ -140,8 +185,89 @@ export function LlegadasVivas({
         onRefrescar={() => void refrescar()}
       />
 
-      <Cuerpo obs={obs} rancio={rancio} />
+      {lineasDelPoste.length > 1 && (
+        <FiltroDeLineas
+          lineas={lineasDelPoste}
+          apagadas={apagadas}
+          onAlternar={alternar}
+          onTodas={() => setApagadas(new Set())}
+          onNinguna={() => setApagadas(new Set(lineasDelPoste.map((l) => l.etiqueta)))}
+        />
+      )}
+
+      <Cuerpo obs={obs} rancio={rancio} visibles={visibles} apagadasTodas={
+        lineasDelPoste.length > 0 && apagadas.size === lineasDelPoste.length
+      } />
     </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+function FiltroDeLineas({
+  lineas, apagadas, onAlternar, onTodas, onNinguna,
+}: {
+  lineas: { etiqueta: string; color: string | null }[];
+  apagadas: ReadonlySet<string>;
+  onAlternar: (e: string) => void;
+  onTodas: () => void;
+  onNinguna: () => void;
+}) {
+  return (
+    <div className="mb-3" data-papel="filtro-lineas">
+      <div className="flex flex-wrap items-center gap-2">
+        {lineas.map(({ etiqueta, color }) => {
+          const off = apagadas.has(etiqueta);
+          return (
+            <button
+              key={etiqueta}
+              type="button"
+              onClick={() => onAlternar(etiqueta)}
+              aria-pressed={!off}
+              aria-label={`${off ? 'Mostrar' : 'Ocultar'} la línea ${etiqueta}`}
+              data-papel="chip-filtro"
+              data-linea={etiqueta}
+              data-apagada={off ? 'si' : 'no'}
+              className="flex h-11 min-w-[44px] items-center justify-center rounded-xl px-2 text-[14px] font-black"
+              style={
+                off
+                  ? {
+                      // ⛔ APAGADA. Y el estado NO va en el tono: va en FORMA.
+                      //    Borde discontinuo + fondo neutro + tachado. Si lo
+                      //    hubiéramos hecho "gris vs color", la línea 31 (roja)
+                      //    y la 26 (verde) se distinguirían por su color y no
+                      //    por su estado. En gris, esto sigue leyéndose.
+                      background: 'var(--color-fondo)',
+                      color: 'var(--color-tinta-tenue)',
+                      border: '2px dashed var(--color-tinta-tenue)',
+                      textDecoration: 'line-through',
+                    }
+                  : { backgroundColor: color ?? '#94a3b8', color: '#fff', border: '2px solid transparent' }
+              }
+            >
+              {etiqueta}
+            </button>
+          );
+        })}
+
+        <span className="ml-auto flex gap-1">
+          <button
+            type="button"
+            onClick={onTodas}
+            className="min-h-[44px] rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-bold"
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            onClick={onNinguna}
+            className="min-h-[44px] rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-bold"
+          >
+            Ninguna
+          </button>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -219,7 +345,14 @@ function BarraDeEdad({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Cuerpo({ obs, rancio }: { obs: Observacion<LlegadasDeParada>; rancio: boolean }) {
+function Cuerpo({
+  obs, rancio, visibles, apagadasTodas,
+}: {
+  obs: Observacion<LlegadasDeParada>;
+  rancio: boolean;
+  visibles: LlegadasDeParada['llegadas'] | null;
+  apagadasTodas: boolean;
+}) {
   // ⚠️ CINCO ESTADOS, CINCO MENSAJES. El proyecto viejo tenía uno para todos, y
   //    ese uno decía "no hay llegadas" — que es MENTIRA en cuatro de los cinco.
   if (obs.estado === 'desconocido') {
@@ -256,10 +389,37 @@ function Cuerpo({ obs, rancio }: { obs: Observacion<LlegadasDeParada>; rancio: b
     );
   }
 
+  // ⚠️ "HAS APAGADO TODAS LAS LÍNEAS" NO ES "NO HAY AUTOBUSES".
+  //    Son dos cosas distintas y decir la segunda cuando pasa la primera es
+  //    mentir. La referencia también lo distingue, y bien: "Selecciona una línea
+  //    para ver próximas llegadas". Se clona.
+  if (apagadasTodas) {
+    return (
+      <Aviso
+        titulo="Has ocultado todas las líneas"
+        cuerpo="Sí hay autobuses viniendo. Pulsa «Todas», o enciende alguna línea del filtro, para verlos."
+        papel="todas-apagadas"
+      />
+    );
+  }
+
+  const lista = visibles ?? llegadas;
+  const ocultos = llegadas.length - lista.length;
+
   return (
     <>
+      {ocultos > 0 && (
+        <p
+          className="mb-2 text-[12px] font-semibold text-[var(--color-tinta-suave)] sin-recortar"
+          data-papel="ocultos-por-filtro"
+        >
+          {ocultos === 1 ? 'Hay 1 autobús oculto' : `Hay ${ocultos} autobuses ocultos`} por el filtro
+          de líneas.
+        </p>
+      )}
+
       <ol className="flex flex-col gap-3" data-papel="lista-llegadas">
-        {llegadas.map((l, i) => (
+        {lista.map((l, i) => (
           <li key={`${l.coche}-${l.etiquetaCruda}-${i}`}>
             <Llegada l={l} rancio={rancio} />
           </li>

@@ -3,9 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { barrerLinea } from '@/engine/barrido';
 import { motor } from '@/engine/motor';
-import { idLinea, idParada, lineas, parada, posteDe, sentidosDe } from '@/engine/topologia';
+import { idLinea, lineas, sentidosDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
-import type { LineId } from '@/core';
+import { Itinerario } from '@/components/Itinerario';
+import { AvisosDelBarrido } from '@/components/AvisosDelBarrido';
+import type { Line, LineId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
 export const dynamic = 'force-dynamic';
@@ -76,7 +78,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
         </nav>
       )}
 
-      <Paradas sentido={activo} fingir={fingir} />
+      <Paradas sentido={activo} linea={l} lineaId={id} fingir={fingir} />
     </div>
   );
 }
@@ -202,17 +204,17 @@ async function Recuento({ id, etiqueta, fingir }: { id: LineId; etiqueta: string
       )}
 
       <p className="mt-3 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
-        Contado ahora, no declarado. {r.datos.postesConsultados} postes consultados de{' '}
-        {r.datos.postesDeLaLinea}. Dato de hace {r.edadSegundos} s.
+        Contado ahora, no declarado. {r.datos.postesLeidos} de {r.datos.postesConsultados} postes
+        leídos (la línea tiene {r.datos.postesDeLaLinea}). Dato de hace {r.edadSegundos} s.
       </p>
 
-      {r.datos.avisos.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1">
-          {r.datos.avisos.slice(0, 3).map((a, i) => (
-            <li key={i} className="text-[11px] leading-snug text-[var(--color-aviso)] sin-recortar">⚠ {a}</li>
-          ))}
-        </ul>
-      )}
+      {/* ⚠️ EL AVISO NO PUEDE GRITAR MÁS QUE EL DATO. Ver AvisosDelBarrido. */}
+      <AvisosDelBarrido
+        avisos={r.datos.avisos}
+        postesConsultados={r.datos.postesConsultados}
+        postesFallidos={r.datos.postesFallidos}
+        postesRancios={r.datos.postesRancios}
+      />
     </div>
   );
 }
@@ -221,9 +223,13 @@ async function Recuento({ id, etiqueta, fingir }: { id: LineId; etiqueta: string
 
 function Paradas({
   sentido,
+  linea,
+  lineaId,
   fingir,
 }: {
   sentido: ReturnType<typeof sentidosDe>[number];
+  linea: Line;
+  lineaId: LineId;
   fingir: Fingimiento | null;
 }) {
   const sinGeometria = sentido.official.geometry.length === 0;
@@ -241,31 +247,22 @@ function Paradas({
         </p>
       )}
 
-      <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-        {sentido.official.stops.length} paradas
+      <h2 className="mb-1 text-[13px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
+        el recorrido · {sentido.official.stops.length} paradas
       </h2>
+      <p className="mb-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
+        Los cuadraditos de colores son <strong>los transbordos</strong>: las otras líneas que pasan
+        por esa misma parada.
+      </p>
 
-      <ol className="overflow-hidden rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)]">
-        {sentido.official.stops.map((sid, i) => {
-          const p = parada(idParada(sid));
-          const poste = posteDe(idParada(sid));
-          if (!p || poste === null) return null;
-          return (
-            <li key={sid} className={i > 0 ? 'border-t border-[var(--color-borde)]' : ''}>
-              <Link
-                href={`/parada/${poste}${fingir ? `?fingir=${fingir}` : ''}`}
-                className="flex min-h-[52px] items-center gap-3 px-4 py-3"
-              >
-                <span className="shrink-0 rounded-md bg-[var(--color-fondo)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--color-tinta-tenue)]">
-                  {poste}
-                </span>
-                {/* SIN TRUNCAR. Baja de línea. */}
-                <span className="text-[14px] font-semibold leading-snug sin-recortar">{p.name}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
+      {/* ⭐ EL ITINERARIO VERTICAL. Clonado de la referencia, con sus nodos y sus
+          chips de transbordo. Lo nuestro (una lista plana de nombres) era peor. */}
+      <Itinerario
+        lineaId={lineaId}
+        linea={linea}
+        paradas={sentido.official.stops}
+        fingir={fingir}
+      />
     </div>
   );
 }

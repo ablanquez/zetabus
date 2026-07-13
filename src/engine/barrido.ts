@@ -58,6 +58,23 @@ export interface BarridoDeLinea {
   readonly linea: string;
   readonly postesConsultados: number;
   readonly postesDeLaLinea: number;
+  /**
+   * ⚠️ TRES CIFRAS, NO UNA. Y NO ES BUROCRACIA.
+   *
+   * La primera versión metía en un solo saco de "avisos" los postes que NO
+   * RESPONDIERON y los que respondieron con un dato RANCIO. La pantalla acabó
+   * diciendo, literalmente:
+   *
+   *     "Detectamos 4 autobuses"  ...  "17 de 17 postes no respondieron"
+   *
+   * Si no respondió ninguno, ¿DE DÓNDE SALEN LOS CUATRO AUTOBUSES? Salían de la
+   * caché, y estaba bien servirlos — lo que estaba mal era el RESUMEN. Una
+   * pantalla que se contradice consigo misma en dos líneas seguidas es la
+   * pantalla coherente y falsa, en su forma más tonta.
+   */
+  readonly postesLeidos: number;
+  readonly postesFallidos: number;
+  readonly postesRancios: number;
   readonly paso: number;
   /** ⚠️ DETECTADOS. Nunca "todos". Ver la cabecera. */
   readonly detectados: readonly AutobusDetectado[];
@@ -121,11 +138,14 @@ export async function barrerLinea(
   }
   const porCoche = new Map<string, Acumulado>();
   let leidos = 0;
+  let fallidos = 0;
+  let rancios = 0;
   let masViejoMs = 0;
   let observadoEn: string | null = null;
 
   for (const { poste, r } of lecturas) {
     if (r.tipo === 'fallo') {
+      fallidos++;
       avisos.push(`poste ${poste}: ${r.motivo}`);
       continue;
     }
@@ -137,7 +157,12 @@ export async function barrerLinea(
       masViejoMs = r.edadSegundos * 1000;
       observadoEn = r.observadoEn;
     }
-    if (r.tipo === 'rancio') avisos.push(`poste ${poste}: dato rancio (${r.motivo})`);
+    if (r.tipo === 'rancio') {
+      // ⚠️ RANCIO NO ES FALLIDO. El poste SÍ contestó (antes), y su dato SÍ se
+      //    está usando. Confundirlos hace que la pantalla se contradiga.
+      rancios++;
+      avisos.push(`poste ${poste}: dato rancio (${r.motivo})`);
+    }
 
     const posiciones = new Map(r.datos.vehiculos.map((v) => [v.coche, v.posicion]));
     for (const ll of r.datos.llegadas) {
@@ -194,6 +219,9 @@ export async function barrerLinea(
     linea: l.shortName,
     postesConsultados: aConsultar.length,
     postesDeLaLinea: enOrden.length,
+    postesLeidos: leidos,
+    postesFallidos: fallidos,
+    postesRancios: rancios,
     paso,
     detectados,
     avisos,
