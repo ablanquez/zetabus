@@ -13,6 +13,7 @@ export * from './ids';
 export * from './provenance';
 export * from './profiles';
 export * from './entities';
+export * from './observacion';
 export * from './errors';
 export * from './control';
 export * from './feed-validity';
