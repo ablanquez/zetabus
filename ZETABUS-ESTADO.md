@@ -5,8 +5,8 @@
 >
 > Este documento es la **memoria del proyecto**. Se actualiza al cerrar cada tanda.
 
-**Estado actual:** Tanda 1 **APROBADA**. Repositorio público publicado.
-**Siguiente:** **Tanda 2 (capa de datos)**.
+**Estado actual:** Tandas 1, 2 y 3 **CERRADAS**. El motor vivo está construido y estresado.
+**Siguiente:** **Tanda 4 (primera pantalla)** — la primera vez que esto se ve.
 **Última actualización:** 13/07/2026
 
 ---
@@ -140,9 +140,9 @@ semanas.**
 | — | **Auditoría de fuentes** (7 fases) | ✅ |
 | **1** | **Modelo de datos y capas** | ✅ **APROBADA** |
 | — | Repositorio | ✅ Público — [github.com/ablanquez/zetabus](https://github.com/ablanquez/zetabus) |
-| **2** | **Capa de datos** (GTFS, flota, puente de identidad) | ⬜ |
-| **3** | **Motor vivo** (scrape, caché, barrido, diff de desvíos) | ⬜ ⚠️ *Se cierra y se estresa ANTES de la interfaz* |
-| **4** | Primera pantalla (parada → tiempos) | ⬜ |
+| **2** | **Capa de datos** (GTFS, flota, puente de identidad) | ✅ 44 líneas · 934 paradas · puente 934/934 · flota 403 |
+| **3** | **Motor vivo** (scrape, caché, barrido, diff de desvíos) | ✅ **157 tests** · 3 bugs reales cazados por ellos |
+| **4** | Primera pantalla (parada → tiempos) | ⬜ ← **AQUÍ** |
 | **5** | El mapa (Leaflet, buses, trazado) | ⬜ |
 | **6** | Capa editorial (desvíos, supresiones, contradicción) | ⬜ |
 | **7** | Endurecimiento + **responsive** | ⬜ ⚠️ *Responsive DESDE EL BRIEFING, no ocho tandas después* |
@@ -150,10 +150,46 @@ semanas.**
 
 ---
 
+## 7bis · Lo que el motor vivo YA SABE HACER (Tanda 3)
+
+| | |
+|---|---|
+| **Peticiones a Avanza** | 1 usuario: **4/min**. 10 usuarios en la misma parada: **4/min**. Una línea en pantalla: **72/min**. Techo duro: **4 req/s**, compartido entre workers. **Cero cuando nadie mira.** |
+| **Caché** | Dos pisos (memoria + disco con cerrojo `O_EXCL`). 20 peticiones concurrentes = **1 llamada**. **Expone la edad** del dato: "actualizado hace 18 s". |
+| **Barrido** | Paso 4: **18 peticiones en vez de 67**, y encuentra **los 11 autobuses**. Cobertura 100% (medido sobre una sola captura → cero deriva. Ver L6). |
+| **Desvíos** | Diff GTFS ↔ `get_stops_list`. **Se auto-apaga** cuando restauran la ruta. Verificado sobre desvíos reales del Coso y Avenida Valencia. |
+| **Estados** | `ok` · `rancio` · `ilegible` · `caido` · `desconocido`. El proyecto viejo tenía **uno**, y se comía cuatro situaciones distintas. |
+
+### ⭐ La asimetría, demostrada EN VIVO (13/07/2026, Plaza San Miguel)
+
+Dos postes, uno por sentido. Misma plaza, mismas líneas:
+
+| poste | sentido | el diff dice | la API viva dice |
+|---|---|---|---|
+| **745** | Camino Las Torres / Pinares | **DESVÍO** — la parada cae | (el autobús no pasa) |
+| **744** | San Gregorio / Vadorrey | **sin desvío** — la ruta no cambia | **"029 SAN GREGORIO, 1 min"** |
+
+Y el comunicado de Avanza dice **por escrito** que la 29 y la 39 en sentido San Gregorio/Vadorrey
+*"realizan su recorrido habitual **pero sin realizar parada** en Plaza San Miguel"*.
+
+→ El **745 es un desvío**: ZetaBus lo detecta y lo tacha solo.
+→ El **744 es una supresión**: **no lo detecta ninguna fuente**, y la API sigue anunciando ahí un
+autobús que no va a parar.
+
+**Misma plaza. Dos sentidos. Uno se puede saber y el otro no.** Eso es el proyecto entero.
+
+---
+
 ## 8 · Cabos abiertos
 
 - ⚠️ **Workers de Hostinger** — sin verificar. La caché ya no depende de ello, pero **hay que
-  medirlo** (endpoint que devuelva `process.pid` + 30 curl concurrentes).
+  medirlo**. `/api/diag` ya devuelve `process.pid`: bastan 30 curl concurrentes en el despliegue.
+- ⚠️ **Los fixtures de los tests son SINTÉTICOS.** Un CI en verde **no demuestra** que Avanza no
+  haya cambiado su HTML. Lo único que lo demuestra es `npm run canario` (1 petición).
+- ⚠️ **La subida de la ráfaga de 8 a 40** (para que quepa el barrido de la N7, 31 peticiones)
+  **debilita la protección de ráfaga**. El techo sostenido (4/s) no cambia. Ver L5.
+- ⚠️ **2 vulnerabilidades moderadas de `postcss`**, transitivas de Next. `npm audit fix --force`
+  tocaría la versión de Next. Sin resolver, y dicho.
 - ⚠️ **El GTFS caduca el 05/10/2026** (84 días). **La app tiene que decirlo en pantalla.**
 - **Plaza Europa** y **Caspe 48** — dos supresiones sin resolver.
 - **El histórico** — si algún día se quiere medir, **el reloj empieza el día que se encienda**.
