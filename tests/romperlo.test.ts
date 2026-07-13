@@ -132,12 +132,23 @@ describe('datos inválidos dentro de un GTFS bien formado', () => {
 describe('el 06/10/2026: el feed caducado', () => {
   const validity = { startDate: '2026-06-23', endDate: '2026-10-05', version: 'v', publisher: 'p' };
 
-  it('el 05/10 todavía es válido (último día)', () => {
-    expect(feedStatus(validity, new Date('2026-10-05T23:00:00Z')).kind).toBe('caduca-pronto');
+  // ⚠️ ESTE BLOQUE CAMBIÓ EN LA TANDA 3, Y NO POR CAPRICHO.
+  //
+  // La versión original probaba `new Date('2026-10-05T23:00:00Z')` y esperaba
+  // "todavía válido". Pero las 23:00 UTC del día 5 son la **01:00 del día 6 en
+  // Zaragoza**: el feed YA HA CADUCADO. El test estaba dando por buena la
+  // semántica UTC, que era precisamente el bug (`feed_end_date` de un GTFS es
+  // una fecha civil de la agencia, no un instante UTC).
+  //
+  // Se corrigió el CÓDIGO (ahora compara en Europe/Madrid) y se corrigió este
+  // test, que estaba fijando el error. Ver `tests/motor-vivo/horas-malas.test.ts`.
+
+  it('el 05/10 todavía es válido (último día, hora de Zaragoza)', () => {
+    expect(feedStatus(validity, new Date('2026-10-05T23:00:00+02:00')).kind).toBe('caduca-pronto');
   });
 
   it('⛔ el 06/10 está CADUCADO — y la app lo DICE, no se calla', () => {
-    const s = feedStatus(validity, new Date('2026-10-06T00:00:00Z'));
+    const s = feedStatus(validity, new Date('2026-10-06T02:00:00+02:00'));
     expect(s.kind).toBe('CADUCADO');
     expect(s).toMatchObject({ daysAgo: 1 });
 
