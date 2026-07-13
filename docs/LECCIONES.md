@@ -322,6 +322,70 @@ paso   peticiones   encontrados   perdidos   cobertura
 
 El 4 no es un número redondo elegido a ojo: es **el último paso que todavía cubre**. Y eso solo se puede afirmar porque las dos columnas salen del mismo instante.
 
+
+---
+
+## L7 · VERIFICAR UNA CAPA Y AFIRMAR SOBRE OTRA
+
+> **Leer el backend NO ES haber mirado la pantalla.**
+> **Leer el CSS NO ES haber visto el color.**
+> **Que el rótulo exista NO PRUEBA que se lea.**
+
+### Tres veces la misma piedra, en el mismo mes
+
+**1 · Auditando la referencia.** Se afirmó que *"pintaba autobuses en el golfo de Guinea"* porque
+en su backend había un `?? 0`. **Era falso.** El mapa filtraba las coordenadas nulas antes de
+pintar (`isValidBusCoord`). Se leyó el JSON y se afirmó sobre el píxel.
+
+**2 · Construyendo el instrumento para no repetir el error 1.** La primera versión de
+`contrasteReal` leía el color con `getComputedStyle`… **que no incluye el `opacity` del
+elemento**. Un texto `#000` sobre `#FFF` al 6% de opacidad daba:
+
+```
+   instrumento VIEJO (getComputedStyle) → 20,6:1  ✅ APROBADO   ← invisible
+   instrumento NUEVO (el píxel real)    →  1,15:1  ⛔ SUSPENDE
+```
+
+**El detector construido para no preguntarle al CSS… le preguntaba al CSS.** Lo cazó su propia
+contraprueba, no yo.
+
+**3 · Auditando la maqueta de la referencia sobre el papel.** Leyendo su código escribí que su
+pantalla de parada estaba *"bien resuelta"*. Al abrirla en un navegador a 360 px:
+
+```
+   el MAPA                    y=249  alto=288 px   (39% del viewport)
+   ⭐ el PRIMER TIEMPO         y=789  ⛔ 49 px POR DEBAJO DE LA PANTALLA
+```
+
+**El dato por el que el usuario abre la app NO SALE en la primera pantalla.** Y está de pie, en la
+calle, con prisa. Eso no se ve en el código: el orden de los componentes era razonable. Se ve
+**cuando abres un navegador de 360 píxeles**.
+
+### La regla
+
+**Se verifica en la capa sobre la que se va a afirmar. Sin excepción.**
+
+| si vas a afirmar sobre… | pregúntale a… |
+|---|---|
+| el dato | la respuesta de la fuente |
+| lo que se ve | **el navegador, al tamaño del usuario** |
+| el color | **el píxel** |
+| si algo cabe | **la geometría, no la clase de Tailwind** |
+| si algo se lee | **el ancho renderizado, no el `innerText`** |
+
+### ⭐ Y EL COROLARIO, QUE ES LO MÁS CARO DE APRENDER
+
+**Un test visual que nunca se ha visto ROJO no es un test: es una captura de pantalla con
+pretensiones.** Por eso cada detector de `e2e/lib/medir.ts` tiene un defecto plantado a propósito
+que tiene que cazar, y una pantalla sana con la que tiene que callarse.
+
+Y cuando el instrumento arreglado abrió la referencia por primera vez, **cantó ocho desbordes que
+eran los ocho falsos** (chips dentro de un contenedor deslizable, teselas de Leaflet recortadas
+por el marco del mapa). Un detector que grita ocho veces por nada es un detector al que se deja de
+hacer caso — y entonces, el día que grite de verdad, nadie mirará.
+
+**El instrumento se audita como se audita una fuente.**
+
 ---
 
 ## Cómo se usa este fichero
