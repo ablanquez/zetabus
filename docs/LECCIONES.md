@@ -203,6 +203,127 @@ longitud, y el siguiente Volvo que entrase en la flota volvería a entrar mal.
 
 ---
 
+## L4 · SI LA FUENTE NO PUEDE DISTINGUIR DOS ESTADOS, NO LA INTERROGUES MÁS FUERTE: CAMBIA LA PREGUNTA DE SITIO
+
+> **La información que no está en la respuesta no se saca de la respuesta.**
+> **Se saca de otro sitio, o no se saca.**
+
+### El caso
+
+La API viva de Avanza tiene que distinguir dos cosas que no significan lo mismo:
+
+- un poste **real** por el que ahora no pasa ningún autobús
+- un poste que **no existe**
+
+Se midió, contra el servidor real, el 13/07/2026:
+
+```
+poste 264      VÁLIDO (desviado)   →   HTTP 200   {"tablatiempos":""}
+poste 999999   NO EXISTE           →   HTTP 200   {"tablatiempos":""}
+poste "abc"    BASURA              →   HTTP 200   {"tablatiempos":""}
+```
+
+**Los tres. El mismo byte.** No hay parser, ni heurística, ni cabecera que los separe: la información **no está en la respuesta**.
+
+El proyecto anterior los confundía y le decía al usuario *"no hay llegadas"* cuando en realidad la petición era errónea. No era un bug del parser. Era un bug de **dónde estaba puesta la pregunta**.
+
+### La regla
+
+Cuando una fuente no puede responder a lo que necesitas:
+
+1. **DILO.** No la interrogues con más ingenio. `NO ME DIGAS QUE SE PUEDE SI NO SE PUEDE.`
+2. Y luego busca si la pregunta puede hacerse **en otro punto del flujo**.
+
+Aquí sí podía: tenemos el GTFS con los 934 postes válidos.
+
+```
+poste ∉ GTFS  →  desconocido.  Y a Avanza NI SE LE PREGUNTA.
+poste ∈ GTFS  →  se pregunta. Si viene vacío, "sin llegadas ahora"
+                 YA SIGNIFICA ALGO, porque el poste existe de verdad.
+```
+
+La validación **subió aguas arriba**, a nuestros propios datos. De propina: cero peticiones desperdiciadas con entrada basura, que es lo mínimo que se le debe a un servicio ajeno del que estamos viviendo.
+
+### ⚠️ Y LO QUE SIGUE SIN PODERSE, SE DICE
+
+Un poste que está en el GTFS pero que el sistema de Avanza no conoce devuelve vacío igual que uno sin autobuses. Ese caso residual **no lo detecta ninguna fuente que tengamos**. No se inventa: se enseña *"sin llegadas previstas"*, que es cierto en los dos casos.
+
+---
+
+## L5 · UNA PROTECCIÓN Y LA FUNCIÓN QUE PROTEGE SE MIDEN JUNTAS, O NO SE MIDEN
+
+> **Una protección mal calibrada no falla: mutila. Y lo hace en silencio, con cara de estar funcionando.**
+
+### El caso
+
+El techo de peticiones contra Avanza lleva un cubo de fichas. Le puse **capacidad 8**, y escribí al lado, con estas palabras:
+
+> *"Ráfaga tolerada. **Un barrido de línea (17 postes)** no debe atascarse de golpe."*
+
+Ocho fichas. Para diecisiete peticiones. **Mi propio comentario contradecía mi propio número, y lo escribí seguido, sin verlo.**
+
+Y la cifra real era peor: la línea **N7 tiene 119 postes**, que con paso 4 son **31 peticiones**. Con un cubo de 8, el barrido de la línea más larga de Zaragoza **salía truncado a 8 postes de 31**. La protección se estaba comiendo la función principal del producto.
+
+No lo vi leyendo el código. Lo vio un test que **contaba autobuses** y al que no le salieron las cuentas.
+
+### La regla
+
+Un número que limita (un techo, un timeout, un tamaño de cubo, un TTL) **no se valida solo**. Se valida **contra la magnitud real de lo que tiene que dejar pasar**.
+
+Y esa relación no se deja en un comentario, que no se ejecuta:
+
+```ts
+it('el cubo da para el barrido MÁS LARGO de la red', () => {
+  expect(CAPACIDAD).toBeGreaterThanOrEqual(peticionesDeLaLineaMasLarga);
+});
+```
+
+Ahora los dos números viven en ficheros distintos **y están atados**. Si mañana crece una línea, esto se pone rojo **antes** de que alguien vea media línea vacía y se pregunte por qué.
+
+### ⚠️ Y EL INTERCAMBIO SE DICE EN VOZ ALTA
+
+Subir la capacidad de 8 a 40 **debilita la protección de ráfaga**: ahora una avalancha de menos de 40 peticiones ya no la corta el cubo. El techo **sostenido** (4 req/s, lo que le prometemos a Avanza) no ha cambiado ni un ápice, pero lo que se tolera de golpe, sí.
+
+Eso no se tapa: se escribe donde vive el número, y se prueba dónde está de verdad el corte.
+
+---
+
+## L6 · SI COMPARAS DOS MEDIDAS TOMADAS EN INSTANTES DISTINTOS, ESTÁS MIDIENDO TU PROPIO RETRASO
+
+> **El instrumento también se mueve.**
+
+### El caso
+
+Había que comprobar si el barrido con paso encuentra los mismos autobuses que el barrido completo. Lo obvio:
+
+1. barrer los 67 postes de la línea 35
+2. barrer 18 con paso 4
+3. comparar
+
+**No vale.** Entre los dos barridos pasan ~20 segundos, **y los autobuses se mueven**. Está medido: el poste 744 pasó de anunciar el coche `4262` a anunciar el `4275` entre dos capturas separadas por un minuto.
+
+Si al comparar apareciera una diferencia, **no sabríamos si es porque el paso se dejó un autobús o porque ese autobús ya no circulaba.** El instrumento estaría midiendo su propio retraso y llamándolo cobertura. Y habría dado un número precioso.
+
+### La regla
+
+Se hace **UNA sola captura** y las dos medidas se calculan **sobre ella**. La respuesta de cada poste es independiente de las demás, así que el subconjunto `{0, 4, 8, ...}` es una **réplica exacta** de lo que habría devuelto un barrido con paso en ese preciso instante.
+
+Cero deriva. Y cero peticiones de más, que en una fuente ajena también cuenta.
+
+**Resultado real (línea 35, 13/07/2026, 17:01):**
+
+```
+paso   peticiones   encontrados   perdidos   cobertura
+   1           67            11          0       100%
+   4           18            11          0       100%   ← el nuestro
+   5           15            10          1        91%   (falta 4312)
+   6           12            10          1        91%   (falta 4312)
+```
+
+El 4 no es un número redondo elegido a ojo: es **el último paso que todavía cubre**. Y eso solo se puede afirmar porque las dos columnas salen del mismo instante.
+
+---
+
 ## Cómo se usa este fichero
 
 Se **añade**, no se reescribe. Una lección que resulte falsa se **tacha con su motivo**, no se
