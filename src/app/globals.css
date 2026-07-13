@@ -1,1 +1,130 @@
 @import "tailwindcss";
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  ⛔ LA REGLA QUE GOBIERNA ESTE FICHERO:
+ *
+ *      EL ESTADO NO PUEDE IR EN EL TONO. NUNCA.
+ *
+ *  22 de las 44 líneas de Zaragoza caen en la franja rojo/ámbar/amarillo/verde.
+ *  La LÍNEA 31 es #D1221D — literalmente el mismo rojo que "alerta" (ΔE 3,0).
+ *  Si el estado fuera color, la 31 estaría permanentemente "en alerta" y la 26
+ *  (verde) permanentemente "correcta". Sin que nadie hiciera nada.
+ *
+ *  ⇒ EL COLOR DE LÍNEA ES **IDENTIDAD**. Nos lo impone el operador.
+ *  ⇒ EL COLOR SEMÁNTICO ES **INFORMACIÓN**. Es nuestro.
+ *  ⇒ NO PUEDEN COMPARTIR CANAL.
+ *
+ *  El estado va en FORMA: anillo, borde discontinuo, trama, opacidad — y
+ *  SIEMPRE con una PALABRA. La referencia acertó con el "ya llega": rojo +
+ *  pulso + palabra. TRES canales. Ese es el patrón.
+ *
+ *  ⭐ Y SE DEMUESTRA, NO SE PROMETE: `e2e/color.spec.ts` pinta la pantalla en
+ *     ESCALA DE GRISES y comprueba que los estados SIGUEN distinguiéndose.
+ *     Si el estado estuviera en el tono, en gris desaparecería.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+@theme {
+  --color-tinta: #0f172a;
+  --color-tinta-suave: #475569;
+  /**
+   * ⚠️ ERA #64748B, Y NO PASABA. Lo cazó el instrumento midiendo el PÍXEL.
+   *
+   * #64748B sobre el fondo #F1F5F9 da **4,34:1**, por debajo del mínimo de 4,5
+   * de WCAG AA. Y el texto que se pintaba con él era, entre otros, ESTE:
+   *
+   *     "Son los autobuses DETECTADOS, no todos."
+   *
+   * Es decir: **la frase más importante de honestidad de toda la pantalla era la
+   * que peor se leía.** Un aviso que no se lee es un aviso que no existe, y
+   * entonces la pantalla estaría diciendo "todos" por omisión.
+   *
+   * No lo vi eligiendo el color. Lo midió Chromium.
+   */
+  --color-tinta-tenue: #556070;
+  --color-papel: #ffffff;
+  --color-fondo: #f1f5f9;
+  --color-borde: #cbd5e1;
+
+  /* Semánticos. NO se usan JAMÁS para pintar una línea. */
+  --color-alerta: #b91c1c;
+  --color-aviso: #92400e;
+  --color-aviso-fondo: #fffbeb;
+  --color-aviso-borde: #fcd34d;
+}
+
+:root { color-scheme: light; }
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ESTADOS, EN FORMA. Cada señal SOBREVIVE AL GRIS.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * INMINENTE — el autobús está entrando.
+ * Señales: (1) anillo grueso, (2) la palabra "YA LLEGA", (3) latido, (4) color.
+ * Quítale el color y quedan tres.
+ */
+.es-inminente {
+  outline: 3px solid var(--color-tinta);
+  outline-offset: 3px;
+  border-radius: 10px;
+  animation: latido 1.4s ease-in-out infinite;
+}
+@keyframes latido {
+  0%, 100% { outline-color: var(--color-tinta); }
+  50%      { outline-color: color-mix(in srgb, var(--color-tinta) 30%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .es-inminente { animation: none; }
+}
+
+/**
+ * RANCIO — el dato es viejo, Y LO DECIMOS.
+ * Señales: (1) trama diagonal, (2) borde discontinuo, (3) el texto de la edad.
+ * ⚠️ La trama es la clave: sobrevive al gris, al daltonismo y a un móvil al sol.
+ */
+.es-rancio {
+  border-style: dashed !important;
+  border-width: 2px !important;
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-tinta) 8%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+/**
+ * SIN VERIFICAR — la ficha no está en el registro oficial. 53 de 403 vehículos:
+ * uno de cada ocho. No es un caso raro y no puede disfrazarse de oficial.
+ * Señal: BORDE PUNTEADO + la palabra. NO un chip de color más.
+ */
+.es-sin-verificar {
+  border: 1px dashed var(--color-tinta-tenue);
+  border-radius: 8px;
+}
+
+/** SIN DATOS — no lo sabemos. Y se dice. */
+.es-sin-datos {
+  border: 1px dotted var(--color-tinta-tenue);
+  border-radius: 8px;
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⚠️ AQUÍ NO SE TRUNCA NADA. NUNCA.
+   "Hu…" puede ser Hugo o Humberto. Un dato recortado es peor que un dato
+   ausente: parece un dato. Si no cabe, BAJA DE LÍNEA.
+   Por eso en todo este proyecto NO existe `truncate` ni `text-overflow`.
+   ───────────────────────────────────────────────────────────────────────── */
+.sin-recortar {
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: none;
+}
