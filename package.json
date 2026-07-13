@@ -1,0 +1,41 @@
+{
+  "name": "zetabus",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "npm run data:build && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gtfs:fetch": "tsx scripts/fetch-gtfs.ts",
+    "data:build": "tsx scripts/build-data.ts"
+  },
+  "dependencies": {
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3",
+    "tsx": "^4",
+    "dotenv": "^17",
+    "fflate": "^0.8"
+  },
+  "description": "Visor en vivo del autobús urbano de Zaragoza",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.9"
+  }
+}

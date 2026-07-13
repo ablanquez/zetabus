@@ -36,6 +36,25 @@
 #    de que se investigó la fuente antes de improvisar.
 !/docs/
 
+# ── 3b. CÓDIGO Y CONFIGURACIÓN ─────────────────────────────────────
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/next.config.ts
+!/next-env.d.ts
+!/postcss.config.mjs
+!/eslint.config.mjs
+!/vitest.config.ts
+!/AGENTS.md
+!/CLAUDE.md
+!/scripts/
+!/tests/
+!/src/
+#    ⛔ src/generated/ es ARTEFACTO DE BUILD: sale del GTFS, que no se
+#    versiona. Versionarlo sería subir el GTFS por la puerta de atrás,
+#    y encima cocinado. Se regenera con `npm run data:build`.
+/src/generated/
+
 # ── 4. DATOS — entra SOLO lo que es nuestro o es público ───────────
 !/data/
 /data/*
