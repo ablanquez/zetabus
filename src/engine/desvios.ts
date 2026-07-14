@@ -69,6 +69,25 @@ export type Veredicto =
   | {
       readonly tipo: 'comparado';
       readonly hayDesvio: boolean;
+      /**
+       * ⭐⭐ LA RUTA QUE EL AUTOBÚS HACE HOY, EN ORDEN. Y ES LO QUE SE PINTA.
+       *
+       * ⛔ ANTES ESTO NO SE DEVOLVÍA, Y ÉSE ERA EL FALLO MÁS GRAVE DEL PROYECTO.
+       *
+       * El diff estaba hecho, medido y probado desde la Tanda 3... y la pantalla
+       * seguía pintando la ruta del GTFS. Es decir: ZetaBus le decía a alguien que
+       * su autobús para en **Avenida Valencia**, una calle que está CORTADA.
+       *
+       * No petaba. Pintaba. Con toda la coherencia del mundo. Que es exactamente
+       * el modo de fallo que este proyecto existe para no tener.
+       *
+       * ⚠️ Y ojo a la asimetría: la lista lleva `poste` y `nombre` **tal y como los
+       * da Avanza**, no ids del GTFS. Tiene que ser así: una parada PROVISIONAL de
+       * un desvío puede no estar en la ruta oficial de esta línea, y aun así hay
+       * que poder escribir su nombre. Si esto devolviera StopIds, las paradas
+       * nuevas se caerían del listado en silencio.
+       */
+      readonly real: readonly ParadaDelDiff[];
       /** En el GTFS y NO en la ruta de hoy → el autobús YA NO PASA. Se tacha. */
       readonly fuera: readonly ParadaDelDiff[];
       /** En la ruta de hoy y NO en el GTFS → parada provisional del desvío. */
@@ -150,6 +169,7 @@ export function compararRecorrido(
   return {
     tipo: 'comparado',
     hayDesvio: fuera.length > 0 || hacia.length > 0 || reordenado,
+    real, // ⭐ LA RUTA DE HOY, EN ORDEN. Es lo que la pantalla va a pintar.
     fuera,
     hacia,
     reordenado,

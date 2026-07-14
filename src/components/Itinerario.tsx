@@ -1,130 +1,228 @@
 import Link from 'next/link';
-import type { Line, LineId } from '@/core';
-import { idParada, parada, posteDe, transbordosDe } from '@/engine/topologia';
+import type { Line, LineId, StopId } from '@/core';
+import { esBuho, transbordosDe } from '@/engine/topologia';
+import { ChipLinea } from './ChipLinea';
+import type { ParadaDelDiff } from '@/engine/desvios';
 
 /**
- * ⭐ EL ITINERARIO VERTICAL. CLONADO DE LA REFERENCIA, Y SIN DISCUSIÓN.
- *
- * Lo nuestro era una lista plana de 38 nombres. **Era peor.** Y no hay debate.
+ * ⭐ EL ITINERARIO VERTICAL. Clonado de la referencia — y medido, no mirado.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * QUÉ HACE BIEN LO SUYO, Y QUE NO SE VE LEYENDO EL CÓDIGO:
+ * ⚠️ C1 y C2 · "LAS PARADAS NO SON PULSABLES" / "LOS CHIPS NO SON PULSABLES"
  *
- *  1. NODOS CONECTADOS POR UNA LÍNEA VERTICAL. El recorrido se lee como lo que
- *     es —una secuencia— y no como un menú. **El tiempo vive en el espacio.**
+ * ⭐ NO ERA VERDAD, Y LO COMPROBÉ PULSANDO (que es lo que no hice la otra vez):
  *
- *  2. ⭐ LOS CHIPS DE TRANSBORDO. Cada parada lleva las OTRAS líneas que pasan
- *     por ella. Medido jugando con su pantalla: la línea 21 tiene 34 paradas y
- *     **61 chips de transbordo**. Te dice dónde cambiar de línea SIN SALIR DEL
- *     ITINERARIO. Eso es oro puro, y yo no lo tenía.
+ *     enlaces a parada en /linea/35 ....... 38
+ *     chips de transbordo ................. 84
+ *     pulsar el nodo 3 .................... → /parada/25 ✅
  *
- *  3. El nodo del PRIMERO y el ÚLTIMO se distinguen: el recorrido tiene extremos.
+ * Mi PRIMER test dijo que no funcionaban. Mentía: leía la URL antes de que la
+ * navegación hubiera ocurrido. El instrumento otra vez. Si me lo hubiera creído,
+ * habría "arreglado" código que funcionaba — y probablemente lo habría roto.
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * ⚠️ Y ES LA L7 OTRA VEZ, CON OTRA CARA:
- * leí su CSS, medí su geometría... y NUNCA PULSÉ NADA. Lo mejor de su producto
- * —el filtro que apaga mapa y lista a la vez, y estos transbordos— vivía en la
- * capa que no miré: LA INTERACCIÓN.
+ * ⚠️ C3 · LO QUE SÍ FALTABA: el nodo no distinguía una parada CON correspondencias
+ * de una SIN ellas. En la referencia sí... con **14 px frente a 16 px**. Dos
+ * píxeles. Eso no es una señal: es una coincidencia. Se clona el CONCEPTO —que es
+ * bueno— pero de forma que se vea:
  *
- * ⚠️ LO ÚNICO QUE NO SE CLONA: nada de `truncate`. Ellos truncan el nombre de la
- * parada; aquí, si no cabe, BAJA DE LÍNEA. "Hu…" puede ser Hugo o Humberto.
+ *     cabecera ............... CUADRADO redondeado, RELLENO
+ *     final .................. CUADRADO redondeado, HUECO
+ *     con correspondencias ... ANILLO
+ *     sin correspondencias ... punto
+ *
+ * ⚠️ Las cuatro son FORMAS, no tonos. El color ya está ocupado por la IDENTIDAD
+ * de la línea y no puede hacer dos trabajos. En gris esto se sigue leyendo entero.
+ *
+ * ⚠️ C4 · Y por eso desaparecen los rótulos "CABECERA" y "FINAL": los dice la
+ * geometría. Se quedan en `sr-only` para quien no ve formas.
+ *
+ * ⚠️ C6 · "los búhos van en su propio carril": MEDIDO, Y NO. En la referencia van
+ * en LA MISMA FILA que los demás (todos a y=533), los ÚLTIMOS, e INVERTIDOS.
  */
+
+/** Una parada del recorrido, tal y como se va a pintar. */
+export interface ParadaDelItinerario {
+  readonly poste: number;
+  readonly nombre: string;
+  /**
+   * `null` = una parada que Avanza sirve HOY y que no está en nuestro GTFS (pasa
+   * con las provisionales de un desvío). Se pinta igual —existe, y el autobús
+   * para en ella— pero sin correspondencias, porque no las sabemos.
+   */
+  readonly sid: StopId | null;
+  /** Provisional: la ha traído el desvío y no está en la ruta oficial. */
+  readonly provisional?: boolean;
+}
 
 export function Itinerario({
   lineaId,
   linea,
   paradas,
   fingir,
+  fuera,
 }: {
   lineaId: LineId;
   linea: Line;
-  paradas: readonly string[];
+  /** ⚠️ LA RUTA QUE SE PINTA. Si hay desvío, es LA REAL. Nunca la teórica. */
+  paradas: readonly ParadaDelItinerario[];
   fingir: string | null;
+  /** Paradas del GTFS por las que HOY el autobús NO pasa. Se tachan, con motivo. */
+  fuera?: readonly ParadaDelDiff[];
 }) {
   return (
     <ol className="mt-2" data-papel="itinerario">
-      {paradas.map((sid, i) => {
-        const p = parada(idParada(sid));
-        const poste = posteDe(idParada(sid));
-        if (!p || poste === null) return null;
-
+      {paradas.map((p, i) => {
         const primero = i === 0;
         const ultimo = i === paradas.length - 1;
-        const transbordos = transbordosDe(idParada(sid), lineaId);
+        const transbordos = p.sid ? transbordosDe(p.sid, lineaId) : [];
 
         return (
-          <li key={sid} className="flex gap-3" data-papel="nodo" data-poste={poste}>
+          <li key={`${p.poste}-${i}`} className="flex gap-3" data-papel="nodo" data-poste={p.poste}>
             {/* ── LA COLUMNA DEL RECORRIDO: nodo + hilo ─────────────────────── */}
             <div className="flex w-6 shrink-0 flex-col items-center" aria-hidden="true">
-              {/* El hilo de ARRIBA. El primero no lo tiene: ahí empieza. */}
               <span
                 className="w-[3px] flex-none"
-                style={{ height: 10, background: primero ? 'transparent' : linea.color }}
+                style={{ height: 8, background: primero ? 'transparent' : linea.color }}
               />
-              {/* El NODO. Los extremos son un anillo grueso; los de en medio, un
-                  punto. ⚠️ La diferencia es de FORMA (relleno/hueco, tamaño), no
-                  de color: el color ya está ocupado por la identidad de la línea
-                  y no puede hacer dos trabajos. */}
-              <span
-                className="flex-none rounded-full"
-                style={
-                  primero || ultimo
-                    ? {
-                        width: 16, height: 16,
-                        border: `4px solid ${linea.color}`,
-                        background: 'var(--color-papel)',
-                      }
-                    : { width: 9, height: 9, background: linea.color }
-                }
+              <Nodo
+                color={linea.color}
+                primero={primero}
+                ultimo={ultimo}
+                conTransbordo={transbordos.length > 0}
               />
-              {/* El hilo de ABAJO. El último no lo tiene: ahí acaba. */}
               <span
                 className="w-[3px] flex-1"
-                style={{ background: ultimo ? 'transparent' : linea.color, minHeight: 18 }}
+                style={{ background: ultimo ? 'transparent' : linea.color, minHeight: 14 }}
               />
             </div>
 
             {/* ── EL CONTENIDO ─────────────────────────────────────────────── */}
-            <div className="min-w-0 flex-1 pb-4">
+            <div className="min-w-0 flex-1 pb-3">
               <Link
-                href={`/parada/${poste}${fingir ? `?fingir=${fingir}` : ''}`}
+                href={`/parada/${p.poste}${fingir ? `?fingir=${fingir}` : ''}`}
                 className="flex min-h-[44px] flex-col justify-center rounded-lg"
               >
                 <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
-                  <span className="text-[14px] font-bold leading-snug sin-recortar">{p.name}</span>
+                  <span className="text-[14px] font-bold leading-snug sin-recortar">{p.nombre}</span>
                   <span className="shrink-0 rounded-md bg-[var(--color-fondo)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--color-tinta-tenue)]">
-                    poste {poste}
+                    poste {p.poste}
                   </span>
                   {(primero || ultimo) && (
-                    <span className="shrink-0 text-[10px] font-black uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-                      {primero ? 'cabecera' : 'final'}
+                    <span className="sr-only">{primero ? 'cabecera de línea' : 'final de línea'}</span>
+                  )}
+                  {p.provisional && (
+                    <span
+                      className="shrink-0 rounded-md border border-dashed border-[var(--color-aviso)] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--color-aviso)]"
+                      data-papel="parada-provisional"
+                    >
+                      provisional · desvío
                     </span>
                   )}
                 </span>
               </Link>
 
-              {/* ⭐ LOS TRANSBORDOS. Lo mejor que se han inventado. */}
+              {/* ⭐ LOS TRANSBORDOS. Lo mejor que se han inventado. Y pulsables. */}
               {transbordos.length > 0 && (
                 <ul className="mt-1 flex flex-wrap gap-1" data-papel="transbordos">
-                  {transbordos.map((t) => (
-                    <li key={String(t.id)}>
-                      <Link
-                        href={`/linea/${encodeURIComponent(t.shortName)}`}
-                        aria-label={`Ver el recorrido de la línea ${t.shortName}`}
-                        className="flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[11px] font-black"
-                        style={{ backgroundColor: t.color, color: t.textColor }}
-                      >
-                        {t.shortName}
-                      </Link>
-                    </li>
-                  ))}
+                  {[...transbordos]
+                    // ⭐ D1/C6: los búhos, AL FINAL. Como ellos. Otra categoría, detrás.
+                    .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
+                    .map((t) => (
+                      <li key={String(t.id)}>
+                        <ChipLinea linea={t} papel="chip-transbordo" enlace />
+                      </li>
+                    ))}
                 </ul>
               )}
             </div>
           </li>
         );
       })}
+
+      {/* ⭐⭐ A1 · LAS PARADAS QUE CAEN POR EL DESVÍO. TACHADAS, Y CON EL MOTIVO.
+          Van al final, y NO en su sitio de la secuencia — porque su sitio ya no
+          existe. Dejarlas en medio insinuaría que el autobús pasa por ahí, que es
+          justo la mentira que venimos a matar.
+
+          ⚠️ Y es DERIVADO: sale de comparar el GTFS con la ruta que Avanza publica
+          para hoy. El día que restauren la calle, el diff sale vacío y esto
+          DESAPARECE SOLO. Nada que mantener, nada de lo que acordarse. Un aviso
+          que hay que acordarse de quitar acaba mintiendo, siempre. */}
+      {fuera && fuera.length > 0 && (
+        <li className="mt-2" data-papel="paradas-fuera">
+          <div className="es-rancio px-3 py-3">
+            <p className="text-[13px] font-black leading-snug text-[var(--color-aviso)] sin-recortar">
+              ⚠ Hoy el autobús NO pasa por{' '}
+              {fuera.length === 1 ? 'esta parada' : `estas ${fuera.length} paradas`}
+            </p>
+            <p className="mt-0.5 text-[11px] leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
+              Están en el recorrido oficial, pero el recorrido que Avanza publica{' '}
+              <strong>para hoy</strong> no las incluye. No lo decimos nosotros: lo dice su ruta.
+            </p>
+            <ul className="mt-2 flex flex-col gap-1">
+              {fuera.map((x) => (
+                <li key={x.poste} className="text-[13px] leading-snug not-italic sin-recortar">
+                  <span className="line-through decoration-2" data-papel="parada-tachada">
+                    {x.nombre}
+                  </span>{' '}
+                  <span className="text-[11px] text-[var(--color-tinta-tenue)]">poste {x.poste}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </li>
+      )}
     </ol>
+  );
+}
+
+/**
+ * EL NODO. Cuatro formas para cuatro cosas distintas. Ninguna es un color.
+ *
+ *   ▣ cuadrado relleno ... cabecera
+ *   ▢ cuadrado hueco ..... final
+ *   ◎ anillo ............. parada con correspondencias
+ *   ● punto .............. parada sin correspondencias
+ */
+function Nodo({
+  color, primero, ultimo, conTransbordo,
+}: {
+  color: string;
+  primero: boolean;
+  ultimo: boolean;
+  conTransbordo: boolean;
+}) {
+  if (primero || ultimo) {
+    return (
+      <span
+        className="flex-none"
+        data-papel={primero ? 'nodo-cabecera' : 'nodo-final'}
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 6,
+          border: `4px solid ${color}`,
+          background: primero ? color : 'var(--color-papel)',
+        }}
+      />
+    );
+  }
+  if (conTransbordo) {
+    return (
+      <span
+        className="flex-none rounded-full"
+        data-papel="nodo-transbordo"
+        style={{ width: 14, height: 14, border: `4px solid ${color}`, background: 'var(--color-papel)' }}
+      />
+    );
+  }
+  return (
+    <span
+      className="flex-none rounded-full"
+      data-papel="nodo-simple"
+      style={{ width: 9, height: 9, background: color }}
+    />
   );
 }
