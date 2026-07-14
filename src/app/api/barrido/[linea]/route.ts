@@ -65,6 +65,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ linea: string }
             // ⭐ EN CUANTO CADA POSTE TERMINA. Ni antes ni al final.
             linea({ tipo: 'poste', ...p });
           },
+          // ⚠️ EL RITMO SOLO SE SALTA CUANDO NO HAY NADIE A QUIEN PROTEGER.
+          //    El ritmo de 4/s existe para no machacar a Avanza. Con un
+          //    fingimiento activo, el transporte es FALSO: no sale ni un byte
+          //    hacia ellos, así que esperar 17 segundos no protegería a nadie —
+          //    solo haría los tests lentos y la demo insoportable.
+          //
+          //    Y no se puede activar por accidente: `fingimientoDe()` exige
+          //    ZETABUS_DEMO === '1'. En producción esa variable no existe, luego
+          //    `fingir` es null, luego el ritmo se aplica SIEMPRE. Hay un test.
+          ...(fingir ? { porSegundo: Infinity } : {}),
         });
 
         linea({

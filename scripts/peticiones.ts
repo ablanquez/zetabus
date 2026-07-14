@@ -74,19 +74,22 @@ const ESCENARIOS: Escenario[] = [
     },
   },
   {
-    nombre: '1 línea en pantalla (la 35)',
-    detalle: 'un barrido con paso 4',
+    nombre: '1 línea, alguien PULSA el botón (la 35)',
+    // ⚠️ Ya no es "paso 4, 18 peticiones". El muestreo perdía autobuses (medido:
+    //    10 de 12 en la 35) y se ha retirado. Se barre la línea entera, los dos
+    //    sentidos: 67 postes. Y NO se dispara solo: solo si alguien pulsa.
+    detalle: 'un barrido COMPLETO: 67 postes, los dos sentidos',
     ciclosPorMinuto: CICLOS_UTILES,
     correr: async (d) => {
-      await barrerLinea(L35, d);
+      await barrerLinea(L35, d, { dormir: async () => {} });
     },
   },
   {
     nombre: '⚠️ PEOR CASO: la línea más larga (N7, 119 postes)',
-    detalle: '31 peticiones por barrido. Es el barrido más caro de la red.',
+    detalle: '119 peticiones por barrido. Es el barrido más caro de la red.',
     ciclosPorMinuto: CICLOS_UTILES,
     correr: async (d) => {
-      await barrerLinea(N7, d);
+      await barrerLinea(N7, d, { dormir: async () => {} });
     },
   },
   {

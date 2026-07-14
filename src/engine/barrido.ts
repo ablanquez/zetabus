@@ -4,43 +4,144 @@
  * La API viva no tiene un endpoint "dame la línea 35". Solo sabe contestar por
  * poste. Así que la línea se reconstruye preguntando por sus postes y uniendo.
  *
- * ⭐ POR QUÉ CON PASO Y NO ENTERO.
- * Cada poste "ve" los autobuses que se le acercan hasta unos 4 km río arriba.
- * Postes consecutivos ven casi lo mismo. Preguntar por los 63 postes de la 35 es
- * pagar 63 peticiones por una información que dan 17. Con paso 4, las ventanas
- * de 4 km siguen solapando y ningún tramo se queda sin cubrir.
+ * ⚠️ LOS DOS SENTIDOS. Una línea son dos, y se barren los dos: los postes de
+ * todos los sentidos se funden en una sola lista (sin repetir: la 35 tiene 2
+ * postes que sirven a los dos, y preguntarlos dos veces sería pagar dos veces).
  *
- * ⚠️ ESO NO ES UNA CORAZONADA, Y TAMPOCO ME LO CREO PORQUE SUENE BIEN.
- * Está medido en `scripts/barrido-recall.ts`, y medido de una forma concreta
- * que importa: comparando el barrido completo con el de paso SOBRE LA MISMA
- * CAPTURA. Hacer un barrido de 63 y luego otro de 17 y comparar NO VALE — entre
- * los dos pasan 20 segundos y los autobuses SE MUEVEN. La diferencia que vieras
- * no distinguiría "el paso se ha dejado un bus" de "ese bus acabó su servicio".
- * El instrumento estaría midiendo su propio retraso. Ver el script.
+ * ═════════════════════════════════════════════════════════════════════════════
+ * ⭐⭐ POR QUÉ SE BARRE ENTERO, Y POR QUÉ ANTES NO. LA MUERTE DEL PASO 4.
+ *
+ * Hasta hoy esto muestreaba 1 de cada 4 postes. La medida de la Tanda 3 decía
+ * "paso 4 → 11 de 11 autobuses → 100%", y me la creí.
+ *
+ * ⚠️ ERA UN CASO FAVORABLE, Y LO TOMÉ POR EL CASO GENERAL.
+ *
+ * Antonio, que coge el bus, dijo haber visto TRES SEGUIDOS EN DOS PARADAS. Se
+ * repitió la medida sobre las tres líneas que más autobuses tienen (35, 33, 32),
+ * los dos sentidos, una sola captura, el 14/07/2026 a las 10:38:
+ *
+ *     línea 35 · 12 buses    paso 2  92%   paso 3 100%   paso 4  83%   paso 5  92%
+ *     línea 33 · 15 buses    paso 2  93%   paso 3  93%   paso 4  93%   paso 5  87%
+ *     línea 32 ·  9 buses    paso 2 100%   paso 3 100%   paso 4 100%   paso 5 100%
+ *
+ * Tres cosas, y las tres matan al paso:
+ *
+ *   1. EL PASO 4 PIERDE AUTOBUSES. Dos de doce en la 35 (los coches 4302 y 4324).
+ *   2. LA COBERTURA NO ES MONÓTONA: en la 35, el paso 3 encuentra MÁS que el 2.
+ *      Un número que sube cuando debería bajar no es una medida: es una lotería.
+ *      El paso acierta o falla según dónde caiga la rejilla. Eso no es cobertura.
+ *   3. LA LÍNEA 32 SALE 100% EN TODOS LOS PASOS — porque sus autobuses van
+ *      repartidos. Tiene la forma exacta de mi medida de la Tanda 3. Si hubiera
+ *      repetido la medida yo solo, habría vuelto a "confirmarlo".
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * ⚠️ EL CONTRATO DE DATOS. LEER ANTES DE ENSEÑAR ESTO EN PANTALLA.
+ * ⭐ Y HAY UNA RAZÓN ESTRUCTURAL. LA REGLA DE LOS DOS.
  *
- * Esto devuelve los autobuses **DETECTADOS**. NO "todos los autobuses de la
- * línea". Y la diferencia no es cosmética:
+ * Avanza anuncia en cada poste, COMO MUCHO, LOS DOS SIGUIENTES autobuses de cada
+ * línea y sentido. Pon los autobuses de un sentido en fila, del más adelantado al
+ * más atrasado: B1, B2, B3… En un poste solo se anuncian los dos que lo tienen
+ * más cerca por detrás. Luego B3 solo es visible en los postes que hay ENTRE B3 y
+ * B1: más allá, lo tapan los otros dos.
  *
- *   · Avanza anuncia como mucho LOS DOS SIGUIENTES por línea y sentido.
- *   · Un autobús que va entre dos paradas muy separadas, y que no es de los dos
- *     siguientes de ninguna, EXISTE y NO SALE AQUÍ.
+ *     ⇒ LA VENTANA DE VISIBILIDAD DE UN AUTOBÚS LA FIJA LO CERCA QUE TENGA AL QUE
+ *       VA **DOS** POSICIONES POR DELANTE. No la fija la longitud de la línea.
  *
- * Se puede decir "de los 12 autobuses que vemos ahora en la 35, los 12 son
- * articulados". No se puede decir "la 35 tiene 12 autobuses". La primera frase
- * es verdad siempre. La segunda es mentira en cuanto uno se esconda.
+ * Un autobús suelto tiene una ventana enorme y cualquier paso lo pilla. Tres
+ * apelotonados dejan al tercero con una ventana de UN poste — medido: el coche
+ * 4314 de la 33 solo era visible en UN poste de 51. Y se midieron 8 parejas a ≤2
+ * postes, dos de ellas a CERO (dos autobuses visibles en el mismo poste).
+ *
+ * Y de ahí sale la regla que decide, que no es estadística:
+ *
+ *     un tramo de p postes CONSECUTIVOS siempre contiene un múltiplo de p
+ *     ⇒ el paso p garantiza encontrar a un autobús cuya ventana mida ≥ p
+ *     ⇒ el paso que aguanta = LA VENTANA MÁS ESTRECHA que exista
+ *
+ * La ventana más estrecha medida es **1**. Luego el único paso que garantiza algo
+ * es el 1. No hay muestreo defendible. SE BARRE ENTERO.
+ *
+ * Cuesta 67 peticiones en la 35 en vez de 18. Se paga. Un barrido caro y correcto
+ * vale más que uno barato que miente.
+ * ═════════════════════════════════════════════════════════════════════════════
+ *
+ * ⚠️ LO QUE NI SIQUIERA EL BARRIDO COMPLETO PUEDE VER, Y SE DICE EN PANTALLA:
+ * si TRES autobuses caben entre dos postes consecutivos, el tercero no es de los
+ * dos siguientes de NINGÚN poste — y no sale, por mucho que preguntemos a todos.
+ * Por eso la pantalla dice "hemos ENCONTRADO", nunca "hay". La diferencia no es
+ * cosmética: es la única frase que sigue siendo verdad cuando eso pasa.
  */
 
 import type { LatLon, LineId, Observacion, VehicleId } from '@/core';
 import type { BusProfile } from '@/modes/bus/profile';
 import { leerPoste } from '@/sources/avanza/poste';
 import type { Dependencias } from './llegadas';
-import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada, nombreDePoste } from './topologia';
+import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada } from './topologia';
 
-/** Paso por defecto. 4 km de alcance y ~250 m entre paradas → sobra margen. */
-export const PASO = 4;
+/**
+ * ⭐ EL RITMO. Y ESTO NO ES UNA OPTIMIZACIÓN: ES LO QUE PROMETEMOS.
+ *
+ * ⚠️ AQUÍ HABÍA UN AGUJERO, Y SOLO SE VIO AL SUBIR A 67 POSTES.
+ *
+ * El barrido hacía `Promise.all` de todos los postes: los disparaba A LA VEZ. Con
+ * 18 no se notaba porque el cubo de fichas tiene 40 y se los tragaba enteros. Es
+ * decir: **el techo no estaba frenando al barrido, le estaba dando permiso para
+ * una ráfaga.** Dieciocho conexiones simultáneas contra un servidor al que le
+ * prometemos cortesía por escrito, y al que hemos visto caerse.
+ *
+ * Con 67 postes el agujero deja de ser teórico por dos motivos a la vez:
+ *   · serían 67 conexiones de golpe, y
+ *   · el cubo solo tiene 40 fichas → 27 postes saldrían `fallo` DE SALIDA.
+ *
+ * ⇒ EL BARRIDO SE MARCA SU PROPIO RITMO. El cubo vuelve a ser lo que debía ser:
+ *   una red de seguridad que en marcha normal NO SE TOCA, no el regulador.
+ *
+ * 67 postes a 4/s son ~17 segundos. Es mucho. Y es exactamente por eso que hay
+ * una barra de progreso: la espera deja de ser un problema y pasa a ser lo que se
+ * mira. Lo que NO se puede hacer es ahorrársela machacando a Avanza.
+ */
+export const POR_SEGUNDO = 4;
+
+/**
+ * Peticiones a la vez. Es un TOPE, no un objetivo: quien manda es el ritmo.
+ *
+ * ⚠️ CON 4 NO LLEGABA, Y LO VI EN UN RELOJ. Un barrido real de la 35 tardó 90 s
+ * en vez de los 17 que dice la aritmética. Con 4 obreros, el caudal no es 4/s: es
+ * 4 ÷ (lo que tarde Avanza). Si contesta en 1 s, salen 4/s y el ritmo manda. Si
+ * tarda 3 s, salen 1,3/s y quien manda es la latencia.
+ *
+ * Con 8, el ritmo sigue mandando aunque Avanza responda en 2 segundos. Y NO sube
+ * el caudal: el techo de 4/s es el mismo. Solo evita que una fuente lenta
+ * convierta un barrido de 17 segundos en uno de minuto y medio.
+ */
+export const EN_VUELO = 8;
+
+/**
+ * ⭐⭐ EL CORTACIRCUITOS. SI NADA CONTESTA, SE PARA. NO SE INSISTE 67 VECES.
+ *
+ * ⚠️ ESTO NO EXISTÍA, Y CON 18 POSTES CASI NO SE NOTABA. CON 67, SÍ.
+ *
+ * El 14/07/2026, con Avanza caída, un barrido real de la 35 hizo esto:
+ *
+ *     110 peticiones · 67 timeouts · 43 reintentos · 3.269 ms de media · 90 s
+ *
+ * Los sesenta y siete postes dieron timeout. Y nosotros seguimos pidiendo. Le
+ * mandamos 110 peticiones a un servidor que ya estaba en el suelo, y al usuario
+ * le pusimos una barra girando durante minuto y medio para acabar diciéndole que
+ * no sabíamos nada.
+ *
+ * Las dos cosas están mal, y las dos las arregla lo mismo: si los primeros postes
+ * fallan TODOS y no ha entrado ni un dato bueno, Avanza no está. Se para.
+ *
+ *   · Al usuario se le dice en ~10 segundos, no en 90.
+ *   · Y a Avanza se le dejan de mandar las 60 peticiones que faltaban.
+ *
+ * ⚠️ Y SOLO SI NO HA IDO BIEN NI UNA. Si un poste suelto falla y los demás van, la
+ * fuente está viva y el barrido sigue entero: un poste malo NO puede tumbar la
+ * línea. Lo que se detecta aquí no es "hay fallos", es "no hay NADIE al otro lado".
+ */
+export const RENDIRSE_TRAS = 6;
+
+const dormirDeVerdad = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export interface AutobusDetectado {
   readonly coche: VehicleId;
@@ -49,17 +150,6 @@ export interface AutobusDetectado {
   readonly posicion: LatLon | null;
   /** El más cercano de los tiempos con que se le vio, en minutos. */
   readonly etaMinutos: number;
-  /**
-   * ⭐ LA PARADA A LA QUE ESTÁ A PUNTO DE LLEGAR, y su nombre.
-   *
-   * ⚠️ OJO CON LA TENTACIÓN: **no es "dónde está el autobús"**. Es el poste del
-   * barrido que lo ha visto MÁS CERCA. Un autobús a 1 minuto de esa parada está,
-   * efectivamente, casi ahí. Uno a 14 minutos puede estar a kilómetros. Por eso
-   * la pantalla dice "llega a X en N min" y NO "está en X": lo primero es lo que
-   * la fuente afirma; lo segundo sería una deducción nuestra.
-   */
-  readonly posteMasCercano: number;
-  readonly paradaMasCercana: string;
   readonly perfil: BusProfile | null;
   /** En cuántos postes del barrido apareció. Sirve para depurar, no para decidir. */
   readonly vistoEnPostes: number;
@@ -77,8 +167,15 @@ export interface ProgresoPoste {
 export interface BarridoDeLinea {
   readonly lineaId: LineId;
   readonly linea: string;
-  readonly postesConsultados: number;
+  /** Todos los de la línea, los dos sentidos. Desde hoy no se muestrea. */
   readonly postesDeLaLinea: number;
+  /**
+   * Los que de verdad se han llegado a preguntar. Normalmente son TODOS. Solo son
+   * menos si el cortacircuitos se disparó — y entonces `abandonado` lo dice.
+   */
+  readonly postesConsultados: number;
+  /** ⭐ `true` = paramos nosotros porque no contestaba nadie. Se dice en pantalla. */
+  readonly abandonado: boolean;
   /**
    * ⚠️ TRES CIFRAS, NO UNA. Y NO ES BUROCRACIA.
    *
@@ -96,16 +193,12 @@ export interface BarridoDeLinea {
   readonly postesLeidos: number;
   readonly postesFallidos: number;
   readonly postesRancios: number;
-  readonly paso: number;
   /** ⚠️ DETECTADOS. Nunca "todos". Ver la cabecera. */
   readonly detectados: readonly AutobusDetectado[];
   readonly avisos: readonly string[];
 }
 
 export interface OpcionesBarrido {
-  readonly paso?: number;
-  /** ⚠️ Solo para el script de medida: barrer TODOS los postes. */
-  readonly completo?: boolean;
   /**
    * ⭐ SE LLAMA EN CUANTO CADA POSTE TERMINA. No al final: EN CUANTO TERMINA.
    *
@@ -119,6 +212,74 @@ export interface OpcionesBarrido {
    *    de avisos que gritaba más que el dato.
    */
   readonly onPoste?: (p: ProgresoPoste) => void;
+  /**
+   * ⚠️ Subir esto SOLO tiene sentido cuando NO se está hablando con Avanza (modo
+   * demo, tests). Nunca en producción: el ritmo es la promesa, no un parámetro.
+   */
+  readonly porSegundo?: number;
+  readonly enVuelo?: number;
+  /** Inyectable para que los tests midan el RITMO sin tener que esperarlo. */
+  readonly dormir?: (ms: number) => Promise<void>;
+  /** Solo para los tests del cortacircuitos. En producción manda `RENDIRSE_TRAS`. */
+  readonly rendirseTras?: number;
+}
+
+/**
+ * Lanza `f` sobre cada elemento a un ritmo máximo de `porSegundo`, con como mucho
+ * `enVuelo` en el aire. El hueco se reserva ANTES de esperar, así que N obreros no
+ * se pisan ni se agolpan: entre dos arranques cualesquiera pasan 1000/porSegundo ms.
+ */
+async function aRitmo<T>(
+  items: readonly number[],
+  f: (x: number) => Promise<T>,
+  o: {
+    porSegundo: number;
+    enVuelo: number;
+    ahora: () => number;
+    dormir: (ms: number) => Promise<void>;
+    /** `true` = ese resultado ha ido bien. Alimenta al cortacircuitos. */
+    fueBien: (r: T) => boolean;
+    rendirseTras: number;
+  },
+): Promise<{ hechos: T[]; abandonado: boolean }> {
+  const salida: T[] = [];
+  const hueco = o.porSegundo > 0 && Number.isFinite(o.porSegundo) ? 1000 / o.porSegundo : 0;
+  let proximoArranque = o.ahora();
+  let siguiente = 0;
+  let fallosSeguidos = 0;
+  let algoFueBien = false;
+  let abandonado = false;
+
+  const obrero = async (): Promise<void> => {
+    for (;;) {
+      if (abandonado) return; // ⭐ ni una petición más a un servidor que no está
+      const i = siguiente++;
+      if (i >= items.length) return;
+      // Se COGE el turno y se libera el mostrador; luego se espera al turno. Si
+      // se esperase primero y se cogiera después, dos obreros cogerían el mismo.
+      const turno = proximoArranque;
+      proximoArranque += hueco;
+      const espera = turno - o.ahora();
+      if (espera > 0) await o.dormir(espera);
+      if (abandonado) return; // pudo caerse mientras esperábamos nuestro turno
+
+      const r = await f(items[i]);
+      salida.push(r);
+
+      if (o.fueBien(r)) {
+        algoFueBien = true;
+        fallosSeguidos = 0;
+      } else if (!algoFueBien && ++fallosSeguidos >= o.rendirseTras) {
+        // ⚠️ Ni un dato bueno en los primeros N. No es un poste malo: no hay nadie.
+        abandonado = true;
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(o.enVuelo, items.length)) }, obrero),
+  );
+  return { hechos: salida, abandonado };
 }
 
 export async function barrerLinea(
@@ -131,45 +292,32 @@ export async function barrerLinea(
     return { estado: 'desconocido', motivo: `La línea "${String(lineaId)}" no existe en el GTFS.` };
   }
 
-  // Todos los postes de la línea, sin repetir, siguiendo el orden de la ruta.
-  const enOrden: number[] = [];
+  // ⭐ TODOS los postes de LOS DOS sentidos, sin repetir, siguiendo la ruta.
+  const aConsultar: number[] = [];
   const vistos = new Set<number>();
   for (const s of sentidosDe(lineaId)) {
     for (const sid of s.official.stops) {
       const poste = posteDe(idParada(sid));
       if (poste !== null && !vistos.has(poste)) {
         vistos.add(poste);
-        enOrden.push(poste);
+        aConsultar.push(poste);
       }
     }
   }
-  if (enOrden.length === 0) {
+  if (aConsultar.length === 0) {
     return { estado: 'desconocido', motivo: `La línea ${l.shortName} no tiene ni un poste con identidad de Avanza.` };
   }
-
-  const paso = o.completo ? 1 : Math.max(1, o.paso ?? PASO);
-  // ⚠️ El ÚLTIMO poste va SIEMPRE, aunque el paso no caiga en él. Si no, la cola
-  //    de la línea se queda ciega y los autobuses del final del recorrido —los
-  //    que están a punto de terminar— desaparecen del mapa sin motivo.
-  const aConsultar = enOrden.filter((_, i) => i % paso === 0);
-  const ultimo = enOrden[enOrden.length - 1];
-  if (!aConsultar.includes(ultimo)) aConsultar.push(ultimo);
 
   const canon = canonLinea(l.shortName);
   const avisos: string[] = [];
 
   // Las peticiones van por la caché, así que un barrido de la línea 35 y alguien
   // mirando una parada de la 35 COMPARTEN entradas. No se cuentan dos veces.
-  //
-  // ⭐ Y CADA UNA AVISA EN CUANTO TERMINA, no al final. Siguen yendo en paralelo
-  //    (con su vuelo único y su techo de fichas); lo único que cambia es que el
-  //    progreso se cuenta según van cayendo, en lugar de esperar a que caigan
-  //    todas y entonces decir "18 de 18" de golpe, que no es una barra: es un
-  //    interruptor.
   let hechos = 0;
   const total = aConsultar.length;
-  const lecturas = await Promise.all(
-    aConsultar.map(async (poste) => {
+  const { hechos: lecturas, abandonado } = await aRitmo(
+    aConsultar,
+    async (poste) => {
       const r = await dep.cache.obtener(`poste:${poste}`, () => leerPoste(poste, dep.transporte));
       hechos++;
       o.onPoste?.({
@@ -180,12 +328,21 @@ export async function barrerLinea(
         ...(r.tipo !== 'fresco' ? { motivo: r.motivo } : {}),
       });
       return { poste, r };
-    }),
+    },
+    {
+      porSegundo: o.porSegundo ?? POR_SEGUNDO,
+      enVuelo: o.enVuelo ?? EN_VUELO,
+      ahora: dep.ahora ?? Date.now,
+      dormir: o.dormir ?? dormirDeVerdad,
+      // ⚠️ RANCIO CUENTA COMO BIEN. El poste contestó (antes) y su dato se usa.
+      //    Si contara como fallo, una caché tibia dispararía el cortacircuitos.
+      fueBien: (x) => x.r.tipo !== 'fallo',
+      rendirseTras: o.rendirseTras ?? RENDIRSE_TRAS,
+    },
   );
 
   interface Acumulado {
     destino: string; posicion: LatLon | null; eta: number; postes: number;
-    posteCercano: number;
   }
   const porCoche = new Map<string, Acumulado>();
   let leidos = 0;
@@ -220,9 +377,9 @@ export async function barrerLinea(
       // Solo los de ESTA línea. El poste anuncia todas las que pasan por él.
       if (canonLinea(ll.lineaCruda) !== canon) continue;
 
-      // ⭐ DEDUPLICADO POR COCHE: el mismo autobús aparece en varios postes del
-      //    barrido (por eso el paso funciona). Contarlo dos veces convertiría
-      //    "12 autobuses en la 35" en "31 autobuses en la 35".
+      // ⭐ DEDUPLICADO POR COCHE, y por eso los dos sentidos caben en una lista:
+      //    el mismo autobús aparece en VARIOS postes (hasta 22 medidos en la 32).
+      //    Contarlo una vez por poste convertiría "12 autobuses" en "31".
       const previo = porCoche.get(ll.coche);
       if (previo) {
         previo.postes++;
@@ -231,7 +388,6 @@ export async function barrerLinea(
         if (ll.etaMinutos < previo.eta) {
           previo.eta = ll.etaMinutos;
           previo.destino = ll.destino;
-          previo.posteCercano = poste;
         }
         previo.posicion ??= posiciones.get(ll.coche) ?? null;
       } else {
@@ -240,18 +396,25 @@ export async function barrerLinea(
           posicion: posiciones.get(ll.coche) ?? null,
           eta: ll.etaMinutos,
           postes: 1,
-          posteCercano: poste,
         });
       }
     }
   }
 
   if (leidos === 0) {
-    return { estado: 'caido', motivo: `No se ha podido leer ni uno de los ${aConsultar.length} postes de la línea ${l.shortName}.` };
+    // ⭐ Y si además nos hemos rendido, se dice CUÁNTAS preguntas nos ahorramos.
+    //    No es un adorno: es la promesa de no abusar, rindiendo cuentas.
+    const rendidos = abandonado
+      ? ` Se ha dejado de preguntar tras ${lecturas.length} intentos fallidos seguidos: si no contesta nadie, insistir ${total - lecturas.length} veces más no ayuda a nadie.`
+      : '';
+    return {
+      estado: 'caido',
+      motivo: `Avanza no ha contestado a ninguna de las ${lecturas.length} paradas que le hemos preguntado de la línea ${l.shortName}.${rendidos}`,
+    };
   }
-  if (leidos < aConsultar.length) {
+  if (leidos < total) {
     avisos.push(
-      `barrido INCOMPLETO: ${leidos} de ${aConsultar.length} postes. ` +
+      `barrido INCOMPLETO: ${leidos} de ${total} postes. ` +
         'Puede haber autobuses de esta línea que no salgan en la lista.',
     );
   }
@@ -262,22 +425,20 @@ export async function barrerLinea(
       destino: a.destino,
       posicion: a.posicion,
       etaMinutos: a.eta,
-      posteMasCercano: a.posteCercano,
-      paradaMasCercana: nombreDePoste(a.posteCercano),
       perfil: perfilDe(coche), // ← null = SIN DATOS. Jamás un valor por defecto.
       vistoEnPostes: a.postes,
     }))
-    .sort((x, y) => x.etaMinutos - y.etaMinutos);
+    .sort((x, y) => String(x.coche).localeCompare(String(y.coche), 'es', { numeric: true }));
 
   const datos: BarridoDeLinea = {
     lineaId,
     linea: l.shortName,
-    postesConsultados: aConsultar.length,
-    postesDeLaLinea: enOrden.length,
+    postesDeLaLinea: total,
+    postesConsultados: lecturas.length,
+    abandonado,
     postesLeidos: leidos,
     postesFallidos: fallidos,
     postesRancios: rancios,
-    paso,
     detectados,
     avisos,
   };

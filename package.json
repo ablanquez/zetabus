@@ -16,6 +16,7 @@
     "canario": "tsx scripts/canario.ts",
     "peticiones": "tsx scripts/peticiones.ts",
     "campo": "tsx scripts/campo.ts",
+    "paso": "tsx scripts/paso.ts",
     "visual": "playwright test",
     "visual:instrumento": "playwright test e2e/instrumento.spec.ts"
   },

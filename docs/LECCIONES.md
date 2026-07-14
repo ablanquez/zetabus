@@ -320,8 +320,24 @@ paso   peticiones   encontrados   perdidos   cobertura
    6           12            10          1        91%   (falta 4312)
 ```
 
-El 4 no es un número redondo elegido a ojo: es **el último paso que todavía cubre**. Y eso solo se puede afirmar porque las dos columnas salen del mismo instante.
+~~El 4 no es un número redondo elegido a ojo: es **el último paso que todavía cubre**. Y eso solo se puede afirmar porque las dos columnas salen del mismo instante.~~
 
+> ### ⛔ TACHADO EL 14/07/2026. LA CONCLUSIÓN ERA FALSA. EL MÉTODO NO.
+>
+> **Lo que sigue siendo verdad** es todo lo de arriba: comparar dos capturas tomadas en instantes
+> distintos mide tu propio retraso, y por eso las dos columnas salen de **una sola captura**. Eso no
+> se toca.
+>
+> **Lo que era falso** es la frase tachada. Aquella tabla se midió sobre **una línea, a una hora, con
+> los autobuses repartidos**. Repetida contra las tres líneas con más autobuses, el paso 4 pierde
+> **2 de 12** en la línea 35 — y la cobertura ni siquiera es monótona (el paso 3 encuentra más que
+> el 2), que es la señal de que el número era **suerte, no cobertura**.
+>
+> El barrido con paso está **retirado**. Se barre entero. → **[L8](#l8--una-medida-que-sale-redonda-a-la-primera-no-es-una-confirmación-es-una-muestra-mal-elegida)**
+>
+> ⚠️ Y la lección dentro de la lección: **una medida impecable sobre una muestra mal elegida da un
+> número impecable y falso.** El rigor del método no compensa el sesgo de la muestra. Los dos
+> hacen falta.
 
 ---
 
@@ -385,6 +401,98 @@ por el marco del mapa). Un detector que grita ocho veces por nada es un detector
 hacer caso — y entonces, el día que grite de verdad, nadie mirará.
 
 **El instrumento se audita como se audita una fuente.**
+
+---
+
+## L8 · UNA MEDIDA QUE SALE REDONDA A LA PRIMERA NO ES UNA CONFIRMACIÓN: ES UNA MUESTRA MAL ELEGIDA
+
+**Fecha:** 14/07/2026 · **Tanda 5B**
+
+En la Tanda 3 medí si el barrido con **paso 4** (preguntar 1 de cada 4 postes) encontraba los
+mismos autobuses que el barrido completo. Salió esto:
+
+```
+paso 1 → 67 peticiones → 11 buses → 100%
+paso 4 → 18 peticiones → 11 buses → 100%   ← el elegido
+paso 5 → 15 peticiones → 10 buses →  91%
+```
+
+Y escribí, tan orgulloso: *"el 4 no es un número redondo elegido a ojo: es el último paso que
+todavía cubre"*. La medida estaba **bien hecha** (una sola captura, cero deriva — eso es la L6).
+Lo que estaba mal era **sobre qué la hice**.
+
+### ⚠️ EL QUE COGE EL BUS SABÍA ALGO QUE MI MEDIDA NO
+
+> *"He llegado a ver TRES BUSES SEGUIDOS EN DOS PARADAS."*
+
+Un paso 4 **se salta tres postes de cada cuatro**. Si en ese hueco hay un pelotón, no lo ve.
+Mi medida salió al 100% porque los 11 autobuses de aquel día iban **repartidos**. Es un caso
+favorable, y lo tomé por el caso general.
+
+Se repitió la medición sobre las tres líneas con más autobuses (35, 33, 32), los dos sentidos,
+una sola captura por línea, a las 10:38 de un martes:
+
+```
+LÍNEA 35 · 12 buses     LÍNEA 33 · 15 buses     LÍNEA 32 · 9 buses
+  paso 2 →  92%           paso 2 →  93%           paso 2 → 100%
+  paso 3 → 100%           paso 3 →  93%           paso 3 → 100%
+  paso 4 →  83%  ⛔       paso 4 →  93%           paso 4 → 100%
+  paso 5 →  92%           paso 5 →  87%           paso 5 → 100%
+```
+
+**El paso 4 perdía 2 de 12 autobuses en la 35.** Y hay dos cosas peores que el número:
+
+**1 · La cobertura NO ES MONÓTONA.** En la 35, el paso 3 encuentra *más* que el paso 2. Un número
+que sube cuando debería bajar no es una medida: **es una lotería**. El paso acierta o falla según
+dónde caiga la rejilla respecto a los autobuses de ese instante.
+
+**2 · La línea 32 sale 100% en todos los pasos.** Sus autobuses van repartidos (ventana mínima: 7
+postes). **Tiene exactamente la forma de mi medida de la Tanda 3.** Si hubiera repetido la
+medición yo solo, habría elegido una línea así y habría vuelto a "confirmar" el paso 4 — con una
+tabla preciosa.
+
+### ⭐ Y HAY UNA RAZÓN ESTRUCTURAL. LA REGLA DE LOS DOS
+
+Avanza anuncia en cada poste, como mucho, **los DOS SIGUIENTES** autobuses de cada línea y sentido.
+Pon los autobuses de un sentido en fila, del más adelantado al más atrasado: B1, B2, B3… En un
+poste solo se anuncian los dos que lo tienen más cerca por detrás. Luego **B3 solo es visible en
+los postes que hay entre B3 y B1**: más allá, lo tapan los otros dos.
+
+> **La ventana de visibilidad de un autobús la fija lo cerca que tenga al que va DOS posiciones por
+> delante. No la fija la longitud de la línea.**
+
+Un autobús suelto tiene una ventana enorme y cualquier paso lo pilla. Tres apelotonados dejan al
+tercero con una ventana de **un poste** — medido: el coche 4314 de la línea 33 solo era visible en
+1 poste de 51. Y se midieron **8 parejas a ≤2 postes, dos de ellas a CERO** (dos autobuses
+visibles en el mismo poste).
+
+De ahí sale la regla que decide, y **no es estadística, es aritmética**:
+
+> un tramo de *p* postes consecutivos siempre contiene un múltiplo de *p*
+> ⇒ el paso *p* **garantiza** encontrar a un autobús cuya ventana mida ≥ *p*
+> ⇒ **el paso que aguanta = la ventana más estrecha que exista**
+
+La ventana más estrecha medida es **1**. Luego el único paso que garantiza algo es el 1.
+**No hay muestreo defendible. Se barre entero.**
+
+### ⚠️ Y LO QUE NI EL BARRIDO COMPLETO PUEDE VER
+
+Si **tres** autobuses caben entre dos postes consecutivos, el tercero no es de los dos siguientes
+de **ningún** poste. No sale, **por mucho que preguntemos a todos**. No es un fallo del barrido: es
+que la información no está en la fuente. Por eso la pantalla dice *"hemos ENCONTRADO"* y nunca
+*"hay"* — y ahora, con el barrido completo, es cuando más tentador es decir "hay" y peor fundado
+está.
+
+### LO QUE SE APRENDE
+
+- **Elegir el caso de prueba es una decisión de diseño, no un trámite.** Y el caso favorable se
+  elige solo, porque es el que primero se te ocurre.
+- **Un número redondo a la primera es una señal de alarma**, no de éxito. (Ya pasó con el oráculo
+  de desvíos en la Fase 6: validado contra los casos que no ponían a prueba el detector.)
+- **El peor caso lo elige quien usa la cosa**, no quien la construye. Antonio no midió nada: se
+  acordó de haber visto tres autobuses seguidos.
+- **Y cuando una métrica no es monótona en su parámetro, la métrica no está midiendo la propiedad
+  que crees.** Ahí es donde se ve que era suerte.
 
 ---
 

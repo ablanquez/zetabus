@@ -14,7 +14,7 @@ import { llegadasDePoste } from '@/engine/llegadas';
 import { barrerLinea } from '@/engine/barrido';
 import { compararRecorrido, desviosDeLinea, UMBRAL_ABSURDO } from '@/engine/desvios';
 import { canonLinea, idLinea, idParada, lineas, paradaDelPoste, perfilDe, posteDe, sentidosDe } from '@/engine/topologia';
-import { POSTE_MUDO, respuestaPoste, respuestaRecorrido, siempre, transporteFalso, posteDelCuerpo } from './dobles';
+import { cacheSinTecho, POSTE_MUDO, respuestaPoste, respuestaRecorrido, siempre, transporteFalso, posteDelCuerpo } from './dobles';
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-m-')); });
@@ -23,6 +23,17 @@ afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 const cache = () => new CacheDosPisos({ dir });
 /** Un poste REAL del GTFS de Zaragoza. Plaza San Miguel. */
 const POSTE_REAL = 744;
+
+/**
+ * ⚠️ EL BARRIDO REAL VA A 4 PETICIONES/SEGUNDO, y la línea 39 tiene decenas de
+ * postes: un test que lo esperase de verdad tardaría medio minuto. Aquí NO se
+ * apaga el ritmo — se le da un reloj que no duerme. La lógica del ritmo sigue
+ * ejecutándose entera, y se comprueba aparte, midiendo lo que PIDE dormir.
+ * Ver `barrido-completo.test.ts`.
+ */
+const SIN_ESPERAR = { dormir: async () => {} } as const;
+/** ⚠️ Y sin esperas hay que apartar el techo, o se mide el cubo. Ver `dobles.ts`. */
+const cacheBarrido = () => cacheSinTecho(dir);
 
 describe('⭐ EL AGUJERO DE LA FUENTE: poste inválido ≠ poste sin autobuses', () => {
   it('la fuente devuelve LO MISMO para los dos. Éste es el hecho.', () => {
@@ -418,7 +429,7 @@ describe('⭐ EL BARRIDO', () => {
     const bus = { coche: '4650', linea: '039', destino: 'VADORREY', eta: 3 };
     const t = siempre(respuestaPoste({ buses: [bus] })); // TODOS los postes ven el mismo
 
-    const r = await barrerLinea(idLinea(String(l.id)), { cache: cache(), transporte: t.transporte });
+    const r = await barrerLinea(idLinea(String(l.id)), { cache: cacheBarrido(), transporte: t.transporte }, SIN_ESPERAR);
 
     expect(r.estado).toBe('ok');
     if (r.estado === 'ok') {
@@ -428,14 +439,24 @@ describe('⭐ EL BARRIDO', () => {
     }
   }, 30_000);
 
-  it('el paso reduce las peticiones, y el último poste va SIEMPRE', async () => {
+  it('⭐ se consultan TODOS los postes, y de LOS DOS sentidos', async () => {
     const l = lineas().find((x) => x.shortName === '39')!;
     const t = siempre(POSTE_MUDO);
-    const r = await barrerLinea(idLinea(String(l.id)), { cache: cache(), transporte: t.transporte });
+    const r = await barrerLinea(idLinea(String(l.id)), { cache: cacheBarrido(), transporte: t.transporte }, SIN_ESPERAR);
+
+    // La unión de los postes de todos los sentidos, sin repetir. Calculada aquí
+    // a mano, a propósito: si el motor volviera a muestrear, esto se pone rojo.
+    const suyos = new Set<number>();
+    for (const s of sentidosDe(idLinea(String(l.id)))) {
+      for (const sid of s.official.stops) {
+        const p = posteDe(idParada(sid));
+        if (p !== null) suyos.add(p);
+      }
+    }
+    expect(sentidosDe(idLinea(String(l.id))).length).toBeGreaterThan(1); // son DOS
     if (r.estado === 'ok') {
-      expect(r.datos.postesConsultados).toBeLessThan(r.datos.postesDeLaLinea / 3);
-      // Sin la regla del último poste, la cola de la línea quedaría ciega.
-      expect(r.datos.paso).toBe(4);
+      expect(r.datos.postesConsultados).toBe(suyos.size);
+      expect(t.llamadas).toBe(suyos.size); // ni uno menos: NADA de muestreo
     }
   }, 30_000);
 
@@ -450,7 +471,7 @@ describe('⭐ EL BARRIDO', () => {
         return { status: 200, texto: respuestaPoste({ buses: [{ coche: '4650', linea: '039', destino: 'V', eta: 2 }] }) };
       },
     });
-    const r = await barrerLinea(idLinea(String(l.id)), { cache: cache(), transporte: t.transporte });
+    const r = await barrerLinea(idLinea(String(l.id)), { cache: cacheBarrido(), transporte: t.transporte }, SIN_ESPERAR);
     if (r.estado === 'ok') {
       // ⭐ Se enseña lo que hay, PERO SE DICE que puede faltar. Un barrido a
       //    medias presentado como completo es la mentira más fácil de contar.
@@ -461,7 +482,7 @@ describe('⭐ EL BARRIDO', () => {
   it('si NO se lee ni un poste → `caido`, no un barrido vacío', async () => {
     const l = lineas().find((x) => x.shortName === '39')!;
     const t = transporteFalso({ explota: 'ECONNREFUSED' });
-    const r = await barrerLinea(idLinea(String(l.id)), { cache: cache(), transporte: t.transporte });
+    const r = await barrerLinea(idLinea(String(l.id)), { cache: cacheBarrido(), transporte: t.transporte }, SIN_ESPERAR);
     expect(r.estado).toBe('caido'); // ← NO {estado:'ok', detectados:[]}
   }, 60_000);
 
@@ -472,9 +493,9 @@ describe('⭐ EL BARRIDO', () => {
     const id = idLinea(String(l.id));
     const t = siempre(POSTE_MUDO);
 
-    await barrerLinea(id, { cache: c, transporte: t.transporte }); // cachea todo
+    await barrerLinea(id, { cache: c, transporte: t.transporte }, SIN_ESPERAR); // cachea todo
     reloj.t += 9_000; // pasan 9 s (por debajo del TTL: nada se refresca)
-    const r = await barrerLinea(id, { cache: c, transporte: t.transporte });
+    const r = await barrerLinea(id, { cache: c, transporte: t.transporte }, SIN_ESPERAR);
 
     if (r.estado === 'ok') {
       // Quedarse con el dato más nuevo sería maquillar el conjunto.
@@ -484,7 +505,7 @@ describe('⭐ EL BARRIDO', () => {
 
   it('una línea que no existe → `desconocido`', async () => {
     const t = siempre(POSTE_MUDO);
-    const r = await barrerLinea(idLinea('no-existe'), { cache: cache(), transporte: t.transporte });
+    const r = await barrerLinea(idLinea('no-existe'), { cache: cacheBarrido(), transporte: t.transporte });
     expect(r.estado).toBe('desconocido');
     expect(t.llamadas).toBe(0);
   });

@@ -10,6 +10,7 @@
  */
 
 import { CacheDosPisos } from '@/cache/dos-pisos';
+import { Limitador } from '@/cache/limitador';
 import { transporteReal, contador, type Transporte } from '@/sources/avanza/transporte';
 import type { Dependencias } from './llegadas';
 
@@ -42,7 +43,30 @@ export function motor(
   if (fingiendo) {
     let c = cachesFingidas.get(fingiendo);
     if (!c) {
-      c = new CacheDosPisos({ dir: `${DIR_CACHE}/_demo/${fingiendo}`, ttlMs: 2_000 });
+      c = new CacheDosPisos({
+        dir: `${DIR_CACHE}/_demo/${fingiendo}`,
+        ttlMs: 2_000,
+        /**
+         * ⚠️⚠️ Y EL TECHO TAMPOCO VA EN LA DEMO. LO VI EN UNA CIFRA QUE NO CUADRABA.
+         *
+         * La demo enseñaba "67 paradas consultadas · 40 peticiones a Avanza" y 27
+         * avisos de "una parada no ha respondido". ¿Veintisiete fallos, con un
+         * transporte FALSO que no puede fallar?
+         *
+         * Eran las fichas del cubo. La demo se salta el ritmo (no hay a quién
+         * proteger: no sale un byte hacia Avanza), así que suelta los 67 postes de
+         * golpe — y el cubo, que tiene 40, deniega los otros 27.
+         *
+         * ⇒ La demo estaba enseñando 27 fallos QUE EN PRODUCCIÓN NO OCURREN NUNCA:
+         *   allí el barrido va a 4/s, que es justo lo que el cubo repone, y no se
+         *   deniega ni una. La demo no estaba imitando al producto: lo estaba
+         *   calumniando. Y con un número muy convincente al lado.
+         *
+         * El techo existe para proteger a Avanza. Si no hay Avanza, no hay techo.
+         * Es la misma razón por la que se salta el ritmo, y va en el mismo sitio.
+         */
+        limitador: new Limitador(`${DIR_CACHE}/_demo/${fingiendo}/_techo`, 1e9, 1e9),
+      });
       cachesFingidas.set(fingiendo, c);
     }
     return { cache: c, transporte };
