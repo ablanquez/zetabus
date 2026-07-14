@@ -69,19 +69,64 @@ export function contraste(a: string, b: string): number {
 export const AA = 4.5;
 
 /**
+ * ⭐⭐ D1 · EL COLOR DEL TEXTO **SE CALCULA**. NO SE ELIGE A MANO.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Antonio vio que la línea 29 tiene el número en NEGRO y las demás en blanco, y
+ *  dijo: *"alguien decidió el color del texto POR LÍNEA, A OJO, en vez de
+ *  calcularlo del contraste real"*.
+ *
+ *  ⭐ TENÍA RAZÓN. Y ese alguien fue **Avanza**: el color sale de
+ *    `route_text_color` del GTFS, y nosotros lo copiábamos sin comprobarlo.
+ *
+ *  ⛔ Y LA REALIDAD ES MUCHO PEOR QUE EL SÍNTOMA. Medido sobre las 44 líneas:
+ *
+ *      26 DE 44 CHIPS ESTÁN POR DEBAJO DE WCAG AA.
+ *
+ *      línea 33 · #C5CE00 + blanco →  1,72:1   (en negro: 12,2:1)
+ *      línea 43 · #F8AD07 + blanco →  1,91:1
+ *      línea 59 · #A5C715 + blanco →  1,95:1
+ *      línea 25 · #EAA200 + blanco →  2,17:1
+ *      línea N3 · #00B9F2 + blanco →  2,28:1
+ *
+ *  La 29 no era la rara: **era la única donde Avanza acertó.**
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * LA REGLA, y es la mínima intervención posible:
+ *
+ *   1. Si el color que manda el operador **se lee** (≥ AA), se respeta. Es SU
+ *      identidad, y no vamos a repintarla por gusto.
+ *   2. Si NO se lee, se cae al que más contraste da (blanco o negro).
+ *
+ * ⚠️ Y si NINGUNO de los dos llegara a AA, esta función **no miente**: devuelve el
+ *    mejor que hay y lo marca. Un test recorre las 44 y **revienta** si eso pasa —
+ *    porque entonces el problema no es el texto: es el color de fondo, y eso hay
+ *    que MIRARLO, no redondearlo.
+ */
+export function textoLegible(fondo: string, preferido: string): { texto: string; contraste: number; forzado: boolean } {
+  const suyo = contraste(fondo, preferido);
+  if (suyo >= AA) return { texto: preferido, contraste: suyo, forzado: false };
+
+  const blanco = contraste(fondo, '#FFFFFF');
+  const negro = contraste(fondo, '#000000');
+  const gana = blanco >= negro ? '#FFFFFF' : '#000000';
+  return { texto: gana, contraste: Math.max(blanco, negro), forzado: true };
+}
+
+/**
  * Los dos tonos de un chip. Es una función pura, y por eso se puede probar sin
  * navegador: el test le pasa las 44 líneas reales y comprueba que ninguna sale
  * ilegible.
  */
 export function tonosDeChip(l: Line): { fondo: string; texto: string; buho: boolean } {
   if (!esBuho(l)) {
-    return { fondo: l.color, texto: l.textColor, buho: false };
+    // ⭐ EL CONTRASTE MANDA, no `route_text_color`.
+    return { fondo: l.color, texto: textoLegible(l.color, l.textColor).texto, buho: false };
   }
-  // ⭐ INVERTIDO. Y con red de seguridad: si el color de la línea no se lee sobre
-  //    el azul noche, el número va en blanco. La CATEGORÍA (la inversión) no se
+  // ⭐ INVERTIDO. Y con la misma red: si el color de la línea no se lee sobre el
+  //    azul noche, el número cae al que sí. La CATEGORÍA (la inversión) no se
   //    pierde nunca; lo que cede es el tono, que es lo accesorio.
-  const suyo = contraste(l.color, NOCHE);
-  return { fondo: NOCHE, texto: suyo >= AA ? l.color : '#FFFFFF', buho: true };
+  return { fondo: NOCHE, texto: textoLegible(NOCHE, l.color).texto, buho: true };
 }
 
 export function ChipLinea({
@@ -96,9 +141,26 @@ export function ChipLinea({
   grande?: boolean;
 }) {
   const { fondo, texto, buho } = tonosDeChip(linea);
+  /**
+   * ⭐ D3 · `shrink-0`. UN SOLO ATRIBUTO, Y ERA TODO EL FALLO.
+   *
+   * Antonio: *"los chips de búho tienen tamaños distintos entre sí"*. Y era
+   * verdad. Medido en pantalla, los siete:
+   *
+   *     N1 43×48 · N2 35×48 · N3 39×48 · N4 36×48 · N5 35×48 · N6 35×48 · N7 42×48
+   *
+   * El chip declara `w-12` (48 px) y la ALTURA salía bien… pero el ancho no. ¿Por
+   * qué? Porque vive dentro de un contenedor `flex`, y **un hijo flex se encoge**:
+   * `w-12` es la anchura *deseada*, no un suelo. Sin `shrink-0`, el navegador la
+   * recorta hasta el contenido — y "N1" ocupa más que "N5".
+   *
+   * ⚠️ Y en el CSS declarado ponía 48 px. **`getComputedStyle` lo habría aprobado.**
+   *    Solo se caza midiendo la caja REAL. Es la décima vez que el píxel y el CSS
+   *    no dicen lo mismo.
+   */
   const clase = grande
-    ? 'flex h-12 w-12 items-center justify-center rounded-xl text-[16px] font-black'
-    : 'flex h-6 min-w-[24px] items-center justify-center rounded-md px-1.5 text-[11px] font-black';
+    ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-[16px] font-black'
+    : 'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black';
 
   const contenido = (
     <span
