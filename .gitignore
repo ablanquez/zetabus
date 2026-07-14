@@ -61,7 +61,21 @@
 !/data/
 /data/*
 !/data/README.md
+
+#    El maestro de flota. GENERADO por scripts/build-flota.ts a partir de
+#    data/fuentes/ + data/flota-observada.json. No se edita a mano.
 !/data/flota-avanza-zaragoza.json
+
+#    ⭐ LAS FUENTES, CONGELADAS Y CITADAS. Cada una con su _meta: quién la
+#    publica, con qué URL, en qué fecha se consultó y qué NO trae.
+#    Sin esto, el maestro es un montón de datos sin padre — que es
+#    exactamente el JSON heredado. Ver docs/LECCIONES.md · L3.
+!/data/fuentes/
+
+#    ⭐ EL FICHERO DE ANTONIO. Autobuses que ha VISTO circular y que no
+#    están en ninguna fuente publicada. Su cadena de custodia es el
+#    `git blame` de este fichero: por eso va versionado, y por eso va solo.
+!/data/flota-observada.json
 
 #    Fichero heredado. NO es producto: es material de auditoría.
 #    Se conserva porque tapa 53 vehículos que el registro oficial no

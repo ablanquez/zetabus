@@ -72,7 +72,7 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
 
   test('"Ninguna" apaga TODO — y NO dice "no hay autobuses"', async ({ page }, info) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
-    await page.getByRole('button', { name: 'Ninguna' }).click();
+    await page.locator('[data-papel="filtro-ninguna"]').click();
     await page.waitForTimeout(200);
 
     expect(await filas(page).count()).toBe(0);
@@ -91,9 +91,9 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
   test('"Todas" vuelve al estado inicial exacto', async ({ page }) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
     const n0 = await filas(page).count();
-    await page.getByRole('button', { name: 'Ninguna' }).click();
+    await page.locator('[data-papel="filtro-ninguna"]').click();
     await page.waitForTimeout(150);
-    await page.getByRole('button', { name: 'Todas' }).click();
+    await page.locator('[data-papel="filtro-todas"]').click();
     await page.waitForTimeout(150);
     expect(await filas(page).count()).toBe(n0);
   });

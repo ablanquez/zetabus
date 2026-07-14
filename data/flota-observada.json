@@ -1,0 +1,198 @@
+{
+  "_meta": {
+    "id": "observacion-propia",
+    "confianza": "observacion_propia",
+    "documento": "Autobuses observados EN SERVICIO por el mantenedor del proyecto",
+    "autor": "Antonio Blanquez (ablanquez)",
+    "url": null,
+    "porQueExiste": "Estos autobuses CIRCULAN. La API viva de Avanza los devuelve, y su ficha sale VACÍA porque no están ni en el pliego municipal ni en busesmadrid.es. Una ficha con la procedencia declarada es mejor que un SIN DATOS cuando se sabe perfectamente qué autobús es.",
+    "reglaDeOro": "⚠️ ESTO NO ES EL PLIEGO. Un vehículo escrito aquí NUNCA se disfraza de dato oficial: nace con `confianza: observacion_propia`, sale marcado en el fichero y sale marcado en la pantalla. Su procedencia es una PERSONA, con nombre y fecha, y el `git blame` de este fichero es su cadena de custodia. Ese es exactamente el pecado que el JSON heredado cometía y que llevamos siete auditorías corrigiendo.",
+    "noEsUnApaño": "⭐ Y NO ES UN PARCHE TEMPORAL: ES EL CANAL. El Anexo 5 es de octubre de 2025 y su pliego NI SIQUIERA ESTÁ ADJUDICADO. busesmadrid.es es una web humana que va a su ritmo. LA FLOTA REAL VA POR DELANTE DE SUS DOS FUENTES, SIEMPRE — un autobús llega a la calle mucho antes que a un documento. Este fichero es la vía por la que la flota se mantiene al día mientras las fuentes alcanzan a la realidad. Se espera que crezca (más eCitaro tras el verano de 2026) y que se VACÍE solo, según el pliego y busesmadrid vayan recogiendo cada coche: `npm run flota:build` avisa cuando un vehículo de aquí ya sobra.",
+    "vehiculos": 7
+  },
+
+  "_elProceso": {
+    "0_cuando": "Cuando veas circular un autobús cuya ficha salga vacía («Sin datos de este autobús») o marcada con «?».",
+    "1_añade": "Copia el bloque `_ejemplo` al final del array `vehiculos` y rellénalo.",
+    "2_sube_el_contador": "⚠️ Sube `_meta.vehiculos` al número de vehículos del array. Si no cuadra, el generador REVIENTA — a propósito: es el contador de control independiente (L1). Es la única cuenta que llevas a mano, y es a propósito.",
+    "3_regenera": "npm run flota:build",
+    "4_mira_lo_que_te_dice": "El generador te dirá tres cosas: (a) si el contador cuadra; (b) si algún vehículo tuyo YA SOBRA porque una fuente publicada lo ha recogido y dice lo mismo — bórralo de aquí; (c) si alguna fuente publicada te CONTRADICE, con los dos valores enfrentados.",
+    "5_commit": "git commit. El `git blame` de este fichero ES la cadena de custodia del dato."
+  },
+
+  "_siLaFuenteOficialTeContradice": {
+    "quienGana": "LA FUENTE MÁS ALTA. Siempre. Un documento firmado por el Ayuntamiento pesa más que «yo lo vi», y eso no es negociable: si no, cualquiera podría sobrescribir el registro público con una impresión.",
+    "peroNoEnSilencio": "⚠️ La contradicción se IMPRIME EN ROJO en el build y queda escrita en `_meta.discrepancias` del maestro, con los dos valores y quién dijo cada uno.",
+    "porQueNoRevienta": "⭐ Porque un `throw` te obligaría a BORRAR una de las dos afirmaciones para poder compilar — y entonces la contradicción desaparece del proyecto. UN DESACUERDO ENTRE LO QUE DICE EL PAPEL Y LO QUE SE VE CON LOS OJOS ES UN DATO, no un conflicto que quitar de en medio. Ya nos pasó con Avenida Valencia: el GTFS decía que la 35 paraba allí, la calle estaba cortada, y quien «resolvió el conflicto en silencio» mandó a alguien a esperar a una calle cortada. El desacuerdo ERA la información.",
+    "queHacerTu": "Mirarlo. O el documento va con retraso (y hay que decirlo), o te confundiste de coche (y hay que corregirlo). Las dos cosas hay que saberlas."
+  },
+
+  "_unaCosaQueNOHace": {
+    "queEs": "Un vehículo tiene UNA fuente, no una por campo.",
+    "consecuencia": "Si un coche está en busesmadrid (que NO publica la longitud) y tú además lo has visto, tu longitud NO se usa: manda busesmadrid, y su silencio sobre la longitud es silencio. Ejemplo real: el 4114 sale como «Estándar», sin metros, aunque tú sepas que los 41XX miden 12 m.",
+    "porQue": "Mezclar procedencias campo a campo produce fichas Frankenstein de las que ya no se puede decir «esto viene de aquí». Es preferible decir menos y poder responder siempre de quién es cada dato.",
+    "siTeMolesta": "Dilo y se diseña procedencia POR CAMPO, con su marca. No lo he hecho por mi cuenta."
+  },
+
+  "_comoSeRellena": {
+    "1_obligatorio": {
+      "coche": "número entero, el que devuelve Avanza en vivo (ej: 4330)",
+      "fabricante": "texto libre (ej: \"Mercedes-Benz\")",
+      "modelo": "texto libre (ej: \"eCitaro G\")",
+      "observadoPor": "\"ablanquez\"",
+      "fechaObservacion": "AAAA-MM-DD — el día que lo viste",
+      "comoLoSupe": "una frase. Ej: \"Me monto en él a diario en la línea 35; el número va rotulado en el frontal.\""
+    },
+    "2_opcional_pero_NO_SE_ADIVINA": {
+      "matricula": "\"1234-ABC\" si la has LEÍDO. Si no, null. ⛔ NUNCA deducirla de la serie.",
+      "clase": "\"sencillo\" | \"articulado\" | \"microbus_pmrs\" — se ve a simple vista. Si dudas, null.",
+      "longitudM": "10 | 12 | 18 — ⛔ SOLO si la sabes de verdad. Un articulado NO es automáticamente 18: ese error costó 62 vehículos mal clasificados en el fichero heredado. Si no la sabes, null (la pantalla dirá solo \"Articulado\", que es cierto).",
+      "propulsion": "\"diesel\" | \"hibrido\" | \"electrico\" — un eCitaro es eléctrico y no hace ruido; eso se oye. Si dudas, null.",
+      "fechaMatriculacion": "casi seguro null. No te la inventes."
+    },
+    "3_prohibido": "⛔ NO consultar la DGT. ⛔ NO scrapear servicios de matrículas. ⛔ NO cruzar con otras bases de vehículos. Solo lo que has VISTO."
+  },
+
+  "_ejemplo": {
+    "coche": 4330,
+    "matricula": null,
+    "fechaMatriculacion": null,
+    "fabricante": "Mercedes-Benz",
+    "modelo": "eCitaro G",
+    "longitudM": null,
+    "clase": "articulado",
+    "propulsion": "electrico",
+    "observadoPor": "ablanquez",
+    "fechaObservacion": "2026-07-14",
+    "comoLoSupe": "Lo cojo a diario. Va asignado a mi línea. Articulado y eléctrico se ven y se oyen; la matrícula no la he leído."
+  },
+
+  "_laObjecionHonesta": {
+    "queHaceAntonio": "Afirma la LONGITUD a partir del MODELO. Y eso es EXACTAMENTE lo que rompió 62 longitudes del JSON heredado (20% de error, siempre infraestimando).",
+    "porQueAquiSiVale": "Porque el heredado lo DEDUJO DE UN CATÁLOGO, y un catálogo no determina la longitud: un VOLVO 7905 existe en 12 m Y en 18 m. Antonio no deduce: SE SUBE. Sabe que el 4330 es articulado porque lo coge a diario y mide 18 metros de autobús. Es OBSERVACIÓN, no inferencia.",
+    "yAunAsi": "⚠️ Sigue siendo la fuente MÁS DÉBIL del proyecto, y por eso sale con `†` en pantalla y con el nombre de quien lo afirma dentro del JSON. No se disfraza de pliego. Si mañana el Anexo 5 dice otra cosa, `npm run flota:build` GRITA la discrepancia — no la resuelve en silencio."
+  },
+
+  "_sobreLasSeries": {
+    "queEs": "⭐ Antonio no afirma coche a coche: afirma UNA SERIE. «Los 41XX son eCitaro sencillos de 12 m; los 43XX, eCitaro G articulados de 18 m.» Escribir eso 30 veces sería copiar y pegar la misma afirmación y perder que es UNA sola.",
+    "aQuienAlcanza": "⚠️ SOLO a los coches que YA constan en otra fuente con ESE modelo exacto. La serie NO es el número: es el número Y el modelo. Un Irisbus con número 43XX no la toca. Y NO se inventan vehículos: solo se completan campos de vehículos que ya existen.",
+    "yElSilencioNoGana": "Si el pliego declara la longitud de un coche, manda el pliego. La serie solo rellena donde las fuentes publicadas CALLAN. Y si se contradicen, `npm run flota:build` lo GRITA."
+  },
+
+  "seriesObservadas": [
+    {
+      "prefijo": "41",
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro",
+      "clase": "sencillo",
+      "longitudM": 12,
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Me monto en ellos todas las semanas. La serie 41XX son eCitaro sencillos de 12 m; la 43XX, eCitaro G articulados de 18 m. Lo sé porque los uso, no porque lo deduzca de un catálogo."
+    },
+    {
+      "prefijo": "43",
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "clase": "articulado",
+      "longitudM": 18,
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Me monto en ellos todas las semanas. La serie 41XX son eCitaro sencillos de 12 m; la 43XX, eCitaro G articulados de 18 m. Lo sé porque los uso, no porque lo deduzca de un catálogo."
+    }
+  ],
+
+  "vehiculos": [
+    {
+      "coche": 4135,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro",
+      "longitudM": 12,
+      "clase": "sencillo",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo uso a diario en mi línea. La serie 41XX son eCitaro sencillos de 12 m. ⚠️ La longitud la afirmo por el MODELO, que es lo que rompió el fichero heredado — pero el heredado lo dedujo de un catálogo y yo me subo al autobús: sé que es rígido y de 12 m porque lo veo. Es observación, no inferencia. La matrícula NO la he leído, y no me la invento."
+    },
+    {
+      "coche": 4330,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. La serie 43XX son eCitaro G articulados de 18 m. ⚠️ Afirmo la longitud a partir del modelo — igual que el fichero heredado, que se equivocó en el 20% —, pero con una diferencia que es la que lo salva: el heredado lo dedujo de un catálogo, y yo ME SUBO. El fuelle se ve. La matrícula NO la he leído, y no me la invento."
+    },
+    {
+      "coche": 4331,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. eCitaro G articulado de 18 m, visto circulando en mi línea. ⚠️ La longitud sale de que lo veo articulado con mis ojos, no de un catálogo. La matrícula NO la he leído."
+    },
+    {
+      "coche": 4332,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. eCitaro G articulado de 18 m, visto circulando en mi línea. ⚠️ La longitud sale de que lo veo articulado con mis ojos, no de un catálogo. La matrícula NO la he leído."
+    },
+    {
+      "coche": 4333,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. eCitaro G articulado de 18 m, visto circulando en mi línea. ⚠️ La longitud sale de que lo veo articulado con mis ojos, no de un catálogo. La matrícula NO la he leído."
+    },
+    {
+      "coche": 4334,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. eCitaro G articulado de 18 m, visto circulando en mi línea. ⚠️ La longitud sale de que lo veo articulado con mis ojos, no de un catálogo. La matrícula NO la he leído."
+    },
+    {
+      "coche": 4335,
+      "matricula": null,
+      "fechaMatriculacion": null,
+      "fabricante": "Mercedes-Benz",
+      "modelo": "eCitaro G",
+      "longitudM": 18,
+      "clase": "articulado",
+      "propulsion": "electrico",
+      "observadoPor": "Antonio Blánquez",
+      "fechaObservacion": "2026-07-14",
+      "comoLoSupe": "Lo cojo a diario. eCitaro G articulado de 18 m, visto circulando en mi línea. ⚠️ La longitud sale de que lo veo articulado con mis ojos, no de un catálogo. La matrícula NO la he leído."
+    }
+  ]
+}

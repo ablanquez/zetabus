@@ -1,18 +1,29 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { control, IngestError, vehicleId, type Confidence, type ControlReport, type VehicleId } from '@/core';
-import { classFromLength, type BusClass, type BusProfile, type Fuel } from '@/modes/bus/profile';
+import { control, IngestError, vehicleId, type Confidence, type ControlReport, type ProcedenciaDeCampo, type VehicleId } from '@/core';
+import {
+  classFromLength,
+  confianzaDeLaFicha,
+  type BusClass,
+  type BusProfile,
+  type CampoDeFicha,
+  type Fuel,
+} from '@/modes/bus/profile';
+
+/** Los siete campos que un vehículo puede afirmar. Cada uno con su padre. */
+const CAMPOS_DE_FICHA: readonly CampoDeFicha[] = [
+  'matricula', 'fechaMatriculacion', 'fabricante', 'modelo', 'longitudM', 'clase', 'propulsion',
+];
 
 /**
  * EL MAESTRO DE FLOTA.
  *
- * Regenerado desde el Anexo 5 del pliego municipal (350 vehículos, `oficial`)
- * más 53 del fichero heredado (`sin_verificar`, autobuses entregados después
- * de octubre de 2025).
+ * Lo genera `scripts/build-flota.ts` a partir de CUATRO fuentes, cada una con su
+ * nivel de confianza. ⛔ No se edita a mano: se regenera (L3).
  *
  * ⚠️ DOS REGLAS QUE NO SE TOCAN:
  *
- * 1. `confidence` VIAJA HASTA LA INTERFAZ. Un `sin_verificar` no puede
- *    disfrazarse de oficial por estar en el mismo array.
+ * 1. `confidence` VIAJA HASTA LA INTERFAZ. Un dato de una web de aficionados no
+ *    puede disfrazarse de pliego municipal por estar en el mismo array.
  *
  * 2. UN COCHE QUE NO ESTÉ AQUÍ DEVUELVE `null` → la interfaz dice SIN DATOS.
  *    NUNCA un valor por defecto. Un valor por defecto miente, y encima con
@@ -30,8 +41,9 @@ interface RawVehicle {
   longitudM: number | null;
   clase: string | null;
   propulsion: string | null;
-  fuente: string;
   confianza: string;
+  /** ⭐ De dónde sale CADA campo. Es la fuente de la verdad; lo plano es su reflejo. */
+  campos: Record<string, { valor: unknown; procedencia: ProcedenciaDeCampo }>;
 }
 
 interface RawFleet {
@@ -42,6 +54,20 @@ interface RawFleet {
 const LENGTHS = new Set([10, 12, 18]);
 const FUELS = new Set<Fuel>(['diesel', 'hibrido', 'electrico']);
 const CLASSES = new Set<BusClass>(['sencillo', 'articulado', 'microbus_pmrs']);
+/**
+ * ⚠️ LOS CUATRO. Ni uno más.
+ *
+ * No es una lista para "aceptar valores": es una lista para RECHAZARLOS. Un
+ * `confianza: "bastante_seguro"` que se colara aquí llegaría a la pantalla y
+ * pintaría un chip sin marcar, que es exactamente cómo el fichero heredado
+ * disfrazaba de dato oficial lo que alguien había tecleado a mano.
+ */
+const CONFIANZAS = new Set<Confidence>([
+  'oficial',
+  'fuente_secundaria',
+  'observacion_propia',
+  'sin_verificar',
+]);
 
 export interface Fleet {
   /** `null` si el coche no está en el maestro. **SIN DATOS**, no un defecto. */
@@ -100,10 +126,10 @@ export function loadFleet(path: string): Fleet {
       throw new IngestError(`El coche ${key} declara una propulsión desconocida: "${fuel}".`);
     }
     const conf = v.confianza;
-    if (conf !== 'oficial' && conf !== 'sin_verificar') {
+    if (!CONFIANZAS.has(conf as Confidence)) {
       throw new IngestError(
         `El coche ${key} tiene una confianza desconocida: "${conf}".`,
-        'Solo hay dos valores, y el campo viaja hasta la pantalla. No se puede improvisar un tercero.',
+        `Solo hay cuatro valores (${[...CONFIANZAS].join(', ')}), y el campo viaja hasta la pantalla. No se puede improvisar un quinto.`,
       );
     }
 
@@ -112,6 +138,73 @@ export function loadFleet(path: string): Fleet {
       throw new IngestError(
         `El coche ${key} dice "${clase}" pero mide ${len} m (le tocaría "${classFromLength(len)}").`,
         'Esto es exactamente el error del fichero heredado: la clase y la longitud no cuadran.',
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ⭐⭐ LA PROCEDENCIA POR CAMPO. Y TRES CERROJOS, PORQUE ESTO ES PELIGROSO.
+    // ═══════════════════════════════════════════════════════════════════════
+    if (!v.campos || typeof v.campos !== 'object') {
+      throw new IngestError(
+        `El coche ${key} no trae \`campos\`: no se puede decir de dónde sale cada dato.`,
+        'La procedencia por campo NO es opcional. Un valor sin padre es un rumor.',
+      );
+    }
+
+    const procedencias: Partial<Record<CampoDeFicha, ProcedenciaDeCampo>> = {};
+    for (const campo of CAMPOS_DE_FICHA) {
+      const valorPlano = (v as unknown as Record<string, unknown>)[campo] ?? null;
+      const c = v.campos[campo];
+
+      // CERROJO 1 · UN VALOR SIN PROCEDENCIA NO ENTRA.
+      if (valorPlano !== null && !c) {
+        throw new IngestError(
+          `El coche ${key} afirma "${campo}" = ${JSON.stringify(valorPlano)} SIN DECIR DE DÓNDE SALE.`,
+          'Es el pecado del JSON heredado: dato correcto, origen desconocido, toda la confianza del mundo.',
+        );
+      }
+      if (!c) continue;
+
+      // CERROJO 2 · LO PLANO Y LA PROCEDENCIA TIENEN QUE DECIR LO MISMO. Si el
+      //   fichero se edita a mano —y no se debe—, los dos se separan en silencio.
+      if (c.valor !== valorPlano) {
+        throw new IngestError(
+          `El coche ${key}: el campo "${campo}" vale ${JSON.stringify(valorPlano)} pero su procedencia dice ${JSON.stringify(c.valor)}.`,
+          'El maestro se REGENERA (`npm run flota:build`), no se edita a mano.',
+        );
+      }
+
+      // CERROJO 3 · Y LA CONFIANZA DE CADA CAMPO ES UNA DE LAS CUATRO.
+      if (!CONFIANZAS.has(c.procedencia?.confidence)) {
+        throw new IngestError(
+          `El coche ${key}: el campo "${campo}" declara una confianza desconocida: "${c.procedencia?.confidence}".`,
+        );
+      }
+      // Y si es una observación, TIENE que decir quién, cuándo y cómo lo sabe.
+      if (c.procedencia.confidence === 'observacion_propia') {
+        const { quien, fecha, comoLoSupe } = c.procedencia;
+        if (!quien || !fecha || !comoLoSupe) {
+          throw new IngestError(
+            `El coche ${key}: el campo "${campo}" es una observación SIN autor, SIN fecha o SIN "cómo lo supe".`,
+            'Una afirmación editorial sin cadena de custodia no llega a la pantalla.',
+          );
+        }
+      }
+      procedencias[campo] = c.procedencia;
+    }
+
+    // ⭐⭐ EL CERROJO QUE IMPORTA: **LA FICHA NO SE BLANQUEA.**
+    //
+    //   La confianza NO se lee del fichero: SE CALCULA, aquí, a partir de las
+    //   procedencias de los campos que la pantalla enseña. Si alguien editara el
+    //   maestro y pusiera `confianza: "oficial"` en un coche cuya longitud viene de
+    //   Antonio, esto lo caza. **Que es exactamente el ataque que la procedencia por
+    //   campo hace posible**: 6 campos del pliego, 1 observado, y la ficha impecable.
+    const calculada = confianzaDeLaFicha(procedencias);
+    if (calculada !== conf) {
+      throw new IngestError(
+        `El coche ${key} se declara "${conf}" pero el campo más débil que ENSEÑA es "${calculada}".`,
+        'Una ficha no se blanquea. Si un solo dato visible viene de una observación, la ficha entera lo dice.',
       );
     }
 
@@ -124,7 +217,8 @@ export function loadFleet(path: string): Fleet {
       fuel: (fuel as Fuel) ?? null,
       registeredOn: v.fechaMatriculacion,
       plate: v.matricula,
-      confidence: conf as Confidence,
+      confidence: calculada, // ← CALCULADA, no leída
+      procedencias,
     });
   }
 

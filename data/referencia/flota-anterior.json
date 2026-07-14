@@ -1,0 +1,124 @@
+{
+ "_meta": {
+  "id": "json-heredado-sin-verificar",
+  "confianza": "sin_verificar",
+  "documento": "autobuses-avanza-zaragoza.json — elaboración manual, proyecto 00 ZGZ RADAR",
+  "url": null,
+  "vehiculos": 10,
+  "salvedad": "PROCEDENCIA DESCONOCIDA. Estos vehículos NO constan en el Anexo 5 del pliego NI en busesmadrid.es. Su longitud es poco fiable: en los 316 cotejables, el fichero erró 62 (20%), siempre infraestimando (decía 12 m donde eran 18 m).",
+  "porQueSiguenAqui": "Porque CIRCULAN: la API viva de Avanza los devuelve. Preferimos una ficha marcada como no verificada a un SIN DATOS. Pero no se ascienden sin fuente.",
+  "longitudVaciada": "⛔ El heredado SÍ traía una longitud. Se ha VACIADO a propósito (Tanda 8). Ese campo tiene un 20% de error medido (62 de 316, siempre infraestimando). Enseñar un número que sabemos falso 1 de cada 5 veces, y encima marcado como «sin procedencia», es lo peor de los dos mundos: la marca dice «fíate menos» y la ficha enseña MÁS que la de un vehículo con fuente citable. La clase (articulado/sencillo) sí se conserva: es lo que el heredado afirmaba, no una longitud numérica."
+ },
+ "vehiculos": [
+  {
+   "coche": 4135,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "sencillo",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4330,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4331,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4332,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4333,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4334,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4335,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Mercedes-Benz",
+   "modelo": "eCitaro G",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "articulado",
+   "propulsion": "electrico"
+  },
+  {
+   "coche": 4610,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Irisbus Iveco",
+   "modelo": "CityClass Ecobus (Hispano Habit)",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "sencillo",
+   "propulsion": "diesel"
+  },
+  {
+   "coche": 4617,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Irisbus Iveco",
+   "modelo": "CityClass Ecobus (Hispano Habit)",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "sencillo",
+   "propulsion": "diesel"
+  },
+  {
+   "coche": 4923,
+   "matricula": null,
+   "fechaMatriculacion": null,
+   "fabricante": "Irisbus Iveco",
+   "modelo": "Citelis (Hispano Habit)",
+   "potenciaCv": null,
+   "longitudM": null,
+   "clase": "sencillo",
+   "propulsion": "diesel"
+  }
+ ]
+}

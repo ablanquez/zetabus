@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LlegadaViva, LlegadasDeParada } from '@/engine/llegadas';
 import type { Observacion } from '@/core';
 import { linea } from '@/engine/topologia';
-import { FichaVehiculo, NotaSinVerificar } from './FichaVehiculo';
+import { DeDondeSaleCadaDato, FichaVehiculo, NotaSinVerificar } from './FichaVehiculo';
 import { tonosDeChip } from './ChipLinea';
 
 /**
@@ -431,7 +431,11 @@ function Cuerpo({
   }
 
   const ocultos = llegadas.length - visibles.length;
-  const hayMarcados = visibles.some((l) => l.perfil !== null && l.perfil.confidence !== 'oficial');
+  // ⚠️ NO es "¿hay algún marcado?" sino "¿CUÁLES hay?". La leyenda explica
+  //    únicamente los símbolos que el usuario tiene delante en ESTA parada.
+  const confianzasPresentes = [
+    ...new Set(visibles.map((l) => l.perfil?.confidence).filter((c) => c !== undefined && c !== 'oficial')),
+  ];
 
   return (
     <>
@@ -465,11 +469,18 @@ function Cuerpo({
               seleccionado={String(l.coche) === seleccionado}
               onSeleccionar={onSeleccionar}
             />
+            {/* ⭐ EL DETALLE DE PROCEDENCIA, **FUERA DEL BOTÓN DE LA FILA**.
+                Un `<details>` dentro de un `<button>` es HTML inválido y, en la
+                práctica, un desplegable que NO SE PUEDE ABRIR: el clic se lo come
+                el botón. Va aquí, como hermano suyo dentro del `<li>`. */}
+            <div className="px-4 pb-2">
+              <DeDondeSaleCadaDato perfil={l.perfil} />
+            </div>
           </li>
         ))}
       </ol>
 
-      {hayMarcados && <NotaSinVerificar />}
+      <NotaSinVerificar presentes={confianzasPresentes} />
 
       {/* ⚠️ EL CONTRATO DE DATOS. Ni una pantalla sin esto. */}
       <p className="mt-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">

@@ -18,6 +18,23 @@ import { loadFleet } from '@/sources/flota-zetabus/adapter';
  */
 
 const tmp = mkdtempSync(join(tmpdir(), 'zetabus-'));
+
+/**
+ * ⭐ Un vehículo de prueba CON SU PROCEDENCIA POR CAMPO (Tanda 9).
+ *
+ * Desde que la procedencia bajó al campo, un vehículo sin `campos` NO ENTRA — y
+ * eso rompió estos fixtures, que llevaban seis tandas construyendo vehículos
+ * huérfanos. **Tenía que romperlos: es exactamente el cerrojo nuevo.**
+ */
+const conProcedencia = (v: Record<string, unknown>, confidence = 'oficial') => ({
+  ...v,
+  campos: Object.fromEntries(
+    ['matricula', 'fechaMatriculacion', 'fabricante', 'modelo', 'longitudM', 'clase', 'propulsion']
+      .filter((c) => v[c] !== null && v[c] !== undefined)
+      .map((c) => [c, { valor: v[c], procedencia: { fuente: 'test', confidence } }]),
+  ),
+});
+
 const p = (n: string) => join(tmp, n);
 const now = new Date('2026-07-13T12:00:00Z');
 
@@ -212,7 +229,7 @@ describe('L1 · el contador de control (y la CONTRAPRUEBA)', () => {
       JSON.stringify({
         _meta: { fuentes: [{ id: 'x', vehiculos: 2 }] },
         vehiculos: [
-          { coche: 1, fabricante: 'V', modelo: 'M', longitudM: 12, clase: 'sencillo', propulsion: 'diesel', confianza: 'oficial', matricula: null, fechaMatriculacion: null },
+          conProcedencia({ coche: 1, fabricante: 'V', modelo: 'M', longitudM: 12, clase: 'sencillo', propulsion: 'diesel', confianza: 'oficial', matricula: null, fechaMatriculacion: null }),
         ],
       }),
     );
@@ -255,9 +272,16 @@ describe('la flota: SIN DATOS, nunca un valor por defecto', () => {
     expect(heredado.find((x) => x.numeroAutobus === 4889)!.longitud).toBe('12 m');
   });
 
-  it('la confianza VIAJA: el 4333 sale marcado como sin_verificar', () => {
-    expect(fleet.get('4333' as never)!.confidence).toBe('sin_verificar');
-    expect(fleet.get('4301' as never)!.confidence).toBe('oficial');
+  it('la confianza VIAJA — y ahora son CUATRO niveles, no dos', () => {
+    // ⚠️ Este test decía "el 4333 sale como sin_verificar", y se puso rojo. TENÍA
+    //    RAZÓN: el 4333 dejó de ser un huérfano el día que Antonio dijo que se sube
+    //    a él a diario. La confianza cambió, y el test lo cazó. Eso es lo que tiene
+    //    que hacer.
+    expect(fleet.get('4301' as never)!.confidence).toBe('oficial'); // pliego
+    expect(fleet.get('4114' as never)!.confidence).toBe('observacion_propia'); // ⭐ su LONGITUD es de Antonio
+    expect(fleet.get('4640' as never)!.confidence).toBe('fuente_secundaria'); // busesmadrid, entero
+    expect(fleet.get('4333' as never)!.confidence).toBe('observacion_propia'); // Antonio
+    expect(fleet.get('4610' as never)!.confidence).toBe('sin_verificar'); // nadie
   });
 
   it('⛔ longitud imposible (15 m) → falla en vez de redondear', () => {
@@ -266,7 +290,7 @@ describe('la flota: SIN DATOS, nunca un valor por defecto', () => {
       f,
       JSON.stringify({
         _meta: { fuentes: [{ id: 'x', vehiculos: 1 }] },
-        vehiculos: [{ coche: 1, fabricante: 'V', modelo: 'M', longitudM: 15, clase: 'sencillo', propulsion: 'diesel', confianza: 'oficial', matricula: null, fechaMatriculacion: null }],
+        vehiculos: [conProcedencia({ coche: 1, fabricante: 'V', modelo: 'M', longitudM: 15, clase: 'sencillo', propulsion: 'diesel', confianza: 'oficial', matricula: null, fechaMatriculacion: null })],
       }),
     );
     expect(() => loadFleet(f)).toThrow(/no existe en esta flota/i);
@@ -278,7 +302,7 @@ describe('la flota: SIN DATOS, nunca un valor por defecto', () => {
       f,
       JSON.stringify({
         _meta: { fuentes: [{ id: 'x', vehiculos: 1 }] },
-        vehiculos: [{ coche: 4889, fabricante: 'VOLVO', modelo: '7905', longitudM: 18, clase: 'sencillo', propulsion: 'hibrido', confianza: 'oficial', matricula: null, fechaMatriculacion: null }],
+        vehiculos: [conProcedencia({ coche: 4889, fabricante: 'VOLVO', modelo: '7905', longitudM: 18, clase: 'sencillo', propulsion: 'hibrido', confianza: 'oficial', matricula: null, fechaMatriculacion: null })],
       }),
     );
     expect(() => loadFleet(f)).toThrow(/dice "sencillo" pero mide 18 m/i);
@@ -290,7 +314,7 @@ describe('la flota: SIN DATOS, nunca un valor por defecto', () => {
       f,
       JSON.stringify({
         _meta: { fuentes: [{ id: 'x', vehiculos: 1 }] },
-        vehiculos: [{ coche: 1, fabricante: 'V', modelo: 'M', longitudM: 12, clase: 'sencillo', propulsion: 'diesel', confianza: 'bastante_seguro', matricula: null, fechaMatriculacion: null }],
+        vehiculos: [conProcedencia({ coche: 1, fabricante: 'V', modelo: 'M', longitudM: 12, clase: 'sencillo', propulsion: 'diesel', confianza: 'bastante_seguro', matricula: null, fechaMatriculacion: null }, 'bastante_seguro')],
       }),
     );
     expect(() => loadFleet(f)).toThrow(/confianza desconocida/i);
