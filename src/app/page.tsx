@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Buscador, type Entrada } from '@/components/Buscador';
+import { ChipLinea } from '@/components/ChipLinea';
 import { GRUPOS, grupoDe, idParada, lineas, paradas, posteDe } from '@/engine/topologia';
 
 /**
@@ -64,14 +65,13 @@ export default function Home() {
                     href={`/linea/${encodeURIComponent(l.shortName)}`}
                     className="flex min-h-[56px] items-center gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
                   >
-                    {/* COLOR DE LÍNEA = IDENTIDAD. Nunca estado. */}
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[13px] font-black"
-                      style={{ backgroundColor: l.color, color: l.textColor }}
-                      aria-hidden="true"
-                    >
-                      {l.shortName}
-                    </span>
+                    {/* ⭐ D1 · UN SOLO SITIO SABE PINTAR UNA LÍNEA.
+                        El color = IDENTIDAD (qué línea). La inversión = CATEGORÍA
+                        (¿es nocturna?). Dos canales, dos preguntas. Y si cada
+                        pantalla lo dedujera por su cuenta, bastaría con que una se
+                        despistara para que la N7 saliera de diurna aquí y de búho
+                        allí. Es el fallo del "0C1" con otro traje. */}
+                    <ChipLinea linea={l} papel="chip-indice" grande />
                     {/* SIN TRUNCAR. Si no cabe, baja de línea. */}
                     <span className="text-[13px] font-semibold leading-snug sin-recortar">
                       {l.longName}
