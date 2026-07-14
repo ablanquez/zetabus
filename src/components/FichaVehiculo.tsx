@@ -1,125 +1,186 @@
 import type { BusProfile } from '@/modes/bus/profile';
 
 /**
- * LA FICHA DEL VEHÍCULO. Y CÓMO SE RESOLVIÓ LA FILA QUE NO CABÍA.
+ * LA FICHA DEL VEHÍCULO, EN CHIPS. Clonada de la referencia.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * ⚠️ EL PROBLEMA, MEDIDO (no intuido) EN LA REFERENCIA A 360 px:
+ * ⭐ A5 · FUERA "✓ Dato oficial (Anexo 5 del pliego municipal)".
  *
- *     fila de chips con sangría `pl-[52px]`:
- *     [Bus 4650] [Articulado] [Diésel]  →  286 px usados de ~307 disponibles
+ * Ocupaba UNA LÍNEA ENTERA en 350 de 403 tarjetas. Es decir: en el 87% de los
+ * casos. **Eso no es una excepción: es la norma.** Y al que está esperando el
+ * autobús le da exactamente igual de qué documento sale el dato.
  *
- * Caben. Con 21 píxeles de margen. Y ZetaBus quiere meter ahí ADEMÁS la
- * CONFIANZA ("sin verificar", ~90 px) y el "SIN DATOS". 286 + 90 = 376 > 307.
+ * Se enseña la excepción, no la norma. La procedencia no se pierde: se va a
+ * `/sobre-los-datos`, entera y con sus enlaces.
  *
- * ⇒ NO CABE. Y no es una sospecha: es una medida.
  * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠️⚠️ A4 · EL "SIN VERIFICAR" DEJA DE SER UNA ALARMA. Y AQUÍ HAY QUE SER MUY
+ *          PRECISO, PORQUE ANTONIO Y YO NO ESTAMOS DE ACUERDO EN LOS HECHOS.
  *
- * ⭐ LA SOLUCIÓN NO ES ENCOGER LOS CHIPS. ES QUITAR LA SANGRÍA.
+ * Antonio dice: los eCitaro «SON POSTERIORES AL ANEXO 5 Y ESTÁN VERIFICADOS,
+ * con matrícula», y pide un tercer valor `posterior_verificado`.
  *
- * Esos 52 px de sangría existían para alinear los chips bajo el destino, por
- * estética. Cuestan el 17% del ancho de un móvil. Aquí la ficha ocupa **el
- * ancho completo de la tarjeta** y se recuperan esos 52 px de golpe.
+ * ⛔ LO HE BUSCADO Y NO HAY NINGUNA MATRÍCULA. Ni una:
  *
- * ⭐ Y LA CONFIANZA NO ES UN CHIP MÁS. Ese era el error de raíz.
+ *     data/flota-avanza-zaragoza.json ...... los 53 tienen `matricula: null`
+ *     data/referencia/…heredado.json ....... 0 matrículas de 369 registros
+ *     el propio maestro dice de esa fuente .. "Procedencia desconocida"
  *
- * "Sin verificar" no es un atributo del autobús como lo son "articulado" o
- * "diésel". Es una propiedad DE TODA LA FICHA: dice si te puedes fiar de las
- * otras tres. Ponerlo al lado, como un chip hermano, lo iguala con ellos — y
- * entonces compite por sitio con lo que está calificando.
+ * Ascenderlos a "verificado" sin una fuente sería INVENTARME LA PROCEDENCIA —
+ * que es exactamente el pecado del JSON heredado (L3): dato correcto, origen
+ * desconocido, y toda la confianza del mundo. Así que NO lo hago, y lo digo.
  *
- * Va DEBAJO, en su propia línea, calificando el bloque entero. Y la señal no es
- * un color: es un BORDE PUNTEADO alrededor de la ficha (`.es-sin-verificar`),
- * que sobrevive al gris, al daltonismo y a un móvil al sol.
+ * ⭐ PERO ANTONIO TIENE RAZÓN EN EL DAÑO, Y ESE SÍ SE ARREGLA:
  *
- * ⚠️ Y NO ES UN CASO RARO: son 53 de 403 vehículos. UNO DE CADA OCHO.
+ * Pintábamos un ⚠ ÁMBAR, en mayúsculas, sobre 53 de 403 autobuses (1 de cada 8).
+ * Un aviso que sale siempre no es un aviso: es ruido. Y un aviso que grita sobre
+ * un dato que probablemente es correcto **enseña al usuario a ignorar los
+ * avisos** — con lo cual el día que uno importe, no lo leerá.
  *
- * ⚠️ SIN DATOS ≠ SIN RAREZA.
- * La referencia, cuando no tenía la ficha, SIMPLEMENTE NO PINTABA NADA. La
- * ausencia de dato era indistinguible de la ausencia de novedad. Aquí, si no
- * hay ficha, SE DICE. Va a pasar: el registro oficial cubre el 87% de lo que
- * circula, porque un autobús nuevo llega antes a la calle que a un documento.
+ * ⇒ La marca se queda (es VERDAD que no consta en el registro oficial), pero
+ *   deja de gritar: un asterisco y un borde discontinuo. La explicación va UNA
+ *   vez al pie de la lista, no 53 veces encima de cada autobús.
+ *
+ * ⚠️ Y la señal sigue siendo FORMA (borde discontinuo), no tono: sobrevive al
+ *    gris, al daltonismo y a un móvil al sol. La prueba de escala de grises manda.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
-const LARGO: Record<string, string> = {
-  diesel: 'diésel',
-  hibrido: 'híbrido',
-  electrico: 'eléctrico',
-};
-
 const CLASE: Record<string, string> = {
-  articulado: 'articulado',
-  sencillo: 'sencillo',
-  microbus_pmrs: 'microbús',
+  articulado: 'Articulado',
+  sencillo: 'Estándar',
+  microbus_pmrs: 'Microbús',
 };
 
-export function FichaVehiculo({
-  coche,
-  perfil,
-  yaSeSabeElCoche = false,
+const COMBUSTIBLE: Record<string, string> = {
+  diesel: 'Diésel',
+  hibrido: 'Híbrido',
+  electrico: 'Eléctrico',
+};
+
+/**
+ * Un chip. 11 px, `px-2 py-0.5`, `rounded-md` — las medidas salen de medir los
+ * suyos con Playwright a 360 px (21 px de alto), no de elegirlas a ojo.
+ */
+function Chip({
+  children,
+  papel,
+  discontinuo = false,
+  fuerte = false,
 }: {
-  coche: string;
-  perfil: BusProfile | null;
-  /**
-   * `true` cuando quien la pinta YA ha puesto "Coche 4114" en su cabecera (la
-   * lista del barrido lo hace). Repetirlo dentro de la ficha no aporta nada y
-   * roba sitio a 360 px, que es donde se pelea cada píxel.
-   */
-  yaSeSabeElCoche?: boolean;
+  children: React.ReactNode;
+  papel: string;
+  discontinuo?: boolean;
+  fuerte?: boolean;
 }) {
-  // ── SIN DATOS. Se dice. No se calla, no se rellena, no se aproxima. ────────
+  return (
+    <span
+      data-papel={papel}
+      className={
+        `inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] leading-[15px] sin-recortar ` +
+        (fuerte ? 'font-semibold ' : 'font-medium ') +
+        (discontinuo
+          ? 'border border-dashed border-[var(--color-tinta-tenue)] bg-[var(--color-fondo)] text-[var(--color-tinta-suave)]'
+          : 'bg-[var(--color-fondo)] text-[var(--color-tinta-suave)]')
+      }
+    >
+      {children}
+    </span>
+  );
+}
+
+export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusProfile | null }) {
+  // ── SIN FICHA. Se dice. No se calla, no se rellena, no se aproxima. ────────
+  //    El registro oficial cubre el 87% de lo que circula: un autobús nuevo llega
+  //    antes a la calle que a un documento. Meterlo en "Estándar, 12 m" porque es
+  //    lo más común sería inventarse el dato justo donde no lo tenemos.
   if (perfil === null) {
     return (
-      <div className="es-sin-datos mt-3 px-3 py-2 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
-        <span className="font-bold not-italic">Coche {coche}</span>
-        {' — '}
-        <span>SIN DATOS de este vehículo.</span>
-        <span className="block not-italic mt-0.5 text-[11px] text-[var(--color-tinta-tenue)]">
-          No está en el registro oficial. No inventamos su modelo ni su tamaño.
-        </span>
+      <div className="mt-2 flex flex-wrap items-center gap-1" data-papel="ficha" data-confianza="sin_ficha">
+        <Chip papel="chip-coche" fuerte>
+          Bus {coche}
+        </Chip>
+        <Chip papel="chip-sin-datos" discontinuo fuerte>
+          Sin datos de este autobús
+        </Chip>
       </div>
     );
   }
 
   const oficial = perfil.confidence === 'oficial';
-  const rasgos = [
-    `${perfil.manufacturer} ${perfil.model}`,
-    perfil.lengthMeters !== null ? `${perfil.lengthMeters} m` : null,
-    CLASE[perfil.busClass] ?? perfil.busClass,
-    perfil.fuel !== null ? (LARGO[perfil.fuel] ?? perfil.fuel) : null,
-  ].filter(Boolean) as string[];
+  const clase = CLASE[perfil.busClass] ?? perfil.busClass;
+  const medida = perfil.lengthMeters !== null ? `${clase} · ${perfil.lengthMeters} m` : clase;
+  const combustible = perfil.fuel !== null ? (COMBUSTIBLE[perfil.fuel] ?? perfil.fuel) : null;
 
   return (
     <div
-      className={`mt-3 px-3 py-2 ${oficial ? 'border border-[var(--color-borde)] rounded-lg bg-[var(--color-fondo)]' : 'es-sin-verificar bg-[var(--color-fondo)]'}`}
+      className="mt-2 flex flex-wrap items-center gap-1"
+      data-papel="ficha"
       data-confianza={perfil.confidence}
     >
-      <p className="text-[12px] leading-snug text-[var(--color-tinta)] sin-recortar">
-        {!yaSeSabeElCoche && (
-          <>
-            <span className="font-bold">Coche {coche}</span>
-            <span className="text-[var(--color-tinta-tenue)]"> · </span>
-          </>
-        )}
-        {/* ⚠️ Separadores con espacios a los lados: si la línea se parte, se
-            parte por un espacio y NO por la mitad de "articulado". */}
-        {rasgos.join(' · ')}
-      </p>
+      <Chip papel="chip-coche" fuerte>
+        Bus {coche}
+      </Chip>
 
-      {/* ⭐ LA PROCEDENCIA. Debajo, calificando la ficha ENTERA. No un chip más. */}
-      <p className="mt-1 text-[11px] leading-snug sin-recortar" data-papel="procedencia">
-        {oficial ? (
-          <span className="text-[var(--color-tinta-tenue)]">
-            <span aria-hidden="true">✓ </span>
-            Dato oficial (Anexo 5 del pliego municipal)
+      {/* ⚠️ LA MEDIDA REAL, NO LA SUYA. La referencia pone "Estándar" sobre
+          autobuses de 18 METROS (su fichero erraba 62 longitudes de 316, siempre
+          ocultando articulados). Nuestro dato es correcto y se queda — pero con
+          SU formato de chip, que era mejor que nuestro cajón. */}
+      <Chip papel="chip-clase" discontinuo={!oficial}>
+        {medida}
+      </Chip>
+
+      {combustible && (
+        <Chip papel="chip-combustible" discontinuo={!oficial}>
+          {combustible}
+        </Chip>
+      )}
+
+      {/* ⭐ UN SOLO ASTERISCO, CALIFICANDO LA FICHA ENTERA. No uno por chip.
+          Y no es solo por sitio (aunque de eso también: con un asterisco dentro de
+          cada chip la fila se partía en dos por DOS píxeles). Es que la confianza
+          NO es un atributo del autobús como lo son "articulado" o "eléctrico": es
+          una propiedad de TODO lo que se afirma sobre él. Meterla dentro de cada
+          chip la iguala con ellos; puesta detrás, los califica a los dos. */}
+      {!oficial && (
+        <>
+          <span
+            aria-hidden="true"
+            className="shrink-0 text-[13px] font-black leading-none text-[var(--color-tinta-suave)]"
+            data-papel="marca-sin-verificar"
+          >
+            *
           </span>
-        ) : (
-          <span className="font-semibold text-[var(--color-aviso)]">
-            <span aria-hidden="true">⚠ </span>
-            SIN VERIFICAR — no consta en el registro oficial
+          <span className="sr-only">
+            Estos datos no constan en el registro oficial del pliego municipal.
           </span>
-        )}
-      </p>
+        </>
+      )}
     </div>
+  );
+}
+
+/**
+ * ⭐ LA NOTA DEL ASTERISCO. UNA VEZ, AL PIE. No 53 veces encima de cada autobús.
+ *
+ * La pinta la lista si —y solo si— hay algún vehículo marcado. Si un día el
+ * registro oficial los recoge a todos, esta nota DESAPARECE SOLA. Nada que
+ * mantener, nada de lo que acordarse. Un aviso que hay que acordarse de quitar
+ * acaba mintiendo, siempre.
+ */
+export function NotaSinVerificar() {
+  return (
+    <p
+      className="mt-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+      data-papel="nota-sin-verificar"
+    >
+      <span aria-hidden="true">* </span>
+      Estos datos <strong>no constan en el registro oficial</strong> del pliego municipal (octubre de
+      2025): son autobuses entregados después. No los hemos podido verificar contra una fuente
+      oficial.{' '}
+      <a href="/sobre-los-datos" className="underline underline-offset-2 font-semibold">
+        Sobre los datos
+      </a>
+    </p>
   );
 }

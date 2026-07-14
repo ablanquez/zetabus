@@ -1,9 +1,12 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { LlegadasDeParada } from '@/engine/llegadas';
+import type { LlegadaViva, LlegadasDeParada } from '@/engine/llegadas';
 import type { Observacion } from '@/core';
-import { FichaVehiculo } from './FichaVehiculo';
+import { linea } from '@/engine/topologia';
+import { FichaVehiculo, NotaSinVerificar } from './FichaVehiculo';
+import { tonosDeChip } from './ChipLinea';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -16,29 +19,37 @@ import { FichaVehiculo } from './FichaVehiculo';
  *
  *  ...y debajo, un texto FIJO: **"Se actualiza automáticamente cada 20 s"**.
  *
- *  Si Avanza se cae con la pantalla abierta, no pasa NADA visible. Los autobuses
- *  siguen ahí con sus minutos. Y ese texto **AFIRMA UNA FRESCURA QUE NO ESTÁ
- *  OCURRIENDO.** Diez minutos después sigues viendo el bus de las 13:04 con el
- *  cartel de "se actualiza cada 20 s" debajo.
- *
  *  ⇒ AQUÍ EL CONTADOR NO SE PARA CUANDO EL REFRESCO FALLA. SIGUE CORRIENDO.
- *    Si llevamos 4 minutos sin conseguir dato nuevo, la pantalla pone
- *    "hace 4 min" y se pone la trama de RANCIO. No hay forma de no verlo.
+ *
+ *  ⚠️ Es UNA de las dos cosas que NO se clonan de ellos. La otra son sus chips
+ *     de flota, que dicen "Estándar" sobre autobuses de 18 metros.
+ *     TODO LO DEMÁS SE CLONA — y esta pantalla ahora sí.
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * ⚠️ Y LA EDAD SE CUENTA CON UN RELOJ MONÓTONO, NO CON LA HORA DEL MÓVIL.
- *
- * La tentación es `Date.now() - Date.parse(observadoEn)`. Pero ese cálculo mezcla
- * el reloj del SERVIDOR (que fechó el dato) con el reloj del CLIENTE (el móvil
- * del usuario). Si el móvil va tres minutos adelantado —cosa común—, la pantalla
- * diría "hace 3 minutos" sobre un dato recién traído. Y si va atrasado, "hace
- * -2 s". Y el último domingo de octubre, con el cambio de hora, una hora entera.
- *
- * `performance.now()` es MONÓTONO: cuenta desde que se abrió la página y no sabe
- * de husos, de cambios de hora ni de saltos de NTP. El servidor nos dice cuántos
- * segundos tenía el dato AL SALIR; nosotros solo sumamos lo que ha pasado desde
- * que llegó. Ni un reloj de pared en toda la cuenta.
+ * `performance.now()` no sabe de husos, de cambios de hora ni de saltos de NTP.
+ * `Date.now() - Date.parse(observadoEn)` mezclaría el reloj del servidor con el
+ * del móvil del usuario, y el último domingo de octubre se equivocaría una hora.
  */
+
+/**
+ * ⭐ EL MAPA, ARRIBA. Y CARGADO EN EL CLIENTE, QUE NO ES UN CAPRICHO:
+ *
+ * Leaflet toca `window` al importarse. En el servidor no hay `window`, así que un
+ * import normal revienta el render. La documentación oficial de Next lo dice sin
+ * rodeos: *"`ssr: false` option will only work for Client Components"*. Este
+ * fichero ES un Client Component, así que aquí sí vale — y solo aquí.
+ */
+const MapaParada = dynamic(() => import('./MapaParada').then((m) => m.MapaParada), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="mb-4 h-72 w-full animate-pulse rounded-2xl border border-[var(--color-borde)] bg-[var(--color-fondo)]"
+      data-papel="mapa-cargando"
+      aria-label="Cargando el mapa"
+    />
+  ),
+});
 
 /** El motor cachea 15 s. Preguntar más a menudo no trae nada nuevo: solo ruido. */
 const CADA_MS = 15_000;
@@ -62,9 +73,7 @@ export function LlegadasVivas({
 }) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'ok', obs: inicial });
 
-  /** Segundos que tenía el dato CUANDO SALIÓ DEL SERVIDOR. */
   const edadAlLlegar = useRef<number>('edadSegundos' in inicial ? inicial.edadSegundos : 0);
-  /** Marca MONÓTONA de cuándo llegó. Nunca `Date.now()`. */
   const llegoEn = useRef<number>(0);
   const [edad, setEdad] = useState<number>(edadAlLlegar.current);
 
@@ -82,16 +91,12 @@ export function LlegadasVivas({
   }, []);
 
   const refrescar = useCallback(async () => {
-    // ⚠️ "COMPROBANDO…" SE DICE. No se pinta el estado bueno por defecto
-    //    mientras se comprueba: eso fabrica un silencio falso en la interfaz.
     setEstado((e) => ({ tipo: 'comprobando', obs: e.obs }));
     try {
       const url = `/api/llegadas/${poste}${fingir ? `?fingir=${fingir}` : ''}`;
       const res = await fetch(url, { cache: 'no-store' });
       const cuerpo = (await res.json()) as Observacion<LlegadasDeParada>;
 
-      // Un 404/502/503 TRAE un cuerpo con su estado: no es un fallo de refresco,
-      // es una respuesta con información. Se pinta tal cual.
       if (cuerpo && typeof cuerpo === 'object' && 'estado' in cuerpo) {
         if (cuerpo.estado === 'ok' || cuerpo.estado === 'rancio') {
           edadAlLlegar.current = cuerpo.edadSegundos;
@@ -103,8 +108,7 @@ export function LlegadasVivas({
       }
       throw new Error(`respuesta inesperada (HTTP ${res.status})`);
     } catch (e) {
-      // ⭐ AQUÍ ESTÁ LA DIFERENCIA CON LA REFERENCIA.
-      //    NO se resetea `llegoEn`. El contador SIGUE SUBIENDO desde el último
+      // ⭐ NO se resetea `llegoEn`: el contador SIGUE SUBIENDO desde el último
       //    dato bueno. Y se guarda el motivo, y se ENSEÑA.
       setEstado((prev) => ({
         tipo: 'refresco-fallido',
@@ -116,8 +120,6 @@ export function LlegadasVivas({
 
   useEffect(() => {
     const t = setInterval(() => { void refrescar(); }, CADA_MS);
-    // ⚠️ Y al volver a la pestaña se refresca YA. La referencia no lo hacía: al
-    //    reenfocar podías estar hasta 20 s viendo datos rancios sin saberlo.
     const alVolver = () => { if (!document.hidden) void refrescar(); };
     document.addEventListener('visibilitychange', alVolver);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', alVolver); };
@@ -126,29 +128,25 @@ export function LlegadasVivas({
   const obs = estado.obs;
   const rancio = edad >= RANCIO_S || obs.estado === 'rancio';
   const fallando = estado.tipo === 'refresco-fallido';
+  const hayDatos = obs.estado === 'ok' || obs.estado === 'rancio';
 
   // ═══════════════════════════════════════════════════════════════════════════
-  //  ⭐ EL FILTRO DE LÍNEAS. CLONADO DE LA REFERENCIA, Y ES LO MEJOR QUE TIENEN.
+  //  ⭐ UN SOLO ESTADO GOBIERNA EL MAPA Y LA LISTA. NO DOS SINCRONIZADOS.
   //
-  //  Lo descubrí PULSANDO, no leyendo. Medido en su pantalla:
+  //  Lo descubrí PULSANDO su web, no leyéndola. Medido en su pantalla:
+  //      pulso "Ninguna"  → lista 4 → 0 filas · mapa 5 → 1 marcadores
+  //      apago una línea  → lista 4 → 2       · mapa 5 → 3
   //
-  //      pulso "Ninguna"   → lista 4 → 0 filas  ·  mapa 5 → 1 marcadores
-  //      pulso "Todas"     → lista → 4          ·  mapa → 5
-  //      apago una línea   → lista 4 → 2        ·  mapa 5 → 3
-  //
-  //  ⭐ UN SOLO ESTADO GOBIERNA LAS DOS VISTAS. No hay dos filtros que haya que
-  //    mantener en sincronía: hay UNO, y las dos vistas lo leen. Por eso no se
-  //    pueden desincronizar: no hay nada que desincronizar.
-  //
-  //  ⚠️ Y por eso `apagadas` vive AQUÍ y no dentro de la lista: cuando llegue el
-  //     mapa (Tanda 5) se enchufa a este mismo estado y funciona solo. Si lo
-  //     hubiera metido dentro de la lista, habría que sacarlo después — y ese
-  //     "después" es donde se cuelan las desincronías.
+  //  No hay dos filtros que mantener en sincronía: hay UNO, y las dos vistas lo
+  //  leen. Por eso no se pueden desincronizar — no hay nada que desincronizar.
+  //  Lo mismo vale para el coche SELECCIONADO: pulsar un bus en el mapa resalta
+  //  su fila, y pulsar la fila resalta el bus. Un estado, dos vistas.
   // ═══════════════════════════════════════════════════════════════════════════
   const [apagadas, setApagadas] = useState<ReadonlySet<string>>(new Set());
+  const [seleccionado, setSeleccionado] = useState<string | null>(null);
 
   const lineasDelPoste = useMemo(() => {
-    if (obs.estado !== 'ok' && obs.estado !== 'rancio') return [];
+    if (!hayDatos) return [];
     const vistas = new Map<string, { etiqueta: string; color: string | null }>();
     for (const l of obs.datos.llegadas) {
       const k = l.linea ?? l.etiquetaCruda;
@@ -157,12 +155,12 @@ export function LlegadasVivas({
     return [...vistas.values()].sort((a, b) =>
       a.etiqueta.localeCompare(b.etiqueta, 'es', { numeric: true }),
     );
-  }, [obs]);
+  }, [obs, hayDatos]);
 
-  const visibles = useMemo(() => {
-    if (obs.estado !== 'ok' && obs.estado !== 'rancio') return null;
+  const visibles = useMemo<readonly LlegadaViva[]>(() => {
+    if (!hayDatos) return [];
     return obs.datos.llegadas.filter((l) => !apagadas.has(l.linea ?? l.etiquetaCruda));
-  }, [obs, apagadas]);
+  }, [obs, apagadas, hayDatos]);
 
   const alternar = (etiqueta: string) =>
     setApagadas((prev) => {
@@ -172,9 +170,20 @@ export function LlegadasVivas({
       return s;
     });
 
+  const todasApagadas = lineasDelPoste.length > 0 && apagadas.size === lineasDelPoste.length;
+
   return (
     <section aria-label="Próximas llegadas">
-      {/* ⭐ LA BARRA DE FRESCURA. Lo primero que se lee después de los minutos. */}
+      {/* ⭐ EL MAPA, ARRIBA. Decisión de Antonio, que es el que coge el bus. */}
+      {hayDatos && (
+        <MapaParada
+          parada={obs.datos.posicionParada}
+          llegadas={visibles}
+          seleccionado={seleccionado}
+          onSeleccionar={setSeleccionado}
+        />
+      )}
+
       <BarraDeEdad
         edad={edad}
         rancio={rancio}
@@ -195,15 +204,31 @@ export function LlegadasVivas({
         />
       )}
 
-      <Cuerpo obs={obs} rancio={rancio} visibles={visibles} apagadasTodas={
-        lineasDelPoste.length > 0 && apagadas.size === lineasDelPoste.length
-      } />
+      <Cuerpo
+        obs={obs}
+        rancio={rancio}
+        visibles={visibles}
+        apagadasTodas={todasApagadas}
+        seleccionado={seleccionado}
+        onSeleccionar={setSeleccionado}
+      />
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * ⭐ B4 · LOS FILTROS, CLONADOS. Antes eran dos pastillas sueltas y no se
+ * entendía qué hacían. Medido en la referencia a 360 px:
+ *
+ *     título "Líneas en esta parada"  h2 · 16 px · bold
+ *     "Todas" / "Ninguna"             botones redondos, A LA DERECHA (66×34, 81×34)
+ *     los chips de línea              56×56, rounded-2xl, 17 px, centrados
+ *
+ * El título es lo que convierte dos botones en un FILTRO: sin él, nadie sabe
+ * qué está tocando.
+ */
 function FiltroDeLineas({
   lineas, apagadas, onAlternar, onTodas, onNinguna,
 }: {
@@ -214,8 +239,30 @@ function FiltroDeLineas({
   onNinguna: () => void;
 }) {
   return (
-    <div className="mb-3" data-papel="filtro-lineas">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-4" data-papel="filtro-lineas">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-[16px] font-bold leading-snug sin-recortar">Líneas en esta parada</h2>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onTodas}
+            data-papel="filtro-todas"
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-[13px] font-semibold"
+          >
+            Todas
+          </button>
+          <button
+            type="button"
+            onClick={onNinguna}
+            data-papel="filtro-ninguna"
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-[13px] font-semibold"
+          >
+            Ninguna
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-4">
         {lineas.map(({ etiqueta, color }) => {
           const off = apagadas.has(etiqueta);
           return (
@@ -228,15 +275,13 @@ function FiltroDeLineas({
               data-papel="chip-filtro"
               data-linea={etiqueta}
               data-apagada={off ? 'si' : 'no'}
-              className="flex h-11 min-w-[44px] items-center justify-center rounded-xl px-2 text-[14px] font-black"
+              className="flex h-14 w-14 items-center justify-center rounded-2xl text-[17px] font-bold"
               style={
                 off
                   ? {
                       // ⛔ APAGADA. Y el estado NO va en el tono: va en FORMA.
-                      //    Borde discontinuo + fondo neutro + tachado. Si lo
-                      //    hubiéramos hecho "gris vs color", la línea 31 (roja)
-                      //    y la 26 (verde) se distinguirían por su color y no
-                      //    por su estado. En gris, esto sigue leyéndose.
+                      //    Borde discontinuo + tachado. En escala de grises esto
+                      //    se sigue leyendo; "gris vs color" no.
                       background: 'var(--color-fondo)',
                       color: 'var(--color-tinta-tenue)',
                       border: '2px dashed var(--color-tinta-tenue)',
@@ -249,23 +294,6 @@ function FiltroDeLineas({
             </button>
           );
         })}
-
-        <span className="ml-auto flex gap-1">
-          <button
-            type="button"
-            onClick={onTodas}
-            className="min-h-[44px] rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-bold"
-          >
-            Todas
-          </button>
-          <button
-            type="button"
-            onClick={onNinguna}
-            className="min-h-[44px] rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-bold"
-          >
-            Ninguna
-          </button>
-        </span>
       </div>
     </div>
   );
@@ -287,14 +315,14 @@ function BarraDeEdad({
 
   return (
     <div
-      className={`mb-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
+      className={`mb-4 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
       data-papel="edad"
       data-rancio={rancio || fallando ? 'si' : 'no'}
       data-edad={edad}
     >
       <div className="flex items-center justify-between gap-3">
         <p className="text-[13px] leading-snug sin-recortar">
-          {/* ⚠️ NUNCA "se actualiza cada 20 s". Eso es una promesa.
+          {/* ⚠️ NUNCA "se actualiza cada 20 s". Eso es una PROMESA.
               Esto es un HECHO: cuándo se miró por última vez. */}
           <span className="text-[var(--color-tinta-tenue)]">Datos de Avanza </span>
           <span className="font-bold" data-papel="edad-texto">{texto}</span>
@@ -307,7 +335,7 @@ function BarraDeEdad({
         <button
           type="button"
           onClick={onRefrescar}
-          className="shrink-0 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 min-h-[44px] min-w-[44px] text-[13px] font-semibold"
+          className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 text-[13px] font-semibold"
           aria-label="Actualizar ahora"
         >
           ↻
@@ -346,12 +374,14 @@ function BarraDeEdad({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Cuerpo({
-  obs, rancio, visibles, apagadasTodas,
+  obs, rancio, visibles, apagadasTodas, seleccionado, onSeleccionar,
 }: {
   obs: Observacion<LlegadasDeParada>;
   rancio: boolean;
-  visibles: LlegadasDeParada['llegadas'] | null;
+  visibles: readonly LlegadaViva[];
   apagadasTodas: boolean;
+  seleccionado: string | null;
+  onSeleccionar: (c: string | null) => void;
 }) {
   // ⚠️ CINCO ESTADOS, CINCO MENSAJES. El proyecto viejo tenía uno para todos, y
   //    ese uno decía "no hay llegadas" — que es MENTIRA en cuatro de los cinco.
@@ -390,9 +420,6 @@ function Cuerpo({
   }
 
   // ⚠️ "HAS APAGADO TODAS LAS LÍNEAS" NO ES "NO HAY AUTOBUSES".
-  //    Son dos cosas distintas y decir la segunda cuando pasa la primera es
-  //    mentir. La referencia también lo distingue, y bien: "Selecciona una línea
-  //    para ver próximas llegadas". Se clona.
   if (apagadasTodas) {
     return (
       <Aviso
@@ -403,11 +430,13 @@ function Cuerpo({
     );
   }
 
-  const lista = visibles ?? llegadas;
-  const ocultos = llegadas.length - lista.length;
+  const ocultos = llegadas.length - visibles.length;
+  const hayMarcados = visibles.some((l) => l.perfil !== null && l.perfil.confidence !== 'oficial');
 
   return (
     <>
+      <h2 className="mb-3 text-[16px] font-bold leading-snug sin-recortar">Próximas llegadas</h2>
+
       {ocultos > 0 && (
         <p
           className="mb-2 text-[12px] font-semibold text-[var(--color-tinta-suave)] sin-recortar"
@@ -418,16 +447,32 @@ function Cuerpo({
         </p>
       )}
 
-      <ol className="flex flex-col gap-3" data-papel="lista-llegadas">
-        {lista.map((l, i) => (
-          <li key={`${l.coche}-${l.etiquetaCruda}-${i}`}>
-            <Llegada l={l} rancio={rancio} />
+      {/* ⭐ B5 · UNA SOLA TARJETA CON FILAS, no seis tarjetas con hueco entre ellas.
+          Medido a 360 px: su fila mide 102 px y la nuestra medía 160. Caben 8
+          llegadas donde nosotros metíamos 4 — y el que espera el bus quiere ver
+          la siguiente, no admirar el margen. */}
+      <ol
+        className={`overflow-hidden rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)] ${rancio ? 'es-rancio' : ''}`}
+        data-papel="lista-llegadas"
+      >
+        {visibles.map((l, i) => (
+          <li
+            key={`${l.coche}-${l.etiquetaCruda}-${i}`}
+            className={i > 0 ? 'border-t border-[var(--color-borde)]' : ''}
+          >
+            <Llegada
+              l={l}
+              seleccionado={String(l.coche) === seleccionado}
+              onSeleccionar={onSeleccionar}
+            />
           </li>
         ))}
       </ol>
 
+      {hayMarcados && <NotaSinVerificar />}
+
       {/* ⚠️ EL CONTRATO DE DATOS. Ni una pantalla sin esto. */}
-      <p className="mt-3 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">
+      <p className="mt-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">
         Son los autobuses <strong>DETECTADOS</strong>, no todos. Avanza anuncia como mucho los dos
         siguientes de cada línea y sentido: puede haber un tercero circulando que no salga aquí.
       </p>
@@ -445,61 +490,98 @@ function Cuerpo({
   );
 }
 
-function Llegada({ l, rancio }: { l: LlegadasDeParada['llegadas'][number]; rancio: boolean }) {
+/**
+ * ⭐ B3 · "YA LLEGA": TRES CANALES, NO UNO.
+ *
+ *   1. LA PALABRA  ....... "YA LLEGA"      ← sobrevive a todo
+ *   2. LA FORMA .......... anillo + latido ← sobrevive al gris y al daltonismo
+ *   3. el color .......... (de apoyo)
+ *
+ * ⚠️ Y EL COLOR NO PUEDE SER EL ÚNICO. La línea 31 de Zaragoza es LITERALMENTE
+ * del mismo rojo que una alerta (#D1221D). Si el estado fuera solo color, un
+ * autobús de la 31 parecería urgente SIEMPRE. Por eso el estado va en la forma
+ * y hay una prueba de escala de grises que lo demuestra apagando el color.
+ */
+function Llegada({
+  l, seleccionado, onSeleccionar,
+}: {
+  l: LlegadaViva;
+  seleccionado: boolean;
+  onSeleccionar: (c: string | null) => void;
+}) {
   const inminente = l.etaMinutos <= 1;
+  const coche = String(l.coche);
+  // `null` = Avanza anuncia una línea que nuestro GTFS no conoce.
+  const suya = l.lineaId ? linea(l.lineaId) : null;
+  const tonos = suya ? tonosDeChip(suya) : null;
 
   return (
-    <article
-      className={`rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)] p-4 ${rancio ? 'es-rancio' : ''}`}
+    <button
+      type="button"
+      // ⭐ LA SINCRONÍA LISTA → MAPA. El mismo estado que resalta el marcador.
+      onClick={() => onSeleccionar(seleccionado ? null : coche)}
+      aria-pressed={seleccionado}
+      className={`flex w-full flex-col gap-2 px-4 py-3.5 text-left ${seleccionado ? 'bg-[var(--color-fondo)]' : ''}`}
       data-papel="llegada"
       data-inminente={inminente ? 'si' : 'no'}
-      data-coche={l.coche}
+      data-coche={coche}
+      data-seleccionado={seleccionado ? 'si' : 'no'}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          {/* COLOR DE LÍNEA = IDENTIDAD. Aquí, y en ningún otro sitio. */}
+        <div className="flex min-w-0 items-center gap-3">
+          {/* ⭐ D1 · El color = IDENTIDAD. La inversión = CATEGORÍA (nocturna).
+              Los tonos salen de `tonosDeChip`, el MISMO sitio que los calcula en
+              el índice y en el itinerario. Si aquí se dedujeran otra vez, una N7
+              podría salir de diurna en esta pantalla y de búho en la otra. */}
           <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[15px] font-black"
-            style={{ backgroundColor: l.color ?? '#94a3b8', color: l.color ? '#fff' : '#1e293b' }}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[15px] font-bold"
+            style={
+              tonos
+                ? { backgroundColor: tonos.fondo, color: tonos.texto }
+                : // Avanza anuncia una línea que el GTFS no tiene. Se pinta gris y
+                  // SE ENSEÑA IGUAL: el autobús existe y va lleno de gente.
+                  { backgroundColor: '#94a3b8', color: '#1e293b' }
+            }
             data-papel="chip-linea"
             data-linea={l.linea ?? l.etiquetaCruda}
+            data-buho={tonos?.buho ? 'si' : 'no'}
             aria-hidden="true"
           >
             {l.linea ?? l.etiquetaCruda}
           </span>
-          <div className="min-w-0">
-            <p className="text-[15px] font-bold leading-snug sin-recortar" data-papel="destino">
-              {l.destino}
-            </p>
-            <p className="text-[12px] text-[var(--color-tinta-tenue)] sin-recortar">
-              línea {l.linea ?? `${l.etiquetaCruda} (desconocida)`}
-            </p>
-          </div>
+          {/* ⚠️ AQUÍ NO SE TRUNCA. Ellos ponen `truncate` y "Vía Hispanidad N.º 73
+              / Nuestra Señora De Los Ángeles" se queda en "Vía Hispanid…". Un dato
+              recortado es un dato que miente. Preferimos que la fila crezca. */}
+          <p className="min-w-0 text-[15px] font-bold leading-snug sin-recortar" data-papel="destino">
+            {l.destino}
+          </p>
         </div>
 
         {/* ⭐ LOS MINUTOS. LO PRIMERO, LO MÁS GRANDE, ARRIBA A LA DERECHA. */}
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
           <p
-            className={`text-[26px] font-black leading-none tabular-nums ${inminente ? 'es-inminente' : ''}`}
+            className={`text-[22px] font-black leading-none tabular-nums ${inminente ? 'es-inminente' : ''}`}
             data-papel="minutos"
           >
-            {l.etaMinutos === 0 ? '0' : l.etaMinutos}
-            <span className="ml-1 text-[13px] font-bold">min</span>
+            {l.etaMinutos}
+            <span className="ml-0.5 text-[13px] font-bold">min</span>
           </p>
-          {/* ⚠️ TERCER CANAL: LA PALABRA. Ni el color ni el latido van solos. */}
+          {/* ⚠️ EL TERCER CANAL: LA PALABRA. Ni el color ni el latido van solos.
+              (La referencia la esconde con `motion-reduce:hidden` — es decir, a
+              quien pide menos animación le quita TAMBIÉN el texto. Eso no se
+              clona: es justo al revés de lo que hay que hacer.) */}
           {inminente && (
-            <span
-              className="text-[10px] font-black uppercase tracking-wide"
-              data-papel="ya-llega"
-            >
+            <span className="text-[10px] font-black uppercase tracking-wide" data-papel="ya-llega">
               ya llega
             </span>
           )}
         </div>
       </div>
 
-      <FichaVehiculo coche={String(l.coche)} perfil={l.perfil} />
-    </article>
+      <div className="pl-[52px]">
+        <FichaVehiculo coche={coche} perfil={l.perfil} />
+      </div>
+    </button>
   );
 }
 

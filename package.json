@@ -18,17 +18,21 @@
     "campo": "tsx scripts/campo.ts",
     "paso": "tsx scripts/paso.ts",
     "visual": "playwright test",
-    "visual:instrumento": "playwright test e2e/instrumento.spec.ts"
+    "visual:instrumento": "playwright test e2e/instrumento.spec.ts",
+    "auditoria": "playwright test e2e/auditoria --project=360px --grep-invert=NUNCA"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "next": "16.2.10",
     "node-html-parser": "^9.0.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
     "@types/pngjs": "^6.0.5",
     "@types/react": "^19",
