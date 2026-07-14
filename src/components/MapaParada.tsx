@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
-import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LlegadaViva } from '@/engine/llegadas';
 import type { LatLon } from '@/core';
+import { linea } from '@/engine/topologia';
+import { tonosDeChip } from './ChipLinea';
 
 /**
  * ⭐ EL MAPA DE LA PARADA. ARRIBA, COMO EN LA REFERENCIA.
@@ -24,7 +26,6 @@ import type { LatLon } from '@/core';
  * mapa no es un adorno que estorba: es la primera pregunta.
  *
  * Medí una capa (la geometría) y afirmé sobre otra (el uso). Es la L7 otra vez.
- * El test de flotación se ha retirado, y NO por descuido: por decisión suya.
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * ⚠️ LO QUE NO SE HACE, PASE LO QUE PASE:
@@ -39,61 +40,314 @@ import type { LatLon } from '@/core';
  *     por omisión, y es la clase de mentira que nadie nota.
  */
 
-/** El icono de un autobús: un chip con su número de línea. No un pin genérico. */
-function iconoBus(etiqueta: string, color: string | null, inminente: boolean): L.DivIcon {
-  const fondo = color ?? '#94a3b8';
-  // ⚠️ El estado (inminente) va en la FORMA —un anillo—, no en el tono: el color
-  //    ya está ocupado por la IDENTIDAD de la línea. La 31 ES roja.
-  const anillo = inminente ? 'box-shadow:0 0 0 3px #111827,0 0 0 6px #fff;' : 'box-shadow:0 1px 3px rgba(0,0,0,.4);';
-  // ⚠️ 30×24, NO 30×22. La primera versión medía 22 px de alto y el detector de
-  //    objetivos táctiles la cazó: WCAG 2.5.8 exige 24×24 mínimo, y un marcador de
-  //    autobús SE PULSA (resalta su fila en la lista). Dos píxeles de menos en algo
-  //    que se toca con el pulgar, en un móvil, andando por la calle.
+/**
+ * ⭐⭐ B3 · EL ZOOM. Y AQUÍ **NO OBEDEZCO AL PIE DE LA LETRA**, Y HAY QUE DECIRLO.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  EL FALLO ERA REAL. `fitBounds` sobre la parada + TODOS los autobuses no tiene
+ *  suelo: la 35 tiene 12 km de recorrido, y un autobús anunciado a 12 minutos está
+ *  a ~3,6 km. El encuadre se abría hasta caberlo → **zoom 12 → medio Zaragoza**, y
+ *  la parada y el autobús que tienes encima quedaban a tres píxeles uno del otro.
+ *  El mapa perdía su función justo cuando más importa.
+ *
+ *  ⛔ PERO LA ORDEN ERA *"zoom centrado en la parada"*, Y MEDIDA NO SE SOSTIENE:
+ *
+ *      zoom 16 → radio visible  257 m       zoom 14 → radio visible 1.028 m
+ *      zoom 15 → radio visible  514 m       zoom 13 → radio visible 2.056 m
+ *
+ *      un autobús a  1 min está a ~0,3 km      a  7 min → ~2,1 km
+ *      un autobús a  3 min está a ~0,9 km      a 12 min → ~3,6 km
+ *
+ *  ⇒ Abrir SIEMPRE en la parada a zoom 16 enseñaría, casi siempre, **el pin y nada
+ *    más**. Y B5 —la orden de la línea siguiente— dice que el usuario tiene que ver
+ *    *"SU posición RESPECTO AL BUS"*. Obedecer B3 al pie de la letra **rompería B5**.
+ *
+ *  LA REGLA, QUE CUMPLE LAS DOS: se encuadra la parada CON los autobuses, pero el
+ *  zoom tiene SUELO y TECHO.
+ *
+ *      · si todo cabe entre 14 y 16 → se encuadra todo (el caso normal, y es lo
+ *        que hace la referencia: medida en su captura, abre a zoom ~14).
+ *      · si para caberlo todo habría que bajar de 14 → **NO SE BAJA**. Se planta en
+ *        14 CENTRADO EN LA PARADA, que es exactamente lo que Antonio pedía para el
+ *        caso que le molestaba: el del autobús lejano.
+ *
+ * ⚠️ Y ESO DEJA AUTOBUSES FUERA DEL ENCUADRE, QUE ES UNA MENTIRA POR OMISIÓN: el
+ *    mapa parecería decir "no viene ninguno". **No se calla: se cuenta cuántos hay
+ *    fuera y se da el botón para encuadrarlos.**
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+const ZOOM_SUELO = 14;
+const ZOOM_TECHO = 16;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  B4 · EL MARCADOR DE AUTOBÚS. CLONADO DE LA REFERENCIA, PÍXEL A PÍXEL.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * ⭐ B4 · ICONO + NÚMERO + PUNTA. Y LA PUNTA NO ES ADORNO.
+ *
+ * Medido sobre su captura (ampliada ×8): píldora de ~47×22 px, borde blanco de 2,
+ * radio ~9, glifo de autobús blanco a la izquierda, número blanco en negrita, y una
+ * **punta triangular centrada** debajo.
+ *
+ * ⭐ LA PUNTA ES LO QUE HACE QUE EL MARCADOR **SEÑALE**. Nuestro marcador anterior
+ *   se anclaba por el CENTRO: el chip tapaba el punto GPS exacto y el autobús podía
+ *   estar en cualquier lugar bajo esos 30×24 px. Con punta, el ancla es la punta, y
+ *   la punta ES la coordenada. Un marcador de mapa que no señala nada es un adorno.
+ *
+ * ⚠️ DOS DESVIACIONES DE SU DISEÑO, Y LAS DOS SE JUSTIFICAN:
+ *
+ *   1. Su píldora mide 22 px de alto. **WCAG 2.5.8 exige 24×24** y esto SE PULSA
+ *      (aísla el autobús y salta a su fila). La nuestra mide 26. Dos píxeles.
+ *
+ *   2. ⭐⭐ EL NÚMERO NO VA EN BLANCO PORQUE SÍ: VA EN EL COLOR QUE SE LEE. Es el
+ *      mismo fallo D1 que Antonio cazó en los chips, y aquí estaba a punto de
+ *      repetirse — la línea 33 es #C5CE00, y su número en blanco da **1,72:1**.
+ *      Los tonos salen de `tonosDeChip`, EL MISMO sitio que los calcula en la
+ *      lista, en el índice y en el itinerario. Un búho es azul noche aquí también.
+ */
+function glifoBus(color: string): string {
+  return (
+    `<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="${color}" ` +
+    `stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` +
+    `<rect x="3.6" y="2.4" width="12.8" height="13" rx="2.6"/>` +
+    `<line x1="3.6" y1="9.6" x2="16.4" y2="9.6"/>` +
+    `<line x1="6.2" y1="15.4" x2="6.2" y2="17.4"/>` +
+    `<line x1="13.8" y1="15.4" x2="13.8" y2="17.4"/>` +
+    `</svg>`
+  );
+}
+
+/** ⭐ La punta. Con reborde blanco, como la suya. Y ES el ancla del marcador. */
+function punta(fondo: string): string {
+  return (
+    `<svg width="18" height="10" viewBox="0 0 18 10" style="display:block;margin-top:-2px" aria-hidden="true">` +
+    `<path d="M1 0 L9 9 L17 0 Z" fill="${fondo}" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>` +
+    `</svg>`
+  );
+}
+
+const ANCHO_ICONO = 64;
+const ALTO_ICONO = 34;
+
+function iconoBus(
+  etiqueta: string,
+  fondo: string,
+  texto: string,
+  { seleccionado, inminente }: { seleccionado: boolean; inminente: boolean },
+): L.DivIcon {
+  /**
+   * ⚠️ DOS ESTADOS, DOS SEÑALES DISTINTAS. Antes compartían una, y eso era un fallo
+   *    real: el anillo se pintaba con `seleccionado || inminente`, así que un
+   *    autobús a 1 minuto **parecía seleccionado** y uno seleccionado **parecía a
+   *    punto de llegar**. Dos significados en un canal es un canal que no dice nada.
+   *
+   *      SELECCIONADO → anillo oscuro   (foco: "este es el que estás mirando")
+   *      INMINENTE    → LATIDO          (estado: "este está entrando")
+   *
+   * ⭐ Y el latido va en la ESCALA, no en la opacidad — la misma corrección que en
+   *   la lista: el desvanecido de la referencia deja el dato a 2,4:1 media vida de
+   *   cada ciclo. El movimiento sobrevive al gris; la opacidad se lleva el contraste.
+   *
+   * ⚠️ Y LA ANIMACIÓN VA EN EL `<span>` DE DENTRO, NUNCA EN LA RAÍZ DEL MARCADOR:
+   *    Leaflet posiciona el marcador con `transform: translate3d(...)`. Animar el
+   *    `transform` de la raíz le pisaría la posición y el autobús se TELETRANSPORTA.
+   */
+  const anillo = seleccionado
+    ? 'box-shadow:0 0 0 3px #111827,0 2px 6px rgba(0,0,0,.45);'
+    : 'box-shadow:0 1px 3px rgba(0,0,0,.45);';
+
   return L.divIcon({
     className: 'zb-bus',
     html:
-      `<span style="display:flex;align-items:center;justify-content:center;` +
-      `width:30px;height:24px;border-radius:6px;background:${fondo};color:#fff;` +
-      `font:900 12px/1 system-ui,sans-serif;border:2px solid #fff;${anillo}">${etiqueta}</span>`,
-    iconSize: [30, 24],
-    iconAnchor: [15, 12],
+      `<span style="display:flex;flex-direction:column;align-items:center;width:${ANCHO_ICONO}px">` +
+      `<span class="${inminente ? 'zb-late' : ''}" style="display:inline-flex;align-items:center;gap:4px;` +
+      `height:26px;padding:0 8px;border-radius:9px;background:${fondo};color:${texto};` +
+      `border:2px solid #fff;font:900 13px/1 system-ui,sans-serif;white-space:nowrap;${anillo}">` +
+      `${glifoBus(texto)}<span>${etiqueta}</span></span>` +
+      punta(fondo) +
+      `</span>`,
+    iconSize: [ANCHO_ICONO, ALTO_ICONO],
+    // ⭐ EL ANCLA ES LA PUNTA. Ahí está el autobús, y ahí apunta el marcador.
+    iconAnchor: [ANCHO_ICONO / 2, ALTO_ICONO],
   });
 }
 
-/** La parada. Un rombo, para que NO se confunda con un autobús ni en gris. */
+/**
+ * ⭐ B5 · LA PARADA ES UN **PIN**. Y NO SE CLONA SU CÍRCULO AZUL — CON MOTIVO.
+ *
+ * Lo que había era un ROMBO anclado por el centro: no señalaba, y en escala de
+ * grises se parecía demasiado a un chip de autobús girado.
+ *
+ * ⚠️ Y su marcador de parada TAMPOCO se copia, aunque la regla sea clonar. Mira su
+ *    captura ampliada: su círculo azul **queda medio tapado por dos marcadores de
+ *    la 39**. El propósito declarado de este marcador es *"que el usuario vea SU
+ *    posición respecto al bus"* — un marcador enterrado bajo un bus no cumple
+ *    exactamente eso. Aquí el pin va SIEMPRE ENCIMA (`zIndexOffset`), y tiene punta,
+ *    que es lo que convierte un adorno en una coordenada.
+ *
+ * ⚠️ Y NO LLEVA COLOR DE LÍNEA, ni se le acerca: el color es IDENTIDAD de línea y
+ *    ese canal está gastado. El pin es tinta. En gris se distingue de un autobús por
+ *    la FORMA (cabeza redonda + punta larga vs. píldora horizontal), no por el tono.
+ */
 const ICONO_PARADA = L.divIcon({
   className: 'zb-parada',
   html:
-    '<span style="display:block;width:18px;height:18px;background:#111827;' +
-    'border:3px solid #fff;transform:rotate(45deg);box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>',
-  iconSize: [24, 24], // WCAG 2.5.8: 24×24 mínimo. Ni un píxel menos.
-  iconAnchor: [12, 12],
+    '<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true" style="display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45))">' +
+    '<path d="M14 35C14 35 25 22.2 25 14A11 11 0 1 0 3 14c0 8.2 11 21 11 21Z" fill="#0F172A" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '<circle cx="14" cy="13.6" r="4.4" fill="#fff"/>' +
+    '</svg>',
+  iconSize: [28, 36], // WCAG 2.5.8: de sobra sobre los 24×24.
+  iconAnchor: [14, 36], // ⭐ La punta del pin. Ahí está la parada.
 });
 
-/**
- * Encuadra el mapa sobre TODO lo que hay que ver. Si solo está la parada, se
- * queda con un zoom cómodo de barrio; si hay autobuses, los mete a todos dentro.
- */
-function Encuadre({ puntos }: { puntos: LatLon[] }) {
-  const map = useMap();
-  const clave = puntos.map((p) => `${p.lat},${p.lon}`).join('|');
-  const previo = useRef('');
+// ─────────────────────────────────────────────────────────────────────────────
 
+/** Los tonos del marcador salen del MISMO sitio que los del chip de la lista. */
+function tonosDeBus(l: LlegadaViva): { fondo: string; texto: string } {
+  const suya = l.lineaId ? linea(l.lineaId) : null;
+  if (!suya) return { fondo: '#94A3B8', texto: '#1E293B' };
+  const t = tonosDeChip(suya);
+  return { fondo: t.fondo, texto: t.texto };
+}
+
+type Encuadrable = 'parada' | 'foco' | 'todos';
+
+/**
+ * ⭐ EL ENCUADRE. Y LA REGLA QUE NADIE PONE Y HACE FALTA:
+ *
+ * ⚠️ **EL MAPA NO SE REENCUADRA SOLO CADA 15 SEGUNDOS.** Los autobuses se refrescan;
+ *    si el encuadre siguiera a los autobuses, el mapa DARÍA UN TIRÓN cada refresco y
+ *    el usuario no podría ni arrastrarlo: estaría peleándose con él. Se encuadra
+ *    cuando cambia la PARADA, cuando cambia el FOCO, o cuando el usuario LO PIDE.
+ *    Nunca porque el GPS se haya movido tres metros.
+ */
+function Encuadre({
+  parada,
+  foco,
+  puntos,
+  orden,
+}: {
+  parada: LatLon | null;
+  foco: LatLon | null;
+  puntos: readonly LatLon[];
+  /** Un contador: sube cuando el usuario pulsa «Ver todos». No es un booleano
+   *  porque hay que poder pedirlo DOS VECES SEGUIDAS. */
+  orden: number;
+}) {
+  const map = useMap();
+  const hecho = useRef<string>('');
+
+  /**
+   * ⭐ EL SUELO DE ZOOM, EN UNA FUNCIÓN. Encuadra lo que le den, pero **nunca se
+   * aleja más allá de `ZOOM_SUELO`**: si para caberlo todo hiciera falta bajar más,
+   * se planta en el suelo Y SE CENTRA EN LA PARADA — no en el centroide de un
+   * autobús que está en Parque Goya.
+   *
+   * ⚠️ `getBoundsZoom` pregunta a Leaflet QUÉ zoom haría falta, sin aplicarlo. Es la
+   *    única manera de decidir esto sin dar primero un tirón feo y corregirlo después.
+   */
+  const encuadrarCon = useCallback(
+    (ps: readonly LatLon[], relleno: number, techo: number) => {
+      if (ps.length === 0) return;
+      const b = L.latLngBounds(ps.map((p) => [p.lat, p.lon] as [number, number]));
+      const relle = L.point(relleno, relleno);
+      const necesario = map.getBoundsZoom(b, false, relle);
+
+      if (necesario >= ZOOM_SUELO) {
+        map.fitBounds(b, { padding: [relleno, relleno], maxZoom: techo });
+        return;
+      }
+      // ⭐ Aquí muerde el suelo. El ancla es LA PARADA, que es la referencia del usuario.
+      const ancla = parada ?? ps[0];
+      map.setView([ancla.lat, ancla.lon], ZOOM_SUELO);
+    },
+    [map, parada],
+  );
+
+  const encuadrar = useCallback(
+    (que: Encuadrable) => {
+      if (que === 'foco' && foco) {
+        // Un solo autobús + la parada. Aquí el techo sube: si el bus está encima,
+        // que se vea que está encima.
+        encuadrarCon(parada ? [foco, parada] : [foco], 48, 17);
+        return;
+      }
+      /**
+       * ⛔ Y AQUÍ EL SUELO **SE ROMPE A PROPÓSITO**. Casi cuelo un botón que no hacía
+       *    nada: si «Encuadrarlos» respetara el suelo de zoom, no podría encuadrar
+       *    precisamente a los autobuses que están fuera POR CULPA del suelo. Sería un
+       *    botón que se pulsa, parpadea y no mueve el mapa.
+       *
+       *    El suelo protege al usuario de un alejamiento que NO HA PEDIDO. Cuando lo
+       *    pide, se le da: `fitBounds` a pelo, sin suelo. Su mapa, su decisión.
+       */
+      if (que === 'todos') {
+        if (puntos.length > 0) {
+          map.fitBounds(
+            L.latLngBounds(puntos.map((p) => [p.lat, p.lon] as [number, number])),
+            { padding: [40, 40], maxZoom: ZOOM_TECHO },
+          );
+        }
+        return;
+      }
+
+      // Reposo: la parada CON los autobuses que quepan sin bajar del suelo.
+      if (puntos.length > 0) encuadrarCon(puntos, 40, ZOOM_TECHO);
+      else if (parada) map.setView([parada.lat, parada.lon], ZOOM_TECHO);
+    },
+    [map, parada, foco, puntos, encuadrarCon],
+  );
+
+  // Reposo / foco: solo cuando REALMENTE cambia la situación, no en cada refresco.
   useEffect(() => {
-    if (puntos.length === 0 || clave === previo.current) return;
-    previo.current = clave;
-    if (puntos.length === 1) {
-      map.setView([puntos[0].lat, puntos[0].lon], 16);
-      return;
-    }
-    map.fitBounds(
-      L.latLngBounds(puntos.map((p) => [p.lat, p.lon] as [number, number])),
-      { padding: [36, 36], maxZoom: 16 },
-    );
-  }, [map, clave, puntos]);
+    const clave = foco
+      ? `foco:${foco.lat},${foco.lon}`
+      : `parada:${parada ? `${parada.lat},${parada.lon}` : 'sin'}`;
+    if (clave === hecho.current) return;
+    hecho.current = clave;
+    encuadrar(foco ? 'foco' : 'parada');
+  }, [foco, parada, encuadrar]);
+
+  // A petición del usuario. Y `orden === 0` es el arranque: ahí no se toca nada.
+  useEffect(() => {
+    if (orden === 0) return;
+    hecho.current = `todos:${orden}`;
+    encuadrar('todos');
+  }, [orden, encuadrar]);
 
   return null;
 }
+
+/**
+ * ⭐ EL CONTADOR DE LO QUE NO SE VE. Sin esto, B3 sería una mentira por omisión:
+ * el mapa abriría en la parada, un autobús quedaría a 4 km fuera del encuadre, y la
+ * pantalla estaría diciendo *"no viene ninguno"* sin decirlo.
+ *
+ * ⚠️ Se cuenta contra los límites REALES del mapa (`getBounds`), no contra una
+ *    distancia inventada. Y se recuenta cuando el usuario mueve el mapa.
+ */
+function ContarFuera({
+  posiciones,
+  onContar,
+}: {
+  posiciones: readonly LatLon[];
+  onContar: (n: number) => void;
+}) {
+  const map = useMap();
+
+  const contar = useCallback(() => {
+    const b = map.getBounds();
+    onContar(posiciones.filter((p) => !b.contains([p.lat, p.lon])).length);
+  }, [map, posiciones, onContar]);
+
+  useMapEvents({ moveend: contar, zoomend: contar, resize: contar });
+  useEffect(contar, [contar]);
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function MapaParada({
   parada,
@@ -113,11 +367,38 @@ export function MapaParada({
   const conPosicion = useMemo(() => llegadas.filter((l) => l.posicion !== null), [llegadas]);
   const sinPosicion = llegadas.length - conPosicion.length;
 
+  const enfocado = useMemo(
+    () => (seleccionado ? (conPosicion.find((l) => String(l.coche) === seleccionado) ?? null) : null),
+    [conPosicion, seleccionado],
+  );
+
+  /**
+   * ⭐ B6 · AL SELECCIONAR, EL MAPA **AÍSLA**. Se pinta ESE autobús y la parada, y
+   * nada más. Es lo que hace útil el gesto: con seis marcadores encima no se ve
+   * cuál es el tuyo por mucho que le pongas un anillo.
+   *
+   * ⚠️ Y si el seleccionado NO TIENE POSICIÓN, aislar dejaría el mapa vacío y
+   *    parecería una avería. En ese caso NO se aísla: se enseñan todos y se DICE
+   *    que a ese autobús Avanza no le da coordenadas. (Ver el aviso de abajo.)
+   */
+  const pintados = enfocado ? [enfocado] : conPosicion;
+
   const puntos = useMemo(() => {
     const ps: LatLon[] = conPosicion.map((l) => l.posicion!);
     if (parada) ps.push(parada);
     return ps;
   }, [conPosicion, parada]);
+
+  const posicionesBus = useMemo(() => conPosicion.map((l) => l.posicion!), [conPosicion]);
+
+  const [fuera, setFuera] = useState(0);
+  const [orden, setOrden] = useState(0);
+
+  /** «Ver todos» = quitar el foco Y devolver el encuadre a LOS FILTRADOS. */
+  const verTodos = useCallback(() => {
+    onSeleccionar(null);
+    setOrden((n) => n + 1);
+  }, [onSeleccionar]);
 
   // Sin NADA que pintar (ni siquiera la parada) no se monta un mapa vacío: se dice.
   if (!parada && conPosicion.length === 0) {
@@ -136,42 +417,86 @@ export function MapaParada({
     ? [parada.lat, parada.lon]
     : [conPosicion[0].posicion!.lat, conPosicion[0].posicion!.lon];
 
+  /** El seleccionado existe en la lista pero el mapa no puede pintarlo. */
+  const seleccionadoSinMapa =
+    seleccionado !== null && !enfocado && llegadas.some((l) => String(l.coche) === seleccionado);
+
   return (
-    <div className="mb-4" data-papel="mapa">
+    <div className="mb-4" data-papel="mapa" data-aislado={enfocado ? 'si' : 'no'}>
       <div className="relative overflow-hidden rounded-2xl border border-[var(--color-borde)] shadow-sm">
         <MapContainer
           center={centro}
-          zoom={16}
+          zoom={ZOOM_TECHO}
           scrollWheelZoom={false}
           className="h-72 w-full"
-          data-papel="lienzo-mapa"
+          /**
+           * ⛔ AQUÍ HABÍA UN `data-papel="lienzo-mapa"`. **NO LLEGABA AL DOM.**
+           *
+           * `MapContainer` de react-leaflet NO reenvía los `data-*` a su `<div>`: los
+           * consume y los tira. Ese gancho llevaba puesto desde la Tanda 4, con pinta
+           * de punto de medida, y cualquier test que lo hubiera usado habría estado
+           * midiendo `null` — es decir, aprobando sin mirar nada.
+           *
+           * Lo cazó el primer test que intentó usarlo de verdad. Un `data-papel` que
+           * no se renderiza es una mentira escrita en el código fuente: fuera. Para
+           * medir el lienzo se usa `.leaflet-container`, que es lo que Leaflet pone.
+           */
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
-          <Encuadre puntos={puntos} />
+          <Encuadre parada={parada} foco={enfocado?.posicion ?? null} puntos={puntos} orden={orden} />
+          <ContarFuera posiciones={posicionesBus} onContar={setFuera} />
 
-          {parada && <Marker position={[parada.lat, parada.lon]} icon={ICONO_PARADA} />}
+          {/* ⭐ LA PARADA, SIEMPRE ENCIMA. Es la referencia del usuario: si un autobús
+              la tapa, el mapa deja de contestar «¿dónde está respecto A MÍ?». */}
+          {parada && (
+            <Marker
+              position={[parada.lat, parada.lon]}
+              icon={ICONO_PARADA}
+              zIndexOffset={1000}
+              alt="Tu parada"
+            />
+          )}
 
-          {conPosicion.map((l) => {
+          {pintados.map((l) => {
             const coche = String(l.coche);
             const etiqueta = l.linea ?? l.etiquetaCruda;
+            const { fondo, texto } = tonosDeBus(l);
+            const activo = coche === seleccionado;
             return (
               <Marker
                 key={coche}
                 position={[l.posicion!.lat, l.posicion!.lon]}
-                icon={iconoBus(etiqueta, l.color, coche === seleccionado || l.etaMinutos <= 1)}
+                icon={iconoBus(etiqueta, fondo, texto, {
+                  seleccionado: activo,
+                  inminente: l.etaMinutos <= 1,
+                })}
+                zIndexOffset={activo ? 500 : 0}
                 // ⭐ LA SINCRONÍA MAPA → LISTA. Es el MISMO estado, no dos copias.
-                eventHandlers={{
-                  click: () => onSeleccionar(coche === seleccionado ? null : coche),
-                }}
+                eventHandlers={{ click: () => onSeleccionar(activo ? null : coche) }}
                 alt={`Línea ${etiqueta}, coche ${coche}, a ${l.etaMinutos} min`}
               />
             );
           })}
         </MapContainer>
+
+        {/* ⭐ B6 · «VER TODOS». Y devuelve LOS FILTRADOS, no todos: si el usuario ha
+            apagado la línea 39, «todos» no puede resucitarla — sería el filtro
+            desobedeciéndose a sí mismo. El mapa recibe `visibles`, y eso es lo que
+            vuelve. */}
+        {seleccionado !== null && (
+          <button
+            type="button"
+            onClick={verTodos}
+            data-papel="ver-todos"
+            className="absolute right-2 top-2 z-[500] min-h-[44px] rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-[13px] font-bold shadow-md"
+          >
+            Ver todos
+          </button>
+        )}
       </div>
 
       {/* ⚠️ LO QUE EL MAPA NO PUEDE ENSEÑAR, SE DICE. Un mapa con 3 autobuses
@@ -184,6 +509,45 @@ export function MapaParada({
           ⚠ {sinPosicion === 1 ? 'Un autobús no sale' : `${sinPosicion} autobuses no salen`} en el mapa:
           Avanza no da su posición. Sí {sinPosicion === 1 ? 'está' : 'están'} en la lista de abajo.
         </p>
+      )}
+
+      {seleccionadoSinMapa && (
+        <p
+          className="mt-1.5 text-[11px] font-semibold leading-snug text-[var(--color-aviso)] sin-recortar"
+          data-papel="seleccionado-sin-mapa"
+          role="status"
+        >
+          ⚠ El autobús que has marcado no sale en el mapa: Avanza no da su posición. El mapa sigue
+          enseñando los demás.
+        </p>
+      )}
+
+      {/* ⭐ EL PRECIO DE B3, PAGADO A LA VISTA. Abrimos en la parada, y eso deja
+          autobuses fuera del encuadre. Se dice cuántos, y se ofrece verlos. */}
+      {/* ⚠️ ESTO SOLO SE VE MIRANDO. La primera versión ponía el texto y el botón en
+          un `flex-wrap`, y a 360 px el botón caía a una tercera línea él solo: un
+          botonazo de 44 px compitiendo con el mapa por la atención. Ningún test lo
+          habría cazado — HTML válido, contraste correcto, nada truncado. Ahora el
+          texto ocupa su ancho y el botón se queda al lado, sin robar protagonismo. */}
+      {!enfocado && fuera > 0 && (
+        <div className="mt-1.5 flex items-center gap-2" data-papel="fuera-del-encuadre">
+          <p className="min-w-0 flex-1 text-[11px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
+            {fuera === 1
+              ? 'Hay 1 autobús fuera del encuadre: está más lejos.'
+              : `Hay ${fuera} autobuses fuera del encuadre: están más lejos.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setOrden((n) => n + 1)}
+            data-papel="encuadrar-todos"
+            // ⚠️ 44 px de alto NO son negociables (WCAG 2.5.8 pide 24, y un pulgar
+            //    en la calle pide más). Lo que se baja es el PESO VISUAL, no el
+            //    tamaño del objetivo: es lo contrario de lo que suele hacerse.
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-semibold text-[var(--color-tinta-suave)]"
+          >
+            Encuadrarlos
+          </button>
+        </div>
       )}
     </div>
   );

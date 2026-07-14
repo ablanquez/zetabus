@@ -51,6 +51,11 @@ const MapaParada = dynamic(() => import('./MapaParada').then((m) => m.MapaParada
   ),
 });
 
+/** Quien pide menos movimiento no pierde el destino: pierde el viaje suave. */
+const quieto = () =>
+  typeof window !== 'undefined' &&
+  (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
+
 /** El motor cachea 15 s. Preguntar más a menudo no trae nada nuevo: solo ruido. */
 const CADA_MS = 15_000;
 /** A partir de aquí el dato deja de ser "fresco" y la pantalla lo dice. */
@@ -143,7 +148,44 @@ export function LlegadasVivas({
   //  su fila, y pulsar la fila resalta el bus. Un estado, dos vistas.
   // ═══════════════════════════════════════════════════════════════════════════
   const [apagadas, setApagadas] = useState<ReadonlySet<string>>(new Set());
+
+  /**
+   * ⭐⭐ B6 · Y AQUÍ EL OJO CAZÓ LO QUE NINGÚN TEST IBA A CAZAR.
+   *
+   * ═══════════════════════════════════════════════════════════════════════════
+   *  Mi primera versión traía SIEMPRE la fila a la vista. Los 11 tests pasaron. Y
+   *  abrí la captura de 360 px y vi esto:
+   *
+   *      pulsas una fila → el mapa aísla → **y el mapa ya no está en la pantalla**.
+   *
+   *  Porque en un móvil de 360 px la lista vive por debajo del pliegue: para tocar
+   *  una fila HAY QUE BAJAR, y entonces el mapa —que es lo que acaba de reaccionar—
+   *  se ha quedado arriba, fuera de la vista. **B6 no hacía absolutamente nada
+   *  visible.** La función estaba bien; la pantalla no.
+   *
+   *  ⇒ LA REGLA ES SIMÉTRICA, Y ES OBVIA EN CUANTO SE MIRA:
+   *
+   *      SE TRAE A LA VISTA **LA VISTA QUE NO HAS TOCADO**.
+   *
+   *      pulsas en la LISTA → viene el MAPA     (ya estás viendo la fila)
+   *      pulsas en el MAPA  → viene la FILA     (ya estás viendo el marcador)
+   *
+   *  Traer a la vista lo que el dedo ya tiene delante es, literalmente, no hacer nada.
+   * ═══════════════════════════════════════════════════════════════════════════
+   */
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
+  const [origen, setOrigen] = useState<'lista' | 'mapa' | null>(null);
+  const cajaMapa = useRef<HTMLDivElement>(null);
+
+  const seleccionar = useCallback((coche: string | null, de: 'lista' | 'mapa') => {
+    setSeleccionado(coche);
+    setOrigen(coche === null ? null : de);
+  }, []);
+
+  useEffect(() => {
+    if (origen !== 'lista' || seleccionado === null) return;
+    cajaMapa.current?.scrollIntoView({ block: 'nearest', behavior: quieto() ? 'auto' : 'smooth' });
+  }, [origen, seleccionado]);
 
   const lineasDelPoste = useMemo(() => {
     if (!hayDatos) return [];
@@ -172,16 +214,33 @@ export function LlegadasVivas({
 
   const todasApagadas = lineasDelPoste.length > 0 && apagadas.size === lineasDelPoste.length;
 
+  /**
+   * ⭐ B6 · EL SELECCIONADO **CADUCA**, Y HAY QUE SOLTARLO.
+   *
+   * ⚠️ Esto no es cosmética: sin esto, el mapa se queda AISLADO sobre un autobús que
+   *    ya no existe. Un coche desaparece de la lista cada 15 segundos por dos motivos
+   *    normalísimos — porque ya ha pasado por la parada, o porque el usuario ha apagado
+   *    su línea en el filtro. Y entonces el mapa estaría enfocando un fantasma: un
+   *    marcador sin fila, o ni siquiera un marcador. **Si el que estabas mirando ya no
+   *    está, el foco se suelta.**
+   */
+  useEffect(() => {
+    if (seleccionado === null) return;
+    if (!visibles.some((l) => String(l.coche) === seleccionado)) seleccionar(null, 'lista');
+  }, [visibles, seleccionado, seleccionar]);
+
   return (
     <section aria-label="Próximas llegadas">
       {/* ⭐ EL MAPA, ARRIBA. Decisión de Antonio, que es el que coge el bus. */}
       {hayDatos && (
-        <MapaParada
-          parada={obs.datos.posicionParada}
-          llegadas={visibles}
-          seleccionado={seleccionado}
-          onSeleccionar={setSeleccionado}
-        />
+        <div ref={cajaMapa}>
+          <MapaParada
+            parada={obs.datos.posicionParada}
+            llegadas={visibles}
+            seleccionado={seleccionado}
+            onSeleccionar={(c) => seleccionar(c, 'mapa')}
+          />
+        </div>
       )}
 
       <BarraDeEdad
@@ -210,7 +269,9 @@ export function LlegadasVivas({
         visibles={visibles}
         apagadasTodas={todasApagadas}
         seleccionado={seleccionado}
-        onSeleccionar={setSeleccionado}
+        // ⭐ Solo se arrastra la fila a la vista si el gesto vino DEL MAPA.
+        traerAlaVista={origen === 'mapa'}
+        onSeleccionar={(c) => seleccionar(c, 'lista')}
       />
     </section>
   );
@@ -374,13 +435,14 @@ function BarraDeEdad({
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Cuerpo({
-  obs, rancio, visibles, apagadasTodas, seleccionado, onSeleccionar,
+  obs, rancio, visibles, apagadasTodas, seleccionado, traerAlaVista, onSeleccionar,
 }: {
   obs: Observacion<LlegadasDeParada>;
   rancio: boolean;
   visibles: readonly LlegadaViva[];
   apagadasTodas: boolean;
   seleccionado: string | null;
+  traerAlaVista: boolean;
   onSeleccionar: (c: string | null) => void;
 }) {
   // ⚠️ CINCO ESTADOS, CINCO MENSAJES. El proyecto viejo tenía uno para todos, y
@@ -467,6 +529,7 @@ function Cuerpo({
             <Llegada
               l={l}
               seleccionado={String(l.coche) === seleccionado}
+              traerAlaVista={traerAlaVista}
               onSeleccionar={onSeleccionar}
             />
             {/* ⭐ EL DETALLE DE PROCEDENCIA, **FUERA DEL BOTÓN DE LA FILA**.
@@ -514,10 +577,12 @@ function Cuerpo({
  * y hay una prueba de escala de grises que lo demuestra apagando el color.
  */
 function Llegada({
-  l, seleccionado, onSeleccionar,
+  l, seleccionado, traerAlaVista, onSeleccionar,
 }: {
   l: LlegadaViva;
   seleccionado: boolean;
+  /** ⭐ El gesto vino del MAPA: la fila tiene que venir a buscar al usuario. */
+  traerAlaVista: boolean;
   onSeleccionar: (c: string | null) => void;
 }) {
   const inminente = l.etaMinutos <= 1;
@@ -526,13 +591,42 @@ function Llegada({
   const suya = l.lineaId ? linea(l.lineaId) : null;
   const tonos = suya ? tonosDeChip(suya) : null;
 
+  /**
+   * ⭐ B6 · PULSAS EL AUTOBÚS EN EL MAPA → SU FILA VIENE A TI.
+   *
+   * Sin esto, la mitad del gesto se pierde: el mapa aísla el autobús, la fila se
+   * resalta… y la fila está tres pantallas más abajo, así que el usuario no ve que
+   * ha pasado nada. El estado es uno, pero **la vista tiene que ir detrás de él**.
+   *
+   * ⛔ Y SOLO SI EL GESTO VINO DEL MAPA (`traerAlaVista`). Mi primera versión
+   *    arrastraba la fila SIEMPRE, incluso cuando el dedo acababa de tocar esa misma
+   *    fila — y el efecto era el contrario del buscado: la página bajaba y **el mapa,
+   *    que es lo que acababa de aislar, se salía de la pantalla**. Se trae lo que NO
+   *    estás mirando. Lo que ya tienes delante no hay que traerlo.
+   */
+  const fila = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!seleccionado || !traerAlaVista) return;
+    fila.current?.scrollIntoView({ block: 'nearest', behavior: quieto() ? 'auto' : 'smooth' });
+  }, [seleccionado, traerAlaVista]);
+
   return (
     <button
+      ref={fila}
       type="button"
       // ⭐ LA SINCRONÍA LISTA → MAPA. El mismo estado que resalta el marcador.
       onClick={() => onSeleccionar(seleccionado ? null : coche)}
       aria-pressed={seleccionado}
-      className={`flex w-full flex-col gap-2 px-4 py-3.5 text-left ${seleccionado ? 'bg-[var(--color-fondo)]' : ''}`}
+      // ⚠️ LA MARCA DE SELECCIÓN NO PUEDE SER SOLO UN FONDO GRIS CLARO: en un móvil
+      //    al sol no se ve, y en escala de grises se confunde con la fila normal. Va
+      //    también una BARRA a la izquierda —forma, no tono— y `pl-3 + border-l-4`
+      //    suma exactamente los 16 px del `px-4` de antes: la fila NO DA UN SALTO al
+      //    seleccionarse, que es el defecto clásico de los bordes de selección.
+      className={`flex w-full flex-col gap-2 border-l-4 py-3.5 pl-3 pr-4 text-left ${
+        seleccionado
+          ? 'border-[var(--color-tinta)] bg-[var(--color-fondo)]'
+          : 'border-transparent'
+      }`}
       data-papel="llegada"
       data-inminente={inminente ? 'si' : 'no'}
       data-coche={coche}
