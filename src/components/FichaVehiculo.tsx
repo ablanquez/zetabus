@@ -53,7 +53,20 @@ const CLASE: Record<string, string> = {
   microbus_pmrs: 'microbús',
 };
 
-export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusProfile | null }) {
+export function FichaVehiculo({
+  coche,
+  perfil,
+  yaSeSabeElCoche = false,
+}: {
+  coche: string;
+  perfil: BusProfile | null;
+  /**
+   * `true` cuando quien la pinta YA ha puesto "Coche 4114" en su cabecera (la
+   * lista del barrido lo hace). Repetirlo dentro de la ficha no aporta nada y
+   * roba sitio a 360 px, que es donde se pelea cada píxel.
+   */
+  yaSeSabeElCoche?: boolean;
+}) {
   // ── SIN DATOS. Se dice. No se calla, no se rellena, no se aproxima. ────────
   if (perfil === null) {
     return (
@@ -82,8 +95,12 @@ export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusPro
       data-confianza={perfil.confidence}
     >
       <p className="text-[12px] leading-snug text-[var(--color-tinta)] sin-recortar">
-        <span className="font-bold">Coche {coche}</span>
-        <span className="text-[var(--color-tinta-tenue)]"> · </span>
+        {!yaSeSabeElCoche && (
+          <>
+            <span className="font-bold">Coche {coche}</span>
+            <span className="text-[var(--color-tinta-tenue)]"> · </span>
+          </>
+        )}
         {/* ⚠️ Separadores con espacios a los lados: si la línea se parte, se
             parte por un espacio y NO por la mitad de "articulado". */}
         {rasgos.join(' · ')}

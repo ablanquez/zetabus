@@ -40,14 +40,24 @@ export type Fingimiento =
   /** DOS líneas en el mismo poste. Sin esto, el filtro no se puede probar:
    *  con una sola línea, apagarla y "Ninguna" hacen exactamente lo mismo y el
    *  test pasaría sin haber comprobado que el filtro FILTRA. */
-  | 'dos-lineas';
+  | 'dos-lineas'
+  /**
+   * ⭐ CADA POSTE TARDA 150 ms. Para poder VER la barra moverse.
+   *
+   * ⚠️ Los demás fingimientos responden INSTANTÁNEOS, y con eso el barrido de 18
+   *    postes termina en 0 ms: React agrupa el render y la barra salta de 0 al
+   *    final sin pasar por en medio. Un test sobre esa barra no probaría que
+   *    mide: probaría que existe. Con Avanza de verdad tarda segundos; aquí se
+   *    reproduce ese tiempo para poder comprobarlo SIN machacar a Avanza.
+   */
+  | 'barrido-lento';
 
 // ⚠️ NO hay un fingimiento para "nombre de parada larguísimo": no hace falta
 //    inventarlo. El poste 823 se llama "Vía Hispanidad N.º 73 / Nuestra Señora
 //    De Los ángeles" — 53 caracteres, y es real. Fingir un caso que ya existe en
 //    los datos sería probar mi invención en lugar de la realidad.
 export const FINGIMIENTOS: readonly Fingimiento[] = [
-  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'dos-lineas',
+  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'dos-lineas', 'barrido-lento',
 ];
 
 export const demoEncendido = (): boolean => process.env.ZETABUS_DEMO === '1';
@@ -130,6 +140,12 @@ export function transporteFingido(f: Fingimiento): Transporte {
   switch (f) {
     case 'dos-lineas':
       return async () => ({ status: 200, texto: DOS_LINEAS });
+    case 'barrido-lento':
+      return async (_u, { senal }) =>
+        new Promise((resolver, rechazar) => {
+          const t = setTimeout(() => resolver({ status: 200, texto: DOS_LINEAS }), 150);
+          senal.addEventListener('abort', () => { clearTimeout(t); rechazar(senal.reason ?? new Error('abortado')); });
+        });
     case 'sin-verificar':
       return async () => ({ status: 200, texto: SIN_VERIFICAR });
     case 'caido':

@@ -5,8 +5,9 @@
 >
 > Este documento es la **memoria del proyecto**. Se actualiza al cerrar cada tanda.
 
-**Estado actual:** Tandas 1, 2 y 3 **CERRADAS**. El motor vivo está construido y estresado.
-**Siguiente:** **Tanda 4 (primera pantalla)** — la primera vez que esto se ve.
+**Estado actual:** Tanda 4 **CERRADA** (pantalla + clon del vocabulario visual de la referencia).
+**Siguiente:** **Tanda 5 — el mapa.**
+⚠️ **Decisión pendiente:** mapa arriba (como la referencia) o llegadas arriba (como ahora).
 **Última actualización:** 13/07/2026
 
 ---
@@ -15,54 +16,57 @@
 
 **Nombre: ZetaBus**
 - La **Z** de Zaragoza sin gritarla + el autobús.
-- ⚠️ **Coste asumido conscientemente:** mete "bus" y "Zaragoza" en la marca. El día que entre
-  el tranvía o Bilbao, el nombre se queda corto. Decisión tomada con los ojos abiertos.
-- **Pero el CÓDIGO no lo hereda:** el motor no sabe que es un bus (ver §4).
+- ⚠️ **Coste asumido conscientemente:** mete "bus" y "Zaragoza" en la marca. **Pero el CÓDIGO no
+  lo hereda** — el motor no sabe que es un bus, y hay un test que lo obliga (ver §4).
 
 **Color:** pendiente (Fase 5).
-⚠️ **Restricción dura:** el mapa necesita **rojo/ámbar/verde** para el estado. La marca no
-puede competir con la semántica de estado.
-⚠️ **Y hay un problema añadido, único de este proyecto:** el color de las líneas **no lo
-elegimos nosotros** — viene del operador. Y **22 de las 44 líneas caen en la franja
-rojo/ámbar/amarillo/lima/verde**. La línea 31 es *literalmente* el mismo rojo que "retraso"
-(ΔE 3,0).
-→ **EL ESTADO NO PUEDE IR EN EL TONO.** Va en forma, anillo con borde blanco, opacidad o
-movimiento.
+⚠️ **Restricción dura, y es peor de lo normal:** el color de las líneas **no lo elegimos** — lo
+impone el operador. Y **22 de las 44 líneas caen en la franja rojo/ámbar/amarillo/lima/verde**.
+**La línea 31 es literalmente el mismo rojo que "retraso"** (contraste 1,22:1 entre ambos).
+→ **EL ESTADO NO PUEDE IR EN EL TONO.** Va en forma, borde, opacidad, palabra o movimiento.
+→ **Y se verifica con una prueba de escala de grises:** se pinta la pantalla sin una gota de
+  color y el estado tiene que seguir ahí. Si desapareciera, es que estaba en el tono.
 
 ---
 
 ## 2 · Qué es
 
-**Dos vistas del mismo dato:**
-
-**VISTA PARADA** *(el que espera)*
-Línea → sentido → parada → los próximos buses con sus **minutos**, moviéndose en el mapa en su
-coordenada GPS real. De cada bus: modelo, combustible, y si es **articulado o sencillo**.
+**VISTA PARADA** *(el que espera en la marquesina)*
+Parada → los próximos buses con sus **minutos**. De cada bus: modelo, combustible,
+articulado/sencillo, **y su nivel de confianza**.
+**+ filtros de línea** que apagan/encienden líneas **a la vez en el mapa y en la lista**.
+⭐ Y hay **un solo estado**, no dos sincronizados: *"no se pueden desincronizar porque no hay
+nada que desincronizar"*.
 
 **VISTA LÍNEA** *(el que mira la red)*
-El **trazado real de hoy** + las paradas en orden + los buses detectados ahora, cada uno en su
-GPS con su destino.
+**Itinerario vertical** con las paradas en orden, **chips de transbordo** (qué otras líneas
+pasan por cada parada), nodos de búho, y **el recuento de buses circulando ahora**.
 
 **LA CAPA QUE NADIE MÁS TIENE**
-Desvíos marcados, supresiones con nota, y **la contradicción del operador enseñada** cuando la
-haya.
+Desvíos detectados, supresiones con nota, **la contradicción del operador**, y la **edad real
+del dato**.
 
-### 🎬 Momento oro para la demo
+### 🎬 Momento oro para la demo — YA FUNCIONA
 
-> **"Circulan 12 buses en la línea 35 ahora mismo. Los 12 son articulados.
-> El que llega en 3 minutos es un Volvo 7905 de 18 m."**
+> **"Detectamos 11 autobuses en la línea 35 ahora mismo. Los 11 de los que conocemos la ficha
+> son ARTICULADOS."**
+> *"Contado ahora, no declarado. 18 postes consultados de 67."*
 
-Ninguna app dice eso. Y **es un recuento, no una declaración** → no necesita permiso, no
-miente en domingo, no caduca. *(Ver L2 en [`docs/LECCIONES.md`](docs/LECCIONES.md).)*
+⚠️ **Y el matiz que casi se come:** si de 11 detectados solo se conoce la ficha de 9, **no se
+puede decir "los 11 son articulados"**. El denominador son **los que tienen ficha**, y los que
+no la tienen **se dicen en la misma frase**.
+*(L2 aplicada a sí misma: cambiar declarar por contar no te libra de decir la verdad sobre tu
+recuento.)*
 
 ### ⛔ Fuera de alcance — CON SU MOTIVO
 
 | Fuera | Por qué |
 |---|---|
-| **Proyectar el bus sobre el trazado** | **No hay `trip_id`.** Habría que inferir el sentido por texto y proyectar por proximidad. Con los dos sentidos yendo por calles paralelas, **pintaría el bus en el sentido contrario**. No peta: PINTA. |
-| **Medir el servicio** (frecuencias, Índice de Puntualidad) | Exige **histórico**, y el histórico no se deriva de nada → base de datos + barredor de fondo. **V1 ENSEÑA, NO MIDE.** |
-| **Repintar la ruta desviada a mano** | Superado: `get_stops_list` la da hecha. *(Ver §5.)* |
-| **Tranvía / multimodal** | Es el **004**. ZetaBus talla el saliente (§4), no lo construye. |
+| **Proyectar el bus sobre el trazado** | **No hay `trip_id`.** Habría que inferir el sentido por texto y proyectar por proximidad. Con los dos sentidos por calles paralelas, **pintaría el bus en el sentido contrario**. No peta: PINTA |
+| **Medir el servicio** (frecuencias, puntualidad) | Exige **histórico**, y el histórico no se deriva de nada. **V1 ENSEÑA, NO MIDE** |
+| **Repintar la ruta desviada a mano** | Superado: `get_stops_list` la da hecha |
+| **Tranvía / multimodal** | Es el **004**. ZetaBus talla el saliente, no lo construye |
+| **"Cerca de mí"** | ⚠️ **Cabo abierto.** Para quien está en la marquesina, el camino correcto son **cero toques**, no dos. Primer candidato de la Tanda 5 |
 
 ---
 
@@ -70,26 +74,27 @@ miente en domingo, no caduca. *(Ver L2 en [`docs/LECCIONES.md`](docs/LECCIONES.m
 
 | Capa | Fuente | Estado |
 |---|---|---|
-| **Topología teórica + shapes + colores** | **GTFS del NAP** (fichero 1176) | ✅ Fiable. ⚠️ **Miente cuando hay obras.** Caduca **05/10/2026** |
-| **Recorrido REAL de hoy** | `get_stops_list` + **KML** (web de Avanza) | ✅ Secuencia ordenada por sentido, **con el desvío aplicado**. 45/46 líneas |
-| **Tiempo real** (posición, ETA, nº de bus) | `gps.avanzabus.com` | ✅ Única puerta. **No existe GTFS-RT en Zaragoza** (probado) |
+| **Topología + shapes + colores** | **GTFS del NAP** (fichero 1176) | ✅ Fiable. ⚠️ **Miente cuando hay obras.** **Caduca el 05/10/2026** |
+| **Recorrido REAL de hoy** | `get_stops_list` + **KML** | ✅ Secuencia ordenada por sentido, **con el desvío aplicado**. 45/46 líneas |
+| **Tiempo real** (posición, ETA, nº bus) | `gps.avanzabus.com` | ✅ Única puerta. **No existe GTFS-RT en Zaragoza** (probado). ⚠️ **Se cae sola** |
 | **Alteraciones** | `get_alteraciones_servicio` **por línea** | ⚠️ **No el RSS** — pierde 3 de 6 alteraciones vigentes |
-| **Flota** (modelo, combustible, longitud) | **Anexo 5 del pliego** | ✅ Regenerado. **Insustituible: el GTFS no puede tenerlo** |
+| **Flota** | **Anexo 5 del pliego municipal** | ✅ Regenerado (403 vehículos: 350 oficiales + 53 `sin_verificar`) |
 
-**Puente de identidad — GRATIS:** `poste = int(stop_code[2:])`. Cobertura **934/934**.
+**Puente de identidad — GRATIS:** `poste = int(stop_code[2:])`. Cobertura **934/934**, verificada
+en cada build.
 
 ### ⭐ LA ASIMETRÍA QUE LO GOBIERNA TODO
 
 > **DESVÍO DE RUTA** *(el bus no pasa)* → la ruta operativa **CAMBIA** → se ve en
-> `get_stops_list`, en el KML y en la API viva (el poste enmudece).
-> **DERIVABLE Y AUTO-APAGABLE.**
+> `get_stops_list`, en el KML y en la API viva. **DERIVABLE Y AUTO-APAGABLE.**
 >
-> **SUPRESIÓN DE PARADA** *(pasa y no para)* → la ruta operativa **NO cambia**. Ponen el
-> cartel en el metacrilato pero **NO desconectan el poste**. La API sigue anunciando buses ahí.
-> **NO DETECTABLE POR NINGUNA FUENTE.**
+> **SUPRESIÓN DE PARADA** *(pasa y no para)* → la ruta operativa **NO cambia**. Ponen el cartel
+> pero **no desconectan el poste**. **NO DETECTABLE POR NINGUNA FUENTE.**
 
-**Prueba:** el comunicado del Coso dice que la 29 y la 39 *"realizan su recorrido habitual pero
-sin parar en Plaza San Miguel"*. La API anuncia buses **a 0 minutos** en ese poste.
+**Y ambas ocurren en la misma plaza.** Plaza San Miguel tiene dos postes:
+- **745** (Camino Las Torres) → **desvío**. ZetaBus lo detecta y lo tacha solo.
+- **744** (San Gregorio) → **supresión**. La API anuncia buses **a 0 minutos** en una parada donde
+  el comunicado dice por escrito que no paran.
 
 ---
 
@@ -97,29 +102,29 @@ sin parar en Plaza San Miguel"*. La API anuncia buses **a 0 minutos** en ese pos
 
 | Decisión | Por qué | Qué se descartó |
 |---|---|---|
-| **Next.js + TypeScript** | Es el **escalón que falta**: JS/TS de verdad. El dominio es frontend con backend fino | **Laravel**: no hay usuarios, ni roles, ni auth. Sería matar moscas a cañonazos. **PHP vanilla**: ir hacia atrás. **Repetir el stack de Turnia**: no sube el escalón |
+| **Next.js 16 + TypeScript** | El **escalón que falta**: JS/TS de verdad. Frontend con backend fino | **Laravel**: no hay usuarios, ni roles, ni auth. **Repetir el stack de Turnia**: no sube el escalón |
 | **Leaflet + OpenStreetMap** | Gratis, sin clave, sin límite | Google/Mapbox: una demo pública permanente no puede depender de un contador |
-| **Sin base de datos** | Todo se deriva. *Lo derivable no se guarda* | MySQL: no hay nada que persistir en la v1 |
-| **Colores del GTFS** (`route_color`) | Cobertura 100%. Cubre 6 líneas que el JSON no tiene | Los del JSON heredado: **empate técnico, no se sabe quién tiene razón**. Se deja un fichero de override vacío |
-| **El motor no sabe que es un bus** | Para que el **004 multimodal** sea un hito pequeño, no cirugía | Modelar "autobús" como tipo. *(Turnia: el motor no sabía qué era un bar.)* |
-| **Caché de dos pisos** (memoria + disco con cerrojo) | Con 4 workers y sin el piso en disco: **1.020 req/min** contra Avanza, en silencio, hasta que bloqueen la IP. Con él: **255, pase lo que pase** | Depender de que Hostinger arranque un solo worker: *"nadie va a recordar mantener ese `1` dentro de dos años"* |
+| **Sin base de datos** | Todo se deriva | MySQL: no hay nada que persistir en la v1 |
+| **Colores del GTFS** | Cobertura 100% | Los del JSON heredado: **empate técnico, no se sabe quién tiene razón** |
+| **El motor no sabe que es un bus** | Para que el **004 multimodal** sea un hito pequeño | ⭐ **Hay un TEST que lo obliga:** falla si aparece la palabra "bus" en `src/core/`. **Tumbó el modelo que yo había aprobado** |
+| **Caché de dos pisos** (memoria + disco con cerrojo) | Sin el piso en disco y con 4 workers: **1.020 req/min** contra Avanza, en silencio. Con él: **255, pase lo que pase** | Forzar un solo worker: *"nadie va a recordar mantener ese `1` dentro de dos años"* |
 | **V1 enseña, no mide** | El 80% del valor sin el problema duro dentro | ⚠️ **Coste:** el histórico que no captures hoy **no se recupera nunca** |
+| **Se clona el vocabulario visual de la referencia** | Antonio la **usa**; nosotros solo la medíamos. **En usabilidad manda quien la usa** | ⛔ Salvo **dos cosas: la promesa de frescura y los chips que mienten**. Eso no es estructura: es verdad |
 
 ---
 
 ## 5 · ⚠️ Decisiones que se DESHICIERON — no se borran
 
-**Esta sección vale oro. Si no está escrita, alguien lo reabre — incluido yo dentro de tres
-semanas.**
-
-| Se creyó | Por qué se creyó | Por qué se dejó de creer |
-|---|---|---|
-| **"Solo se puede tachar, no repintar"** | Los comunicados dan las paradas del desvío **sin orden y sin sentido**, y 7 de 30 no existen en el GTFS | ⭐ **Existe `get_stops_list`**, que da la secuencia ordenada del recorrido real. *"El desvío no hay que transcribirlo: hay que pedirlo."* **Lo encontró Antonio mirando 3 postes** |
-| **"7 paradas fantasma"** (listadas como suprimidas pero con buses) | La API viva devolvía llegadas ahí | ⭐ **El oráculo era falso.** La API **no refleja las supresiones**: ponen el cartel pero no desconectan el poste. **Lo dijo Antonio, que conoce la ciudad** |
-| **"Esta línea lleva articulados"** | Es cierto, y está en el pliego | El pliego que lo dice **NO está en vigor** (pendiente de adjudicar). Y la dotación **cambia en domingo**. → **Sustituido por un recuento en vivo**, que no necesita permiso |
-| **"El tranvía es una ficha aparte del NAP"** | Parecía lógico | **Falso. Ya está dentro del ZIP** (`agency_id=11`). El 004 se abarata |
-| **"Los colores del JSON no son los oficiales"** | Un solo caso (línea 21, y encima gris) | **Extrapolación desde un caso.** Empate técnico 16-16 contra el mapa oficial. **No se sabe** |
-| **"El JSON de flota es oro puro"** | El GTFS no puede tener esos datos | ✅ Sigue siendo insustituible… **pero tenía 62 longitudes mal, todas en el mismo sentido.** Regenerado desde el Anexo 5 |
+| Se creyó | Por qué se dejó de creer |
+|---|---|
+| **"Solo se puede tachar, no repintar"** | ⭐ **Existe `get_stops_list`.** *"El desvío no hay que transcribirlo: hay que pedirlo."* **Lo encontró Antonio mirando 3 postes** |
+| **"7 paradas fantasma"** | ⭐ **El oráculo era falso.** La API **no refleja las supresiones**. **Lo dijo Antonio, que conoce la ciudad** |
+| **"Esta línea lleva articulados"** | El pliego que lo dice **no está en vigor**, y la dotación **cambia en domingo**. → **Sustituido por un recuento en vivo** |
+| **"El tranvía es una ficha aparte del NAP"** | **Falso. Ya está dentro del ZIP** (`agency_id=11`) |
+| **"El JSON de flota es oro puro"** | Tenía **62 longitudes mal, todas en el mismo sentido**. Regenerado desde el Anexo 5 |
+| **"La referencia pinta buses en el golfo de Guinea"** | ⚠️ **Falso. Lo dije yo leyendo su backend y afirmando sobre su pantalla.** Su mapa sí filtra. **L7** |
+| **"Su pantalla de parada está bien resuelta"** | Lo escribió el ejecutor **leyendo el código**. Con Chromium a 360 px, **el primer tiempo caía en y=789** |
+| **"Su pantalla de parada está mal, no se clona"** | ⚠️ **Y luego resultó que su usabilidad SÍ es buena.** Los filtros de línea sincronizados son excelentes — **y nadie los había visto porque nadie la había PULSADO** |
 
 ---
 
@@ -127,9 +132,11 @@ semanas.**
 
 | No se sabe | Qué se dice |
 |---|---|
-| **Si una parada suprimida sigue suprimida** | **No se adjudica.** *"Avanza declaró esta parada suprimida el 10/01. Su sistema sigue anunciando buses aquí. Confirma en la marquesina."* La contradicción es del operador |
+| **Si una parada suprimida sigue suprimida** | **No se adjudica.** *"Avanza la declaró suprimida el 10/01. Su sistema sigue anunciando buses. Confirma en la marquesina."* La contradicción es del operador |
 | **Qué expedición es un bus** (`trip_id`) | No se proyecta sobre el trazado. **El bus se pinta donde está** |
-| **Todos los buses de una línea** | **"Buses detectados"**, nunca *"todos los buses"*. La API da los que **se acercan** a una parada |
+| **Todos los buses de una línea** | **"Buses DETECTADOS"**, nunca *"todos"*. Avanza anuncia como mucho los dos siguientes de cada línea y sentido |
+| **Si Avanza responde** | ⭐ *"No hemos podido contar los autobuses. **Esto NO significa que no haya: significa que no lo sabemos.**"* |
+| **Si el usuario apagó todas las líneas** | ⚠️ *"Has ocultado todas las líneas"* **≠** *"no hay autobuses"*. Confundirlas sería fabricar un **silencio falso en la propia interfaz**, con el motor diciendo la verdad justo debajo |
 
 ---
 
@@ -137,77 +144,67 @@ semanas.**
 
 | | Tanda | Estado |
 |---|---|---|
-| — | **Auditoría de fuentes** (7 fases) | ✅ |
-| **1** | **Modelo de datos y capas** | ✅ **APROBADA** |
-| — | Repositorio | ✅ Público — [github.com/ablanquez/zetabus](https://github.com/ablanquez/zetabus) |
-| **2** | **Capa de datos** (GTFS, flota, puente de identidad) | ✅ 44 líneas · 934 paradas · puente 934/934 · flota 403 |
-| **3** | **Motor vivo** (scrape, caché, barrido, diff de desvíos) | ✅ **157 tests** · 3 bugs reales cazados por ellos |
-| **4** | Primera pantalla (parada → tiempos) | ⬜ ← **AQUÍ** |
-| **5** | El mapa (Leaflet, buses, trazado) | ⬜ |
+| — | Auditoría de fuentes (7 fases + diseño) | ✅ |
+| **1** | Modelo de datos y capas | ✅ |
+| — | Repositorio público | ✅ `github.com/ablanquez/zetabus` |
+| **2** | **Capa de datos** (GTFS, flota, puente de identidad) | ✅ 10 contadores de control cuadrados |
+| **3** | **Motor vivo** (scrape, caché, barrido, diff de desvíos) | ✅ Cerrado y estresado **antes** de la interfaz |
+| — | **Verificación visual** (Playwright) | ✅ El instrumento **se cazó a sí mismo dos veces** |
+| **4** | **Pantalla + clon del vocabulario visual** | ✅ **CERRADA** |
+| **5** | **El mapa** (Leaflet, buses, trazado) | ⬅️ **SIGUIENTE** |
 | **6** | Capa editorial (desvíos, supresiones, contradicción) | ⬜ |
-| **7** | Endurecimiento + **responsive** | ⬜ ⚠️ *Responsive DESDE EL BRIEFING, no ocho tandas después* |
+| **7** | Endurecimiento | ⬜ |
 | **8** | Despliegue + demo pública | ⬜ |
 
----
-
-## 7bis · Lo que el motor vivo YA SABE HACER (Tanda 3)
-
-| | |
-|---|---|
-| **Peticiones a Avanza** | 1 usuario: **4/min**. 10 usuarios en la misma parada: **4/min**. Una línea en pantalla: **72/min**. Techo duro: **4 req/s**, compartido entre workers. **Cero cuando nadie mira.** |
-| **Caché** | Dos pisos (memoria + disco con cerrojo `O_EXCL`). 20 peticiones concurrentes = **1 llamada**. **Expone la edad** del dato: "actualizado hace 18 s". |
-| **Barrido** | Paso 4: **18 peticiones en vez de 67**, y encuentra **los 11 autobuses**. Cobertura 100% (medido sobre una sola captura → cero deriva. Ver L6). |
-| **Desvíos** | Diff GTFS ↔ `get_stops_list`. **Se auto-apaga** cuando restauran la ruta. Verificado sobre desvíos reales del Coso y Avenida Valencia. |
-| **Estados** | `ok` · `rancio` · `ilegible` · `caido` · `desconocido`. El proyecto viejo tenía **uno**, y se comía cuatro situaciones distintas. |
-
-### ⭐ La asimetría, demostrada EN VIVO (13/07/2026, Plaza San Miguel)
-
-Dos postes, uno por sentido. Misma plaza, mismas líneas:
-
-| poste | sentido | el diff dice | la API viva dice |
-|---|---|---|---|
-| **745** | Camino Las Torres / Pinares | **DESVÍO** — la parada cae | (el autobús no pasa) |
-| **744** | San Gregorio / Vadorrey | **sin desvío** — la ruta no cambia | **"029 SAN GREGORIO, 1 min"** |
-
-Y el comunicado de Avanza dice **por escrito** que la 29 y la 39 en sentido San Gregorio/Vadorrey
-*"realizan su recorrido habitual **pero sin realizar parada** en Plaza San Miguel"*.
-
-→ El **745 es un desvío**: ZetaBus lo detecta y lo tacha solo.
-→ El **744 es una supresión**: **no lo detecta ninguna fuente**, y la API sigue anunciando ahí un
-autobús que no va a parar.
-
-**Misma plaza. Dos sentidos. Uno se puede saber y el otro no.** Eso es el proyecto entero.
+*(El responsive va dentro de cada tanda — la lección de Turnia se paga una sola vez.)*
 
 ---
 
 ## 8 · Cabos abiertos
 
-- ⚠️ **Workers de Hostinger** — sin verificar. La caché ya no depende de ello, pero **hay que
-  medirlo**. `/api/diag` ya devuelve `process.pid`: bastan 30 curl concurrentes en el despliegue.
-- ⚠️ **Los fixtures de los tests son SINTÉTICOS.** Un CI en verde **no demuestra** que Avanza no
-  haya cambiado su HTML. Lo único que lo demuestra es `npm run canario` (1 petición).
-- ⚠️ **La subida de la ráfaga de 8 a 40** (para que quepa el barrido de la N7, 31 peticiones)
-  **debilita la protección de ráfaga**. El techo sostenido (4/s) no cambia. Ver L5.
-- ⚠️ **2 vulnerabilidades moderadas de `postcss`**, transitivas de Next. `npm audit fix --force`
-  tocaría la versión de Next. Sin resolver, y dicho.
-- ⚠️ **El GTFS caduca el 05/10/2026** (84 días). **La app tiene que decirlo en pantalla.**
-- **Plaza Europa** y **Caspe 48** — dos supresiones sin resolver.
+- ⚠️ **DECISIÓN PENDIENTE:** ¿**mapa arriba** (como la referencia) o **llegadas arriba** (como
+  ahora)? Si es lo primero, hay que **retirar `flotacion.spec.ts` a mano**. El ejecutor lo dejó
+  a decisión de Antonio — **no lo hizo a escondidas**.
+- **"Cerca de mí"** — cero toques para el que está en la marquesina. **El mejor candidato de la
+  Tanda 5.**
+- **Workers de Hostinger** — sin medir. `/api/diag` ya devuelve `process.pid`; faltan 30 curl
+  concurrentes en el despliegue.
+- **El GTFS caduca el 05/10/2026.** La lógica del aviso está probada con fecha inyectada, pero
+  **la banda real no la ha visto nadie**.
+- **2 vulnerabilidades moderadas de `postcss`** (transitivas de Next). El fix tocaría la versión
+  de Next. → Endurecimiento.
 - **El histórico** — si algún día se quiere medir, **el reloj empieza el día que se encienda**.
-  Lo que no captures hoy, no se recupera.
-- **Solo se compararon 2 líneas de 45** contra `get_stops_list`. Y no se sabe con qué
-  frecuencia Avanza lo actualiza.
+- **Solo se compararon 2 líneas de 45** contra `get_stops_list`.
+- **La sincronía mapa↔lista no está probada contra un mapa**, porque no hay mapa. El estado ya
+  está listo; la prueba real es la Tanda 5.
 
 ---
 
-## 9 · Índice de documentos
+## 9 · Lecciones de método nacidas aquí
 
-| Documento | Para qué se abre |
-|---|---|
-| **[Auditorías, fases 1-7B](docs/auditoria/)** | Cómo se llegó aquí. Qué miente cada fuente y cómo se probó |
-| **[`docs/diseno/tanda1-modelo-de-datos.md`](docs/diseno/tanda1-modelo-de-datos.md)** | El modelo, las capas, la caché. **APROBADO con enmiendas** |
-| **[`docs/diseno/tanda1-cierre-de-cabos.md`](docs/diseno/tanda1-cierre-de-cabos.md)** | Las enmiendas al diseño. **Prevalece sobre el anterior** |
-| **[`docs/LECCIONES.md`](docs/LECCIONES.md)** | Método. Vale más allá de ZetaBus (L1 contador de control, L2 contar vs declarar, L3 regenerar vs parchear) |
-| **[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)** | La posición legal: *consumir ≠ redistribuir* |
+*(Detalle en `docs/LECCIONES.md`. Van a la guía maestra al cerrar el proyecto.)*
+
+**L1 · Todo extractor necesita un contador de control INDEPENDIENTE.**
+El parser del Anexo 5 devolvió **349 de 350 en silencio** por un carácter invisible. Se pilló
+contando matrículas (otra señal, otro formato). *Si cuentas con la misma regex con la que
+extraes, no has verificado nada.*
+
+**L2 · En cuanto dejas de declarar y empiezas a contar, el problema desaparece.**
+*Contar no necesita permiso. Declarar sí.* — Pero: *cambiar declarar por contar no te libra de
+decir la verdad sobre tu recuento.*
+
+**L3 · Un dato heredado sin procedencia no se corrige: se sustituye.**
+*"El coste real del parche no es que deje errores sin encontrar: es que **deja la causa viva**."*
+Y el sesgo es una señal: **62 errores, los 62 en la misma dirección**, no es ruido — tiene una
+causa única.
+
+**L7 · Verificar una capa y afirmar sobre otra.**
+Cometida cuatro veces en un mes, por los dos. *Leer el código no es usar la app. **Medirla
+tampoco. Hay que tocarla.*** Los filtros de línea sincronizados —lo mejor de la referencia— no
+los vio nadie hasta que alguien los **pulsó**.
+
+**Y una que sale del fallo real de hoy:**
+*Un test que solo pasa cuando la fuente ajena está sana **no es un test: es un test de Avanza**.*
 
 ---
 
@@ -216,4 +213,10 @@ autobús que no va a parar.
 > **El GTFS oficial da la topología, pero miente cuando hay obras.**
 > **La API viva da la ruta real, pero no las supresiones.**
 > **El comunicado da las supresiones, pero no caduca.**
-> **ZetaBus cruza las tres, y enseña la contradicción en vez de fingir que no existe.**
+> **Y a veces no responde ninguno de los tres.**
+>
+> **ZetaBus los cruza. Y cuando no sabe algo, LO DICE.**
+
+*(Probado el 13/07/2026: **Avanza se cayó de verdad** a mitad de una tanda. La pantalla dijo
+"no hemos podido contar los autobuses; esto NO significa que no haya, significa que no lo
+sabemos". **Nadie lo forzó. Pasó.**)*

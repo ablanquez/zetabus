@@ -150,6 +150,13 @@ export function paradaDelPoste(poste: unknown): StopId | null {
 }
 
 /** `null` = una línea que el GTFS no conoce. NO se descarta el bus: se anota. */
+/** El nombre de la parada de ese poste. Para poder decir "llega a X en N min". */
+export function nombreDePoste(poste: number): string {
+  const sid = paradaDePoste.get(poste);
+  const p = sid ? paradaPorId.get(String(sid)) : undefined;
+  return p?.name ?? `poste ${poste}`;
+}
+
 export function lineaDeEtiqueta(cruda: string): Line | null {
   return lineaPorCanon.get(canonLinea(cruda)) ?? null;
 }

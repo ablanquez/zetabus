@@ -158,20 +158,22 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
     expect(c).toMatch(/no todos/);
   });
 
-  it('el recuento dice "Detectamos", nunca "circulan todos"', () => {
-    const c = readFileSync('src/app/linea/[linea]/page.tsx', 'utf8');
-    expect(c).toMatch(/Detectamos \{total\}/);
-    expect(c).not.toMatch(/todos los autobuses de la línea/i);
+  it('el hallazgo dice "Hemos encontrado", nunca "hay" ni "todos"', () => {
+    // ⚠️ CAMBIÓ EN LA TANDA 5A. El recuento agregado ("los 11 son articulados")
+    //    se retiró: no le servía a nadie. Lo que sirve es el dato BRUTO —cuántos
+    //    hay y CUÁLES SON— y el usuario ve con sus ojos cuáles son articulados.
+    //    La geometría se explica sola; el texto hay que creérselo.
+    const c = readFileSync('src/components/BuscarBuses.tsx', 'utf8');
+    expect(c).toMatch(/Hemos encontrado/);
+    expect(sinComentarios(c)).not.toMatch(/todos los autobuses/i);
   });
 
-  it('⭐ el recuento NO afirma sobre los autobuses SIN FICHA', () => {
-    // Si de 11 detectados conozco la ficha de 9, NO puedo decir "los 11 son
-    // articulados": estaría afirmando sobre 2 vehículos de los que no sé nada.
-    // El denominador son LOS QUE TIENEN FICHA, y los que no, se dicen.
-    const c = readFileSync('src/app/linea/[linea]/page.tsx', 'utf8');
-    expect(c).toMatch(/conFicha/);
-    expect(c).toMatch(/de los que conocemos la ficha/);
-    expect(c).toMatch(/NO TENEMOS DATOS/);
+  it('⭐ un autobús SIN FICHA sigue diciendo SIN DATOS, nunca un defecto', () => {
+    // Esto NO cambia con la Tanda 5A: la ficha es la misma, y su regla también.
+    const c = readFileSync('src/components/FichaVehiculo.tsx', 'utf8');
+    expect(c).toMatch(/SIN DATOS/);
+    expect(c).toMatch(/No inventamos su modelo/);
+    expect(c).toMatch(/SIN VERIFICAR/);
   });
 
   it('los cinco estados tienen CINCO mensajes distintos', () => {
@@ -183,5 +185,68 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
     expect(c).toMatch(/No entendemos lo que ha contestado/);
     expect(c).toMatch(/no viene ningún autobús/);
     expect(c).toMatch(/NO significa que no haya autobuses/);
+  });
+});
+
+describe('⛔ EL BARRIDO NO SE DISPARA SOLO. NUNCA.', () => {
+  /**
+   * ⚠️ ANTONIO: "comprueba que NO QUEDA NINGÚN OTRO SITIO donde se dispare solo.
+   *              CUÉNTALO, no lo supongas."
+   *
+   * Lo conté. Y HABÍA OTRO: `/api/linea/[linea]/route.ts`, un Route Handler de la
+   * Tanda 3 que barría la línea entera —y encima calculaba los desvíos— con un
+   * simple GET. No lo llamaba nadie de la interfaz, pero era una URL PÚBLICA: el
+   * día que un rastreador la encontrara, disparaba 18 peticiones a Avanza sin que
+   * nadie hubiera pulsado nada.
+   *
+   * Se borró. Y este test existe para que no vuelva a colarse otro.
+   */
+  const rutas = ficheros('src/app', ['.tsx', '.ts']);
+
+  it('barrerLinea SOLO se llama desde /api/barrido, que necesita un botón', () => {
+    const culpables = rutas.filter(
+      (f) => /barrerLinea/.test(sinComentarios(readFileSync(f, 'utf8'))) && !f.includes('barrido'),
+    );
+    expect(culpables, 'un barrido que se dispara solo no se puede defender').toEqual([]);
+  });
+
+  it('NINGUNA página (page.tsx) toca Avanza al renderizarse... salvo la de parada', () => {
+    // La parada SÍ consulta al abrirse, y es correcto: es UNA petición, y es
+    // exactamente el dato por el que el usuario ha abierto esa pantalla.
+    // La LÍNEA, no: son 18, y quien solo quiere ver el recorrido no las pide.
+    const paginas = rutas.filter((f) => f.endsWith('page.tsx'));
+    const queBarren = paginas.filter((f) => {
+      const c = sinComentarios(readFileSync(f, 'utf8'));
+      return /barrerLinea|leerPoste/.test(c);
+    });
+    expect(queBarren).toEqual([]);
+
+    const linea = readFileSync('src/app/linea/[linea]/page.tsx', 'utf8');
+    expect(sinComentarios(linea), 'la vista de línea NO puede barrer al abrirse').not.toMatch(
+      /barrerLinea|motor\(/,
+    );
+    expect(linea, 'tiene que haber un botón').toMatch(/BuscarBuses/);
+  });
+
+  it('⭐ el titular NO afirma más de lo que sabe', () => {
+    const c = readFileSync('src/components/BuscarBuses.tsx', 'utf8');
+    expect(c, '"Hemos encontrado N" — es un hallazgo, no un censo').toMatch(/Hemos encontrado/);
+    // ⛔ Lo que NO puede decir, pase lo que pase:
+    const codigo = sinComentarios(c);
+    expect(codigo, 'nunca "todos los autobuses"').not.toMatch(/todos los autobuses/i);
+    expect(codigo, 'nunca "hay N autobuses" a secas').not.toMatch(/Hay \$\{n\}/);
+    // Y la salvedad que hace que el titular sea verdad:
+    expect(c.replace(/\s+/g, ' ')).toMatch(/Puede haber alguno más que no aparezca aquí/);
+    expect(c).toMatch(/sin respuesta/);
+  });
+
+  it('la barra de progreso mide POSTES REALES, no una animación', () => {
+    const c = sinComentarios(readFileSync('src/components/BuscarBuses.tsx', 'utf8'));
+    // El ancho sale del contador de postes hechos, no de un keyframes.
+    expect(c).toMatch(/hechos \/ total/);
+    expect(c).toMatch(/aria-valuenow=\{hechos\}/);
+    expect(c, 'una barra animada que no mide nada es un instrumento mentiroso').not.toMatch(
+      /animate-pulse|animate-\[/,
+    );
   });
 });

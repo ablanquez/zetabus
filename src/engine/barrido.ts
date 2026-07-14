@@ -37,20 +37,41 @@ import type { LatLon, LineId, Observacion, VehicleId } from '@/core';
 import type { BusProfile } from '@/modes/bus/profile';
 import { leerPoste } from '@/sources/avanza/poste';
 import type { Dependencias } from './llegadas';
-import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada } from './topologia';
+import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada, nombreDePoste } from './topologia';
 
 /** Paso por defecto. 4 km de alcance y ~250 m entre paradas → sobra margen. */
 export const PASO = 4;
 
 export interface AutobusDetectado {
   readonly coche: VehicleId;
+  /** El destino que anuncia Avanza. En la práctica, ES el sentido. */
   readonly destino: string;
   readonly posicion: LatLon | null;
   /** El más cercano de los tiempos con que se le vio, en minutos. */
   readonly etaMinutos: number;
+  /**
+   * ⭐ LA PARADA A LA QUE ESTÁ A PUNTO DE LLEGAR, y su nombre.
+   *
+   * ⚠️ OJO CON LA TENTACIÓN: **no es "dónde está el autobús"**. Es el poste del
+   * barrido que lo ha visto MÁS CERCA. Un autobús a 1 minuto de esa parada está,
+   * efectivamente, casi ahí. Uno a 14 minutos puede estar a kilómetros. Por eso
+   * la pantalla dice "llega a X en N min" y NO "está en X": lo primero es lo que
+   * la fuente afirma; lo segundo sería una deducción nuestra.
+   */
+  readonly posteMasCercano: number;
+  readonly paradaMasCercana: string;
   readonly perfil: BusProfile | null;
   /** En cuántos postes del barrido apareció. Sirve para depurar, no para decidir. */
   readonly vistoEnPostes: number;
+}
+
+/** Lo que ha pasado con UN poste del barrido. Se emite EN CUANTO ocurre. */
+export interface ProgresoPoste {
+  readonly hechos: number;
+  readonly total: number;
+  readonly poste: number;
+  readonly resultado: 'ok' | 'rancio' | 'fallo';
+  readonly motivo?: string;
 }
 
 export interface BarridoDeLinea {
@@ -85,6 +106,19 @@ export interface OpcionesBarrido {
   readonly paso?: number;
   /** ⚠️ Solo para el script de medida: barrer TODOS los postes. */
   readonly completo?: boolean;
+  /**
+   * ⭐ SE LLAMA EN CUANTO CADA POSTE TERMINA. No al final: EN CUANTO TERMINA.
+   *
+   * Es lo que permite que la barra de progreso mida algo de verdad. Una barra
+   * que se rellena con una animación fija, sin saber por dónde va el trabajo, es
+   * un instrumento mentiroso: promete información y no da ninguna. Ésta cuenta
+   * postes reales.
+   *
+   * ⚠️ Y LOS FALLOS SE EMITEN AQUÍ, MIENTRAS OCURREN. Así ya no tapan el
+   *    resultado: suceden ANTES que él. Eso arregla solo el problema del bloque
+   *    de avisos que gritaba más que el dato.
+   */
+  readonly onPoste?: (p: ProgresoPoste) => void;
 }
 
 export async function barrerLinea(
@@ -126,15 +160,32 @@ export async function barrerLinea(
 
   // Las peticiones van por la caché, así que un barrido de la línea 35 y alguien
   // mirando una parada de la 35 COMPARTEN entradas. No se cuentan dos veces.
+  //
+  // ⭐ Y CADA UNA AVISA EN CUANTO TERMINA, no al final. Siguen yendo en paralelo
+  //    (con su vuelo único y su techo de fichas); lo único que cambia es que el
+  //    progreso se cuenta según van cayendo, en lugar de esperar a que caigan
+  //    todas y entonces decir "18 de 18" de golpe, que no es una barra: es un
+  //    interruptor.
+  let hechos = 0;
+  const total = aConsultar.length;
   const lecturas = await Promise.all(
     aConsultar.map(async (poste) => {
       const r = await dep.cache.obtener(`poste:${poste}`, () => leerPoste(poste, dep.transporte));
+      hechos++;
+      o.onPoste?.({
+        hechos,
+        total,
+        poste,
+        resultado: r.tipo === 'fallo' ? 'fallo' : r.tipo === 'rancio' ? 'rancio' : 'ok',
+        ...(r.tipo !== 'fresco' ? { motivo: r.motivo } : {}),
+      });
       return { poste, r };
     }),
   );
 
   interface Acumulado {
     destino: string; posicion: LatLon | null; eta: number; postes: number;
+    posteCercano: number;
   }
   const porCoche = new Map<string, Acumulado>();
   let leidos = 0;
@@ -180,6 +231,7 @@ export async function barrerLinea(
         if (ll.etaMinutos < previo.eta) {
           previo.eta = ll.etaMinutos;
           previo.destino = ll.destino;
+          previo.posteCercano = poste;
         }
         previo.posicion ??= posiciones.get(ll.coche) ?? null;
       } else {
@@ -188,6 +240,7 @@ export async function barrerLinea(
           posicion: posiciones.get(ll.coche) ?? null,
           eta: ll.etaMinutos,
           postes: 1,
+          posteCercano: poste,
         });
       }
     }
@@ -209,7 +262,9 @@ export async function barrerLinea(
       destino: a.destino,
       posicion: a.posicion,
       etaMinutos: a.eta,
-      perfil: perfilDe(coche),
+      posteMasCercano: a.posteCercano,
+      paradaMasCercana: nombreDePoste(a.posteCercano),
+      perfil: perfilDe(coche), // ← null = SIN DATOS. Jamás un valor por defecto.
       vistoEnPostes: a.postes,
     }))
     .sort((x, y) => x.etaMinutos - y.etaMinutos);

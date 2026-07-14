@@ -187,86 +187,39 @@ test.describe('⭐ EL ITINERARIO (clonado: nodos + transbordos)', () => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('⭐ EL AVISO NO PUEDE GRITAR MÁS QUE EL DATO', async ({ page }, info) => {
-  // ⚠️ EL BLOQUE DE AVISOS DE /linea/35 ESTABA ROTO: tres avisos de timeout que
-  //    ocupaban MÁS que el recuento, repetían tres veces la misma explicación, y
-  //    enseñaban la URL del endpoint de Avanza.
+test('⭐ EL AVISO YA NO PUEDE GRITAR MÁS QUE EL DATO: OCURRE ANTES QUE ÉL', async ({ page }, info) => {
+  // ⚠️ ESTE TEST CAMBIÓ EN LA TANDA 5A, Y EL CAMBIO ES EL ARREGLO.
   //
-  //    Y el daño no es estético: un aviso que grita más que el dato hace que se
-  //    dejen de leer LOS DOS. El usuario aprende a saltarse los avisos, y
-  //    entonces el día que el aviso IMPORTA tampoco lo lee.
-  await page.goto('/linea/35', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2_500);
-  await capturar(page, `capturas/zetabus/linea-avisos-${info.project.name}.png`);
-
-  // ⚠️ AVANZA SE CAE. HOY MISMO, MIENTRAS ESCRIBÍA ESTO, SE CAYÓ:
+  // Antes, los avisos del barrido salían JUNTO al resultado y lo tapaban: tres
+  // párrafos de timeout ocupando más que el hallazgo. Se resumieron, y estaba
+  // mejor. Pero la solución de verdad era otra:
   //
-  //     curl -X POST gps.avanzabus.com/.../fRefrescaEmpresaExternos
-  //     → HTTP 000, timeout a los 20 s
+  //   ⇒ AHORA LOS FALLOS SE DICEN **MIENTRAS OCURREN**, en la barra de progreso.
+  //     Ya no compiten con el resultado, porque SUCEDEN ANTES QUE ÉL.
   //
-  // Y la pantalla hizo lo correcto: "No hemos podido contar los autobuses de la
-  // línea 35. Esto NO significa que no haya autobuses: significa que no lo
-  // sabemos."  Ese es un estado LEGÍTIMO, no un fallo del test.
-  //
-  // ⇒ Un test que solo pasa cuando la fuente AJENA está sana NO ES UN TEST: es
-  //   un test de Avanza. Y nosotros no controlamos Avanza. Se comprueban LOS DOS
-  //   caminos, y en los dos la pantalla tiene que ser honesta.
-  const fallido = page.locator('[data-papel="recuento-fallido"]');
-  if ((await fallido.count()) > 0) {
-    console.log(`
-  [${info.project.name}] Avanza NO responde ahora mismo.`);
-    await expect(fallido).toContainText(/NO significa que no haya autobuses/);
-    await expect(page.locator('body')).not.toContainText('gps.avanzabus.com');
-    // ⛔ Y NUNCA, JAMÁS, "no hay autobuses en esta línea".
-    await expect(page.locator('body')).not.toContainText(/no detectamos ningún autobús/i);
-    return;
-  }
+  // El problema no se maquilló: desapareció al cambiar cuándo se cuenta la cosa.
+  await page.goto('/linea/35?fingir=dos-lineas', { waitUntil: 'networkidle' });
 
-  const recuento = page.locator('[data-papel="recuento"]');
-  await expect(recuento).toBeVisible();
-  const cajaRec = (await recuento.boundingBox())!;
+  // 1 · Al abrir NO hay ni resultado ni avisos. Solo el botón.
+  expect(await page.locator('[data-papel="hallazgo"]').count()).toBe(0);
+  await expect(page.locator('[data-papel="boton-barrer"]')).toBeVisible();
 
-  const avisos = page.locator('[data-papel="avisos-barrido"]');
-  if ((await avisos.count()) === 0) {
-    console.log(`\n  [${info.project.name}] (ningún poste falló: no hay aviso que medir)`);
-    return;
-  }
-  const cajaAv = (await avisos.boundingBox())!;
+  // 2 · Se pulsa. Los fallos, si los hay, salen EN LA BARRA.
+  await page.locator('[data-papel="boton-barrer"]').click();
+  await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 60_000 });
+  await capturar(page, `capturas/zetabus/linea-hallazgo-${info.project.name}.png`);
 
-  console.log(`\n  [${info.project.name}] recuento: ${Math.round(cajaRec.height)} px de alto`);
-  console.log(`               aviso:    ${Math.round(cajaAv.height)} px de alto`);
+  const hallazgo = page.locator('[data-papel="hallazgo"]');
+  const salvedad = page.locator('[data-papel="hallazgo-salvedad"]');
+  const cajaH = (await hallazgo.boundingBox())!;
+  const cajaS = (await salvedad.boundingBox())!;
 
-  // ⭐ EL RECUENTO MANDA. Siempre.
-  expect(cajaAv.height, 'el aviso NO puede ser más alto que el recuento').toBeLessThan(cajaRec.height);
+  console.log(`
+  [${info.project.name}] hallazgo: ${Math.round(cajaH.height)} px · salvedad: ${Math.round(cajaS.height)} px`);
 
-  // El detalle está PLEGADO por defecto.
-  expect(await page.locator('[data-papel="avisos-detalle"]').count()).toBe(0);
+  // ⭐ EL HALLAZGO MANDA. La salvedad lo acompaña, no lo tapa.
+  expect(cajaS.height, 'la letra pequeña NO puede ser más alta que el titular').toBeLessThan(cajaH.height);
 
-  // ⛔ Y LA URL DEL ENDPOINT DE AVANZA NO SE ENSEÑA. Eso es para el log.
+  // ⛔ Y LA URL DE AVANZA NO APARECE EN LA INTERFAZ. Eso es para el log.
   await expect(page.locator('body')).not.toContainText('gps.avanzabus.com');
-
-  // ⭐ Y LA PANTALLA NO PUEDE CONTRADECIRSE CONSIGO MISMA.
-  //    Llegó a decir, a la vez: "Detectamos 4 autobuses" y "17 de 17 postes NO
-  //    RESPONDIERON". Si no respondió ninguno, ¿de dónde salían los cuatro?
-  //    De la caché — y servirlos estaba bien. Lo que estaba mal era el resumen,
-  //    que contaba como "fallido" a todo poste que generase un aviso, incluidos
-  //    los que SÍ dieron dato, solo que viejo.
-  const detectados = Number(await recuento.getAttribute('data-total'));
-  const texto = await page.locator('[data-papel="avisos-barrido"]').innerText();
-  const m = /(\d+) de (\d+) postes no respondieron/.exec(texto);
-  if (m && detectados > 0) {
-    const [, fallidos, consultados] = m.map(Number);
-    console.log(`  detectados: ${detectados} · postes fallidos: ${fallidos}/${consultados}`);
-    expect(
-      fallidos,
-      `⛔ dice que detecta ${detectados} autobuses Y que NINGÚN poste respondió. Imposible.`,
-    ).toBeLessThan(consultados);
-  }
-
-  // Pero si alguien lo pide, está.
-  await avisos.locator('button').click();
-  await page.waitForTimeout(200);
-  await expect(page.locator('[data-papel="avisos-detalle"]')).toBeVisible();
-  await expect(page.locator('body')).not.toContainText('gps.avanzabus.com'); // ni desplegado
-  console.log('  ✅ el detalle se despliega si se pide · la URL de Avanza NO aparece ni desplegada');
 });

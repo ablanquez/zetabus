@@ -1,12 +1,9 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { barrerLinea } from '@/engine/barrido';
-import { motor } from '@/engine/motor';
 import { idLinea, lineas, sentidosDe } from '@/engine/topologia';
-import { fingimientoDe, transporteDe } from '@/engine/fingir';
+import { fingimientoDe } from '@/engine/fingir';
 import { Itinerario } from '@/components/Itinerario';
-import { AvisosDelBarrido } from '@/components/AvisosDelBarrido';
+import { BuscarBuses } from '@/components/BuscarBuses';
 import type { Line, LineId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
@@ -42,14 +39,12 @@ export default async function LineaPage({ params, searchParams }: Props) {
         <h1 className="text-[18px] font-black leading-tight sin-recortar">{l.longName}</h1>
       </div>
 
-      {/* ⭐ EL RECUENTO. Es lo primero, y es el producto.
-          Va en <Suspense> porque barrer una línea son 18-31 peticiones: sin esto,
-          la página entera esperaría y el usuario vería una pantalla en blanco.
-          ⚠️ Y el fallback DICE que está contando. NUNCA se pinta el estado bueno
-             por defecto mientras se comprueba: eso fabrica un silencio falso. */}
-      <Suspense fallback={<ContandoTodavia linea={l.shortName} />}>
-        <Recuento id={id} etiqueta={l.shortName} fingir={fingir} />
-      </Suspense>
+      {/* ⭐ EL BARRIDO, BAJO DEMANDA. CERO PETICIONES AL ABRIR ESTA PÁGINA.
+          Antes había aquí un <Suspense> con un barrido automático: 18 peticiones a
+          Avanza que nadie había pedido, cada vez que alguien abría la línea solo
+          para mirar el recorrido. El repositorio promete en público no abusar, y
+          eso no se podía defender. Ahora solo se barre si se PULSA. */}
+      <BuscarBuses linea={l.shortName} fingir={fingir} />
 
       {/* Sentido: dos pestañas. Y el enlace lleva el sentido DENTRO, para que se
           pueda compartir. (La referencia leía `?sentido=` y no lo generaba nunca:
@@ -79,142 +74,6 @@ export default async function LineaPage({ params, searchParams }: Props) {
       )}
 
       <Paradas sentido={activo} linea={l} lineaId={id} fingir={fingir} />
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ContandoTodavia({ linea }: { linea: string }) {
-  return (
-    <div
-      className="rounded-2xl border-2 border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-4"
-      data-papel="contando"
-      role="status"
-    >
-      <p className="text-[14px] font-bold leading-snug sin-recortar">
-        Contando los autobuses de la línea {linea}…
-      </p>
-      <p className="mt-1 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
-        Estamos preguntando poste a poste. Tarda unos segundos.
-      </p>
-    </div>
-  );
-}
-
-/**
- * ⭐ EL RECUENTO. LA L2, EN PANTALLA.
- *
- *   "De los 11 autobuses que vemos ahora en la línea 35, los 11 son articulados."
- *
- * ═══════════════════════════════════════════════════════════════════════════
- *  ES UN RECUENTO, NO UNA DECLARACIÓN. Y por eso:
- *
- *   · No necesita permiso de nadie. No hay que citar ningún contrato.
- *   · No miente en domingo. (La 35 pasa de 15 articulados a 2 en festivo. Una
- *     frase declarativa —"la 35 lleva articulados"— sería falsa ese día. Un
- *     recuento, no: cuenta los que hay.)
- *   · No caduca. Se vuelve a contar cada vez.
- * ═══════════════════════════════════════════════════════════════════════════
- *
- * ⚠️ Y AQUÍ ESTÁ LA TRAMPA QUE CASI ME COMO, Y QUE ES LA MÁS FEA DE TODAS:
- *
- * Si de 11 autobuses detectados conozco la ficha de 9, **NO PUEDO DECIR "los 11
- * son articulados"**. Podría decir "los 9 que conozco son articulados", pero si
- * digo "los 11", estoy afirmando algo sobre 2 vehículos de los que NO SÉ NADA.
- *
- * Sería exactamente el pecado del proyecto viejo con otra cara: rellenar el
- * hueco con lo que parece razonable. Y el hueco no es raro: el registro oficial
- * cubre el 87% de lo que circula.
- *
- * ⇒ El denominador del recuento son LOS QUE TIENEN FICHA. Y los que no la
- *   tienen SE DICEN, en la misma frase, para que nadie los confunda con ceros.
- */
-async function Recuento({ id, etiqueta, fingir }: { id: LineId; etiqueta: string; fingir: Fingimiento | null }) {
-  const r = await barrerLinea(id, motor(transporteDe(fingir), fingir));
-
-  if (r.estado !== 'ok') {
-    return (
-      <div
-        className="rounded-2xl border-2 border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-4"
-        data-papel="recuento-fallido"
-        role="status"
-      >
-        <p className="text-[14px] font-bold leading-snug sin-recortar">
-          No hemos podido contar los autobuses de la línea {etiqueta}
-        </p>
-        <p className="mt-1 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
-          {r.motivo}
-          {' '}
-          <strong>Esto NO significa que no haya autobuses: significa que no lo sabemos.</strong>
-        </p>
-      </div>
-    );
-  }
-
-  const buses = r.datos.detectados;
-  const total = buses.length;
-  const conFicha = buses.filter((b) => b.perfil !== null);
-  const sinFicha = total - conFicha.length;
-  const articulados = conFicha.filter((b) => b.perfil!.busClass === 'articulado').length;
-
-  return (
-    <div
-      className={`rounded-2xl border-2 border-[var(--color-tinta)] bg-[var(--color-papel)] p-4 ${r.edadSegundos >= 45 ? 'es-rancio' : ''}`}
-      data-papel="recuento"
-      data-total={total}
-      data-con-ficha={conFicha.length}
-      data-articulados={articulados}
-    >
-      {total === 0 ? (
-        <p className="text-[15px] font-bold leading-snug sin-recortar">
-          Ahora mismo no detectamos ningún autobús en la línea {etiqueta}.
-        </p>
-      ) : (
-        <>
-          <p className="text-[17px] font-black leading-snug sin-recortar" data-papel="recuento-titular">
-            {/* ⚠️ "DETECTAMOS", no "circulan". La API da los autobuses que SE
-                ACERCAN a una parada: uno que vaya entre dos paradas lejanas
-                existe y puede no salir. Decir "todos" sería mentir. */}
-            Detectamos {total} {total === 1 ? 'autobús' : 'autobuses'} en la línea {etiqueta} ahora mismo.
-          </p>
-
-          {conFicha.length > 0 && (
-            <p className="mt-2 text-[15px] font-bold leading-snug sin-recortar" data-papel="recuento-articulados">
-              {articulados === conFicha.length && conFicha.length > 1
-                ? `Los ${conFicha.length} de los que conocemos la ficha son ARTICULADOS.`
-                : articulados === 0
-                  ? `Ninguno de los ${conFicha.length} de los que conocemos la ficha es articulado.`
-                  : `${articulados} de los ${conFicha.length} de los que conocemos la ficha son articulados.`}
-            </p>
-          )}
-
-          {/* ⭐ LOS QUE NO SABEMOS. En la MISMA frase, no en una nota al pie. */}
-          {sinFicha > 0 && (
-            <p
-              className="mt-2 text-[13px] font-semibold leading-snug text-[var(--color-aviso)] sin-recortar"
-              data-papel="recuento-sin-ficha"
-            >
-              ⚠ De {sinFicha === 1 ? 'otro autobús' : `otros ${sinFicha}`} NO TENEMOS DATOS: no
-              {sinFicha === 1 ? ' está' : ' están'} en el registro oficial. No {sinFicha === 1 ? 'lo contamos' : 'los contamos'}
-              {' '}ni a favor ni en contra.
-            </p>
-          )}
-        </>
-      )}
-
-      <p className="mt-3 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
-        Contado ahora, no declarado. {r.datos.postesLeidos} de {r.datos.postesConsultados} postes
-        leídos (la línea tiene {r.datos.postesDeLaLinea}). Dato de hace {r.edadSegundos} s.
-      </p>
-
-      {/* ⚠️ EL AVISO NO PUEDE GRITAR MÁS QUE EL DATO. Ver AvisosDelBarrido. */}
-      <AvisosDelBarrido
-        avisos={r.datos.avisos}
-        postesConsultados={r.datos.postesConsultados}
-        postesFallidos={r.datos.postesFallidos}
-        postesRancios={r.datos.postesRancios}
-      />
     </div>
   );
 }

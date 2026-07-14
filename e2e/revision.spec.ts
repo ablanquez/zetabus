@@ -206,23 +206,19 @@ test('la portada aguanta a este tamaño', async ({ page }, info) => {
   expect(r.scroll).toBeLessThanOrEqual(0);
 });
 
-test('la pantalla de línea aguanta, y el RECUENTO se ve', async ({ page }, info) => {
-  await page.goto('/linea/35?fingir=sin-verificar', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(1_000);
+test('la pantalla de línea aguanta a este tamaño (y NO barre al abrirse)', async ({ page }, info) => {
+  await page.goto('/linea/35', { waitUntil: 'networkidle' });
   await capturar(page, `capturas/zetabus/linea-${info.project.name}.png`);
 
-  const recuento = page.locator('[data-papel="recuento"]');
-  await expect(recuento).toBeVisible();
-  const total = await recuento.getAttribute('data-total');
-  const conFicha = await recuento.getAttribute('data-con-ficha');
-  const art = await recuento.getAttribute('data-articulados');
-  console.log(`\n  [${info.project.name}] RECUENTO → detectados ${total} · con ficha ${conFicha} · articulados ${art}`);
-
-  // ⚠️ "DETECTAMOS", nunca "circulan todos".
-  await expect(recuento).toContainText(/Detectamos/);
-  await expect(page.locator('body')).not.toContainText(/todos los autobuses de la línea/i);
+  // ⚠️ CAMBIÓ EN LA TANDA 5A: ya no hay recuento automático. Hay un BOTÓN.
+  //    Abrir la línea no cuesta ni una petición a Avanza.
+  await expect(page.locator('[data-papel="boton-barrer"]')).toBeVisible();
+  expect(await page.locator('[data-papel="hallazgo"]').count(), 'nada barrido al abrir').toBe(0);
+  await expect(page.locator('[data-papel="itinerario"]')).toBeVisible();
 
   const r = await revisar(page, `línea · ${info.project.name}`);
   expect(r.fuera).toEqual([]);
+  expect(r.cortados).toEqual([]);
   expect(r.scroll).toBeLessThanOrEqual(0);
+  expect(r.tactil).toEqual([]);
 });
