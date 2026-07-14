@@ -135,7 +135,33 @@ export async function llegadasDePoste(
     nombreParada: p.name,
     poste,
     posicionParada: lectura.marcadorParada ?? p.position,
-    llegadas,
+    /**
+     * ⭐⭐ ORDEN ESTRICTO POR TIEMPO. Y ESTO ES COMPORTAMIENTO, NO ESTÉTICA.
+     *
+     * ⛔ Avanza agrupa su HTML por (línea, destino), y el parser conservaba ese
+     *    orden. Así que la pantalla decía: TODOS los de la 39, luego TODOS los
+     *    de la 29. Con la 39 a 12 y 25 minutos ARRIBA, y la 29 a 1 minuto abajo.
+     *
+     * El que está en la marquesina no quiere saber "qué hay de la línea 39".
+     * Quiere saber **QUÉ LLEGA ANTES**. Y con el orden agrupado, la respuesta a
+     * la única pregunta que se hace estaba enterrada en mitad de la lista.
+     *
+     * La referencia lo hace bien: 0 · 1 · 5 · 6 · 10 · 12 · 12 · 25. Orden puro.
+     *
+     * ⚠️ Y SE ORDENA AQUÍ, EN EL MOTOR, NO EN EL COMPONENTE. Si el orden viviera
+     *    en la pantalla, cualquier otra pantalla que consumiera esto (o un
+     *    endpoint, o el día de mañana un widget) heredaría el orden de Avanza
+     *    sin enterarse. El contrato es del dato, no del pintado.
+     *
+     * El desempate es por coche, para que dos autobuses al mismo minuto no bailen
+     * de sitio entre dos refrescos: una lista que se reordena sola cada 15 s es
+     * ilegible aunque cada foto suya sea correcta.
+     */
+    llegadas: [...llegadas].sort(
+      (a, b) =>
+        a.etaMinutos - b.etaMinutos ||
+        String(a.coche).localeCompare(String(b.coche), 'es', { numeric: true }),
+    ),
     avisos,
   };
 

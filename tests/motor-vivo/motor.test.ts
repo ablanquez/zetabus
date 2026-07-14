@@ -190,8 +190,36 @@ describe('⚠️ LOS ESTADOS RAROS', () => {
     expect(canonLinea('CI2')).toBe('CI2');
     expect(canonLinea('Ci2')).toBe('CI2');
     expect(canonLinea(' 007 ')).toBe('7');
-    // ...y no se pasa de listo: "0X" NO se convierte en "X".
-    expect(canonLinea('0X')).toBe('0X');
+  });
+
+  /**
+   * ⚠️⚠️ AQUÍ HABÍA UNA ASERCIÓN QUE DEFENDÍA EL BUG. QUEDA ESCRITO.
+   *
+   * Este test decía, con toda la solemnidad de una invariante:
+   *
+   *     // ...y no se pasa de listo: "0X" NO se convierte en "X".
+   *     expect(canonLinea('0X')).toBe('0X');
+   *
+   * Es decir: protegía una línea HIPOTÉTICA llamada "0X", que no existe ni ha
+   * existido nunca... y al hacerlo obligaba a que los ceros solo se quitaran
+   * delante de un dígito. Que es EXACTAMENTE lo que rompía la C1 y la C4, que sí
+   * existen y sí circulan.
+   *
+   * ⇒ Un test verde defendiendo un caso imaginario, mientras dos líneas reales
+   *   salían sin color, sin enlace y con un aviso falso. Es la tercera vez este
+   *   mes que encuentro un test cuidando de un fallo.
+   *
+   * La protección de verdad NO es esta aserción: es comprobar que la premisa
+   * ("ninguna línea empieza por cero") SIGA SIENDO CIERTA en los datos. Y eso
+   * vive en `identidad-de-linea.test.ts`, contado contra el GTFS real.
+   */
+  it('⭐ el cero de cabeza es RELLENO del operador, y se quita SIEMPRE', () => {
+    // Medido contra Avanza el 14/07/2026 (postes 730 y 1040): manda "0C1" y "0C4".
+    // Y el propio GTFS lo confirma: sus service_id son `0C1003F_…`, `0C4008L_…`.
+    expect(canonLinea('0C1')).toBe('C1');
+    expect(canonLinea('0C4')).toBe('C4');
+    // El caso degenerado sí se protege: "000" no puede quedarse en "".
+    expect(canonLinea('000')).toBe('000');
   });
 
   it('la línea "039" de Avanza SÍ casa con la 39 del GTFS, de punta a punta', async () => {

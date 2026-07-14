@@ -40,7 +40,10 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
+import type { TerminalDeSentido, TipoDeDia } from '@/sources/gtfs-nap/terminal';
 import artefacto from '@/generated';
+
+export type { TerminalDeSentido, TipoDeDia };
 
 interface Artefacto {
   readonly generatedAt: string;
@@ -53,6 +56,8 @@ interface Artefacto {
   }[];
   readonly posteByStopId: Record<string, number>;
   readonly flota: Record<string, BusProfile>;
+  readonly terminales?: TerminalDeSentido[];
+  readonly fechasDeReferencia?: Record<TipoDeDia, string | null>;
 }
 
 const A = artefacto as unknown as Artefacto;
@@ -68,11 +73,49 @@ const A = artefacto as unknown as Artefacto;
  *     "CI2" → "CI2"     mayúsculas: se igualan las dos partes
  *     "Ci2" → "CI2"
  *
- * ⚠️ Los ceros se quitan SOLO si delante de un dígito. Una futura línea "0X" no
- *    se convertiría en "X" por accidente.
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⛔ AQUÍ ESTABA EL "0C1". Y NO ERA UN FALLO DE PINTADO: ERA ÉSTE.
+ *
+ * La versión anterior quitaba los ceros SOLO si el carácter siguiente era un
+ * DÍGITO:  `.replace(/^0+(?=\d)/, '')`
+ *
+ * Es decir: trataba la etiqueta de línea COMO SI FUERA UN NÚMERO. Y "C1" no es
+ * un número. Resultado, medido contra Avanza el 14/07/2026 (postes 730 y 1040):
+ *
+ *     Avanza manda ......... "0C1"      GTFS tiene ......... "C1"
+ *     canonLinea("0C1") → "0C1"    ≠    canonLinea("C1") → "C1"
+ *
+ * ⇒ NO CASABAN. Y las consecuencias no eran cosméticas:
+ *      · el autobús salía con la etiqueta "0C1" en vez de "C1"
+ *      · SIN COLOR de línea y SIN ENLACE (no había GTFS que enganchar)
+ *      · y con un AVISO FALSO: "la línea 0C1 está circulando pero no existe en
+ *        el GTFS". Un aviso falso enseña a ignorar los avisos. Ése es el daño.
+ *
+ * ⭐ POR QUÉ EL CERO ESTÁ AHÍ, Y NO ES UNA RAREZA DE LA API:
+ *
+ * El operador codifica la línea en TRES caracteres, rellenando con ceros:
+ *     "21" → "021"      "C1" → "0C1"      "CI1" → "CI1" (ya mide 3)
+ *
+ * Y no es una suposición: **el propio GTFS lo hace**. Sus `service_id` son
+ * `021008L_02101_`, `0C1003F_0C1E1_`, `CI1008F_CI101_`. El relleno es del
+ * OPERADOR, no de la API. Por eso la regla correcta es quitar el relleno, sin
+ * mirar qué viene detrás.
+ *
+ * (La referencia llegó a lo mismo por el camino corto: `raw.replace(/^0+/,"")`.)
+ *
+ * ⚠️ EL SUPUESTO QUE ESTO ASUME, DICHO EN VOZ ALTA: que ninguna línea del GTFS
+ *    empieza por cero. Si un día la hubiera, "0X" se convertiría en "X" y
+ *    volveríamos a tener el mismo lío al revés. NO se confía en que alguien se
+ *    acuerde: el test `ninguna línea del GTFS empieza por 0` se pone rojo.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * El `|| etiqueta` del final protege el caso degenerado: una etiqueta que sea
+ * TODO ceros ("000") no puede convertirse en la cadena vacía.
  */
-export const canonLinea = (etiqueta: string): string =>
-  etiqueta.trim().toUpperCase().replace(/^0+(?=\d)/, '');
+export const canonLinea = (etiqueta: string): string => {
+  const s = etiqueta.trim().toUpperCase();
+  return s.replace(/^0+/, '') || s;
+};
 
 // ── Índices, construidos una vez al cargar el módulo ─────────────────────────
 
@@ -229,3 +272,37 @@ export function grupoDe(l: Line): GrupoLinea {
   if (/^C\d/i.test(s)) return 'lanzadera';
   return 'diurna';
 }
+
+/**
+ * ⭐ ¿Es una línea nocturna? La pregunta que responde LA INVERSIÓN del chip (D1).
+ *
+ * Vive aquí, y no en el componente, para que **haya un solo sitio que lo decida**.
+ * Si el chip de la lista, el del itinerario y el del índice lo dedujeran cada uno
+ * por su cuenta con su propia expresión regular, bastaría con que uno se
+ * despistase para que una N7 saliera pintada de diurna en una pantalla y de búho
+ * en otra. Ése es exactamente el fallo del "0C1", con otro traje.
+ */
+export const esBuho = (l: Line): boolean => grupoDe(l) === 'buho';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ⭐ C5 · FUNCIONAMIENTO DE TERMINAL. Primeras y últimas salidas por tipo de día.
+//
+//  ⚠️ SE COMPROBÓ QUE EL DATO EXISTE ANTES DE PROMETERLO: sale de stop_times
+//  (870.718 filas) + trips + calendar_dates, horneado en el build. Y NO de
+//  clasificar `service_id` por su nombre: el feed tiene dos convenciones y una de
+//  ellas hace circular "domingos y festivos" un martes — porque un festivo CAE en
+//  martes. Se evalúa una fecha concreta del propio feed. Ver `terminal.ts`.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const terminalPorSentido = new Map<string, TerminalDeSentido>();
+for (const t of A.terminales ?? []) {
+  terminalPorSentido.set(`${t.lineId}|${t.directionId}`, t);
+}
+
+/** `null` = ese sentido no tiene horario en el feed. Se calla, no se inventa. */
+export function terminalDe(id: LineId, directionId: 0 | 1): TerminalDeSentido | null {
+  return terminalPorSentido.get(`${String(id)}|${directionId}`) ?? null;
+}
+
+/** Las fechas del feed que se han usado como día representativo. Son auditables. */
+export const fechasDeReferencia = A.fechasDeReferencia ?? { laborable: null, sabado: null, festivo: null };
