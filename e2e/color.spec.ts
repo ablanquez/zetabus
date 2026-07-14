@@ -59,23 +59,51 @@ test('⭐ EN ESCALA DE GRISES, EL ESTADO SIGUE VIÉNDOSE', async ({ page }, info
   await page.waitForTimeout(200);
   await capturar(page, `capturas/zetabus/GRIS-parada-${info.project.name}.png`);
 
-  // 1 · INMINENTE — el anillo sigue ahí (es forma, no color)
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ⭐⭐ B1 · INMINENTE, CON TRES CANALES. Y EL ROJO VUELVE.
+  //
+  // Este test comprobaba EL ANILLO. Y el anillo era mi error de la Tanda 6: quité
+  // el rojo por miedo a que el estado fuera color, y lo sustituí por un aro negro
+  // que —dicho por Antonio mirando la pantalla— "parece un error de renderizado".
+  //
+  // ⛔ El salto lógico estaba mal: «el estado no puede ir SOLO en el tono» NO es
+  //    «el estado no puede ir en el tono TAMBIÉN».
+  //
+  // ⇒ Ahora se comprueban LOS TRES canales. Y lo que este test mide de verdad —lo
+  //   único que importa— es que **AL QUITAR EL COLOR SIGUEN QUEDANDO DOS**.
+  // ═══════════════════════════════════════════════════════════════════════════
   const inminente = page.locator('[data-inminente="si"] [data-papel="minutos"]').first();
   expect(await inminente.count(), 'debería haber un autobús inminente').toBeGreaterThan(0);
-  const anillo = await inminente.evaluate((n) => {
-    const s = getComputedStyle(n);
-    return { ancho: s.outlineWidth, estilo: s.outlineStyle };
-  });
-  console.log(`\n  INMINENTE  → anillo ${anillo.ancho} ${anillo.estilo}  (forma: SOBREVIVE al gris)`);
-  expect(parseFloat(anillo.ancho)).toBeGreaterThanOrEqual(3);
-  expect(anillo.estilo).not.toBe('none');
 
-  // 2 · Y LA PALABRA. El tercer canal. Ni el color ni el latido van solos.
+  // CANAL 1 · EL COLOR. Se mide EN EL PÍXEL, sobre la página YA en gris: si el rojo
+  //   fuera la única señal, aquí ya se habría muerto — y eso es justo lo que se ve.
+  const rojoDeclarado = await inminente.evaluate((n) => getComputedStyle(n).color);
+  console.log(`\n  INMINENTE  → canal 1 · COLOR: ${rojoDeclarado}  (⚠️ SE PIERDE en gris, y no pasa nada)`);
+
+  // CANAL 2 · EL MOVIMIENTO. El latido no es un color: sobrevive.
+  const anim = await inminente.evaluate((n) => getComputedStyle(n).animationName);
+  console.log(`  INMINENTE  → canal 2 · MOVIMIENTO: "${anim}"  (SOBREVIVE al gris)`);
+  expect(anim, 'el latido tiene que estar').not.toBe('none');
+
+  // CANAL 3 · LA PALABRA. Tampoco es un color.
   const palabra = page.locator('[data-papel="ya-llega"]').first();
   expect(await palabra.count(), 'la palabra "YA LLEGA" tiene que estar').toBeGreaterThan(0);
   const ve = await seVe(page, '[data-papel="ya-llega"]');
-  console.log(`  INMINENTE  → la palabra "YA LLEGA": ${ve.visible ? 'SE VE' : `NO — ${ve.motivo}`}`);
+  console.log(`  INMINENTE  → canal 3 · PALABRA "YA LLEGA": ${ve.visible ? 'SE VE' : `NO — ${ve.motivo}`}  (SOBREVIVE al gris)`);
   expect(ve.visible).toBe(true);
+
+  // ⭐ Y LA CONTRAPRUEBA DEL PROPIO ARGUMENTO: en ESCALA DE GRISES, ¿se distingue
+  //   todavía el bus inminente del que no lo es? Si la respuesta fuera "no", el
+  //   rojo sería la única señal y habría que quitarlo. La respuesta es SÍ, y es
+  //   por el latido y la palabra — que es exactamente lo que permite meter el rojo.
+  const noInminente = page.locator('[data-inminente="no"] [data-papel="minutos"]').first();
+  const animNo = await noInminente.evaluate((n) => getComputedStyle(n).animationName);
+  expect(animNo, 'un bus NO inminente no puede latir').toBe('none');
+  expect(
+    await page.locator('[data-inminente="no"] [data-papel="ya-llega"]').count(),
+    'un bus NO inminente no puede decir "ya llega"',
+  ).toBe(0);
+  console.log('  ⭐ y en GRIS, el inminente SIGUE distinguiéndose: late y lo dice.');
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 3 · SIN VERIFICAR. ⚠️ LA SEÑAL SE HA MOVIDO, Y EL TEST LA HA CAZADO.
@@ -90,40 +118,84 @@ test('⭐ EN ESCALA DE GRISES, EL ESTADO SIGUE VIÉNDOSE', async ({ page }, info
   //    para lo que existe este test. Así que se comprueban los TRES canales otra
   //    vez, sobre el sitio nuevo.
   // ═══════════════════════════════════════════════════════════════════════════
-  const ficha = page.locator('[data-papel="ficha"][data-confianza="sin_verificar"]').first();
-  expect(await ficha.count(), 'el fingimiento debería traer un coche sin verificar').toBeGreaterThan(0);
+  // ⚠️ Y EN LA TANDA 7 SE VOLVIÓ A MOVER: ya no hay UN "sin verificar", hay TRES
+  //    procedencias no oficiales, cada una con su símbolo. El riesgo nuevo no es
+  //    que se confundan con el oficial —eso ya estaba probado— sino que **SE
+  //    CONFUNDAN ENTRE ELLAS**. Así que el test sube de exigencia.
+  const NIVELES = [
+    { conf: 'fuente_secundaria', simbolo: '*', que: 'busesmadrid.es — citable, NO oficial' },
+    { conf: 'observacion_propia', simbolo: '†', que: 'Antonio se sube a él. NO citable' },
+    { conf: 'sin_verificar', simbolo: '?', que: 'no consta en ninguna parte' },
+  ] as const;
 
-  // CANAL 1 · LA FORMA. Borde discontinuo en los chips que afirman algo del bus.
-  const chip = ficha.locator('[data-papel="chip-clase"]');
-  const borde = await chip.evaluate((n) => getComputedStyle(n).borderStyle);
-  console.log(`\n  SIN VERIFICAR → chip con borde "${borde}"  (FORMA: sobrevive al gris)`);
-  expect(borde).toBe('dashed');
+  const simbolosVistos: string[] = [];
+  for (const n of NIVELES) {
+    const ficha = page.locator(`[data-papel="ficha"][data-confianza="${n.conf}"]`).first();
+    expect(await ficha.count(), `el fingimiento debería traer un coche ${n.conf}`).toBeGreaterThan(0);
 
-  // CANAL 2 · EL SÍMBOLO. Un asterisco. No es un color, así que en gris sigue ahí.
-  const marca = ficha.locator('[data-papel="marca-sin-verificar"]');
-  const veMarca = await seVe(page, '[data-papel="marca-sin-verificar"]');
-  await expect(marca).toHaveText('*');
-  console.log(`  SIN VERIFICAR → el asterisco: ${veMarca.visible ? 'SE VE' : `NO — ${veMarca.motivo}`}`);
-  expect(veMarca.visible).toBe(true);
+    // CANAL 1 · LA FORMA. Borde discontinuo en los chips que afirman algo del bus.
+    const borde = await ficha
+      .locator('[data-papel="chip-clase"]')
+      .evaluate((el) => getComputedStyle(el).borderStyle);
+    expect(borde).toBe('dashed');
 
-  // CANAL 3 · LA PALABRA. Al pie, UNA vez. No 53 veces gritando encima de cada bus.
+    // CANAL 2 · EL SÍMBOLO. No es un color: en gris sigue ahí.
+    const marca = ficha.locator('[data-papel="marca-confianza"]');
+    await expect(marca).toHaveText(n.simbolo);
+    // ⚠️ Con TRES autobuses, la tercera ficha cae por debajo del pliegue a 360×740.
+    //    Eso NO es un defecto —se baja y ya—, pero `seVe` mide contra el viewport y
+    //    dijo "fuera del viewport (265, 752)". Tenía razón, y por eso se trae. Lo
+    //    que este test prueba es que el símbolo SOBREVIVE AL GRIS, no que quepa sin
+    //    hacer scroll.
+    await marca.scrollIntoViewIfNeeded();
+    const ve = await seVe(page, `[data-marca="${n.conf}"]`);
+    expect(ve.visible).toBe(true);
+    simbolosVistos.push(n.simbolo);
+
+    console.log(
+      `\n  ${n.conf.padEnd(18)} → borde "${borde}" · símbolo "${n.simbolo}" ${ve.visible ? 'SE VE' : `NO — ${ve.motivo}`}  (${n.que})`,
+    );
+  }
+
+  // ⭐ Y LOS SÍMBOLOS SON DISTINTOS ENTRE SÍ. Si los tres niveles llevaran el mismo
+  //    asterisco, el usuario no podría distinguir "lo dice una web de aficionados"
+  //    de "no lo dice nadie" — y esas dos cosas NO son lo mismo.
+  expect(new Set(simbolosVistos).size, 'cada procedencia, SU símbolo').toBe(NIVELES.length);
+
+  // CANAL 3 · LA PALABRA. Al pie, UNA vez, y solo la de los niveles PRESENTES.
   const nota = page.locator('[data-papel="nota-sin-verificar"]');
-  await expect(nota).toContainText(/no constan en el registro oficial/i);
-  console.log('  SIN VERIFICAR → la nota al pie: SE VE');
+  await expect(nota).toContainText(/No consta en el pliego municipal/i);
+  await expect(nota).toContainText(/Visto circular/i);
+  await expect(nota).toContainText(/Sin procedencia conocida/i);
+  console.log('  la leyenda al pie: SE VE, con las TRES entradas');
 
-  // ⭐ 4 · Y EL OFICIAL NO LLEVA NINGUNA DE LAS TRES. Si los dos tratamientos solo
-  //        se distinguieran por el TONO, en escala de grises serían idénticos y el
+  // ⚠️ Y LA CONTRAPRUEBA DE LA LEYENDA: en una parada donde SOLO hay oficiales, no
+  //    se pinta NINGUNA línea. Una leyenda que explica símbolos que no están es
+  //    ruido, y además miente sobre lo que el usuario tiene delante.
+  const limpia = await page.context().newPage();
+  await limpia.goto(`/parada/${POSTE}?fingir=solo-oficiales`, { waitUntil: 'networkidle' });
+  // ⚠️ Y SE EXIGE LA BANDA DEL MODO DEMO: si el fingimiento no ha ocurrido, este
+  //    test estaría mirando datos REALES y aprobando por casualidad.
+  await expect(limpia.locator('text=MODO DEMO').first()).toBeVisible();
+  expect(
+    await limpia.locator('[data-papel="nota-sin-verificar"]').count(),
+    'sin marcados en pantalla, la leyenda NO se pinta',
+  ).toBe(0);
+  console.log('  ⭐ CONTRAPRUEBA: con solo oficiales, la leyenda NO aparece');
+  await limpia.close();
+
+  // ⭐ 4 · Y EL OFICIAL NO LLEVA NINGUNA DE LAS TRES. Si los tratamientos solo se
+  //        distinguieran por el TONO, en escala de grises serían idénticos y el
   //        usuario no podría saber de cuál fiarse. Esto es lo que de verdad prueba
   //        el test: que la diferencia NO está en el color.
   const oficial = page.locator('[data-papel="ficha"][data-confianza="oficial"]').first();
-  if ((await oficial.count()) > 0) {
-    const bordeOf = await oficial
-      .locator('[data-papel="chip-clase"]')
-      .evaluate((n) => getComputedStyle(n).borderStyle);
-    console.log(`  OFICIAL       → chip con borde "${bordeOf}"`);
-    expect(bordeOf).not.toBe('dashed'); // ⭐ distinguibles por FORMA, sin color
-    expect(await oficial.locator('[data-papel="marca-sin-verificar"]').count()).toBe(0);
-  }
+  expect(await oficial.count(), 'hace falta un oficial CON QUÉ COMPARAR').toBeGreaterThan(0);
+  const bordeOf = await oficial
+    .locator('[data-papel="chip-clase"]')
+    .evaluate((n) => getComputedStyle(n).borderStyle);
+  console.log(`  oficial            → borde "${bordeOf}" · sin símbolo  (es la NORMA: no se anuncia)`);
+  expect(bordeOf).not.toBe('dashed'); // ⭐ distinguibles por FORMA, sin color
+  expect(await oficial.locator('[data-papel="marca-confianza"]').count()).toBe(0);
 });
 
 test('⭐ EL COLOR DE LÍNEA NO SE USA NUNCA PARA UN ESTADO', async ({ page }) => {

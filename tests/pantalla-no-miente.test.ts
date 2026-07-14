@@ -100,9 +100,28 @@ describe('⛔ EL ESTADO NO VA EN EL TONO', () => {
 
   it('cada señal de estado tiene AL MENOS una marca que sobrevive al gris', () => {
     const css = readFileSync('src/app/globals.css', 'utf8');
-    // No basta con que exista la clase: tiene que llevar FORMA, no solo color.
+    /**
+     * ⚠️ ESTE TEST SE PUSO ROJO AL METER EL ROJO DEL "YA LLEGA", Y HAY QUE MIRARLO
+     * DESPACIO, PORQUE AQUÍ ES DONDE SE ABLANDA UN TEST SIN DARSE CUENTA.
+     *
+     * Exigía literalmente `outline` en `.es-inminente`. Y el anillo se ha ido: era
+     * mi error de la Tanda 6 (quitar el color por miedo y poner un aro que, dicho
+     * por Antonio mirando la pantalla, "parece un error de renderizado").
+     *
+     * ⭐ LA INTENCIÓN DEL TEST ERA BUENA Y NO SE TOCA: *"al menos una señal que
+     *   sobreviva al gris"*. Lo que estaba mal era atarla a UNA FORMA CONCRETA.
+     *
+     * Lo que sobrevive al gris NO es solo el borde: es **cualquier cosa que no sea
+     * un tono**. El latido (`animation`) es una de ellas —una opacidad que pulsa se
+     * ve igual en blanco y negro—, y la palabra "YA LLEGA" es otra (esa la
+     * comprueba `e2e/color.spec.ts`, en el navegador, sobre la página ya en gris).
+     *
+     * ⛔ Lo que NO se acepta, y por eso el regex sigue siendo estricto: que la única
+     *    propiedad del bloque sea un `color`. Si alguien borra el `animation`, este
+     *    test vuelve a ponerse rojo. **Se ha cambiado la forma exigida, no el listón.**
+     */
     for (const [clase, forma] of [
-      ['.es-inminente', /outline/],
+      ['.es-inminente', /outline|animation/],
       ['.es-rancio', /border-style:\s*dashed|repeating-linear-gradient/],
       ['.es-sin-verificar', /dashed/],
       ['.es-sin-datos', /dotted/],
@@ -202,11 +221,43 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
     expect(c, 'nada de alarmas ámbar en cada tarjeta').not.toMatch(/color-aviso|SIN VERIFICAR/);
 
     // ⚠️ PERO LA MARCA SE QUEDA: es VERDAD que no consta en el registro oficial.
-    //    Un asterisco, un borde discontinuo (FORMA, no tono: sobrevive al gris) y
+    //    Un símbolo, un borde discontinuo (FORMA, no tono: sobrevive al gris) y
     //    la explicación UNA vez al pie, no 53 veces encima de cada autobús.
-    expect(c).toMatch(/marca-sin-verificar/);
+    expect(c).toMatch(/marca-confianza/);
     expect(c).toMatch(/border-dashed/);
-    expect(c, 'la nota, una sola vez').toMatch(/no constan en el registro oficial/);
+    expect(c, 'la nota, una sola vez').toMatch(/No consta en el pliego municipal/);
+  });
+
+  /**
+   * ⭐⭐ TANDA 7 · LA MARCA DICE **DE QUIÉN** ES EL DATO, no solo que no es oficial.
+   *
+   * Antonio aportó busesmadrid.es, y 43 de los 53 huérfanos ganaron procedencia.
+   * ⚠️ Pero una web de aficionados NO ES UN PLIEGO MUNICIPAL. El riesgo de esta
+   * tanda entera es que, al mezclarlos en el mismo array, la pantalla los pinte
+   * igual — y entonces habremos hecho exactamente lo que el JSON heredado hacía.
+   */
+  it('⭐⭐ las TRES procedencias no oficiales se distinguen EN PANTALLA', () => {
+    const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+
+    // Tres símbolos distintos. Y el oficial NO tiene: es la norma, no se anuncia.
+    expect(c).toMatch(/oficial:\s*null/);
+    for (const [nivel, simbolo] of [
+      ['fuente_secundaria', "'\\*'"],
+      ['observacion_propia', "'†'"],
+      ['sin_verificar', "'\\?'"],
+    ] as const) {
+      expect(c, `${nivel} necesita su símbolo`).toMatch(new RegExp(`${nivel}:[\\s\\S]{0,80}simbolo: ${simbolo}`));
+    }
+
+    // ⚠️ Y la leyenda tiene que decir que busesmadrid NO ES OFICIAL, con su enlace.
+    expect(c).toMatch(/busesmadrid\.es/);
+    expect(c, 'sin esto, un aficionado se disfraza de pliego').toMatch(/que no es oficial/i);
+    expect(c, 'la observación propia NO es citable, y se dice').toMatch(/No es un dato citable/i);
+
+    // ⚠️ La leyenda solo explica los símbolos QUE HAY. Si en esta parada no hay
+    //    ningún bus observado a mano, la línea del † no se pinta.
+    const llegadas = sinComentarios(readFileSync('src/components/LlegadasVivas.tsx', 'utf8'));
+    expect(llegadas).toMatch(/NotaSinVerificar presentes=\{confianzasPresentes\}/);
   });
 
   it('los cinco estados tienen CINCO mensajes distintos', () => {

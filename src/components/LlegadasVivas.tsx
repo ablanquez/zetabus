@@ -582,7 +582,13 @@ function Llegada({
               quien pide menos animación le quita TAMBIÉN el texto. Eso no se
               clona: es justo al revés de lo que hay que hacer.) */}
           {inminente && (
-            <span className="text-[10px] font-black uppercase tracking-wide" data-papel="ya-llega">
+            <span
+              // ⭐ B1 · EL ROJO ENTRA AQUÍ TAMBIÉN. Los tres canales: color +
+              //    palabra + parpadeo. Y la palabra NO se esconde con
+              //    `motion-reduce` — eso es lo único que NO se clona de ellos.
+              className="text-[10px] font-black uppercase tracking-wide text-[var(--color-alerta)]"
+              data-papel="ya-llega"
+            >
               ya llega
             </span>
           )}

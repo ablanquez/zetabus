@@ -67,22 +67,95 @@ body {
    ───────────────────────────────────────────────────────────────────────── */
 
 /**
- * INMINENTE — el autobús está entrando.
- * Señales: (1) anillo grueso, (2) la palabra "YA LLEGA", (3) latido, (4) color.
- * Quítale el color y quedan tres.
+ * ⭐⭐ B1 · INMINENTE — el autobús está ENTRANDO. Y AQUÍ ME EQUIVOQUÉ, Y SE CORRIGE.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * En la Tanda 6 razoné así: «el estado no puede ir en el TONO, porque la línea 31
+ * es #D1221D y el rojo de alerta es #B91C1C — el mismo rojo». Y de ahí salté a
+ * QUITAR EL ROJO y poner un anillo negro.
+ *
+ * ⛔ EL SALTO ESTABA MAL, Y ES UN ERROR DE RAZONAMIENTO, NO DE CÓDIGO:
+ *
+ *      «el estado no puede ir SOLO en el tono»
+ *          NO ES LO MISMO QUE
+ *      «el estado no puede ir en el tono TAMBIÉN»
+ *
+ * Me protegí del riesgo eliminando la señal más fuerte que tiene un ser humano
+ * mirando una marquesina con prisa. Antonio, mirando la pantalla: *"el anillo
+ * parece un error de renderizado"*. **Tenía razón: no significaba nada.**
+ *
+ * ⭐ LA REFERENCIA LO HACÍA BIEN, Y CON TRES CANALES:
+ *
+ *      COLOR       el número en ROJO           ← el que se ve a un metro
+ *      PALABRA     "YA LLEGA"                  ← el que sobrevive al gris
+ *      MOVIMIENTO  parpadeo                    ← el que sobrevive al gris
+ *
+ * ⚠️ Y LA PRUEBA DE ESCALA DE GRISES SIGUE MANDANDO — y sigue pasando: quítale el
+ *    color y quedan DOS canales en pie. Eso es exactamente lo que la prueba mide.
+ *    **El rojo no es la señal: es EL REFUERZO de la señal.**
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+/**
+ * ⛔⛔ Y AQUÍ EL INSTRUMENTO ME CAZÓ A MÍ, MIDIENDO EL PÍXEL. LÉELO:
+ *
+ * Mi primera versión clonaba el parpadeo de la referencia tal cual: `opacity` de 1
+ * a 0,45. Y el detector de contraste, que mide el PÍXEL RESULTANTE y no el CSS,
+ * lo tumbó en dos tamaños:
+ *
+ *       Error: "1min" a 2.46:1 no se lee      (mínimo 4.5:1)
+ *
+ * **En el valle del parpadeo, el dato más importante de la pantalla es ilegible.**
+ * El rojo a plena opacidad da 6,4:1; al 45% se queda en 2,4:1. Y no es un caso
+ * raro: es la mitad de cada ciclo, cada 1,4 segundos, para siempre.
+ *
+ * ⇒ **Clonar su desvanecido habría importado un defecto de accesibilidad.** Y eso
+ *   entra dentro de lo único que no se les copia: lo que hace daño.
+ *
+ * ⭐ EL LATIDO SE QUEDA —es un canal, y sobrevive al gris— PERO EN LA ESCALA, NO EN
+ *   LA OPACIDAD. Un `transform: scale` es movimiento igual, se ve igual en blanco y
+ *   negro… y NO TOCA EL CONTRASTE NUNCA. El texto está siempre a 6,4:1.
+ *
+ *   Se llama latido y ahora late de verdad, en vez de apagarse.
  */
 .es-inminente {
-  outline: 3px solid var(--color-tinta);
-  outline-offset: 3px;
-  border-radius: 10px;
+  /* ⛔ FUERA EL ANILLO. No comunicaba nada y parecía un fallo de render. */
+  color: var(--color-alerta);
+  display: inline-block;
+  transform-origin: right center;
   animation: latido 1.4s ease-in-out infinite;
 }
 @keyframes latido {
-  0%, 100% { outline-color: var(--color-tinta); }
-  50%      { outline-color: color-mix(in srgb, var(--color-tinta) 30%, transparent); }
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
 }
+/**
+ * ⚠️ Y AQUÍ SÍ CONSERVO LO MÍO, PORQUE AQUÍ YO TENÍA RAZÓN:
+ *
+ * La referencia esconde la palabra "YA LLEGA" con `motion-reduce:hidden`. O sea:
+ * a quien pide MENOS ANIMACIÓN le quita TAMBIÉN EL TEXTO — se queda con un canal
+ * menos justo la persona que más lo necesita. **Eso está al revés.**
+ *
+ * Aquí, quien pide menos movimiento pierde el parpadeo. **Y NADA MÁS.** El rojo se
+ * queda. La palabra se queda.
+ */
 @media (prefers-reduced-motion: reduce) {
   .es-inminente { animation: none; }
+}
+
+/**
+ * ⭐ B4 · EL MISMO LATIDO, EN EL MARCADOR DEL MAPA.
+ *
+ * ⚠️ Y VA EN EL `<span>` DE DENTRO, NUNCA EN LA RAÍZ DEL MARCADOR. Leaflet coloca
+ *    cada marcador con `transform: translate3d(...)`: animar el `transform` de la
+ *    raíz le pisaría la posición y **el autobús se teletransportaría** por el mapa
+ *    1,4 veces por segundo. Se anima el hijo, que Leaflet no toca.
+ */
+.zb-late {
+  transform-origin: center bottom;
+  animation: latido 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .zb-late { animation: none; }
 }
 
 /**
