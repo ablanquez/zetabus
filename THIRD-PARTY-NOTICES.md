@@ -45,7 +45,47 @@ Ver [`docs/auditoria/07-contrato-de-explotacion.md`](docs/auditoria/07-contrato-
 
 ---
 
-## 3 · ⛔ Servicios internos de Avanza — CONSUMIDOS, NUNCA REDISTRIBUIDOS
+## 3 · busesmadrid.es — ⚠️ FUENTE ESPECIALIZADA, **NO OFICIAL**
+
+| | |
+|---|---|
+| **Qué es** | Listado de la flota de Avanza Zaragoza (AUZSA): nº de coche, matrícula, chasis, carrocería y observaciones. **574 vehículos**, históricos incluidos. |
+| **De dónde** | https://busesmadrid.es/autobuses-urbanos-de-zaragoza-s-a-auzsa/ |
+| **Consultado** | 14/07/2026 |
+| **Naturaleza** | **Sitio especializado, mantenido por aficionados.** No es un registro público ni un documento administrativo. |
+| **Qué usamos** | **43 vehículos, y solo esos**: los que circulan y **no** figuran en el Anexo 5 del pliego (entregados después de octubre de 2025). No replicamos su listado completo. |
+| **Qué NO trae** | Fecha de matriculación · longitud · potencia. **No se rellenan.** Quedan a `null`. |
+| **¿Está en este repo?** | ✅ **Sí**, la extracción mínima: `data/fuentes/busesmadrid-2026-07-14.json`. Con su URL, su fecha y su naturaleza escritas dentro. |
+
+> ### ⚠️ POR QUÉ NO ES `oficial`, Y POR QUÉ IMPORTA
+>
+> La cotejamos contra el Anexo 5 en los **350 vehículos que están en las dos fuentes**:
+>
+> | Campo | Coincidencia |
+> |---|---|
+> | Fabricante | **350 / 350 — 100 %** |
+> | Propulsión | **350 / 350 — 100 %** |
+> | Matrícula | **342 / 347 — 98,6 %** (3 no la publican) |
+>
+> Es una fuente **excelente**. Y aun así, las 5 matrículas que discrepan son **cuatro
+> transposiciones de letras o dígitos** (`8948-MKF` / `8948 MFK`). Esa es la huella de una
+> transcripción **a mano**: **se equivoca ~1 de cada 70.**
+>
+> ⇒ Donde el pliego también la tiene, **manda el pliego**. Donde busesmadrid es la **única**
+> fuente —los 43—, ese error **no es detectable**, y por eso esos vehículos nacen con
+> `confianza: fuente_secundaria` y salen **marcados con un asterisco en la pantalla**.
+>
+> **Una web de aficionados no se disfraza de pliego municipal, por buena que sea.**
+
+**Atribución, tal y como aparece en la aplicación:**
+
+> Datos de flota de vehículos no recogidos en el pliego municipal, tomados de
+> [busesmadrid.es](https://busesmadrid.es/autobuses-urbanos-de-zaragoza-s-a-auzsa/) —
+> fuente especializada, **no oficial**.
+
+---
+
+## 4 · ⛔ Servicios internos de Avanza — CONSUMIDOS, NUNCA REDISTRIBUIDOS
 
 | | |
 |---|---|
@@ -71,7 +111,7 @@ tener que bloquearnos.**
 
 ---
 
-## 4 · Software
+## 5 · Software
 
 | Componente | Licencia |
 |---|---|

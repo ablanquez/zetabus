@@ -32,8 +32,11 @@ export default function SobreLosDatos() {
   // ⚠️ LAS CIFRAS SE CUENTAN, NO SE ESCRIBEN. Un "350 vehículos" a mano en el
   //    texto es un número que caduca en silencio el día que cambie el maestro.
   const flota = Object.values((artefacto as unknown as Artefacto).flota);
-  const oficiales = flota.filter((v) => v.confidence === 'oficial').length;
-  const marcados = flota.length - oficiales;
+  const cuantos = (c: BusProfile['confidence']) => flota.filter((v) => v.confidence === c).length;
+  const oficiales = cuantos('oficial');
+  const secundarios = cuantos('fuente_secundaria');
+  const observados = cuantos('observacion_propia');
+  const marcados = cuantos('sin_verificar');
 
   return (
     <div className="flex flex-col gap-6">
@@ -102,25 +105,76 @@ export default function SobreLosDatos() {
       </Bloque>
 
       <Bloque
-        titulo={`⚠️ Lo que NO hemos podido verificar — ${marcados} vehículos`}
-        fuente="Sin fuente oficial. Y así se marca."
+        titulo={`* Fuente especializada, NO oficial — ${secundarios} vehículos`}
+        fuente="busesmadrid.es · consultado el 14/07/2026"
+      >
+        <p>
+          <strong>{secundarios} autobuses</strong> circulan y <strong>no</strong> están en el pliego:
+          son eléctricos entregados <strong>después</strong> de octubre de 2025. Su ficha sale de{' '}
+          <a
+            className="font-semibold underline underline-offset-2"
+            href="https://busesmadrid.es/autobuses-urbanos-de-zaragoza-s-a-auzsa/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            busesmadrid.es
+          </a>
+          , una web especializada en flotas de autobuses.
+        </p>
+        <p className="mt-2">
+          La hemos medido contra el pliego en los <strong>350 vehículos que están en los dos</strong>
+          : acierta el <strong>100 % del fabricante y de la propulsión</strong>, y el{' '}
+          <strong>98,6 % de las matrículas</strong>. Es muy buena. <strong>Pero no es oficial</strong>
+          : las pocas matrículas que fallan son letras cambiadas de orden, la huella de una
+          transcripción a mano. Donde es <strong>la única</strong> fuente, ese error{' '}
+          <strong>no lo podemos detectar</strong> — y por eso llevan asterisco.
+        </p>
+        <p className="mt-2 text-[var(--color-tinta-tenue)]">
+          De ahí sacamos <strong>matrícula, modelo y propulsión</strong>. La{' '}
+          <strong>longitud no la publica</strong>, así que no la decimos: un articulado sale como
+          «Articulado», sin metros. Deducir «18 m» del nombre del modelo es exactamente el error que
+          estropeó 62 fichas del fichero anterior.
+        </p>
+      </Bloque>
+
+      {observados > 0 && (
+        <Bloque
+          titulo={`† Visto circular — ${observados} vehículos`}
+          fuente="Observación propia, con fecha. NO es una fuente citable."
+        >
+          <p>
+            <strong>{observados} autobuses</strong> que <strong>hemos visto en servicio</strong> y que
+            no aparecen en ninguna fuente publicada. Lo afirmamos nosotros, con nombre y fecha, y
+            queda registrado en el historial del proyecto.
+          </p>
+          <p className="mt-2">
+            No es un apaño temporal. <strong>La flota real va siempre por delante de sus fuentes</strong>
+            : el pliego es de octubre de 2025 y <strong>ni siquiera está adjudicado</strong>. Un
+            autobús llega a la calle mucho antes que a un documento — y mientras tanto, tú lo ves
+            llegar.
+          </p>
+          <p className="mt-2 text-[var(--color-tinta-tenue)]">
+            ⚠️ Es la fuente <strong>más débil de todas</strong>, y va marcada como tal. Si mañana el
+            registro oficial dice otra cosa, <strong>manda el registro</strong> — pero{' '}
+            <strong>la contradicción se anota, no se borra</strong>.
+          </p>
+        </Bloque>
+      )}
+
+      <Bloque
+        titulo={`? Sin procedencia conocida — ${marcados} vehículos`}
+        fuente="Sin ninguna fuente. Y así se marca."
         alerta
       >
         <p>
-          <strong>{marcados} autobuses</strong> (uno de cada ocho) no constan en el registro oficial:
-          son eléctricos entregados <strong>después</strong> de octubre de 2025. Su ficha viene de un
-          fichero de elaboración manual heredado del proyecto anterior,{' '}
+          <strong>{marcados} autobuses</strong> no constan <strong>en ninguna parte</strong>: ni en el
+          pliego, ni en busesmadrid. Su ficha viene de un fichero heredado del proyecto anterior,{' '}
           <strong>sin matrícula y sin procedencia documentada</strong>.
         </p>
         <p className="mt-2">
-          En pantalla van con un <strong>asterisco</strong> y el borde discontinuo. No se disfrazan
-          de oficiales, y tampoco se les grita encima: es muy probable que el dato sea correcto —
-          simplemente <strong>no lo podemos demostrar</strong>.
-        </p>
-        <p className="mt-2 text-[var(--color-tinta-tenue)]">
-          Para poder quitar el asterisco haría falta una fuente citable con la{' '}
-          <strong>matrícula</strong> de cada coche (un registro municipal actualizado, o el propio
-          Avanza). No la tenemos, y <strong>no nos la inventamos</strong>.
+          En pantalla van con una <strong>interrogación</strong> y el borde discontinuo. No se
+          disfrazan de oficiales, y tampoco se les grita encima: es probable que el dato sea correcto
+          — simplemente <strong>no lo podemos demostrar</strong>.
         </p>
       </Bloque>
 

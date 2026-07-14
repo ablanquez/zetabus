@@ -56,9 +56,53 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
         <main className="mx-auto max-w-2xl px-4 py-3 pb-16">{children}</main>
 
-        <footer className="mx-auto max-w-2xl px-4 pb-8 text-[11px] leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar">
-          Recorridos: GTFS oficial del NAP (Ministerio de Transportes). Llegadas en tiempo real:
-          Avanza Zaragoza, consultadas como cliente. ZetaBus no redistribuye sus datos.
+        {/*
+          ⭐ B14 · EL PIE, CORTO. PERO LA LICENCIA NO SE NEGOCIA.
+          ═════════════════════════════════════════════════════════════════════
+          Antonio pidió acortarlo. Y tenía razón: tres líneas de créditos debajo
+          de un autobús que llega en 2 minutos son ruido.
+
+          ⚠️ PERO ACORTARLO NO PUEDE CARGARSE LA ATRIBUCIÓN. La licencia de datos
+          abiertos del MITMS **exige** tres cosas, y NO son opcionales:
+
+              1. la fórmula «Powered by MITRAMS»
+              2. con ENLACE a https://www.transportes.gob.es/
+              3. e indicar si el dato es **bruto o PROCESADO**
+
+          ⛔ Y HOY NO SE CUMPLÍAN. El pie decía "GTFS oficial del NAP (Ministerio
+             de Transportes)" —que suena bien y no vale—: sin la fórmula, sin el
+             enlace y sin decir que lo procesamos. **Era un incumplimiento, no un
+             descuido de estilo.** Se arregla aquí.
+
+          ⚠️ Y lo que hacen otros NO es el criterio. Miré ZGZ Radar, que consume
+             exactamente estos datos: **no tiene atribución ninguna.** Eso no nos
+             autoriza a nada. Si mañana alguien de Avanza o del Ministerio abre
+             esto, el pie es lo primero que va a mirar.
+
+          El resto —licencias, qué se redistribuye y qué no, y por qué— vive
+          entero en `/sobre-los-datos`, a un toque.
+        */}
+        <footer
+          className="mx-auto max-w-2xl px-4 pb-8 text-[11px] leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar"
+          data-papel="pie"
+        >
+          Recorridos: GTFS del{' '}
+          <a
+            href="https://www.transportes.gob.es/"
+            className="underline underline-offset-2"
+            target="_blank"
+            rel="noreferrer"
+            data-papel="atribucion-mitrams"
+          >
+            <strong>Powered by MITRAMS</strong>
+          </a>{' '}
+          — <strong>datos procesados</strong>. Tiempo real: Avanza Zaragoza.{' '}
+          <Link
+            href="/sobre-los-datos"
+            className="inline-flex min-h-[24px] items-center font-semibold underline underline-offset-2"
+          >
+            Sobre los datos
+          </Link>
         </footer>
       </body>
     </html>
