@@ -42,6 +42,25 @@ export const VIEWPORTS = {
 
 export default defineConfig({
   testDir: './e2e',
+
+  /**
+   * ⚠️ `e2e/auditoria/` NO CIERRA LA TANDA. Y es una decisión, no una excusa.
+   *
+   * Ahí viven los tests que miden **la app de la referencia** (localhost:3002) y
+   * la disección píxel a píxel. Afirman cosas sobre software de TERCEROS, que
+   * cambia sin avisarnos, y sobre datos VIVOS de Avanza (si ahora mismo no hay
+   * autobuses en esa parada, su filtro no filtra nada y el test se cae).
+   *
+   * ⇒ Un test que solo pasa cuando una app ajena está en un estado concreto NO ES
+   *   UN TEST: es un informe con un `expect` puesto. Y si tumba el build de
+   *   ZetaBus, lo que acaba pasando es que se desactiva y no se mira nunca más.
+   *
+   * Se lanzan a mano, y su salida son TABLAS, no verdes:
+   *     npm run auditoria
+   */
+  // ⚠️ Se ignoran SALVO que se pidan por ruta a propósito (`npm run auditoria`),
+  //    que es como Playwright resuelve un filtro explícito por carpeta.
+  testIgnore: process.argv.some((a) => a.includes('auditoria')) ? [] : '**/auditoria/**',
   // Vitest se queda con `tests/**/*.test.ts`; Playwright, con `e2e/**/*.spec.ts`.
   // Los dos exportan un `test` global: si se cruzaran, uno cargaría los ficheros
   // del otro y fallaría con un error que no dice nada de lo que pasa.

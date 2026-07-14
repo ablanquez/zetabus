@@ -496,6 +496,63 @@ está.
 
 ---
 
+## L9 · UN MÓDULO PROBADO Y DESCONECTADO DA MÁS CONFIANZA QUE UNO QUE NO EXISTE
+
+**Fecha:** 14/07/2026 · **Tanda 6**
+
+El diff de desvíos estaba **escrito, medido y probado desde la Tanda 3**. Sabía que la línea 35 no
+pasa hoy por Avenida Valencia — una calle **cortada**. Lo verificamos contra Avanza. Lo documentamos
+en la auditoría 05. Tenía doce tests en verde.
+
+**Y la pantalla seguía pintando la ruta del GTFS.**
+
+ZetaBus le estaba diciendo a alguien que su autobús para en una calle por la que el autobús no pasa.
+No petaba: **pintaba**. Con toda la coherencia del mundo.
+
+### ⚠️ POR QUÉ NINGÚN TEST LO CAZÓ
+
+**344 tests en verde. Y ninguno miraba si la pantalla usaba el motor.**
+
+Un test unitario pregunta *"¿esta función hace lo que dice?"*. **Nunca pregunta *"¿alguien la
+llama?"***. Cada módulo estaba probado. Lo que no estaba probado era **la flecha entre dos
+módulos** — y una flecha que no existe no rompe nada: simplemente no está.
+
+Lo mismo pasaba con:
+
+- el **GPS de cada autobús** (): calculado, probado… y sin mapa que lo pintara
+- la **posición de la parada**: igual
+- el **KML** y la **geometría del GTFS**: descargados, parseados, verificados (304 con
+  )… y nunca dibujados
+
+### ⭐ LA FRASE
+
+> **Un módulo probado y desconectado da MÁS confianza que uno que no existe.**
+>
+> El que no existe **se nota**. El desconectado sale en verde, tiene su documentación, su cobertura
+> y su comentario de cabecera explicando lo bien pensado que está. **Y la pantalla miente igual.**
+
+### CÓMO SE ENCUENTRA
+
+No con tests. **Contando imports.**
+
+\
+**La diferencia entre las dos listas es el agujero.** Está en
+[](auditoria/09-motor-vs-interfaz.md).
+
+### ⚠️ Y EL COROLARIO, QUE CASI ME CUESTA CARO
+
+En la misma auditoría, Antonio me pidió arreglar dos cosas que **ya funcionaban**: las paradas y los
+chips de transbordo SÍ eran pulsables (38 enlaces y 84 chips, verificado **pulsando**).
+
+Mi primer test dijo que no. **Mentía**: leía la URL antes de que la navegación hubiera ocurrido.
+
+**Si me lo hubiera creído, habría "arreglado" código que funcionaba.** Es la primera vez que el
+instrumento no solo me habría hecho perder el tiempo, sino **destruir algo que estaba bien**.
+
+⇒ **Verificar que algo está roto es tan importante como verificar que está arreglado.**
+
+---
+
 ## Cómo se usa este fichero
 
 Se **añade**, no se reescribe. Una lección que resulte falsa se **tacha con su motivo**, no se

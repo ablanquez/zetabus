@@ -18,6 +18,14 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { edadDe } from '@/core/observacion';
 import { feedStatus } from '@/core/feed-validity';
+
+/**
+ * ⚠️ UN GREP SOBRE PROSA NO ES UNA COMPROBACIÓN DE CÓDIGO. Ya me pasó dos veces:
+ * `Date.now()` y `truncate` aparecían dentro de los comentarios que los PROHIBEN,
+ * y el test se ponía rojo contra sí mismo. Se quitan los comentarios primero.
+ */
+const sinComentarios = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 import { validez } from '@/engine/topologia';
 
 /** Las llamadas que introducen el huso horario y el calendario en el código. */
@@ -148,10 +156,41 @@ describe('⏳ EL DOMINGO, EL FESTIVO Y LAS CUATRO DE LA MAÑANA', () => {
     //
     // Lo único que se cuenta es lo que se ve. Un domingo se ven menos autobuses,
     // y ZetaBus enseña menos autobuses. Sin explicar por qué, porque no lo sabe.
-    const codigoDelMotor = ficherosDe('src/engine')
-      .map((f) => readFileSync(f, 'utf8'))
-      .join('\n');
-    expect(codigoDelMotor).not.toMatch(/calendar_dates|festivo|laborable|frecuencia/i);
+    //
+    // ═══════════════════════════════════════════════════════════════════════
+    // ⚠️ ESTE TEST HA TENIDO QUE AFINARSE, Y LA DISTINCIÓN ES LA LECCIÓN.
+    //
+    // Antes buscaba las palabras "festivo|laborable|calendar_dates" en todo
+    // `src/engine` y exigía CERO. Con C5 (funcionamiento de terminal) esas
+    // palabras aparecen... en `topologia.ts`, que solo **LEE UN DATO HORNEADO**.
+    //
+    // Y no son lo mismo, ni de lejos:
+    //
+    //   ⛔ PROHIBIDO: que el motor VIVO decida algo según el calendario.
+    //      ("hoy es festivo, así que estos silencios son normales")
+    //      Ahí es donde vive la familia de bugs: el 12 de octubre en lunes, el
+    //      horario de verano, el festivo local que nadie metió en la lista.
+    //
+    //   ✅ PERMITIDO: enseñar un dato ESTÁTICO del GTFS, calculado en el build,
+    //      que dice a qué hora sale el primer autobús. Eso no decide nada: se
+    //      pinta. Y si el feed cambia, cambia en el build, no en caliente.
+    //
+    // ⇒ La regla se vuelve a expresar donde importa: EL CAMINO VIVO. Los tres
+    //   ficheros por los que pasa una petición no pueden mirar el calendario.
+    // ═══════════════════════════════════════════════════════════════════════
+    const CAMINO_VIVO = ['src/engine/llegadas.ts', 'src/engine/desvios.ts', 'src/engine/motor.ts'];
+    for (const f of CAMINO_VIVO) {
+      const codigo = sinComentarios(readFileSync(f, 'utf8'));
+      expect(codigo, `${f} NO puede decidir nada según el calendario`).not.toMatch(
+        /calendar|festivo|laborable|esFestivo|diaDeLaSemana|getDay\(/i,
+      );
+    }
+
+    // Y el dato de terminal es de SOLO LECTURA: se hornea en el build y aquí solo
+    // se sirve. Si alguien lo calculara en runtime, esto se pone rojo.
+    const topo = sinComentarios(readFileSync('src/engine/topologia.ts', 'utf8'));
+    expect(topo, 'el terminal se LEE del artefacto, no se calcula').not.toMatch(/getDay\(|new Date\(/);
+    expect(topo).toMatch(/A\.terminales/);
   });
 
   it('a las 4 a.m. todos los postes están mudos, y eso NO es una anomalía', () => {

@@ -168,12 +168,45 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
   //    todos"—, que es el test de arriba. Sigue mandando, porque la limitación de la
   //    fuente es la misma: dos siguientes por línea y sentido.
 
-  it('⭐ un autobús SIN FICHA sigue diciendo SIN DATOS, nunca un defecto', () => {
-    // Esto NO cambia con la Tanda 5A: la ficha es la misma, y su regla también.
-    const c = readFileSync('src/components/FichaVehiculo.tsx', 'utf8');
-    expect(c).toMatch(/SIN DATOS/);
-    expect(c).toMatch(/No inventamos su modelo/);
-    expect(c).toMatch(/SIN VERIFICAR/);
+  it('⭐ un autobús SIN FICHA sigue diciendo "sin datos", nunca un defecto', () => {
+    // La ficha cambió de forma (ahora son chips, como los suyos) pero la REGLA es
+    // la misma y no se negocia: si no sabemos el modelo, se dice. Nunca "Estándar,
+    // 12 m" porque sea lo más común — eso es inventarse el dato justo donde no lo
+    // tenemos, y hacerlo con toda la confianza del mundo.
+    const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+    expect(c).toMatch(/Sin datos de este autobús/i);
+    // Y el valor por defecto sigue prohibido en el motor, que es donde importa.
+    const t = sinComentarios(readFileSync('src/engine/topologia.ts', 'utf8'));
+    expect(t, 'perfilDe devuelve null, no un perfil inventado').toMatch(/A\.flota\[coche\] \?\? null/);
+  });
+
+  it('⭐ A5 · la PROCEDENCIA ya no ocupa una línea en cada tarjeta (era la NORMA)', () => {
+    // "✓ Dato oficial (Anexo 5 del pliego municipal)" salía en 350 de 403 fichas.
+    // El 87%. Eso no es una excepción: es la norma. Y al que espera el autobús le
+    // da igual de qué documento sale el dato.
+    const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+    expect(c, 'la procedencia se fue a /sobre-los-datos').not.toMatch(/Dato oficial|Anexo 5/);
+
+    // ⚠️ Pero NO SE HA PERDIDO. Existe la página, y dice de dónde sale cada cosa.
+    const sobre = readFileSync('src/app/sobre-los-datos/page.tsx', 'utf8');
+    expect(sobre).toMatch(/Anexo 5/);
+    expect(sobre).toMatch(/0034140-25/);
+    expect(sobre, 'y lo que NO sabemos, también').toMatch(/NO detectamos supresiones/);
+  });
+
+  it('⭐⭐ A4 · el "sin verificar" ya no GRITA, pero sigue estando', () => {
+    // Pintábamos un ⚠ ÁMBAR en mayúsculas sobre 53 de 403 autobuses (1 de cada 8).
+    // Un aviso que sale siempre no es un aviso: es ruido. Y enseña al usuario a
+    // ignorar los avisos — con lo cual el día que uno importe, no lo leerá.
+    const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+    expect(c, 'nada de alarmas ámbar en cada tarjeta').not.toMatch(/color-aviso|SIN VERIFICAR/);
+
+    // ⚠️ PERO LA MARCA SE QUEDA: es VERDAD que no consta en el registro oficial.
+    //    Un asterisco, un borde discontinuo (FORMA, no tono: sobrevive al gris) y
+    //    la explicación UNA vez al pie, no 53 veces encima de cada autobús.
+    expect(c).toMatch(/marca-sin-verificar/);
+    expect(c).toMatch(/border-dashed/);
+    expect(c, 'la nota, una sola vez').toMatch(/no constan en el registro oficial/);
   });
 
   it('los cinco estados tienen CINCO mensajes distintos', () => {
@@ -226,26 +259,58 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
     expect(queBarren, 'ninguna ruta puede mencionar el barrido siquiera').toEqual([]);
   });
 
-  it('⭐ LA ÚNICA página que toca Avanza al renderizarse es la de PARADA', () => {
-    // ⚠️ Y ESTE TEST LO ESCRIBÍ MAL LA PRIMERA VEZ: exigía CERO páginas, cuando su
-    //    propio nombre decía "salvo la de parada". Habría obligado a que la parada
-    //    dejara de pedir el dato por el que existe. Un test más estricto de lo que
-    //    dice ser no es más seguro: es una trampa para el que venga después.
-    //
-    //    La parada SÍ consulta al abrirse, y es CORRECTO: es UNA petición, cacheada
-    //    y compartida por todos los que miran esa parada, y es exactamente el dato
-    //    por el que el usuario ha abierto esa pantalla.
-    //    La LÍNEA, no: eran 67, y quien solo quiere ver el recorrido no las pide.
+  /**
+   * ⚠️⚠️ ESTE TEST HA CAMBIADO, Y NO POR DESCUIDO. QUEDA ESCRITO POR QUÉ.
+   *
+   * Al aparcar el barrido prometí "CERO peticiones al abrir la vista de línea", y
+   * este test lo exigía. Hoy la vista de línea hace **2 peticiones**.
+   *
+   * ⛔ PORQUE ESTABA PINTANDO LA RUTA TEÓRICA. Y la Avenida de Valencia ESTÁ
+   *   CORTADA. ZetaBus le decía a alguien que su autobús para en una calle por la
+   *   que el autobús no pasa. No petaba: pintaba.
+   *
+   * La promesa de "cero peticiones" era contra el BARRIDO: 67 peticiones y hasta
+   * 66 segundos de espera, por pulsación, para una pregunta que nadie se hace.
+   * Esto son 2, cacheadas 30 minutos, y son la diferencia entre decir la verdad y
+   * mandar a alguien a esperar a una calle cortada.
+   *
+   * ⚠️ Y para que "2" no se convierta en "20" el día que alguien añada algo, el
+   *    número está ATADO aquí abajo.
+   */
+  it('⭐ solo PARADA y LÍNEA tocan Avanza al renderizarse. Y ninguna barre.', () => {
     const paginas = ficheros('src/app', ['.tsx']).filter((f) => f.endsWith('page.tsx'));
-    const queLlaman = paginas.filter((f) =>
-      /barrerLinea|leerPoste|motor\(/.test(sinComentarios(readFileSync(f, 'utf8'))),
-    );
-    expect(queLlaman.map((f) => f.replace(/\\/g, '/'))).toEqual(['src/app/parada/[poste]/page.tsx']);
+    const queLlaman = paginas
+      .filter((f) => /leerPoste|motor\(/.test(sinComentarios(readFileSync(f, 'utf8'))))
+      .map((f) => f.replace(/\\/g, '/'))
+      .sort();
 
-    // Y ninguna de ellas, ni la de parada, puede barrer.
+    expect(queLlaman).toEqual([
+      'src/app/linea/[linea]/page.tsx', // ← la RUTA REAL. 2 peticiones, 30 min de caché.
+      'src/app/parada/[poste]/page.tsx', // ← las llegadas. 1 petición, 15 s de caché.
+    ]);
+
+    // ⛔ Y NINGUNA puede barrer. El barrido sigue aparcado.
     for (const f of paginas) {
       expect(sinComentarios(readFileSync(f, 'utf8')), f).not.toMatch(/barrerLinea/);
     }
+  });
+
+  it('⭐ la vista de línea pide LA RUTA, no las llegadas: 2 peticiones, no 67', () => {
+    const c = sinComentarios(readFileSync('src/app/linea/[linea]/page.tsx', 'utf8'));
+
+    // Pide el recorrido de hoy (un `get_stops_list` por sentido). Y NADA MÁS.
+    expect(c).toMatch(/desviosDeLinea/);
+    expect(c, 'no lee postes, que es lo que se disparaba a 67').not.toMatch(/leerPoste|llegadasDePoste/);
+
+    // ⚠️ EL COSTE, ATADO A UN NÚMERO. Si mañana alguien mete otra llamada, esto se
+    //    pone rojo antes de que Avanza se entere.
+    const llamadas = (c.match(/await (desviosDeLinea|llegadasDePoste|barrerLinea)/g) ?? []).length;
+    expect(llamadas, 'una sola llamada al motor por render').toBe(1);
+
+    // Y la caché del recorrido son 30 minutos: un desvío no se pone y se quita
+    // cada minuto. Si esto bajara a 15 s, multiplicaríamos por 120 el tráfico.
+    const d = sinComentarios(readFileSync('src/engine/desvios.ts', 'utf8'));
+    expect(d).toMatch(/TTL_RECORRIDO_MS\s*=\s*30 \* 60_000/);
   });
 
   it('⛔ la vista de línea NO tiene botón. Ni apagado, ni con un "próximamente".', () => {

@@ -24,7 +24,7 @@
 
 import { test, expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { contrasteReal, revisar, capturar, seVe } from './lib/medir';
+import { contrasteReal, revisar, capturar, seVe } from '../lib/medir';
 
 const REF = 'http://localhost:3100';
 /** Plaza San Miguel: el poste de la asimetría. Dos líneas, tráfico real. */

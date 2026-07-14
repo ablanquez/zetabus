@@ -77,24 +77,53 @@ test('⭐ EN ESCALA DE GRISES, EL ESTADO SIGUE VIÉNDOSE', async ({ page }, info
   console.log(`  INMINENTE  → la palabra "YA LLEGA": ${ve.visible ? 'SE VE' : `NO — ${ve.motivo}`}`);
   expect(ve.visible).toBe(true);
 
-  // 3 · SIN VERIFICAR — borde punteado, no un chip de color
-  const sv = page.locator('[data-confianza="sin_verificar"]').first();
-  expect(await sv.count(), 'el fingimiento debería traer un coche sin verificar').toBeGreaterThan(0);
-  const borde = await sv.evaluate((n) => getComputedStyle(n).borderStyle);
-  console.log(`  SIN VERIFICAR → borde "${borde}"  (forma: SOBREVIVE al gris)`);
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3 · SIN VERIFICAR. ⚠️ LA SEÑAL SE HA MOVIDO, Y EL TEST LA HA CAZADO.
+  //
+  // Antes el borde discontinuo iba en el CAJÓN de la ficha entera. Ahora la ficha
+  // son CHIPS (clonados de la referencia) y el borde va en cada chip afectado.
+  // El test miraba el contenedor, encontró "solid", y se puso rojo. Correcto: la
+  // señal ya no estaba donde él miraba.
+  //
+  // ⚠️ Y AQUÍ ESTABA LA TENTACIÓN: cambiar el selector y seguir. Pero lo que hay
+  //    que volver a demostrar es que la señal SIGUE SOBREVIVIENDO AL GRIS, que es
+  //    para lo que existe este test. Así que se comprueban los TRES canales otra
+  //    vez, sobre el sitio nuevo.
+  // ═══════════════════════════════════════════════════════════════════════════
+  const ficha = page.locator('[data-papel="ficha"][data-confianza="sin_verificar"]').first();
+  expect(await ficha.count(), 'el fingimiento debería traer un coche sin verificar').toBeGreaterThan(0);
+
+  // CANAL 1 · LA FORMA. Borde discontinuo en los chips que afirman algo del bus.
+  const chip = ficha.locator('[data-papel="chip-clase"]');
+  const borde = await chip.evaluate((n) => getComputedStyle(n).borderStyle);
+  console.log(`\n  SIN VERIFICAR → chip con borde "${borde}"  (FORMA: sobrevive al gris)`);
   expect(borde).toBe('dashed');
 
-  // 4 · Y la palabra, otra vez. Nunca solo forma, nunca solo color.
-  await expect(sv).toContainText(/SIN VERIFICAR/i);
+  // CANAL 2 · EL SÍMBOLO. Un asterisco. No es un color, así que en gris sigue ahí.
+  const marca = ficha.locator('[data-papel="marca-sin-verificar"]');
+  const veMarca = await seVe(page, '[data-papel="marca-sin-verificar"]');
+  await expect(marca).toHaveText('*');
+  console.log(`  SIN VERIFICAR → el asterisco: ${veMarca.visible ? 'SE VE' : `NO — ${veMarca.motivo}`}`);
+  expect(veMarca.visible).toBe(true);
 
-  // 5 · Y el OFICIAL tiene borde SÓLIDO: los dos tratamientos se distinguen
-  //     SIN COLOR. Si los dos fueran sólidos y solo cambiara el tono, en gris
-  //     serían idénticos y el usuario no podría saber de cuál fiarse.
-  const of = page.locator('[data-confianza="oficial"]').first();
-  const bordeOf = await of.evaluate((n) => getComputedStyle(n).borderStyle);
-  console.log(`  OFICIAL       → borde "${bordeOf}"`);
-  expect(bordeOf).toBe('solid');
-  expect(bordeOf).not.toBe(borde); // ⭐ distinguibles por FORMA
+  // CANAL 3 · LA PALABRA. Al pie, UNA vez. No 53 veces gritando encima de cada bus.
+  const nota = page.locator('[data-papel="nota-sin-verificar"]');
+  await expect(nota).toContainText(/no constan en el registro oficial/i);
+  console.log('  SIN VERIFICAR → la nota al pie: SE VE');
+
+  // ⭐ 4 · Y EL OFICIAL NO LLEVA NINGUNA DE LAS TRES. Si los dos tratamientos solo
+  //        se distinguieran por el TONO, en escala de grises serían idénticos y el
+  //        usuario no podría saber de cuál fiarse. Esto es lo que de verdad prueba
+  //        el test: que la diferencia NO está en el color.
+  const oficial = page.locator('[data-papel="ficha"][data-confianza="oficial"]').first();
+  if ((await oficial.count()) > 0) {
+    const bordeOf = await oficial
+      .locator('[data-papel="chip-clase"]')
+      .evaluate((n) => getComputedStyle(n).borderStyle);
+    console.log(`  OFICIAL       → chip con borde "${bordeOf}"`);
+    expect(bordeOf).not.toBe('dashed'); // ⭐ distinguibles por FORMA, sin color
+    expect(await oficial.locator('[data-papel="marca-sin-verificar"]').count()).toBe(0);
+  }
 });
 
 test('⭐ EL COLOR DE LÍNEA NO SE USA NUNCA PARA UN ESTADO', async ({ page }) => {

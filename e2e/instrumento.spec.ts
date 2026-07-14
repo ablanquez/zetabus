@@ -58,6 +58,42 @@ test.describe('⭐ EL INSTRUMENTO CAZA LO QUE DICE CAZAR', () => {
     }
   });
 
+  /**
+   * ⚠️⚠️ EL DETECTOR ME CAZÓ SIETE FALSOS POSITIVOS, Y TODOS ERAN `sr-only`.
+   *
+   * Un `sr-only` es un elemento de 1×1 px con `overflow:hidden` — exactamente la
+   * firma geométrica de "texto recortado". El detector medía bien y concluía mal.
+   *
+   * ⇒ Se excluye lo VISUALMENTE OCULTO. Pero excluir algo de un detector es abrir
+   *   un agujero, así que hay que demostrar las DOS cosas: que se calla con el
+   *   `sr-only` Y que sigue gritando con un truncado de verdad. Si solo probara lo
+   *   primero, podría haber desactivado el detector entero sin enterarme.
+   */
+  test('⭐ un sr-only NO es un texto truncado (y el detector sigue cazando los de verdad)', async ({ page }) => {
+    await page.setContent(`
+      <div style="width:200px">
+        <!-- (a) sr-only: NO está en la pantalla. No se juzga. -->
+        <span style="position:absolute;width:1px;height:1px;overflow:hidden;white-space:nowrap">
+          cabecera de línea, esto lo lee un lector de pantalla y no ocupa píxeles
+        </span>
+        <!-- (b) UN TRUNCADO DE VERDAD: sí está en pantalla, y se amputa. -->
+        <p id="real" style="width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          Vía Hispanidad N.º 73 / Nuestra Señora De Los Ángeles
+        </p>
+      </div>
+    `);
+
+    const c = await truncados(page);
+    console.log(`\n  cazados: ${c.length}`);
+    for (const x of c) console.log(`     "${x.texto}" · ${x.detalle}`);
+
+    // ⭐ EL VERDE: caza el de verdad...
+    expect(c.length, 'el truncado real tiene que salir').toBe(1);
+    expect(c[0].texto).toContain('Vía Hispanidad');
+    // ...y SOLO el de verdad. El sr-only no aparece.
+    expect(c.some((x) => /lector de pantalla/.test(x.texto)), 'un sr-only NO es un truncado').toBe(false);
+  });
+
   test('⛔ ROTO 2 · TEXTO CORTADO → el instrumento lo caza', async ({ page }) => {
     await page.setContent(banco(['texto-cortado']));
 

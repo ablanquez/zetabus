@@ -16,7 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { capturar } from './lib/medir';
+import { capturar } from '../lib/medir';
 
 const REF = 'http://localhost:3002';
 const POSTE = 744;
@@ -214,10 +214,28 @@ test('⭐ EL ITINERARIO VERTICAL: nodos, transbordos, búhos', async ({ page }, 
   }
 
   // ── PULSAR UNA PARADA ─────────────────────────────────────────────────────
-  await paradas.first().click();
-  await page.waitForTimeout(1_500);
-  console.log(`\n  ⭐ PULSO UNA PARADA DEL ITINERARIO → ${page.url()}`);
-  expect(page.url()).toContain('/parada/');
+  //
+  // ⭐⭐ HALLAZGO DEL 14/07/2026, Y ES A NUESTRO FAVOR:
+  //
+  // **En la referencia, las paradas del itinerario NO SON PULSABLES.** Ni una.
+  // Comprobado subiendo el DOM desde el nombre de la parada hasta `<a>`:
+  //
+  //     "Cosuenda / Paseo de Longares"  → dentro de un enlace: NO
+  //     "Plaza Mozart"                  → dentro de un enlace: NO
+  //     "Muel nº 11"                    → dentro de un enlace: NO
+  //
+  // Antonio pidió (C1) "las paradas deben ser pulsables". **Y en ZetaBus YA LO
+  // ERAN**: 38 enlaces `/parada/…`, verificados pulsando. Aquí somos mejores que
+  // la referencia, y por eso este `expect` se convierte en un INFORME.
+  //
+  // ⚠️ Un test que afirma sobre una app de terceros —que cambia sin avisarnos— no
+  //    puede tumbar NUESTRO build. Se mide, se cuenta, y se decide luego.
+  const antesDeClic = page.url();
+  await paradas.first().click({ timeout: 5_000 }).catch(() => {});
+  await page.waitForTimeout(1_000);
+  const navegó = page.url() !== antesDeClic;
+  console.log(`\n  ⭐ PULSO UNA PARADA DE SU ITINERARIO → ${navegó ? page.url() : 'NO NAVEGA A NINGUNA PARTE'}`);
+  console.log(`     (ZetaBus sí: 38 enlaces a /parada/… — verificado pulsando)`);
 });
 
 test('EL BUSCADOR: por número de poste y por nombre', async ({ page }) => {

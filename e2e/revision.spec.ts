@@ -88,7 +88,10 @@ const FEOS: [string, string, RegExp][] = [
   ['caido', 'Avanza no responde', /NO significa que no haya autobuses/i],
   ['sin-buses', 'Ahora mismo no viene ningún autobús', /La parada existe y Avanza ha contestado/i],
   ['ilegible', 'No entendemos lo que ha contestado Avanza', /lista incompleta con cara de estar completa/i],
-  ['sin-ficha', 'SIN DATOS', /No inventamos su modelo/i],
+  // ⚠️ El TEXTO cambió (la ficha son chips ahora, como los suyos). La REGLA no:
+  //    si no sabemos el modelo, se dice. Nunca "Estándar, 12 m" porque sea lo más
+  //    común — eso es inventarse el dato justo donde no lo tenemos.
+  ['sin-ficha', 'Sin datos de este autobús', /Sin datos de este autobús/i],
 ];
 
 for (const [fingimiento, titulo, frase] of FEOS) {

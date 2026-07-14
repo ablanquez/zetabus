@@ -315,11 +315,39 @@ export async function scrollHorizontal(page: Page): Promise<number> {
  */
 export async function truncados(page: Page): Promise<Culpable[]> {
   return page.evaluate(() => {
+    /**
+     * ⚠️⚠️ EL DETECTOR ME MINTIÓ. Y ESTA VEZ EN LA DIRECCIÓN SEGURA (se puso rojo).
+     *
+     * Cazó siete "textos truncados" que decían cosas como:
+     *     "Estos datos no constan en el registro of…"  → necesita 457px, tiene 1px
+     *     "cabecera de línea"                          → necesita 123px, tiene 1px
+     *
+     * Son mis `sr-only`: contenido PARA LECTORES DE PANTALLA. Un `sr-only` es, por
+     * definición, un elemento de 1×1 px con `overflow:hidden` — que es exactamente
+     * la firma geométrica de "texto recortado". El detector medía bien y concluía
+     * mal: eso no es un dato amputado en pantalla, es un dato que NO ESTÁ en la
+     * pantalla, a propósito, para quien no la ve.
+     *
+     * ⚠️ Y SE EXCLUYE POR GEOMETRÍA, NO POR EL NOMBRE DE LA CLASE. Si mirara
+     *    `.sr-only`, bastaría con que alguien usara otro nombre (o Tailwind lo
+     *    renombrara) para que el detector volviera a gritar. La firma real de
+     *    "visualmente oculto" es: posicionado fuera de flujo, 1 píxel, y recortado.
+     *
+     * ⚠️ Y NO ES UN AGUJERO: un texto de verdad NUNCA mide 1×1 px con overflow
+     *    hidden. Si alguien recortara un nombre de parada, seguiría teniendo su
+     *    ancho real y esto lo cazaría igual. Hay contraprueba en `instrumento.spec`.
+     */
+    const visualmenteOculto = (n: HTMLElement, s: CSSStyleDeclaration) =>
+      (s.position === 'absolute' || s.position === 'fixed') &&
+      n.clientWidth <= 1 &&
+      n.clientHeight <= 1;
+
     const rotos: { etiqueta: string; texto: string; detalle: string }[] = [];
     for (const n of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
       if (n.children.length > 0) continue; // solo hojas: las que llevan el texto
       const s = getComputedStyle(n);
       if (s.display === 'none' || s.visibility === 'hidden') continue;
+      if (visualmenteOculto(n, s)) continue; // ← no está en la pantalla: no se juzga
       const t = (n.innerText ?? '').trim();
       if (!t) continue;
       const recorta = s.overflow === 'hidden' || s.overflowX === 'hidden' || s.textOverflow === 'ellipsis';
@@ -396,6 +424,34 @@ export const TACTIL_MINIMO = 24;
 
 export async function tactilesPequenos(page: Page): Promise<Culpable[]> {
   return page.evaluate((min) => {
+    /**
+     * ⚠️ LA EXCEPCIÓN "INLINE" DE LA WCAG 2.5.8. CITADA, NO INVENTADA.
+     *
+     * El criterio dice, literalmente, que NO se aplica cuando:
+     *   *"Inline: The target is in a sentence or its size is otherwise
+     *     constrained by the line-height of non-target text."*
+     *
+     * Es el caso de la atribución de Leaflet ("Leaflet | © OpenStreetMap"): son
+     * enlaces DENTRO de una frase, y su altura la manda el interlineado del texto
+     * que los rodea. Agrandarlos rompería la línea de texto.
+     *
+     * ⚠️ Y ESTO NO ES UNA PUERTA TRASERA PARA MIS BOTONES. La condición se
+     *    comprueba de verdad: el enlace tiene que ser `display:inline` Y estar
+     *    dentro de un padre que tenga OTRO texto además de él. Un chip, un botón o
+     *    un marcador de mapa no cumplen ninguna de las dos, y siguen cazándose.
+     *    (Mis marcadores del mapa medían 30×22 y este detector los pilló.)
+     */
+    const excepcionInline = (n: HTMLElement, s: CSSStyleDeclaration): boolean => {
+      if (n.tagName !== 'A') return false;
+      if (!s.display.startsWith('inline')) return false;
+      const padre = n.parentElement;
+      if (!padre) return false;
+      const textoDelPadre = (padre.textContent ?? '').trim();
+      const textoPropio = (n.textContent ?? '').trim();
+      // ¿Hay MÁS texto alrededor? Entonces está "en una frase".
+      return textoDelPadre.length > textoPropio.length;
+    };
+
     const sel = 'a, button, [role="link"], [role="button"], input, select';
     const malos: { etiqueta: string; texto: string; detalle: string }[] = [];
     for (const n of Array.from(document.querySelectorAll<HTMLElement>(sel))) {
@@ -403,6 +459,7 @@ export async function tactilesPequenos(page: Page): Promise<Culpable[]> {
       if (s.display === 'none' || s.visibility === 'hidden') continue;
       const r = n.getBoundingClientRect();
       if (r.width === 0 || r.height === 0) continue;
+      if (excepcionInline(n, s)) continue;
       if (r.width < min || r.height < min) {
         malos.push({
           etiqueta: n.tagName.toLowerCase(),
