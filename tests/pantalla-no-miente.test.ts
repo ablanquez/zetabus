@@ -236,8 +236,18 @@ describe('⛔ EL BARRIDO NO SE DISPARA SOLO. NUNCA.', () => {
     expect(codigo, 'nunca "todos los autobuses"').not.toMatch(/todos los autobuses/i);
     expect(codigo, 'nunca "hay N autobuses" a secas').not.toMatch(/Hay \$\{n\}/);
     // Y la salvedad que hace que el titular sea verdad:
-    expect(c.replace(/\s+/g, ' ')).toMatch(/Puede haber alguno más que no aparezca aquí/);
+    const plano = c.replace(/\s+/g, ' ');
+    expect(plano).toMatch(/Puede haber alguno más que no aparezca/);
     expect(c).toMatch(/sin respuesta/);
+
+    // ⭐ Y LA SALVEDAD TIENE QUE DECIR POR QUÉ, porque desde que el barrido es
+    //    completo el "puede haber alguno más" suena a excusa. No lo es: Avanza
+    //    solo anuncia los DOS SIGUIENTES de cada línea y sentido, así que un
+    //    tercero muy pegado a otros dos no lo publica NINGÚN poste. Ni
+    //    preguntándolos todos. Ése es el motivo, y va escrito en la pantalla.
+    expect(plano, 'la salvedad tiene que explicar la regla de los dos').toMatch(
+      /dos siguientes de cada línea y sentido/,
+    );
   });
 
   it('la barra de progreso mide POSTES REALES, no una animación', () => {
@@ -247,6 +257,37 @@ describe('⛔ EL BARRIDO NO SE DISPARA SOLO. NUNCA.', () => {
     expect(c).toMatch(/aria-valuenow=\{hechos\}/);
     expect(c, 'una barra animada que no mide nada es un instrumento mentiroso').not.toMatch(
       /animate-pulse|animate-\[/,
+    );
+    // ⭐ Lo que SE VE es el %. Lo que se MIDE siguen siendo postes. Quitar el
+    //    rótulo de fontanería ("12 de 18 postes") no puede quitar el instrumento.
+    expect(c, 'la barra enseña el porcentaje').toMatch(/\{pct\} %/);
+    expect(c, 'y ya no enseña el recuento de postes, que no le dice nada a nadie')
+      .not.toMatch(/de \{total\} postes/);
+  });
+});
+
+describe('⛔ EL BARRIDO NO PUEDE VOLVER A DISPARARLO TODO DE GOLPE', () => {
+  it('⭐ el motor NO hace Promise.all sobre los postes: se marca un ritmo', () => {
+    const c = sinComentarios(readFileSync('src/engine/barrido.ts', 'utf8'));
+    // El `Promise.all` de los postes era la ráfaga: 67 conexiones a la vez contra
+    // un servidor ajeno. Ahora las peticiones van por `aRitmo`, que reserva un
+    // hueco por petición. El `Promise.all` que queda es el de los OBREROS (4), y
+    // ése es justo el que acota las simultáneas.
+    expect(c).toMatch(/aRitmo\(/);
+    expect(c).toMatch(/POR_SEGUNDO\s*=\s*4/);
+    expect(c, 'los postes NO se mapean a un Promise.all').not.toMatch(
+      /Promise\.all\(\s*aConsultar/,
+    );
+  });
+
+  it('⚠️ el ritmo SOLO se salta cuando el transporte es falso (modo demo)', () => {
+    const c = sinComentarios(readFileSync('src/app/api/barrido/[linea]/route.ts', 'utf8'));
+    // Saltarse el ritmo es defendible cuando no sale ni un byte hacia Avanza. No
+    // lo es en ningún otro caso, y no puede haber ninguna otra puerta.
+    const saltos = c.match(/porSegundo/g) ?? [];
+    expect(saltos).toHaveLength(1);
+    expect(c, 'el salto va condicionado a `fingir`').toMatch(
+      /fingir\s*\?\s*\{\s*porSegundo:\s*Infinity\s*\}/,
     );
   });
 });

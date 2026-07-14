@@ -72,5 +72,28 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    /**
+     * ⚠️⚠️ ESTO FALTABA, Y LOS TESTS PASABAN IGUAL. QUE ES LO GRAVE.
+     *
+     * Los tests visuales usan `?fingir=` para provocar los casos feos (Avanza
+     * caída, un coche sin ficha, un dato sin verificar). Y `fingimientoDe()`
+     * exige `ZETABUS_DEMO === '1'` — con razón: un modo demo que se pueda
+     * encender desde la URL en producción es una fábrica de pantallas falsas.
+     *
+     * Pero este servidor se levantaba SIN la variable. ⇒ `fingir` era null, el
+     * fingimiento NO OCURRÍA, y los tests corrían contra los datos REALES de
+     * Avanza... y pasaban, porque estaban escritos con guardas del tipo
+     * "si hay algún sin_verificar, compruébalo".
+     *
+     * Se me pasó porque yo tenía un `ZETABUS_DEMO=1 next start` levantado a mano
+     * y `reuseExistingServer` lo reutilizaba. En cuanto Playwright levantó el
+     * suyo, los fingimientos desaparecieron. El verde dependía de lo que hubiera
+     * dejado abierto en otra terminal.
+     *
+     * ⇒ La variable va AQUÍ. Y además, los tests que fingen exigen ver la banda
+     *   roja del modo demo: si no está, el fingimiento no ha ocurrido y el test
+     *   TIENE que fallar en vez de aprobar mirando otra cosa.
+     */
+    env: { ZETABUS_DEMO: '1' },
   },
 });

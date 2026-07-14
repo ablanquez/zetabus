@@ -58,12 +58,35 @@ function espia(page: Page) {
   return aNuestraApi;
 }
 
+/**
+ * ⚠️⚠️ SOSPECHA DEL INSTRUMENTO: ¿EL FINGIMIENTO HA OCURRIDO DE VERDAD?
+ *
+ * `?fingir=` solo hace algo si el servidor tiene `ZETABUS_DEMO=1`. Si no la
+ * tiene, el parámetro se ignora EN SILENCIO y el test acaba mirando los datos
+ * reales de Avanza — y pasando, porque casi todo lo que comprueba también es
+ * cierto con datos reales.
+ *
+ * Eso pasó: el `webServer` de Playwright no ponía la variable. Los tests estaban
+ * verdes y no probaban lo que decían probar. El verde dependía de que yo tuviera
+ * otro servidor levantado a mano en otra terminal.
+ *
+ * ⇒ Si se finge, TIENE que verse la banda roja. Si no está, el test muere aquí
+ *   en vez de aprobar mirando otra cosa.
+ */
+async function fingiendo(page: Page) {
+  await expect(
+    page.locator('[data-papel="banda-demo"]'),
+    'el fingimiento NO está ocurriendo: falta ZETABUS_DEMO=1 en el servidor',
+  ).toBeVisible();
+}
+
 test.describe('⭐ CERO PETICIONES HASTA QUE ALGUIEN PULSA', () => {
   test('abrir la línea · cambiar de sentido · recargar · esperar → CERO', async ({ page }, info) => {
     const llamadas = espia(page);
 
     // 1 · Abrir la vista de línea.
     await page.goto(CON_FINGIR, { waitUntil: 'networkidle' });
+    await fingiendo(page);
     await expect(page.locator('[data-papel="boton-barrer"]')).toBeVisible();
     console.log(`
   [${info.project.name}]`);
@@ -72,7 +95,7 @@ test.describe('⭐ CERO PETICIONES HASTA QUE ALGUIEN PULSA', () => {
     // ⭐ Y EL SERVIDOR TAMPOCO HA BARRIDO: el HTML no trae ni un autobús.
     //    (Un barrido en el SSR no se vería como petición del navegador.)
     expect(await page.locator('[data-papel="hallazgo"]').count(), 'el HTML no puede traer resultados').toBe(0);
-    expect(await page.locator('[data-papel="bus-encontrado"]').count()).toBe(0);
+    expect(await page.locator('[data-papel="grupo-flota"]').count()).toBe(0);
     expect(await page.locator('[data-papel="itinerario"]').count(), 'pero el recorrido SÍ está').toBe(1);
 
     // 2 · Cambiar de sentido.
@@ -101,30 +124,53 @@ test.describe('⭐ CERO PETICIONES HASTA QUE ALGUIEN PULSA', () => {
     expect(llamadas, 'la vista de línea NO PUEDE tocar Avanza si nadie pulsa').toEqual([]);
   });
 
-  test('⭐ pulsar el botón → ~18, y NI UNA MÁS', async ({ page }, info) => {
+  test('⭐ pulsar el botón → LA LÍNEA ENTERA, los dos sentidos, y ni una más', async ({ page }, info) => {
     const llamadas = espia(page);
     await page.goto(CON_FINGIR, { waitUntil: 'networkidle' });
+    await fingiendo(page);
     expect(llamadas).toEqual([]); // nada todavía
 
     await page.locator('[data-papel="boton-barrer"]').click();
     await expect(page.locator('[data-papel="barriendo"]')).toBeVisible();
-    await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 90_000 });
 
     // ⭐ EL PROPIO ENDPOINT DECLARA cuántas peticiones ha hecho a Avanza, contadas
     //    en el único punto del programa que habla con ellos. No es una estimación.
     const declaradas = Number(await page.locator('[data-papel="hallazgo"]').getAttribute('data-peticiones'));
-    const total = Number(await page.locator('[data-papel="hallazgo-salvedad"]').innerText().then((s) => /(\d+) postes consultados/.exec(s)?.[1] ?? '0'));
+    const total = Number(await page.locator('[data-papel="hallazgo-salvedad"]').innerText().then((s) => /(\d+) paradas consultadas/.exec(s)?.[1] ?? '0'));
 
     console.log(`
   [${info.project.name}] pulsar el botón:`);
     console.log(`     llamadas al endpoint de barrido: ${llamadas.length}`);
-    console.log(`     postes consultados: ${total}`);
+    console.log(`     paradas consultadas: ${total}`);
     console.log(`     peticiones a Avanza (contadas): ${declaradas}`);
 
     expect(llamadas.length, 'UNA sola llamada al barrido, no una por poste').toBe(1);
-    // La 35 tiene 67 postes → 18 con paso 4. Ni uno más, y desde luego no los 67.
-    expect(total, 'con paso 4, no se barren los 67 postes').toBeLessThanOrEqual(20);
-    expect(declaradas).toBeLessThanOrEqual(total);
+
+    // ⭐⭐ AQUÍ CAMBIÓ EL CONTRATO, Y ES EL CORAZÓN DE LA TANDA.
+    //
+    // Este test decía: "con paso 4, NO se barren los 67 postes" → ≤ 20.
+    // Es decir: certificaba, en verde, que NO preguntábamos por 49 paradas.
+    //
+    // Y el 14/07/2026 se midió contra Avanza que ese muestreo PERDÍA AUTOBUSES:
+    // en la línea 35, 10 de 12. La aserción estaba protegiendo el fallo.
+    //
+    // Ahora se exige lo contrario: LA LÍNEA ENTERA, los dos sentidos. 67 paradas.
+    expect(total, 'la 35 tiene 67 postes en los dos sentidos: se piden TODOS').toBe(67);
+
+    // ⚠️⚠️ Y LAS 67 TIENEN QUE HABERSE PEDIDO DE VERDAD. AQUÍ ME CACÉ UNA.
+    //
+    // Esto decía "≤ total" y pasaba con 40. Cuarenta, de 67. ¿Por qué 40? Porque
+    // el cubo de fichas tiene 40 y la demo, al saltarse el ritmo, las soltaba de
+    // golpe: 27 postes salían "no ha respondido" con un transporte FALSO, que no
+    // puede fallar. La demo estaba enseñando un producto peor del que hay.
+    //
+    // Un "≤" es una aserción cobarde: aprueba el caso bueno y el malo.
+    expect(declaradas, 'las 67 se piden, y ninguna se queda sin ficha').toBe(total);
+    await expect(
+      page.locator('[data-papel="hallazgo-salvedad"]'),
+      'con un transporte falso NO puede haber paradas sin respuesta',
+    ).not.toContainText(/sin respuesta/);
 
     // Y esperar NO dispara otro barrido: aquí no hay refresco automático.
     await page.waitForTimeout(20_000);
@@ -143,6 +189,8 @@ test.describe('⭐ LA BARRA MIDE ALGO DE VERDAD', () => {
     //    equivocado: "no hay valores intermedios" no probaría que la barra sea
     //    decorativa, sino que el trabajo fue instantáneo.
     await page.goto(`/linea/${LINEA}?fingir=barrido-lento`, { waitUntil: 'networkidle' });
+
+    await fingiendo(page);
 
     const vistos: number[] = [];
     // Se observa el DOM mientras barre: los valores que TOMA la barra.
@@ -206,6 +254,8 @@ test.describe('⭐ LA BARRA MIDE ALGO DE VERDAD', () => {
 test('⚠️ AVANZA SE CAE A MITAD DEL BARRIDO: la barra lo DICE, no se congela', async ({ page }, info) => {
   await page.goto(CON_FINGIR, { waitUntil: 'networkidle' });
 
+  await fingiendo(page);
+
   // El barrido empieza bien y a los 400 ms se corta el canal: es lo más parecido
   // a que Avanza se caiga con el barrido a medias.
   await page.route('**/api/barrido/**', async (route) => {
@@ -233,37 +283,110 @@ test('⚠️ AVANZA SE CAE A MITAD DEL BARRIDO: la barra lo DICE, no se congela'
 
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('la lista de autobuses: ficha completa, confianza, y a qué parada llega', async ({ page }, info) => {
+test('⭐ el resultado va AGRUPADO POR MODELO: la geometría se explica sola', async ({ page }, info) => {
   await page.goto(`/linea/${LINEA}?fingir=sin-verificar`, { waitUntil: 'networkidle' });
+  await fingiendo(page);
   await page.locator('[data-papel="boton-barrer"]').click();
-  await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 90_000 });
   await page.waitForTimeout(300);
   await capturar(page, `capturas/zetabus/buses-encontrados-${info.project.name}.png`);
 
-  const buses = page.locator('[data-papel="bus-encontrado"]');
-  const n = await buses.count();
-  console.log(`\n  [${info.project.name}] ${n} autobuses encontrados`);
+  const grupos = page.locator('[data-papel="grupo-flota"]');
+  const n = await grupos.count();
+  console.log(`\n  [${info.project.name}] ${n} grupos de flota`);
   expect(n).toBeGreaterThan(0);
 
-  const primero = buses.first();
-  await expect(primero).toContainText(/Coche \d+/);
-  await expect(primero).toContainText(/sentido/);
-  await expect(primero).toContainText(/llega a/);
+  // El dato BRUTO sigue estando: los números de coche. Es lo único que le sirve
+  // a alguien que está mirando el autobús de verdad.
+  const coches = page.locator('[data-papel="coches"] [data-coche]');
+  expect(await coches.count(), 'los números de coche VAN').toBeGreaterThan(0);
 
-  // ⭐ LA CONFIANZA NO SE DISFRAZA. Y se distingue por FORMA, no por color:
-  //    borde discontinuo para `sin_verificar`, sólido para `oficial`.
-  const sv = page.locator('[data-papel="bus-encontrado"] [data-confianza="sin_verificar"]');
-  if ((await sv.count()) > 0) {
-    await expect(sv.first()).toContainText(/SIN VERIFICAR/);
-    const borde = await sv.first().evaluate((n2) => getComputedStyle(n2).borderStyle);
+  // ⛔ Y lo que se ha QUITADO, porque aquí sobraba y competía con lo que importa:
+  await expect(page.locator('[data-papel="grupos-flota"]')).not.toContainText(/sentido/);
+  await expect(page.locator('[data-papel="grupos-flota"]')).not.toContainText(/llega a/);
+  await expect(page.locator('[data-papel="grupos-flota"]')).not.toContainText(/\bmin\b/);
+
+  // ⭐⭐ LA CONFIANZA NO SE DISFRAZA. Y se distingue por FORMA, no por color:
+  //    borde discontinuo para `sin_verificar`, sólido para `oficial`. Sobrevive
+  //    al gris — y hay un test que lo demuestra apagando el color entero.
+  const sv = grupos.filter({ has: page.locator('css=[data-papel="procedencia"]') });
+  const svN = await page.locator('[data-papel="grupo-flota"][data-confianza="sin_verificar"]').count();
+  if (svN > 0) {
+    const uno = page.locator('[data-papel="grupo-flota"][data-confianza="sin_verificar"]').first();
+    await expect(uno).toContainText(/SIN VERIFICAR/);
+    const borde = await uno.evaluate((el) => getComputedStyle(el).borderStyle);
     console.log(`  sin_verificar → borde "${borde}" (sobrevive al gris)`);
     expect(borde).toBe('dashed');
+
+    // ⚠️ Y NO SE HA MEZCLADO con ningún grupo oficial: es un grupo APARTE.
+    const oficiales = page.locator('[data-papel="grupo-flota"][data-confianza="oficial"]');
+    if ((await oficiales.count()) > 0) {
+      const bordeOf = await oficiales.first().evaluate((el) => getComputedStyle(el).borderStyle);
+      expect(bordeOf, 'un oficial NO puede llevar el borde del sin-verificar').toBe('solid');
+    }
   }
+  expect(await sv.count()).toBe(svN); // el marcador y el atributo dicen lo mismo
 
   // ⚠️ Y el titular NO afirma más de lo que sabe.
   await expect(page.locator('[data-papel="hallazgo-titular"]')).toContainText(/Hemos encontrado/);
   await expect(page.locator('body')).not.toContainText(/todos los autobuses/i);
   await expect(page.locator('[data-papel="hallazgo-salvedad"]')).toContainText(
-    /Puede haber alguno más que no aparezca aquí/,
+    /dos siguientes de cada línea y sentido/,
   );
+});
+
+test('⭐⭐ AVANZA NO CONTESTA A NADA: nos rendimos pronto y LO DECIMOS', async ({ page }, info) => {
+  /**
+   * ⚠️ ESTO SALIÓ DE UN BARRIDO REAL CON AVANZA CAÍDA, EL 14/07/2026:
+   *
+   *     110 peticiones · 67 timeouts · 43 reintentos · 90 segundos
+   *
+   * Preguntamos por los 67 postes, uno a uno, a un servidor que no contestaba a
+   * ninguno. Y al usuario le pusimos una barra girando durante minuto y medio
+   * para acabar diciéndole que no sabíamos nada.
+   *
+   * Ahora: se para pronto, se dice, y a Avanza se le dejan de mandar las
+   * peticiones que faltaban. Que es lo que promete el README.
+   */
+  await page.goto(`/linea/${LINEA}?fingir=caido`, { waitUntil: 'networkidle' });
+  await fingiendo(page);
+
+  const t0 = Date.now();
+  await page.locator('[data-papel="boton-barrer"]').click();
+  await expect(page.locator('[data-papel="barrido-roto"]')).toBeVisible({ timeout: 60_000 });
+  const tardo = (Date.now() - t0) / 1000;
+
+  console.log(`\n  [${info.project.name}] Avanza caída → se rinde en ${tardo.toFixed(1)} s`);
+  await capturar(page, `capturas/zetabus/barrido-caido-${info.project.name}.png`);
+
+  // ⛔ NO dice "no hay autobuses". Dice que NO LO SABE. Y dice que ha parado.
+  await expect(page.locator('body')).toContainText(/dejado de preguntar/);
+  await expect(page.locator('body')).toContainText(/NO significa que no haya autobuses/);
+  await expect(page.locator('body')).not.toContainText(/Hemos encontrado 0/);
+
+  // Y se puede reintentar: la pantalla no es un callejón sin salida.
+  await expect(page.getByRole('button', { name: /Volver a intentarlo/ })).toBeVisible();
+});
+
+test('⚠️ UN COCHE SIN FICHA VA EN SU PROPIO GRUPO. Nunca dentro de otro.', async ({ page }, info) => {
+  // El fingimiento `sin-ficha` mete el coche 9999, que NO está en el registro
+  // oficial de flota. La tentación de un sistema perezoso es meterlo en el grupo
+  // más común ("sencillo, 12 m") porque casi siempre acierta. Eso es inventarse
+  // el dato justo donde no lo tenemos, y hacerlo con toda la confianza del mundo.
+  await page.goto(`/linea/${LINEA}?fingir=sin-ficha`, { waitUntil: 'networkidle' });
+  await fingiendo(page);
+  await page.locator('[data-papel="boton-barrer"]').click();
+  await expect(page.locator('[data-papel="hallazgo"]')).toBeVisible({ timeout: 90_000 });
+
+  const sinFicha = page.locator('[data-papel="grupo-flota"][data-confianza="sin_ficha"]');
+  await expect(sinFicha).toHaveCount(1);
+  await expect(sinFicha).toContainText(/Sin datos/i);
+  await expect(sinFicha).toContainText(/No inventamos su modelo ni su tamaño/);
+
+  // Su forma también lo dice, sin color: borde de PUNTOS.
+  const borde = await sinFicha.evaluate((el) => getComputedStyle(el).borderStyle);
+  console.log(`\n  [${info.project.name}] sin ficha → borde "${borde}"`);
+  expect(borde).toBe('dotted');
+
+  await capturar(page, `capturas/zetabus/grupo-sin-ficha-${info.project.name}.png`);
 });
