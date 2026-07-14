@@ -19,7 +19,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { capturar, seVe } from './lib/medir';
+import { capturar, seVe } from '../../e2e/lib/medir';
 
 const LINEA = '35';
 const CON_FINGIR = `/linea/${LINEA}?fingir=dos-lineas`;

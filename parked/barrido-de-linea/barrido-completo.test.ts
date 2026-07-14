@@ -19,12 +19,12 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CacheDosPisos } from '@/cache/dos-pisos';
-import { barrerLinea, EN_VUELO, POR_SEGUNDO, RENDIRSE_TRAS } from '@/engine/barrido';
-import { agruparFlota } from '@/engine/agrupar-flota';
+import { barrerLinea, EN_VUELO, POR_SEGUNDO, RENDIRSE_TRAS } from './barrido';
+import { agruparFlota } from './agrupar-flota';
 import { idLinea, idParada, lineas, posteDe, sentidosDe } from '@/engine/topologia';
 import type { BusProfile } from '@/modes/bus/profile';
 import type { Transporte } from '@/sources/avanza/transporte';
-import { cacheSinTecho, POSTE_MUDO, respuestaPoste, siempre, transporteFalso, posteDelCuerpo } from './dobles';
+import { cacheSinTecho, POSTE_MUDO, respuestaPoste, siempre, transporteFalso, posteDelCuerpo } from '../../tests/motor-vivo/dobles';
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-bc-')); });

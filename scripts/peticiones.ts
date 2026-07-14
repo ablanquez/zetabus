@@ -13,8 +13,6 @@
 import { CacheDosPisos } from '@/cache/dos-pisos';
 import { Limitador } from '@/cache/limitador';
 import { llegadasDePoste } from '@/engine/llegadas';
-import { barrerLinea } from '@/engine/barrido';
-import { idLinea, lineas } from '@/engine/topologia';
 import type { Transporte } from '@/sources/avanza/transporte';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -44,9 +42,19 @@ const REFRESCOS_POR_MINUTO = 6;
 /** Pero la caché solo deja pasar 1 de cada 15 s → 4 refrescos reales/min. */
 const CICLOS_UTILES = 4;
 
-const L35 = idLinea(String(lineas().find((l) => l.shortName === '35')!.id));
-const N7 = idLinea(String(lineas().find((l) => l.shortName === 'N7')!.id));
-
+/**
+ * ⚠️ AQUÍ HABÍA DOS ESCENARIOS MÁS, Y ERAN LOS QUE MANDABAN EN LA CUENTA:
+ *
+ *     "1 línea en pantalla (la 35)"          →  67 peticiones por barrido
+ *     "PEOR CASO: la línea más larga (N7)"   → 119 peticiones por barrido
+ *
+ * El barrido de línea está APARCADO (ver `docs/BARRIDO_APARCADO.md`), así que ya
+ * no hay ninguna operación en la aplicación que haga más de UNA petición a Avanza.
+ * Los escenarios que quedan son todos de PARADA — que es todo lo que hay.
+ *
+ * ⭐ Y ese es justamente el argumento del aparcamiento, dicho en números: el 80%
+ *   del valor cuesta UNA petición cacheada; el 20% restante costaba 67.
+ */
 const ESCENARIOS: Escenario[] = [
   {
     nombre: '1 usuario mirando 1 parada',
@@ -74,22 +82,14 @@ const ESCENARIOS: Escenario[] = [
     },
   },
   {
-    nombre: '1 línea, alguien PULSA el botón (la 35)',
-    // ⚠️ Ya no es "paso 4, 18 peticiones". El muestreo perdía autobuses (medido:
-    //    10 de 12 en la 35) y se ha retirado. Se barre la línea entera, los dos
-    //    sentidos: 67 postes. Y NO se dispara solo: solo si alguien pulsa.
-    detalle: 'un barrido COMPLETO: 67 postes, los dos sentidos',
+    nombre: 'alguien mirando el RECORRIDO de una línea',
+    // ⭐ CERO. Y no es que esté cacheado: es que NO EXISTE EL CÓDIGO que lo pediría.
+    //    El itinerario sale del GTFS, que se hornea en el build. Avanza no se entera
+    //    de que alguien ha abierto /linea/35.
+    detalle: 'itinerario, transbordos, paradas. Todo del GTFS. CERO peticiones.',
     ciclosPorMinuto: CICLOS_UTILES,
-    correr: async (d) => {
-      await barrerLinea(L35, d, { dormir: async () => {} });
-    },
-  },
-  {
-    nombre: '⚠️ PEOR CASO: la línea más larga (N7, 119 postes)',
-    detalle: '119 peticiones por barrido. Es el barrido más caro de la red.',
-    ciclosPorMinuto: CICLOS_UTILES,
-    correr: async (d) => {
-      await barrerLinea(N7, d, { dormir: async () => {} });
+    correr: async () => {
+      /* a propósito: no hay nada que llamar */
     },
   },
   {

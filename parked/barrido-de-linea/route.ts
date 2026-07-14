@@ -29,7 +29,7 @@
  * botón. Meter un protocolo con más partes de las que se usan es una ñapa cara.
  */
 
-import { barrerLinea } from '@/engine/barrido';
+import { barrerLinea } from './barrido';
 import { motor } from '@/engine/motor';
 import { idLinea, lineas } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';

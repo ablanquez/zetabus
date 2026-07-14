@@ -206,14 +206,16 @@ test('la portada aguanta a este tamaño', async ({ page }, info) => {
   expect(r.scroll).toBeLessThanOrEqual(0);
 });
 
-test('la pantalla de línea aguanta a este tamaño (y NO barre al abrirse)', async ({ page }, info) => {
+test('la pantalla de línea aguanta a este tamaño (y ya no tiene botón)', async ({ page }, info) => {
   await page.goto('/linea/35', { waitUntil: 'networkidle' });
   await capturar(page, `capturas/zetabus/linea-${info.project.name}.png`);
 
-  // ⚠️ CAMBIÓ EN LA TANDA 5A: ya no hay recuento automático. Hay un BOTÓN.
-  //    Abrir la línea no cuesta ni una petición a Avanza.
-  await expect(page.locator('[data-papel="boton-barrer"]')).toBeVisible();
-  expect(await page.locator('[data-papel="hallazgo"]').count(), 'nada barrido al abrir').toBe(0);
+  // ⛔ EL BARRIDO ESTÁ APARCADO. Y no se deja un botón desactivado ni un
+  //    "próximamente": un botón que no hace nada es ruido, y una promesa
+  //    incumplida en una demo resta. Ver `docs/BARRIDO_APARCADO.md`.
+  expect(await page.locator('[data-papel="boton-barrer"]').count(), 'ni botón').toBe(0);
+  expect(await page.locator('[data-papel="hallazgo"]').count()).toBe(0);
+  // Lo que la pantalla sirve —el recorrido— sigue entero, y sale del GTFS.
   await expect(page.locator('[data-papel="itinerario"]')).toBeVisible();
 
   const r = await revisar(page, `línea · ${info.project.name}`);

@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 function ficheros(dir: string, ext: string[]): string[] {
@@ -158,15 +158,15 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
     expect(c).toMatch(/no todos/);
   });
 
-  it('el hallazgo dice "Hemos encontrado", nunca "hay" ni "todos"', () => {
-    // ⚠️ CAMBIÓ EN LA TANDA 5A. El recuento agregado ("los 11 son articulados")
-    //    se retiró: no le servía a nadie. Lo que sirve es el dato BRUTO —cuántos
-    //    hay y CUÁLES SON— y el usuario ve con sus ojos cuáles son articulados.
-    //    La geometría se explica sola; el texto hay que creérselo.
-    const c = readFileSync('src/components/BuscarBuses.tsx', 'utf8');
-    expect(c).toMatch(/Hemos encontrado/);
-    expect(sinComentarios(c)).not.toMatch(/todos los autobuses/i);
-  });
+  // ⚠️ AQUÍ HABÍA UN TEST SOBRE EL TITULAR DEL BARRIDO ("Hemos encontrado N", nunca
+  //    "hay N"). Se ha ido con el barrido a `parked/barrido-de-linea/`, y su regla
+  //    está escrita en `docs/BARRIDO_APARCADO.md` §2: si tres autobuses caben entre
+  //    dos postes seguidos, el tercero no lo publica NINGÚN poste, así que "hay N"
+  //    era insostenible incluso barriendo la línea entera.
+  //
+  //    Lo que NO se ha ido es la misma regla aplicada a la PARADA —"DETECTADOS, no
+  //    todos"—, que es el test de arriba. Sigue mandando, porque la limitación de la
+  //    fuente es la misma: dos siguientes por línea y sentido.
 
   it('⭐ un autobús SIN FICHA sigue diciendo SIN DATOS, nunca un defecto', () => {
     // Esto NO cambia con la Tanda 5A: la ficha es la misma, y su regla también.
@@ -188,106 +188,94 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
   });
 });
 
-describe('⛔ EL BARRIDO NO SE DISPARA SOLO. NUNCA.', () => {
+describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A ÉL', () => {
   /**
-   * ⚠️ ANTONIO: "comprueba que NO QUEDA NINGÚN OTRO SITIO donde se dispare solo.
-   *              CUÉNTALO, no lo supongas."
+   * ═══════════════════════════════════════════════════════════════════════════
+   * ⚠️ ESTE TEST NO EXISTE PARA COMPROBAR QUE EL BOTÓN NO ESTÁ.
    *
-   * Lo conté. Y HABÍA OTRO: `/api/linea/[linea]/route.ts`, un Route Handler de la
-   * Tanda 3 que barría la línea entera —y encima calculaba los desvíos— con un
-   * simple GET. No lo llamaba nadie de la interfaz, pero era una URL PÚBLICA: el
-   * día que un rastreador la encontrara, disparaba 18 peticiones a Avanza sin que
-   * nadie hubiera pulsado nada.
+   * Existe porque YA PASÓ UNA VEZ: en la Tanda 5A conté los sitios que disparaban
+   * el barrido y apareció `/api/linea/[linea]/route.ts`, un Route Handler que
+   * barría la línea entera —y encima calculaba los desvíos— con un simple GET.
+   * No lo llamaba nadie de la interfaz. Pero era una URL PÚBLICA E INDEXABLE: el
+   * día que un rastreador la encontrara, 18 peticiones a Avanza sin que nadie
+   * hubiera pulsado nada.
    *
-   * Se borró. Y este test existe para que no vuelva a colarse otro.
+   * Quitar el botón NO ES aparcar el barrido. Aparcarlo es que NO QUEDE NINGÚN
+   * CAMINO DE EJECUCIÓN — ni ruta, ni handler, ni import vivo.
+   *
+   * Y eso se CUENTA, no se supone.
+   * ═══════════════════════════════════════════════════════════════════════════
    */
-  const rutas = ficheros('src/app', ['.tsx', '.ts']);
+  const vivos = [...ficheros('src', ['.ts', '.tsx']), ...ficheros('scripts', ['.ts'])];
 
-  it('barrerLinea SOLO se llama desde /api/barrido, que necesita un botón', () => {
-    const culpables = rutas.filter(
-      (f) => /barrerLinea/.test(sinComentarios(readFileSync(f, 'utf8'))) && !f.includes('barrido'),
-    );
-    expect(culpables, 'un barrido que se dispara solo no se puede defender').toEqual([]);
-  });
-
-  it('NINGUNA página (page.tsx) toca Avanza al renderizarse... salvo la de parada', () => {
-    // La parada SÍ consulta al abrirse, y es correcto: es UNA petición, y es
-    // exactamente el dato por el que el usuario ha abierto esa pantalla.
-    // La LÍNEA, no: son 18, y quien solo quiere ver el recorrido no las pide.
-    const paginas = rutas.filter((f) => f.endsWith('page.tsx'));
-    const queBarren = paginas.filter((f) => {
+  it('⭐ NADA en src/ ni en scripts/ importa el barrido aparcado', () => {
+    const culpables = vivos.filter((f) => {
       const c = sinComentarios(readFileSync(f, 'utf8'));
-      return /barrerLinea|leerPoste/.test(c);
+      return /barrerLinea|agruparFlota|BuscarBuses|parked\//.test(c);
     });
-    expect(queBarren).toEqual([]);
-
-    const linea = readFileSync('src/app/linea/[linea]/page.tsx', 'utf8');
-    expect(sinComentarios(linea), 'la vista de línea NO puede barrer al abrirse').not.toMatch(
-      /barrerLinea|motor\(/,
-    );
-    expect(linea, 'tiene que haber un botón').toMatch(/BuscarBuses/);
+    expect(culpables, 'el código aparcado NO puede tener un import vivo').toEqual([]);
   });
 
-  it('⭐ el titular NO afirma más de lo que sabe', () => {
-    const c = readFileSync('src/components/BuscarBuses.tsx', 'utf8');
-    expect(c, '"Hemos encontrado N" — es un hallazgo, no un censo').toMatch(/Hemos encontrado/);
-    // ⛔ Lo que NO puede decir, pase lo que pase:
+  it('⭐ no existe NINGUNA ruta de barrido bajo src/app', () => {
+    // Next enruta lo que hay bajo `src/app`. Un `route.ts` ahí es una URL pública.
+    // El barrido vive en `parked/`, que Next no mira: no es una ruta, es un fichero.
+    expect(existsSync('src/app/api/barrido'), 'no puede haber endpoint de barrido').toBe(false);
+
+    const rutas = ficheros('src/app', ['.ts', '.tsx']);
+    const queBarren = rutas.filter((f) => /barrerLinea|barrido/i.test(sinComentarios(readFileSync(f, 'utf8'))));
+    expect(queBarren, 'ninguna ruta puede mencionar el barrido siquiera').toEqual([]);
+  });
+
+  it('⭐ LA ÚNICA página que toca Avanza al renderizarse es la de PARADA', () => {
+    // ⚠️ Y ESTE TEST LO ESCRIBÍ MAL LA PRIMERA VEZ: exigía CERO páginas, cuando su
+    //    propio nombre decía "salvo la de parada". Habría obligado a que la parada
+    //    dejara de pedir el dato por el que existe. Un test más estricto de lo que
+    //    dice ser no es más seguro: es una trampa para el que venga después.
+    //
+    //    La parada SÍ consulta al abrirse, y es CORRECTO: es UNA petición, cacheada
+    //    y compartida por todos los que miran esa parada, y es exactamente el dato
+    //    por el que el usuario ha abierto esa pantalla.
+    //    La LÍNEA, no: eran 67, y quien solo quiere ver el recorrido no las pide.
+    const paginas = ficheros('src/app', ['.tsx']).filter((f) => f.endsWith('page.tsx'));
+    const queLlaman = paginas.filter((f) =>
+      /barrerLinea|leerPoste|motor\(/.test(sinComentarios(readFileSync(f, 'utf8'))),
+    );
+    expect(queLlaman.map((f) => f.replace(/\\/g, '/'))).toEqual(['src/app/parada/[poste]/page.tsx']);
+
+    // Y ninguna de ellas, ni la de parada, puede barrer.
+    for (const f of paginas) {
+      expect(sinComentarios(readFileSync(f, 'utf8')), f).not.toMatch(/barrerLinea/);
+    }
+  });
+
+  it('⛔ la vista de línea NO tiene botón. Ni apagado, ni con un "próximamente".', () => {
+    // Un botón que no hace nada es ruido. Y una promesa incumplida en una demo
+    // resta: el que la ve piensa "esto está a medias", no "esto es deliberado".
+    const c = readFileSync('src/app/linea/[linea]/page.tsx', 'utf8');
     const codigo = sinComentarios(c);
-    expect(codigo, 'nunca "todos los autobuses"').not.toMatch(/todos los autobuses/i);
-    expect(codigo, 'nunca "hay N autobuses" a secas').not.toMatch(/Hay \$\{n\}/);
-    // Y la salvedad que hace que el titular sea verdad:
-    const plano = c.replace(/\s+/g, ' ');
-    expect(plano).toMatch(/Puede haber alguno más que no aparezca/);
-    expect(c).toMatch(/sin respuesta/);
-
-    // ⭐ Y LA SALVEDAD TIENE QUE DECIR POR QUÉ, porque desde que el barrido es
-    //    completo el "puede haber alguno más" suena a excusa. No lo es: Avanza
-    //    solo anuncia los DOS SIGUIENTES de cada línea y sentido, así que un
-    //    tercero muy pegado a otros dos no lo publica NINGÚN poste. Ni
-    //    preguntándolos todos. Ése es el motivo, y va escrito en la pantalla.
-    expect(plano, 'la salvedad tiene que explicar la regla de los dos').toMatch(
-      /dos siguientes de cada línea y sentido/,
-    );
+    expect(codigo).not.toMatch(/BuscarBuses|boton-barrer|<button/i);
+    expect(codigo, 'nada de "próximamente"').not.toMatch(/próximamente|proximamente|disabled/i);
+    // Pero el recorrido SÍ está: es lo que la pantalla sirve, y sale del GTFS.
+    expect(codigo, 'el itinerario se queda').toMatch(/Itinerario/);
   });
 
-  it('la barra de progreso mide POSTES REALES, no una animación', () => {
-    const c = sinComentarios(readFileSync('src/components/BuscarBuses.tsx', 'utf8'));
-    // El ancho sale del contador de postes hechos, no de un keyframes.
-    expect(c).toMatch(/hechos \/ total/);
-    expect(c).toMatch(/aria-valuenow=\{hechos\}/);
-    expect(c, 'una barra animada que no mide nada es un instrumento mentiroso').not.toMatch(
-      /animate-pulse|animate-\[/,
-    );
-    // ⭐ Lo que SE VE es el %. Lo que se MIDE siguen siendo postes. Quitar el
-    //    rótulo de fontanería ("12 de 18 postes") no puede quitar el instrumento.
-    expect(c, 'la barra enseña el porcentaje').toMatch(/\{pct\} %/);
-    expect(c, 'y ya no enseña el recuento de postes, que no le dice nada a nadie')
-      .not.toMatch(/de \{total\} postes/);
+  it('⚠️ el código aparcado SIGUE AHÍ. Aparcar no es borrar.', () => {
+    // Lo valioso no es el código (está en git). Es el PORQUÉ, que sí se pierde.
+    for (const f of ['barrido.ts', 'agrupar-flota.ts', 'BuscarBuses.tsx', 'route.ts']) {
+      expect(existsSync(`parked/barrido-de-linea/${f}`), `falta ${f}`).toBe(true);
+    }
+    expect(existsSync('docs/BARRIDO_APARCADO.md'), 'el porqué, escrito').toBe(true);
+  });
+
+  it('⭐ y el documento explica LA REGLA DE LOS DOS, que es el motivo de verdad', () => {
+    // Si alguien lo enciende dentro de seis meses, va a tropezar con lo mismo. Lo
+    // que tiene que encontrar no es "estaba desactivado": es POR QUÉ NO FUNCIONA.
+    const d = readFileSync('docs/BARRIDO_APARCADO.md', 'utf8').replace(/\s+/g, ' ');
+    expect(d, 'la regla de los dos').toMatch(/dos siguientes/i);
+    expect(d, 'la ventana la fija el pelotón').toMatch(/ventana/i);
+    expect(d, 'no hay muestreo defendible').toMatch(/no hay muestreo defendible/i);
+    expect(d, 'la cobertura no es monótona').toMatch(/monótona/i);
+    expect(d, 'el coste real').toMatch(/67/);
   });
 });
 
-describe('⛔ EL BARRIDO NO PUEDE VOLVER A DISPARARLO TODO DE GOLPE', () => {
-  it('⭐ el motor NO hace Promise.all sobre los postes: se marca un ritmo', () => {
-    const c = sinComentarios(readFileSync('src/engine/barrido.ts', 'utf8'));
-    // El `Promise.all` de los postes era la ráfaga: 67 conexiones a la vez contra
-    // un servidor ajeno. Ahora las peticiones van por `aRitmo`, que reserva un
-    // hueco por petición. El `Promise.all` que queda es el de los OBREROS (4), y
-    // ése es justo el que acota las simultáneas.
-    expect(c).toMatch(/aRitmo\(/);
-    expect(c).toMatch(/POR_SEGUNDO\s*=\s*4/);
-    expect(c, 'los postes NO se mapean a un Promise.all').not.toMatch(
-      /Promise\.all\(\s*aConsultar/,
-    );
-  });
-
-  it('⚠️ el ritmo SOLO se salta cuando el transporte es falso (modo demo)', () => {
-    const c = sinComentarios(readFileSync('src/app/api/barrido/[linea]/route.ts', 'utf8'));
-    // Saltarse el ritmo es defendible cuando no sale ni un byte hacia Avanza. No
-    // lo es en ningún otro caso, y no puede haber ninguna otra puerta.
-    const saltos = c.match(/porSegundo/g) ?? [];
-    expect(saltos).toHaveLength(1);
-    expect(c, 'el salto va condicionado a `fingir`').toMatch(
-      /fingir\s*\?\s*\{\s*porSegundo:\s*Infinity\s*\}/,
-    );
-  });
-});

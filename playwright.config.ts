@@ -70,7 +70,27 @@ export default defineConfig({
   webServer: {
     command: 'npm run start',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    /**
+     * ⚠️⚠️ `reuseExistingServer: !process.env.CI` ME MINTIÓ TRES VECES EN UN DÍA.
+     *
+     * Reutilizaba el `next start` que yo tenía levantado a mano en otra terminal.
+     * Y ese servidor tenía OTRO BUILD. Consecuencias reales, las tres silenciosas:
+     *
+     *   1. Los tests del barrido medían el código de la tanda ANTERIOR: decían
+     *      `"paso": 4, "total": 18` cuando el código ya barría los 67 postes.
+     *   2. El servidor reutilizado no tenía ZETABUS_DEMO=1 → los `?fingir=` se
+     *      ignoraban y los tests corrían contra Avanza REAL... y pasaban.
+     *   3. Y al aparcar el barrido, el botón "seguía ahí" — en un build de hace
+     *      media hora.
+     *
+     * Un test que aprueba código que no es el que has escrito no es un test.
+     * Y lo peor es que las tres veces el fallo fue SILENCIOSO: verde, y falso.
+     *
+     * ⇒ SIEMPRE SU PROPIO SERVIDOR, CON ESTE BUILD. Si el puerto está ocupado,
+     *   Playwright falla EN VOZ ALTA — que es exactamente lo que quiero: prefiero
+     *   un error a un verde prestado.
+     */
+    reuseExistingServer: false,
     timeout: 120_000,
     /**
      * ⚠️⚠️ ESTO FALTABA, Y LOS TESTS PASABAN IGUAL. QUE ES LO GRAVE.

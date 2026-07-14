@@ -74,8 +74,8 @@
 import type { LatLon, LineId, Observacion, VehicleId } from '@/core';
 import type { BusProfile } from '@/modes/bus/profile';
 import { leerPoste } from '@/sources/avanza/poste';
-import type { Dependencias } from './llegadas';
-import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada } from './topologia';
+import type { Dependencias } from '@/engine/llegadas';
+import { canonLinea, linea as buscarLinea, sentidosDe, perfilDe, posteDe, idParada } from '@/engine/topologia';
 
 /**
  * ⭐ EL RITMO. Y ESTO NO ES UNA OPTIMIZACIÓN: ES LO QUE PROMETEMOS.

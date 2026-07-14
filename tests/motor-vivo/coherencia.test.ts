@@ -14,12 +14,11 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CacheDosPisos, TTL_MS } from '@/cache/dos-pisos';
-import { CAPACIDAD, TASA_POR_SEGUNDO } from '@/cache/limitador';
+import { CAPACIDAD, Limitador, TASA_POR_SEGUNDO } from '@/cache/limitador';
 import { llegadasDePoste, type LlegadasDeParada } from '@/engine/llegadas';
-import { barrerLinea, EN_VUELO, POR_SEGUNDO } from '@/engine/barrido';
-import { idLinea, idParada, lineas, paradaDelPoste, posteDe, sentidosDe } from '@/engine/topologia';
+import { paradaDelPoste } from '@/engine/topologia';
 import { tieneDatos, type Observacion } from '@/core';
-import { cacheSinTecho, POSTE_MUDO, respuestaPoste, siempre, transporteFalso } from './dobles';
+import { POSTE_MUDO, respuestaPoste, siempre, transporteFalso } from './dobles';
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-c-')); });
@@ -121,121 +120,56 @@ describe('⚠️ LAS INVARIANTES SE CUMPLEN VENGA EL DATO DE DONDE VENGA', () =>
   });
 });
 
-describe('⚠️ COHERENCIA DEL BARRIDO', () => {
-  it('ningún coche sale dos veces, y el total dedupe ≤ suma de apariciones', async () => {
-    const l = lineas().find((x) => x.shortName === '39')!;
-    const buses = Array.from({ length: 6 }, (_, i) => ({
-      coche: String(4600 + i), linea: '039', destino: 'VADORREY', eta: i,
-    }));
-    const t = siempre(respuestaPoste({ buses })); // cada poste ve los 6
-
-    const r = await barrerLinea(
-      idLinea(String(l.id)),
-      { cache: cacheSinTecho(dir), transporte: t.transporte },
-      { dormir: async () => {} },
-    );
-
-    expect(r.estado).toBe('ok');
-    if (r.estado === 'ok') {
-      const coches = r.datos.detectados.map((d) => String(d.coche));
-      expect(new Set(coches).size).toBe(coches.length); // ⭐ cero duplicados
-      expect(r.datos.detectados).toHaveLength(6); // 6, no 6 × 40 postes
-      // Cada uno visto en varios postes: es la prueba de que el dedupe trabajó.
-      expect(r.datos.detectados.every((d) => d.vistoEnPostes > 1)).toBe(true);
-      // Y salen ordenados por número de coche: la lista ya no se lee por minutos
-      // (los minutos se han quitado), así que el orden tiene que ser estable y
-      // no depender de por dónde pasaba cada autobús en ese instante.
-      expect(coches).toEqual([...coches].sort((a, b) => a.localeCompare(b, 'es', { numeric: true })));
-    }
-  }, 30_000);
-
-  it('⭐ CONTRAPRUEBA: sin deduplicar, la línea 39 tendría ~100 autobuses', async () => {
-    // Un barrido ingenuo suma las llegadas de cada poste. El mismo autobús
-    // aparece en MUCHOS postes (medido: hasta 22 de los 72 de la línea 32), así
-    // que la cifra se dispara: "la línea 39 tiene 240 autobuses circulando".
-    // Perfectamente coherente. Perfectamente falsa. Y nadie la cuestionaría.
-    const l = lineas().find((x) => x.shortName === '39')!;
-    const buses = Array.from({ length: 6 }, (_, i) => ({ coche: String(4600 + i), linea: '039', destino: 'V', eta: i }));
-    const t = siempre(respuestaPoste({ buses }));
-
-    const r = await barrerLinea(
-      idLinea(String(l.id)),
-      { cache: cacheSinTecho(dir), transporte: t.transporte },
-      { dormir: async () => {} },
-    );
-    if (r.estado === 'ok') {
-      const sinDeduplicar = r.datos.detectados.reduce((a, d) => a + d.vistoEnPostes, 0);
-      // 6 autobuses vistos en cada uno de los postes del barrido. El motor
-      // ingenuo los sumaría todos y cantaría una cifra ocho veces mayor.
-      expect(sinDeduplicar).toBe(6 * r.datos.postesConsultados);
-      expect(sinDeduplicar).toBeGreaterThan(40); // ← lo que diría el motor ingenuo
-      expect(r.datos.detectados).toHaveLength(6); // ← lo que decimos nosotros
-      expect(sinDeduplicar / r.datos.detectados.length).toBeGreaterThan(5); // ×8, de hecho
-    }
-  }, 30_000);
-});
-
-describe('⚠️ EL TECHO NO PUEDE MUTILAR EL PRODUCTO', () => {
+describe('⚠️ EL TECHO SIGUE EN PIE AUNQUE EL BARRIDO SE HAYA IDO', () => {
   /**
-   * ⭐⭐ ESTE TEST CAMBIÓ DE SIGNIFICADO, Y ESO ES EL HALLAZGO.
+   * ⚠️ SEAMOS EXACTOS CON LO QUE PROTEGE CADA COSA. AQUÍ ES MUY FÁCIL AUTOENGAÑARSE.
    *
-   * Antes decía: "el cubo (40 fichas) tiene que dar para el barrido más largo
-   * (N7: 31 peticiones con paso 4)". Y pasaba. Pero lo que estaba comprobando,
-   * SIN QUE YO ME DIERA CUENTA, era que **el cubo dejara pasar una ráfaga entera
-   * de golpe**. El barrido hacía `Promise.all` de todos los postes: los soltaba a
-   * la vez, y el cubo, con 40 fichas, se los tragaba.
+   * El RITMO (4/s) y el CORTACIRCUITOS eran propiedades DEL BARRIDO: existían porque
+   * una sola pulsación disparaba 67 peticiones. Con el barrido aparcado no queda
+   * ninguna operación que haga más de UNA petición, así que esas dos piezas se han
+   * ido aparcadas CON él (`parked/barrido-de-linea/`).
    *
-   * ⇒ El techo no estaba frenando al barrido. LE ESTABA DANDO PERMISO.
+   * Decir que "siguen protegiéndonos" sería quedarme con una medalla que no me toca:
+   * hoy no protegen nada que exista. Lo que se queda es su LECCIÓN, escrita en
+   * `docs/BARRIDO_APARCADO.md`, porque el que lo encienda dentro de seis meses va a
+   * tropezar con lo mismo.
    *
-   * Y el test me estaba ayudando a mantener ese permiso, con toda la solemnidad
-   * de una invariante. Ese es el modo de fallo que persigue este proyecto: no que
-   * algo pete, sino que algo coherente y falso se quede a vivir.
+   * ⭐ LO QUE SÍ NOS PROTEGE HOY, Y NO SE VA A NINGUNA PARTE, ES EL TECHO.
    *
-   * Solo se vio al subir a 67 postes, porque entonces el permiso ya no alcanzaba
-   * (67 > 40) y 27 postes habrían salido `fallo` de salida.
+   * Y no es redundante con la caché: la caché acota las peticiones POR CLAVE, no el
+   * número de CLAVES. Un rastreador que recorra `/api/llegadas/<poste>` para los 934
+   * postes produce 934 fallos de caché legítimos, y los 934 son peticiones reales a
+   * Avanza. La caché estaría funcionando perfectamente mientras nos bloquean la IP.
    *
-   * Ahora el barrido SE MARCA SU PROPIO RITMO (4/s, y nunca dispara de golpe), y
-   * el cubo vuelve a ser lo que tenía que ser: una red de seguridad que en marcha
-   * normal no se toca. La invariante que hay que atar ya no es "cabe la ráfaga",
-   * es **"el barrido no pide más deprisa de lo que el cubo repone"**.
+   * Ese caso no lo ha aparcado nadie. Sigue vivo, y el techo es lo único que lo para.
    */
-  it('⭐ el barrido NO pide más deprisa de lo que el cubo repone', () => {
-    // Si alguien sube POR_SEGUNDO por encima de la tasa del cubo, el barrido se
-    // comería sus propias fichas y empezaría a fallar postes en marcha normal.
-    // Dos números en dos ficheros que nadie relacionaría a ojo. Atados.
-    expect(POR_SEGUNDO).toBeLessThanOrEqual(TASA_POR_SEGUNDO);
-    // Y el colchón tiene que absorber, como mínimo, lo que hay en vuelo a la vez.
-    expect(CAPACIDAD).toBeGreaterThanOrEqual(EN_VUELO);
-  });
-
-  it('⚠️ el barrido más largo de la red YA NO tiene que caber en el cubo', () => {
-    // La línea más larga (N7, 119 postes) ahora se pide ENTERA. No cabe en 40
-    // fichas, y NO PASA NADA: no se piden de golpe. Este test deja escrito que la
-    // vieja relación "postes ≤ CAPACIDAD" ha dejado de existir a propósito, para
-    // que nadie la restaure "arreglando" un número.
-    let peor = 0;
-    let cual = '';
-    for (const l of lineas()) {
-      const postes = new Set<number>();
-      for (const s of sentidosDe(idLinea(String(l.id)))) {
-        for (const sid of s.official.stops) {
-          const p = posteDe(idParada(sid));
-          if (p) postes.add(p);
-        }
-      }
-      if (postes.size > peor) { peor = postes.size; cual = l.shortName; }
-    }
-    expect(peor, `la línea más larga es la ${cual}`).toBeGreaterThan(CAPACIDAD);
-    // El tiempo que va a tardar, dicho en voz alta: si un día son 5 minutos,
-    // que se vea aquí y no en la cara del usuario.
-    const segundos = peor / POR_SEGUNDO;
-    expect(segundos, `barrer la ${cual} entera tarda ${segundos.toFixed(0)} s`).toBeLessThan(60);
-  });
-
-  it('...y el techo SOSTENIDO sigue siendo 4/s: la ráfaga no lo relaja', () => {
-    // Una ráfaga grande NO es barra libre. Se vacía el cubo entero y luego solo
-    // se regenera a 4 fichas por segundo, que es lo que le prometemos a Avanza.
+  it('⭐ el techo sostenido sigue siendo 4/s', () => {
     expect(TASA_POR_SEGUNDO).toBe(4);
+    expect(CAPACIDAD).toBeGreaterThan(0);
+  });
+
+  it('⭐ un rastreador pidiendo 200 postes seguidos NO sale de golpe', () => {
+    const c = new CacheDosPisos({ dir });
+    let concedidas = 0;
+    for (let n = 0; n < 200; n++) if (c.limitador.pedirFicha().concedida) concedidas++;
+
+    // Se vacía el cubo y a partir de ahí solo repone 4 fichas por segundo. Doscientas
+    // peticiones de golpe NO salen de golpe. Es la promesa del README, cumplida — y es
+    // la ÚNICA pieza que sigue de guardia ahora que el barrido no está.
+    expect(concedidas, 'el cubo tiene que denegar').toBeLessThan(200);
+    expect(concedidas).toBeLessThanOrEqual(CAPACIDAD + 5); // + lo poco que repone entretanto
+  });
+
+  it('⚠️ CONTRAPRUEBA: sin techo, los 200 saldrían todos', () => {
+    // Si el cubo concediera siempre, el test de arriba estaría pasando por el motivo
+    // equivocado ("es que solo pedí 200"). Con un cubo enorme, salen las 200.
+    const c = new CacheDosPisos({
+      dir,
+      limitador: new Limitador(join(dir, '_sin_techo'), 1e9, 1e9),
+    });
+    let concedidas = 0;
+    for (let n = 0; n < 200; n++) if (c.limitador.pedirFicha().concedida) concedidas++;
+    expect(concedidas).toBe(200); // ⛔ esto es lo que Avanza recibiría sin el techo
   });
 });
 

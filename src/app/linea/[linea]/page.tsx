@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import { idLinea, lineas, sentidosDe } from '@/engine/topologia';
 import { fingimientoDe } from '@/engine/fingir';
 import { Itinerario } from '@/components/Itinerario';
-import { BuscarBuses } from '@/components/BuscarBuses';
 import type { Line, LineId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
@@ -39,12 +38,20 @@ export default async function LineaPage({ params, searchParams }: Props) {
         <h1 className="text-[18px] font-black leading-tight sin-recortar">{l.longName}</h1>
       </div>
 
-      {/* ⭐ EL BARRIDO, BAJO DEMANDA. CERO PETICIONES AL ABRIR ESTA PÁGINA.
-          Antes había aquí un <Suspense> con un barrido automático: 18 peticiones a
-          Avanza que nadie había pedido, cada vez que alguien abría la línea solo
-          para mirar el recorrido. El repositorio promete en público no abusar, y
-          eso no se podía defender. Ahora solo se barre si se PULSA. */}
-      <BuscarBuses linea={l.shortName} fingir={fingir} />
+      {/* ═══════════════════════════════════════════════════════════════════════
+          ⛔ AQUÍ NO HAY BOTÓN DE "BUSCAR LOS AUTOBUSES DE ESTA LÍNEA". APARCADO.
+
+          Costaba 67 peticiones a Avanza y entre 17 y 66 segundos de espera, y no
+          respondía a ninguna pregunta que se haga alguien parado en una marquesina.
+          El 80% del valor está en la PARADA —"¿cuándo llega el mío, y es el largo
+          o el corto?"— y eso cuesta UNA petición, cacheada e instantánea.
+
+          ⚠️ Y NO SE DEJA UN BOTÓN APAGADO NI UN "PRÓXIMAMENTE". Un botón que no
+             hace nada es ruido, y una promesa incumplida en una demo resta.
+
+          El porqué —y lo que haría falta para retomarlo— está escrito en
+          `docs/BARRIDO_APARCADO.md`. El código, en `parked/barrido-de-linea/`.
+          ═══════════════════════════════════════════════════════════════════════ */}
 
       {/* Sentido: dos pestañas. Y el enlace lleva el sentido DENTRO, para que se
           pueda compartir. (La referencia leía `?sentido=` y no lo generaba nunca:

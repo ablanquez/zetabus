@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import type { Observacion } from '@/core';
-import type { BarridoDeLinea, ProgresoPoste } from '@/engine/barrido';
-import { agruparFlota, type GrupoDeFlota } from '@/engine/agrupar-flota';
+import type { BarridoDeLinea, ProgresoPoste } from './barrido';
+import { agruparFlota, type GrupoDeFlota } from './agrupar-flota';
 
 /**
  * ⭐ EL BARRIDO BAJO DEMANDA. Y LA ESPERA COMO ESPECTÁCULO.
