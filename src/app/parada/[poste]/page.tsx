@@ -62,7 +62,11 @@ export default async function ParadaPage({ params, searchParams }: Props) {
       {/* Cabecera COMPACTA a propósito: cada píxel que gasta aquí es un píxel
           que le quita al primer tiempo de llegada. */}
       <div className="mb-3">
-        <h1 className="text-[20px] font-black leading-tight sin-recortar" data-papel="nombre-parada">
+        <h1
+          className="text-[20px] font-black leading-tight sin-recortar"
+          data-papel="nombre-parada"
+          data-nombre-fuente={p.nombreProc.fuente}
+        >
           {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
               "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
           {p.name}
@@ -73,6 +77,29 @@ export default async function ParadaPage({ params, searchParams }: Props) {
             <span className="ml-2 font-bold text-[var(--color-alerta)]">· FINGIENDO «{fingir}»</span>
           )}
         </p>
+
+        {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA.
+            Avanza no da el nombre de las paradas suprimidas por un desvío (los 4 de
+            Avenida de Valencia, por ejemplo). Esas se quedan con el del GTFS, que
+            puede venir roto por el exportador ("Av. De Valencia"), y el usuario tiene
+            derecho a saber que ese nombre NO está confirmado por el operador.
+
+            ⚠️ La señal NO va solo en el tono: borde punteado (forma) + la palabra
+               (texto) + el icono. En gris se sigue leyendo. La procedencia por campo
+               que montamos para la flota, aplicada al nombre de la parada. */}
+        {p.nombreProc.fuente === 'gtfs-marcado' && (
+          <p
+            className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-[11px] leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+            data-papel="nombre-sin-confirmar"
+            role="note"
+          >
+            <span className="font-bold not-italic">⚠ nombre sin confirmar.</span>
+            <span className="not-italic">
+              Avanza no lo da (parada en desvío o fuera de toda ruta). El que ves viene del GTFS y
+              puede estar mal escrito. Solo se comprueba mirando el rótulo de la calle.
+            </span>
+          </p>
+        )}
       </div>
 
       {/* ⭐ AQUÍ. LO PRIMERO. */}

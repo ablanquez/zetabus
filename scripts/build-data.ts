@@ -9,14 +9,16 @@
  * cae. No emite un artefacto a medias con un aviso en amarillo: **un artefacto
  * a medias se despliega; un build roto, no**.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { feedStatus, feedWarning, type Mode } from '@/core';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { feedStatus, feedWarning, type Mode, type Stop } from '@/core';
 import { loadGtfs, readGtfsZip } from '@/sources/gtfs-nap';
 import { calcularTerminales } from '@/sources/gtfs-nap/terminal';
 import { loadFleet } from '@/sources/flota-zetabus/adapter';
+import { aplicarNombres } from '@/sources/avanza/aplicar-nombres';
 
 const GTFS = 'data/gtfs/zaragoza-gtfs.zip';
 const FLEET = 'data/flota-avanza-zaragoza.json';
+const NOMBRES = 'src/generated/nombres.json';
 const OUT = 'src/generated';
 
 /** Los modos que ZetaBus v1 sirve. El 004 añadirá 'tram' AQUÍ, y en ningún otro sitio. */
@@ -32,6 +34,31 @@ console.log('╚═════════════════════�
 // ── GTFS ────────────────────────────────────────────────────────────────────
 const files = readGtfsZip(GTFS);
 const gtfs = loadGtfs(files, { modes: MODES, now });
+
+// ── ⭐ A1 · CAPA DE NOMBRES (avanza-web), superpuesta sobre las paradas ───────
+//    Se lee la tabla que dejó `npm run nombres:build`. Si NO está, no es un error:
+//    se usa el GTFS entero, MARCADO como sin confirmar, y se dice. El build NUNCA
+//    se cae por esto — la app siempre puede desplegar (ver build-nombres.ts).
+const tablaNombres = existsSync(NOMBRES)
+  ? (JSON.parse(readFileSync(NOMBRES, 'utf8')) as { generatedAt: string; porPoste: Record<string, string> })
+  : null;
+const nombres = aplicarNombres(gtfs.stops, gtfs.posteByStopId, tablaNombres);
+const stopsConNombre: readonly Stop[] = nombres.stops;
+
+console.log('CAPA DE NOMBRES (A1)\n');
+if (nombres.sinCapa) {
+  console.log('  ⚠️  NO hay tabla de nombres (src/generated/nombres.json).');
+  console.log('     TODAS las paradas usan el nombre del GTFS, MARCADO como sin confirmar.');
+  console.log('     Para pedir los nombres buenos al operador:  npm run nombres:build\n');
+} else {
+  const pct = Math.round((nombres.deAvanza / nombres.total) * 100);
+  console.log(`  ✅ ${String(nombres.deAvanza).padStart(4)} / ${nombres.total}  paradas con nombre de Avanza (${pct}%)`);
+  console.log(`  ⚠️  ${String(nombres.deGtfsMarcado).padStart(4)} / ${nombres.total}  se quedan con el del GTFS, marcadas (Avanza no las da: desvíos)`);
+  if (nombres.sobrantesDeAvanza > 0) {
+    console.log(`  ·  ${nombres.sobrantesDeAvanza} poste(s) que Avanza da y no están en nuestro GTFS (paradas provisionales)`);
+  }
+  console.log('');
+}
 
 // ── Flota ───────────────────────────────────────────────────────────────────
 const fleet = loadFleet(FLEET);
@@ -102,7 +129,7 @@ const artifact = {
   generatedAt: now.toISOString(),
   modes: MODES,
   validity: gtfs.validity,
-  stops: gtfs.stops,
+  stops: stopsConNombre,
   lines: gtfs.lines,
   directions: gtfs.directions,
   posteByStopId: gtfs.posteByStopId,

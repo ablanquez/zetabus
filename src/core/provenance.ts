@@ -67,6 +67,44 @@ export interface ProcedenciaDeCampo {
   readonly comoLoSupe?: string;
 }
 
+/**
+ * ⭐⭐ A1 · LA PROCEDENCIA DEL NOMBRE DE UNA PARADA. (Tanda 10)
+ *
+ * Es la misma idea que bajó al campo en la flota, aplicada al nombre de una parada:
+ * **un nombre tiene su fuente, igual que la longitud de un bus tiene la suya.**
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  POR QUÉ HACEN FALTA DOS FUENTES, Y NO UNA.
+ *
+ *  El GTFS del NAP trae el 80,4 % de los nombres ROTOS por un `ucwords()` de PHP
+ *  en el exportador de Avanza: "Pedro III" → "Pedro Iii", "Miguel Ángel" → "Miguel
+ *  ángel", "de" → "De". PRUEBA de que es el exportador y no el GTFS: las 50 paradas
+ *  de TRANVÍA del mismo fichero están bien escritas. Mismo fichero, dos calidades.
+ *
+ *  ⇒ El nombre bueno se le pide al OPERADOR, a `get_stops_list` (el mismo endpoint
+ *    que ya usamos para los desvíos), que lo escribe bien: "Av. de Cataluña n.º 51".
+ *
+ *  Pero esa fuente NO cubre el 100 %: `get_stops_list` devuelve la ruta REAL de hoy,
+ *  así que **no da las paradas suprimidas por un desvío**. Esas se quedan con el
+ *  nombre roto del GTFS, y HAY QUE DECIRLO EN PANTALLA, no taparlo.
+ *
+ *      `avanza-web`     el operador lo escribe así HOY. Es el bueno.
+ *      `gtfs-marcado`   Avanza no lo da (parada suprimida, o fuera de toda ruta).
+ *                       Se queda el del GTFS, que puede estar roto, Y SE MARCA.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ⚠️ Y NO SE CORRIGE A MANO NI UNO. La transformación del GTFS tiene PÉRDIDA: de
+ *    "Pedro Iii" no se puede recuperar "Pedro III" sin adivinar (¿o era "Pedro III"
+ *    de un rey, o "III" de un número de portal?). Adivinar es inventar. Es la L3.
+ */
+export type FuenteDelNombre = 'avanza-web' | 'gtfs-marcado';
+
+export interface ProcedenciaDelNombre {
+  readonly fuente: FuenteDelNombre;
+  /** ISO. Cuándo se lo pedimos a Avanza. `null` cuando se quedó el del GTFS. */
+  readonly fecha: string | null;
+}
+
 /** De dónde salió un dato. Sin esto, un dato es un rumor. */
 export interface Provenance {
   /** Qué fuente lo produjo. */

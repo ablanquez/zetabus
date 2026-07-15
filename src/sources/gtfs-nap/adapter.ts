@@ -318,6 +318,13 @@ export function loadGtfs(files: GtfsFiles, options: LoadOptions): GtfsDataset {
       id: stopId(sid),
       code,
       name: sget(r, 'stop_name'),
+      // ⚠️ POR DEFECTO, EL NOMBRE ES EL DEL GTFS Y SE MARCA COMO TAL. El adaptador
+      //    del GTFS no conoce la web de Avanza —a propósito, es GTFS y nada más—.
+      //    `build-data.ts` superpone después los nombres de `avanza-web` sobre los
+      //    postes que Avanza sí da, y a esos les cambia esta procedencia. Los que se
+      //    quedan aquí son los que Avanza NO da (suprimidos por desvío): rotos, y
+      //    marcados. Ver `ProcedenciaDelNombre`.
+      nombreProc: { fuente: 'gtfs-marcado', fecha: null },
       position: { lat, lon },
       modes: [...(modesByStop.get(sid) ?? [])],
       provenance: prov(feedUpdated, now),

@@ -1,5 +1,5 @@
 import type { Hex, LatLon, LineId, Mode, StopId, VehicleId } from './ids';
-import type { Provenance } from './provenance';
+import type { Provenance, ProcedenciaDelNombre } from './provenance';
 import type { VehicleProfile } from './profiles';
 
 /**
@@ -23,6 +23,13 @@ export interface Stop {
   /** El código que el operador enseña en la marquesina. Puede no haberlo. */
   readonly code: string | null;
   readonly name: string;
+  /**
+   * ⭐ A1 · DE DÓNDE SALE EL NOMBRE. Su procedencia, campo a campo, como en la flota.
+   * `avanza-web` = el operador lo escribe así hoy (el bueno). `gtfs-marcado` = Avanza
+   * no lo da (parada suprimida por desvío) y se queda el del GTFS, que puede estar
+   * roto — y la pantalla lo dice. Ver `ProcedenciaDelNombre`.
+   */
+  readonly nombreProc: ProcedenciaDelNombre;
   readonly position: LatLon;
   /** Una parada puede servir a varios modos (una plaza con bus y tranvía). */
   readonly modes: readonly Mode[];

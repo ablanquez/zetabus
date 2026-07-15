@@ -272,3 +272,69 @@ Lo que sé es **quién tiene derecho a decirlo: el operador**. Y su web lo dice.
   Hay que atarla con un test que **falle en voz alta**, no que se quede en silencio.
 
 **Y no he arreglado nada.** Esto es el diagnóstico que pediste.
+
+---
+
+## 7 · A1 · IMPLEMENTADO (Tanda 10)
+
+Lo que arriba era diagnóstico, ahora es código. **La capa de nombres se pide al operador en
+el build, con procedencia campo a campo, y NO se commitea.**
+
+### Los tres contadores (L1), de la pasada real del 15/07/2026
+
+```
+PETICIONES (build-nombres, cuenta peticiones)
+  74   esperadas (= 74 sentidos de 44 líneas)
+  74   respondieron
+   0   fallaron
+ 927   postes distintos con nombre de Avanza
+
+PARADAS (build-data, cuenta paradas — MÉTODO DISTINTO, a propósito)
+ 918 / 934   con nombre de avanza-web  (98 %)
+  16 / 934   se quedan con el GTFS, MARCADAS  (Avanza no las da hoy)
+```
+
+Los dos contadores cuentan la MISMA realidad por caminos distintos (peticiones vs. paradas), y
+cada uno revienta si su suma no cuadra. Es L1 en las dos capas.
+
+### Qué pasa si Avanza está caída durante el build — DISEÑADO, en dos capas
+
+- **`build-nombres` (la petición) PUEDE fallar, y falla RUIDOSAMENTE.** Si responde menos del
+  80 % de los sentidos, NO es "hay desvíos": es "no llego a Avanza". Sale con código 1 y **NO
+  sobrescribe la tabla buena** que ya haya en disco. El que despliega decide: reintenta, o
+  despliega con la última buena.
+- **`build-data` (el build de la app) NUNCA se cae por los nombres.** Sin tabla, usa el GTFS
+  entero MARCADO y lo dice. Acoplar el despliegue de un arreglo a que Avanza tenga un buen día,
+  por una capa cosmética, es el intercambio equivocado.
+
+Probado: un transporte que siempre se cae → 74 fallidas, 0 excepciones, ratio 0 (unit test).
+
+### Lo que NO se arregla, y sale MARCADO en pantalla
+
+- **Avenida de Valencia.** ⚠️ **HOY solo 264-265 están suprimidas; 262-263 han vuelto** y Avanza
+  ya les da nombre bueno. La foto de la auditoría decía 262-265, pero la capa refleja HOY, no
+  aquel día — es la propiedad de auto-sanado, la misma que los desvíos. Los suprimidos se quedan
+  con el GTFS roto ("Av. De Valencia N.º 41") y un aviso visible: *"nombre sin confirmar"*.
+- **"Asín y Palacios"** sigue con la Y mayúscula: **Avanza también lo escribe así.** No es un
+  fallo nuestro; es lo que da la fuente. Solo se comprueba en la calle.
+- **Los 16 gtfs-marcado de hoy** son calles hoy en obras/desvío: Coso, Independencia, San Vicente
+  de Paúl, Av. Valencia 264-265… Avanza genuinamente no las lista. Honesto, no incompleto.
+
+### La contraprueba (el rojo)
+
+Apagando la capa (apartando `nombres.json`) y reconstruyendo, los tres nombres VUELVEN rotos:
+
+```
+CON la capa      →  🟢 "Av. de Cataluña n.º 51"   [avanza-web]
+SIN la capa      →  🔴 "Av. De Cataluña N.º 51"    [gtfs-marcado]   ← vuelve roto
+                    🔴 "Pedro Iii / Asín Y Palacios"
+                    🔴 "Violante De Hungría N.º 5"
+```
+
+Si al apagar la capa los nombres siguieran bien, la capa no haría nada. Vuelven rotos: **sí los
+arregla.**
+
+### Y sigue sin poderse: el rótulo de la calle
+
+Nada de esto ha visto una marquesina. Si Avanza y el rótulo físico discrepan, ganamos al operador
+y no nos enteramos. **Eso sigue siendo trabajo tuyo, que coges el bus.**

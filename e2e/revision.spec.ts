@@ -122,11 +122,18 @@ for (const [fingimiento, titulo, frase] of FEOS) {
 test.describe('⚠️ UN NOMBRE LARGO BAJA DE LÍNEA. NO SE CORTA.', () => {
   test('la parada de 53 caracteres se lee ENTERA', async ({ page }, info) => {
     // No es un caso inventado: el poste 823 se llama así de verdad.
+    //
+    // ⭐ A1 · Y AQUÍ SE VE LA CAPA DE NOMBRES ARREGLANDO ALGO. Este test fijaba el
+    //    nombre ROTO del GTFS: "Vía Hispanidad N.º 73 / Nuestra Señora De Los ángeles"
+    //    —con "De" en mayúscula y "ángeles" en minúscula, huella del ucwords—. Desde
+    //    A1, el nombre lo da el operador y está BIEN escrito: "n.º", "de", "Ángeles".
+    //    El caso sigue siendo el mismo (53 caracteres que no caben en una línea a
+    //    360 px), pero el literal se actualiza al nombre CORRECTO. Sigue sin truncarse.
     await page.goto(`/parada/${POSTE_NOMBRE_LARGO}?fingir=sin-verificar`, { waitUntil: 'networkidle' });
     await capturar(page, `capturas/zetabus/nombre-largo-${info.project.name}.png`);
 
     const h1 = page.locator('[data-papel="nombre-parada"]');
-    await expect(h1).toContainText('Vía Hispanidad N.º 73 / Nuestra Señora De Los ángeles');
+    await expect(h1).toContainText('Vía Hispanidad n.º 73 / Nuestra Señora de Los Ángeles');
 
     // ⭐ Y AQUÍ ESTÁ LA DIFERENCIA ENTRE UN TEST DE RÓTULO Y UNO DE VERDAD:
     //    `toContainText` pasaría IGUAL sobre un "Vía Hispanidad N.º 73 / Nue…".
