@@ -46,9 +46,7 @@ describe('calcularTerminales · el origen real de cada salida', () => {
     { trip: 'U1', route: 'R2', dir: '0', paradas: [['C3', '09:00'], ['D4', '09:15']] },
     { trip: 'U2', route: 'R2', dir: '0', paradas: [['C3', '10:00'], ['D4', '10:15']] },
   ]);
-  // Terminal oficial: todas las de R1 acaban en B2; las de R2 en D4.
-  const terminalOficial = (route: string) => ({ R1: 'B2', R2: 'D4' })[route];
-  const res = calcularTerminales(CAL, tripsTxt, stopTimesTxt, DESDE, nombreDeParada, terminalOficial);
+  const res = calcularTerminales(CAL, tripsTxt, stopTimesTxt, DESDE, nombreDeParada);
 
   const diaDe = (route: string) => {
     const term = res.terminales.find((x) => x.lineId === route && x.directionId === 0)!;

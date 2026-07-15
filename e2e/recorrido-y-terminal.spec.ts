@@ -135,190 +135,157 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ SALIDAS PARCIALES · índice numérico + leyenda, no un "desde" repetido', () => {
+test.describe('⭐ EMPIEZA / ACABA EN … · se ENSEÑA cada salida y se marca, no se filtra', () => {
   /**
-   * Comprueba, para un `data-papel="dia-terminal"`, que los índices ¹ de las horas
-   * y los de la leyenda CASAN EXACTAMENTE: ni un número en la tabla sin su entrada,
-   * ni una entrada en la leyenda sin su hora. Y que el nombre coincide con el origen.
+   * Para un `data-papel="dia-terminal"`: cada marca de la tabla (¹ ² …) casa con una
+   * entrada de leyenda, y al revés. Una marca es (acción + lugar): la acción sale de
+   * `data-accion` del superíndice; el lugar, de `data-origen` (empieza) o `data-destino`
+   * (acaba) de su salida. Devuelve el conjunto de índices y cuántas salidas normales hay.
    */
-  async function cuadraElDia(dia: import('@playwright/test').Locator) {
+  async function cuadraElDia(dia: Locator) {
     const salidas = dia.locator('[data-papel="salida"]');
-    const idxTabla = new Map<string, string>(); // índice → nombre de origen
-    let cabeceraSinMarca = 0;
+    const idxTabla = new Map<string, string>(); // índice → "accion en lugar"
+    let normales = 0;
     for (let i = 0; i < (await salidas.count()); i++) {
       const s = salidas.nth(i);
       const origen = await s.getAttribute('data-origen');
-      const indice = await s.getAttribute('data-indice');
-      const marca = await s.locator('[data-papel="indice-origen"]').count();
-      if (origen === null) {
-        // ⛔ CABECERA: ni índice ni superíndice.
-        expect(indice, 'una salida de cabecera no lleva índice').toBeNull();
-        expect(marca, 'ni superíndice de origen').toBe(0);
-        cabeceraSinMarca++;
-      } else {
-        expect(indice, 'una salida PARCIAL lleva índice').not.toBeNull();
-        expect(marca, 'y su superíndice ¹').toBe(1);
-        expect(await s.locator('[data-papel="indice-origen"]').innerText()).toBe(indice);
-        idxTabla.set(indice!, origen);
+      const destino = await s.getAttribute('data-destino');
+      const sup = s.locator('[data-papel="indice-parcial"]');
+      const nSup = await sup.count();
+      const marcasEsperadas = (origen ? 1 : 0) + (destino ? 1 : 0);
+      expect(nSup, 'un superíndice por extremo parcial (empieza/acaba)').toBe(marcasEsperadas);
+      if (marcasEsperadas === 0) normales++;
+      for (let j = 0; j < nSup; j++) {
+        const accion = await sup.nth(j).getAttribute('data-accion');
+        const indice = await sup.nth(j).getAttribute('data-indice');
+        expect(await sup.nth(j).innerText(), 'el dígito pintado == su data-indice').toBe(indice);
+        const lugar = accion === 'empieza' ? origen : destino;
+        idxTabla.set(indice!, `${accion} en ${lugar}`);
       }
     }
-    const leyenda = dia.locator('[data-papel="leyenda-origen"]');
-    const idxLeyenda = new Map<string, string>();
+    const leyenda = dia.locator('[data-papel="leyenda-parcial"]');
+    const idxLeyenda = new Set<string>();
     for (let i = 0; i < (await leyenda.count()); i++) {
       const li = leyenda.nth(i);
       const indice = (await li.getAttribute('data-indice'))!;
-      const txt = await li.innerText();
-      expect(txt, `la leyenda ${indice} nombra su origen`).toContain(idxTabla.get(indice) ?? '∅');
-      idxLeyenda.set(indice, txt);
+      const txt = (await li.innerText()).replace(/\s+/g, ' ');
+      expect(txt, `la leyenda ${indice} dice su acción y lugar`).toContain(idxTabla.get(indice) ?? '∅');
+      idxLeyenda.add(indice);
     }
-    // ⛔ CONTRAPRUEBA (los dos sentidos): los índices de la tabla y los de la
-    //    leyenda son EL MISMO conjunto. Un ¹ sin leyenda, o una leyenda sin ¹, falla.
-    expect([...idxLeyenda.keys()].sort(), 'tabla y leyenda cuadran').toEqual([...idxTabla.keys()].sort());
-    return { indices: [...idxTabla.keys()], cabeceraSinMarca };
+    // ⛔ CONTRAPRUEBA: los índices de la TABLA y los de la LEYENDA son EL MISMO
+    //    conjunto. Un ¹ sin entrada, o una entrada sin ¹, revienta.
+    expect([...idxLeyenda].sort(), 'tabla y leyenda cuadran').toEqual([...idxTabla.keys()].sort());
+    return { indices: [...idxTabla.keys()], normales };
   }
 
-  test('la 35: superíndices ¹ en las parciales, leyenda "1 · salidas desde Coso n.º 126"', async ({ page }, info) => {
-    await page.goto('/linea/35', { waitUntil: 'networkidle' });
+  test('la 35 →Seminario: las de madrugada se ENSEÑAN con "acaba en Coso n.º 126"', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-papel="titulo-linea"]'), 'es →Seminario').toContainText(/Seminario/);
     const terminal = page.locator('[data-papel="terminal"]');
-    await expect(terminal).toBeVisible();
     await terminal.scrollIntoViewIfNeeded();
-
     const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
-    const { indices, cabeceraSinMarca } = await cuadraElDia(lab);
-    console.log(`\n  [${info.project.name}] 35 laborable · índices ${JSON.stringify(indices)} · cabecera sin marca ${cabeceraSinMarca}`);
-    expect(indices.length, 'la 35 tiene parciales').toBeGreaterThan(0);
-    expect(cabeceraSinMarca, 'y también salidas normales, sin marca').toBeGreaterThan(0);
-    await expect(lab.locator('[data-papel="leyenda-origen"]').first()).toContainText(/1\s*·\s*salidas desde Coso/i);
+    await cuadraElDia(lab);
 
-    // ⛔ El ¹ (origen) NO es el ⁺¹ (madrugada): son elementos distintos. En la 0:31
-    //    conviven los dos, y se distinguen por su data-papel.
-    const cruceParcial = lab.locator('[data-papel="salida"][data-siguiente="si"][data-indice]').first();
-    if (await cruceParcial.count()) {
-      expect(await cruceParcial.locator('[data-papel="marca-dia-siguiente"]').count(), 'lleva ⁺¹').toBe(1);
-      expect(await cruceParcial.locator('[data-papel="indice-origen"]').count(), 'y lleva ¹, distinto').toBe(1);
+    // ⭐ La 0:11 (1451) y la 0:51 (1491) NO desaparecen: se ven, marcadas "acaba en Coso".
+    for (const min of [1451, 1491]) {
+      const s = lab.locator(`[data-papel="salida"][data-minuto="${min}"]`);
+      expect(await s.getAttribute('data-destino'), `la ${min} acaba en Coso`).toMatch(/Coso/);
+      expect(await s.locator('[data-papel="indice-parcial"][data-accion="acaba"]').count(), 'con su ¹ de "acaba"').toBe(1);
     }
+    // La 0:27 (1467) SÍ llega: sin marca.
+    const completa = lab.locator('[data-papel="salida"][data-minuto="1467"]');
+    expect(await completa.getAttribute('data-destino'), 'la 0:27 llega, sin marca').toBeNull();
+    await expect(lab.locator('[data-papel="leyenda-parcial"]').filter({ hasText: /acaba en Coso/i })).toHaveCount(1);
 
-    // ⭐ LA CONSECUENCIA: UNA sola línea al pie (no por salida, no por número).
-    const nota = terminal.locator('[data-papel="nota-parciales"]');
-    await expect(nota, 'se dice POR QUÉ importa, una vez').toHaveCount(1);
-    await expect(nota).toContainText(/no pasan por las paradas anteriores a su origen/i);
+    // ⛔ El ¹ (parcial, gris) NO es el ⁺¹ (madrugada, ámbar): conviven en la 0:11.
+    const s011 = lab.locator('[data-papel="salida"][data-minuto="1451"]');
+    expect(await s011.locator('[data-papel="marca-dia-siguiente"]').count(), 'lleva ⁺¹').toBe(1);
+    expect(await s011.locator('[data-papel="indice-parcial"]').count(), 'y ¹, distinto').toBe(1);
 
-    await capturar(page, `capturas/zetabus/PARCIAL-terminal-35-${info.project.name}.png`);
+    await capturar(page, `capturas/zetabus/MARCA-35-Seminario-${info.project.name}.png`);
   });
 
-  test('la 23: DOS orígenes parciales distintos → ¹ y ², cada uno con su calle', async ({ page }, info) => {
-    await page.goto('/linea/23', { waitUntil: 'networkidle' });
+  test('la 35 →Parque Goya: las de madrugada con "empieza en Coso n.º 126"', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-papel="titulo-linea"]'), 'es →Parque Goya').toContainText(/Parque Goya/);
+    const terminal = page.locator('[data-papel="terminal"]');
+    await terminal.scrollIntoViewIfNeeded();
+    const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
+    await cuadraElDia(lab);
+    for (const min of [1471, 1509]) {
+      const s = lab.locator(`[data-papel="salida"][data-minuto="${min}"]`);
+      expect(await s.getAttribute('data-origen'), `la ${min} empieza en Coso`).toMatch(/Coso/);
+      expect(await s.locator('[data-papel="indice-parcial"][data-accion="empieza"]').count(), 'con su ¹ de "empieza"').toBe(1);
+    }
+    await expect(lab.locator('[data-papel="leyenda-parcial"]').filter({ hasText: /empieza en Coso/i })).toHaveCount(1);
+    await capturar(page, `capturas/zetabus/MARCA-35-ParqueGoya-${info.project.name}.png`);
+  });
+
+  test('la Ci2: mismo LUGAR, dos ACCIONES → "empieza en …" y "acaba en …", DOS entradas', async ({ page }, info) => {
+    await page.goto('/linea/Ci2?sentido=1', { waitUntil: 'networkidle' });
     const terminal = page.locator('[data-papel="terminal"]');
     await expect(terminal).toBeVisible();
     await terminal.scrollIntoViewIfNeeded();
+    const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
+    await cuadraElDia(lab);
+    const leyenda = lab.locator('[data-papel="leyenda-parcial"]');
+    const textos = (await leyenda.allInnerTexts()).map((t) => t.replace(/\s+/g, ' '));
+    console.log(`\n  [${info.project.name}] Ci2 leyenda: ${JSON.stringify(textos)}`);
+    // ⭐ "empieza en Camino de Las Torres n.º 3" y "acaba en …" el MISMO sitio: dos entradas.
+    expect(textos.some((t) => /empieza en Camino de Las Torres/i.test(t)), 'hay "empieza en"').toBe(true);
+    expect(textos.some((t) => /acaba en Camino de Las Torres/i.test(t)), 'y "acaba en" el mismo lugar').toBe(true);
+    await capturar(page, `capturas/zetabus/MARCA-Ci2-${info.project.name}.png`);
+  });
 
+  test('OTRA LÍNEA · la 32 dir0: "1 · empieza en Plaza de España" y "2 · acaba en San Vicente"', async ({ page }, info) => {
+    await page.goto('/linea/32?sentido=0', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await expect(terminal).toBeVisible();
+    await terminal.scrollIntoViewIfNeeded();
     const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
     const { indices } = await cuadraElDia(lab);
-    console.log(`\n  [${info.project.name}] 23 laborable · índices ${JSON.stringify(indices)}`);
-    // Dos orígenes → dos números, dos entradas de leyenda con nombres distintos.
-    expect(indices.sort(), 'la 23 arranca desde dos sitios').toEqual(['1', '2']);
-    const leyenda = lab.locator('[data-papel="leyenda-origen"]');
-    expect(await leyenda.count(), 'una entrada por origen').toBe(2);
-    const l1 = await leyenda.nth(0).innerText();
-    const l2 = await leyenda.nth(1).innerText();
-    expect(l1, 'las dos calles no son la misma').not.toBe(l2);
-
-    // ⛔ Con ¹ Y ² (varios orígenes) la consecuencia SIGUE SIENDO UNA línea, no dos.
-    expect(
-      await terminal.locator('[data-papel="nota-parciales"]').count(),
-      'una sola línea al pie aunque haya dos orígenes',
-    ).toBe(1);
-
-    await capturar(page, `capturas/zetabus/PARCIAL-terminal-23-${info.project.name}.png`);
+    console.log(`\n  [${info.project.name}] 32 dir0 índices: ${JSON.stringify(indices)}`);
+    const textos = (await lab.locator('[data-papel="leyenda-parcial"]').allInnerTexts()).map((t) => t.replace(/\s+/g, ' '));
+    expect(textos.some((t) => /empieza en Plaza de España/i.test(t)), 'empieza en Plaza de España').toBe(true);
+    expect(textos.some((t) => /acaba en San Vicente/i.test(t)), 'acaba en San Vicente').toBe(true);
+    await capturar(page, `capturas/zetabus/MARCA-32-${info.project.name}.png`);
   });
 
-  test('⚠️ una línea SIN salidas parciales (la 22) NO inventa números ni leyenda', async ({ page }, info) => {
+  test('⚠️ una línea SIN parciales (la 22): ni números, ni leyenda, ni nota', async ({ page }, info) => {
     await page.goto('/linea/22', { waitUntil: 'networkidle' });
     const terminal = page.locator('[data-papel="terminal"]');
     await expect(terminal).toBeVisible();
     await terminal.scrollIntoViewIfNeeded();
-    const nIdx = await terminal.locator('[data-papel="indice-origen"]').count();
-    const nLey = await terminal.locator('[data-papel="leyenda-origenes"]').count();
-    console.log(`\n  [${info.project.name}] la 22 · superíndices: ${nIdx} · leyendas: ${nLey}`);
-    expect(nIdx, 'la 22 no marca ninguna salida').toBe(0);
-    expect(nLey, 'ni enseña leyenda alguna').toBe(0);
-    expect(
-      await terminal.locator('[data-papel="nota-parciales"]').count(),
-      'ni la línea de consecuencia: sin parciales, sin aparato',
-    ).toBe(0);
-    // Sí hay salidas normales (para no confundir "sin marca" con "sin bloque").
-    expect(await terminal.locator('[data-papel="salida"]').count()).toBeGreaterThan(0);
+    const nIdx = await terminal.locator('[data-papel="indice-parcial"]').count();
+    const nLey = await terminal.locator('[data-papel="leyenda-parciales"]').count();
+    const nNota = await terminal.locator('[data-papel="nota-parciales"]').count();
+    console.log(`\n  [${info.project.name}] la 22 · superíndices ${nIdx} · leyendas ${nLey} · notas ${nNota}`);
+    expect(nIdx, 'ni un superíndice').toBe(0);
+    expect(nLey, 'ni una leyenda').toBe(0);
+    expect(nNota, 'ni la nota de consecuencia').toBe(0);
+    expect(await terminal.locator('[data-papel="salida"]').count(), 'pero sí hay salidas').toBeGreaterThan(0);
   });
-});
 
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ ÚLTIMAS SALIDAS · solo las que LLEGAN a la cabecera final', () => {
-  /** Los minutos GTFS de las salidas de la fila "Últimas" de un día. */
-  async function ultimasMinutos(terminal: Locator, tipo = 'laborable'): Promise<number[]> {
-    const dia = terminal.locator(`[data-papel="dia-terminal"][data-tipo="${tipo}"]`);
-    const ult = dia.locator('[data-papel="fila-salidas"][data-etiqueta="Últimas"] [data-papel="salida"]');
-    const mins: number[] = [];
-    for (let i = 0; i < (await ult.count()); i++) mins.push(Number(await ult.nth(i).getAttribute('data-minuto')));
-    return mins;
-  }
-
-  test('la 35 →Seminario: última real 0:27, SIN las que acaban en P. Mina (Coso)', async ({ page }, info) => {
+  test('la CONSECUENCIA, una sola línea al pie, cubre empieza y acaba', async ({ page }) => {
     await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-papel="titulo-linea"]'), 'es el sentido →Seminario').toContainText(/Seminario/);
-    const terminal = page.locator('[data-papel="terminal"]');
-    await terminal.scrollIntoViewIfNeeded();
-    const mins = await ultimasMinutos(terminal);
-    console.log(`\n  [${info.project.name}] 35 →Seminario últimas: ${JSON.stringify(mins)}`);
-    // ⛔ Las cortas 0:11 (1451), 0:51 (1491) y 1:29 (1529) acaban en Coso, NO llegan
-    //    a Seminario: NO pueden figurar como últimas salidas.
-    for (const corta of [1451, 1491, 1529]) {
-      expect(mins, `la corta ${corta} no llega a Seminario y no se muestra`).not.toContain(corta);
-    }
-    expect(Math.max(...mins), 'la última real hacia Seminario es 0:27 (1467)').toBe(1467);
-    await capturar(page, `capturas/zetabus/ULTIMAS-35-Seminario-${info.project.name}.png`);
+    const nota = page.locator('[data-papel="terminal"] [data-papel="nota-parciales"]');
+    await expect(nota, 'una sola vez').toHaveCount(1);
+    await expect(nota).toContainText(/empieza en/i);
+    await expect(nota).toContainText(/acaba en/i);
   });
 
-  test('la 35 →Parque Goya: última real MÁS TARDÍA (1:09), con "empieza en"', async ({ page }, info) => {
-    await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-papel="titulo-linea"]'), 'es el sentido →Parque Goya').toContainText(/Parque Goya/);
-    const terminal = page.locator('[data-papel="terminal"]');
-    await terminal.scrollIntoViewIfNeeded();
-    const mins = await ultimasMinutos(terminal);
-    console.log(`\n  [${info.project.name}] 35 →Parque Goya últimas: ${JSON.stringify(mins)}`);
-    // La 1:09 (1509) EMPIEZA en Coso pero LLEGA a Parque Goya: SÍ es última salida.
-    expect(mins, 'la 1:09 llega a la cabecera y se queda').toContain(1509);
-    const s = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"] [data-papel="salida"][data-minuto="1509"]');
-    expect(await s.getAttribute('data-origen'), 'y va marcada "empieza en Coso"').toMatch(/Coso/);
-    // ⭐ EL PUNTO DE ANTONIO: cada sentido mira SU cabecera. →Parque Goya acaba MÁS
-    //    TARDE (1:09) que →Seminario (0:27), y las dos cosas son correctas.
-    expect(Math.max(...mins), '→Parque Goya es más tardía que →Seminario (1467)').toBeGreaterThan(1467);
-    await capturar(page, `capturas/zetabus/ULTIMAS-35-ParqueGoya-${info.project.name}.png`);
-  });
-
-  test('OTRA LÍNEA afectada · la 23 dir0: últimas filtradas, última real 21:59', async ({ page }, info) => {
-    await page.goto('/linea/23?sentido=0', { waitUntil: 'networkidle' });
+  test('⚠️ la 44 (dos terminales) YA NO es un caso especial: enseña y marca sin más', async ({ page }, info) => {
+    await page.goto('/linea/44?sentido=0', { waitUntil: 'networkidle' });
     const terminal = page.locator('[data-papel="terminal"]');
     await expect(terminal).toBeVisible();
     await terminal.scrollIntoViewIfNeeded();
-    const mins = await ultimasMinutos(terminal);
-    console.log(`\n  [${info.project.name}] 23 dir0 últimas: ${JSON.stringify(mins)}`);
-    // 14 expediciones acaban antes (en Clara Campoamor) y quedan fuera; la última
-    // real completa es la 21:59 (1319).
-    expect(Math.max(...mins), 'la última real de la 23 dir0 es 21:59 (1319)').toBe(1319);
-    await capturar(page, `capturas/zetabus/ULTIMAS-23-${info.project.name}.png`);
-  });
-
-  test('⚠️ un sentido de destino AMBIGUO (44 dir0, dos terminales) NO se filtra', async ({ page }, info) => {
-    await page.goto('/linea/44?sentido=0', { waitUntil: 'networkidle' });
-    const terminal = page.locator('[data-papel="terminal"]');
-    await terminal.scrollIntoViewIfNeeded();
-    const mins = await ultimasMinutos(terminal);
-    console.log(`\n  [${info.project.name}] 44 dir0 últimas (sin filtrar, dos terminales): ${JSON.stringify(mins)}`);
-    // No se toca: la 44 tiene dos terminales reales (Campus Río Ebro / Pablo Ruiz
-    // Picasso según la hora); filtrar a ciegas tiraría salidas buenas.
-    expect(mins.length, 'la 44 conserva sus últimas').toBeGreaterThan(0);
+    // No revienta y cuadra como cualquier otra (al no filtrar, su ambigüedad da igual).
+    const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
+    await cuadraElDia(lab);
+    expect(await lab.locator('[data-papel="salida"]').count(), 'la 44 enseña sus salidas').toBeGreaterThan(0);
   });
 });
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {

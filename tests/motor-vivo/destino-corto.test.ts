@@ -1,15 +1,18 @@
 /**
- * ⭐ LAS ÚLTIMAS SALIDAS SE JUZGAN POR SU DESTINO: solo cuentan las que LLEGAN.
+ * ⭐ ENSEÑAR, NO FILTRAR: cada salida dice si EMPIEZA o ACABA a mitad de línea.
  *
- * Antonio, cotejando con Avanza: en →Seminario aparecían como "última salida"
- * expediciones que acaban antes (en P. Mina) y NO llegan a Seminario. Quien espera
- * en Seminario después no tiene bus, y le decíamos que sí.
+ * Antonio, cotejando con Avanza: en →Seminario aparecían de madrugada expediciones
+ * que acaban antes (en P. Mina) y NO llegan. La versión anterior las FILTRABA (con
+ * guardia, casación de terminales, detección de ambigüedad…). Avanza no esconde
+ * nada: enseña el Desde/Hasta y ya. Es más simple y más honesto: la 0:11 no
+ * desaparece, se ve "acaba en Coso" y el usuario entiende que no llega.
  *
  * Se prueba la MÁQUINA con feeds de juguete (deterministas):
- *   1) una corta por el final (última parada ≠ terminal) NO entra en las últimas;
- *   2) las PRIMERAS no se tocan: una corta sí puede ser la primera del día;
- *   3) una que empieza a mitad pero SÍ llega a la terminal, se queda (con su origen);
- *   4) destino AMBIGUO (dos terminales, modal ≠ terminal oficial): NO se filtra.
+ *   1) una que ACABA a mitad se ENSEÑA (no se filtra), marcada con su destino;
+ *   2) la normal (empieza y acaba en su cabecera) va sin marca;
+ *   3) una que EMPIEZA a mitad pero acaba bien lleva solo "empieza en";
+ *   4) una que empieza Y acaba a mitad lleva las DOS marcas;
+ *   5) un sentido con dos terminales NO es especial: marca el destino que toque.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -29,82 +32,64 @@ function feed(trips: { trip: string; route: string; dir: string; paradas: [strin
   }
   return { tripsTxt: t.join('\n'), stopTimesTxt: st.join('\n') };
 }
-const minutos = (ss: readonly SalidaDeTerminal[]) => ss.map((s) => s.minuto);
 
-describe('calcularTerminales · las últimas salen por su destino', () => {
-  // R1 →Seminario (terminal FIN). Completas A→FIN a 06:00 / 22:00 / 23:00; y DOS
-  // cortas A→MID: una temprana (05:00) y una TARDÍA (23:30) que hoy mentiría como
-  // "última salida". La tardía NO debe entrar en las últimas.
+describe('calcularTerminales · empieza / acaba a mitad, sin filtrar', () => {
+  // Cabecera de origen A (mayoría) y de destino FIN (mayoría). Una corta por el
+  // final, una parcial de origen, y una que corta por los DOS lados, todas tardías.
   const r1 = feed([
     { trip: 'c1', route: 'R1', dir: '0', paradas: [['A', '06:00'], ['MID', '06:10'], ['FIN', '06:20']] },
     { trip: 'c2', route: 'R1', dir: '0', paradas: [['A', '22:00'], ['MID', '22:10'], ['FIN', '22:20']] },
     { trip: 'c3', route: 'R1', dir: '0', paradas: [['A', '23:00'], ['MID', '23:10'], ['FIN', '23:20']] },
-    { trip: 'corta-pronto', route: 'R1', dir: '0', paradas: [['A', '05:00'], ['MID', '05:10']] },
-    { trip: 'corta-tarde', route: 'R1', dir: '0', paradas: [['A', '23:30'], ['MID', '23:40']] },
-    // una que EMPIEZA a mitad (en MID) pero SÍ llega a FIN: se queda, marcada.
-    { trip: 'empieza-mid', route: 'R1', dir: '0', paradas: [['MID', '23:15'], ['FIN', '23:25']] },
+    { trip: 'acaba-mid', route: 'R1', dir: '0', paradas: [['A', '23:30'], ['MID', '23:40']] },
+    { trip: 'empieza-mid', route: 'R1', dir: '0', paradas: [['MID', '23:45'], ['FIN', '23:55']] },
+    { trip: 'ambas', route: 'R1', dir: '0', paradas: [['MID', '23:50'], ['MID', '23:52']] },
   ]);
-  const oficialR1 = (route: string) => (route === 'R1' ? 'FIN' : undefined);
   const dia1 = () => {
-    const res = calcularTerminales(CAL, r1.tripsTxt, r1.stopTimesTxt, DESDE, nombreDeParada, oficialR1);
+    const res = calcularTerminales(CAL, r1.tripsTxt, r1.stopTimesTxt, DESDE, nombreDeParada);
     return res.terminales.find((x) => x.lineId === 'R1')!.dias.find((d) => d.tipo === 'laborable')!;
   };
+  const porMin = (ss: readonly SalidaDeTerminal[], m: number) => ss.find((s) => s.minuto === m);
 
-  it('⛔ la corta TARDÍA (23:30 → P. Mina) NO entra en las últimas: no llega a Seminario', () => {
+  it('⛔ la que ACABA a mitad (23:30 → P. Mina) SE ENSEÑA, con "acaba en"; no se filtra', () => {
     const d = dia1();
-    // La última salida real es la 23:00 (c3) o la 23:15 (empieza-mid), NO la 23:30.
-    expect(minutos(d.ultimas), 'la 23:30 (1410) queda fuera').not.toContain(23 * 60 + 30);
-    // Y la última de verdad SÍ llega (23:15 empieza-mid o 23:00): la mayor de ultimas < 23:30.
-    expect(Math.max(...minutos(d.ultimas)), 'la última mostrada llega a Seminario').toBeLessThan(23 * 60 + 30);
+    const s = porMin(d.ultimas, 23 * 60 + 30);
+    expect(s, 'la 23:30 sigue en las últimas (no se descarta)').toBeDefined();
+    expect(s!.destino, 'marcada acaba en P. Mina').toBe('P. Mina');
+    expect(s!.origen, 'pero empieza en la cabecera: sin marca de origen').toBeNull();
   });
 
-  it('las PRIMERAS no se tocan: la corta de las 05:00 SÍ es la primera del día', () => {
-    const d = dia1();
-    expect(minutos(d.primeras)[0], 'la primera es la 05:00, aunque sea corta').toBe(5 * 60);
+  it('la normal (empieza y acaba en su cabecera) va SIN marca', () => {
+    const s = porMin(dia1().ultimas, 23 * 60); // c3: A → FIN
+    expect(s!.origen).toBeNull();
+    expect(s!.destino).toBeNull();
   });
 
-  it('una que EMPIEZA a mitad pero LLEGA a la terminal se queda, marcada con su origen', () => {
-    const d = dia1();
-    const s = d.ultimas.find((x) => x.minuto === 23 * 60 + 15);
-    expect(s, 'la 23:15 (empieza en P. Mina, llega a Seminario) está en las últimas').toBeDefined();
-    expect(s!.origen, 'y va marcada "empieza en P. Mina"').toBe('P. Mina');
+  it('la que EMPIEZA a mitad pero acaba bien lleva solo "empieza en"', () => {
+    const s = porMin(dia1().ultimas, 23 * 60 + 45); // empieza-mid: MID → FIN
+    expect(s!.origen, 'empieza en P. Mina').toBe('P. Mina');
+    expect(s!.destino, 'acaba en la cabecera: sin marca de destino').toBeNull();
   });
 
-  it('⛔ CONTRAPRUEBA · sin el filtro, la 23:30 sería la última (y es falso)', () => {
-    // El orden CRUDO por minuto pondría la 23:30 la última. El filtro la saca.
-    const d = dia1();
-    const todasPorMinuto = [5 * 60, 6 * 60, 22 * 60, 23 * 60, 23 * 60 + 15, 23 * 60 + 30];
-    expect(Math.max(...todasPorMinuto), 'cruda, la mayor es la 23:30').toBe(23 * 60 + 30);
-    expect(minutos(d.ultimas), 'filtrada, la 23:30 no está').not.toContain(23 * 60 + 30);
+  it('la que corta por los DOS lados lleva las DOS marcas', () => {
+    const s = porMin(dia1().ultimas, 23 * 60 + 50); // ambas: MID → MID
+    expect(s!.origen).toBe('P. Mina');
+    expect(s!.destino).toBe('P. Mina');
   });
 
-  // R2: destino AMBIGUO. Dos terminales de verdad, X (mayoría) y FIN (oficial).
-  // Como el modal (X) ≠ terminal oficial (FIN), NO se filtra: se dejan todas.
-  const r2 = feed([
-    { trip: 'a1', route: 'R2', dir: '0', paradas: [['A', '20:00'], ['X', '20:20']] },
-    { trip: 'a2', route: 'R2', dir: '0', paradas: [['A', '21:00'], ['X', '21:20']] },
-    { trip: 'a3', route: 'R2', dir: '0', paradas: [['A', '22:00'], ['X', '22:20']] },
-    { trip: 'b1', route: 'R2', dir: '0', paradas: [['A', '23:00'], ['FIN', '23:30']] },
-  ]);
-  it('⚠️ destino AMBIGUO (modal X ≠ terminal oficial FIN): NO se filtra, se dejan todas', () => {
-    const res = calcularTerminales(CAL, r2.tripsTxt, r2.stopTimesTxt, DESDE, nombreDeParada, () => 'FIN');
-    const d = res.terminales.find((x) => x.lineId === 'R2')!.dias.find((x) => x.tipo === 'laborable')!;
-    // Las 4 salen; ninguna se descarta (una a X, otra a FIN, todas son terminal real).
-    expect(minutos(d.ultimas).sort((a, b) => a - b)).toEqual([20 * 60, 21 * 60, 22 * 60, 23 * 60]);
-  });
-
-  it('menos de 5 completas: se enseñan las que haya, NO se rellena con cortas', () => {
-    // R3: 3 completas (mayoría → terminal FIN es fiable) + 2 cortas TARDÍAS. Las
-    // últimas deben ser SOLO las 3 completas, aunque las cortas sean más tardías.
-    const r3 = feed([
-      { trip: 'k1', route: 'R3', dir: '0', paradas: [['A', '06:00'], ['FIN', '06:20']] },
-      { trip: 'k2', route: 'R3', dir: '0', paradas: [['A', '07:00'], ['FIN', '07:20']] },
-      { trip: 'k3', route: 'R3', dir: '0', paradas: [['A', '08:00'], ['FIN', '08:20']] },
-      { trip: 'x1', route: 'R3', dir: '0', paradas: [['A', '22:00'], ['MID', '22:10']] },
-      { trip: 'x2', route: 'R3', dir: '0', paradas: [['A', '23:00'], ['MID', '23:10']] },
+  // R2: dos terminales (X mayoría, FIN minoría). NO es un caso especial: la que
+  // acaba en FIN (≠ destino modal X) se marca "acaba en Seminario" y ya.
+  it('⚠️ dos terminales: NO es especial, se marca el destino que toque', () => {
+    const r2 = feed([
+      { trip: 'a1', route: 'R2', dir: '0', paradas: [['A', '20:00'], ['X', '20:20']] },
+      { trip: 'a2', route: 'R2', dir: '0', paradas: [['A', '21:00'], ['X', '21:20']] },
+      { trip: 'a3', route: 'R2', dir: '0', paradas: [['A', '22:00'], ['X', '22:20']] },
+      { trip: 'b1', route: 'R2', dir: '0', paradas: [['A', '23:00'], ['FIN', '23:30']] },
     ]);
-    const res = calcularTerminales(CAL, r3.tripsTxt, r3.stopTimesTxt, DESDE, nombreDeParada, () => 'FIN');
-    const d = res.terminales.find((x) => x.lineId === 'R3')!.dias.find((x) => x.tipo === 'laborable')!;
-    expect(minutos(d.ultimas), 'solo las 3 completas, no rellena con las cortas tardías').toEqual([6 * 60, 7 * 60, 8 * 60]);
+    const res = calcularTerminales(CAL, r2.tripsTxt, r2.stopTimesTxt, DESDE, nombreDeParada);
+    const d = res.terminales.find((x) => x.lineId === 'R2')!.dias.find((x) => x.tipo === 'laborable')!;
+    // Las 4 se enseñan (nada se filtra). La que va a X (mayoría) sin marca; la de FIN, marcada.
+    expect(d.ultimas.map((s) => s.minuto)).toEqual([20 * 60, 21 * 60, 22 * 60, 23 * 60]);
+    expect(porMin(d.ultimas, 22 * 60)!.destino, 'X es el destino modal: sin marca').toBeNull();
+    expect(porMin(d.ultimas, 23 * 60)!.destino, 'FIN es la excepción: marcada').toBe('Seminario');
   });
 });

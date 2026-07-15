@@ -42,28 +42,33 @@
 export type TipoDeDia = 'laborable' | 'sabado' | 'festivo';
 
 /**
- * Una salida concreta: su minuto GTFS y, SOLO si no arranca en la cabecera, el
- * nombre de dónde arranca de verdad.
+ * Una salida concreta: su minuto GTFS y, si no recorre la línea entera, DÓNDE
+ * empieza o dónde acaba de verdad.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * ⚠️ NO TODA SALIDA ARRANCA EN LA CABECERA. Antonio lo cazó cotejando con Avanza:
- * la 35 tiene 12 salidas de refuerzo que empiezan a MITAD de recorrido (en "Coso
- * n.º 126", la parada 19 de 38), no en la cabecera (Sainz de Varanda). Punta de
- * mañana. Quien espera en una parada ANTERIOR a ese punto, con ese bus NO CUENTA:
- * no pasa por él. El dato general —"hay salida a las 4:40"— oculta el matiz.
+ * ⚠️ NO TODA SALIDA RECORRE LA LÍNEA ENTERA. Antonio lo cotejó con Avanza:
+ *   · unas EMPIEZAN a mitad (refuerzos de punta que arrancan en "Coso n.º 126",
+ *     no en la cabecera) → quien espera ANTES no las coge;
+ *   · otras ACABAN a mitad (de madrugada, que se quedan en "Coso" y no llegan a
+ *     Seminario) → quien espera DESPUÉS no las coge.
  *
- * ⭐ Y EL GTFS LO SABE: la primera parada real de cada trip es su `stop_times` de
- * `stop_sequence` mínima. Antes se aplanaba a "desde cabecera" y se tiraba. Ya no.
+ * ⭐ Y AVANZA NO LAS ESCONDE: enseña el Desde/Hasta de cada salida y ya está. Es
+ * más simple y más honesto que filtrarlas: la 0:11 no desaparece, se ve con "acaba
+ * en Coso" y el usuario entiende que no llega. El GTFS lo sabe: la primera y la
+ * última parada de cada trip son sus `stop_times` de secuencia mínima y máxima.
  *
- * ⚠️ SE MARCA LA EXCEPCIÓN, NO LA NORMA: `origen` es `null` cuando la salida
- * arranca en la cabecera (lo normal). Solo las PARCIALES llevan nombre.
+ * ⚠️ SE MARCA LA EXCEPCIÓN, NO LA NORMA: `origen`/`destino` son `null` cuando la
+ * salida empieza/acaba en la cabecera de ese extremo (lo normal). Solo las que se
+ * salen de lo normal llevan nombre.
  * ═══════════════════════════════════════════════════════════════════════════
  */
 export interface SalidaDeTerminal {
   /** Minutos desde medianoche. Puede pasar de 1440 (madrugada del día siguiente). */
   readonly minuto: number;
-  /** Nombre de la parada de arranque SOLO si NO es la cabecera. `null` = normal. */
+  /** Nombre de dónde EMPIEZA, SOLO si no es la cabecera de origen. `null` = normal. */
   readonly origen: string | null;
+  /** Nombre de dónde ACABA, SOLO si no es la cabecera de destino. `null` = normal. */
+  readonly destino: string | null;
 }
 
 export interface SalidasDeTerminal {
@@ -74,7 +79,8 @@ export interface SalidasDeTerminal {
   /** Cuántas salidas hay ese día. Da idea de la frecuencia sin prometer un horario. */
   readonly expediciones: number;
   /**
-   * ⭐ LAS 5 PRIMERAS Y LAS 5 ÚLTIMAS SALIDAS, en MINUTOS GTFS y con su origen real.
+   * ⭐ LAS 5 PRIMERAS Y LAS 5 ÚLTIMAS SALIDAS, en MINUTOS GTFS, con dónde empieza y
+   *    acaba cada una. NO se filtra ninguna: se enseñan y se marcan (como Avanza).
    *
    * Es una PRUEBA DE FUENTE: un rango ("5:59 → 23:33") no se puede cotejar; una
    * salida concreta SÍ —quien coge el bus verifica con los ojos si el GTFS es fiel
@@ -141,13 +147,6 @@ export function calcularTerminales(
    * el mismo nombre que el usuario ve en el itinerario, sin acoplar esto a los nombres.
    */
   nombreDeParada: (stopId: string) => string,
-  /**
-   * ⭐ La TERMINAL OFICIAL de un sentido (última parada de su recorrido), por
-   * `route|dir`. Se inyecta (el build la tiene de las `directions`). Sirve para
-   * dos cosas: filtrar las ÚLTIMAS a las que LLEGAN, y —guardia de fiabilidad—
-   * saltarse los sentidos donde el destino es ambiguo (dos terminales, como la 44).
-   */
-  terminalOficial: (route: string, dir: 0 | 1) => string | undefined,
 ): ResultadoTerminal {
   // ── 1 · qué servicios circulan cada fecha ────────────────────────────────
   const activos = new Map<string, Set<string>>();
@@ -252,51 +251,42 @@ export function calcularTerminales(
     return best;
   };
 
-  // ⭐ CABECERA de origen = arranque más frecuente. No se cablea: sale del dato.
-  //    (Coincide con la oficial: 35|1 → 16880.)
-  const cabecera = new Map<string, string>();
-  for (const [kd, m] of cuentaOrigen) cabecera.set(kd, modal(m));
+  // ⭐ Las CABECERAS de cada sentido = la parada de arranque y la de llegada MÁS
+  //    FRECUENTES. Salen del dato, no se cablean. Lo que se sale de ellas se marca.
+  const cabeceraOrigen = new Map<string, string>();
+  for (const [kd, m] of cuentaOrigen) cabeceraOrigen.set(kd, modal(m));
+  const cabeceraDestino = new Map<string, string>();
+  for (const [kd, m] of cuentaDestino) cabeceraDestino.set(kd, modal(m));
 
-  // ⭐⭐ ¿SE PUEDE FILTRAR LAS ÚLTIMAS DE ESTE SENTIDO CON SEGURIDAD?
-  //    Solo si el destino es INEQUÍVOCO: la última parada más frecuente coincide
-  //    con la terminal oficial del recorrido. Cuando no coinciden, el sentido tiene
-  //    DOS terminales de verdad (la 44: Campus Río Ebro / Pablo Ruiz Picasso, según
-  //    la hora) y filtrar a ciegas tiraría salidas buenas. Ahí NO se filtra.
-  const terminalFiltrable = new Map<string, string | null>(); // route|dir → stop a exigir, o null
-  for (const [kd, m] of cuentaDestino) {
-    const [route, dir] = kd.split('|');
-    const oficial = terminalOficial(route, dir === '1' ? 1 : 0);
-    terminalFiltrable.set(kd, oficial !== undefined && modal(m) === oficial ? oficial : null);
-  }
-
+  // ⭐⭐ ENSEÑAR, NO FILTRAR (como Avanza). NO se descarta ninguna salida: se cogen
+  //    las 5 primeras y las 5 últimas TAL CUAL, y de cada una se dice si EMPIEZA o
+  //    ACABA a mitad. Así la 0:11 no desaparece —se ve "acaba en Coso"— y el usuario
+  //    entiende que no llega a Seminario. Más simple y más honesto que el filtro.
+  //    (Y de paso la 44 —dos terminales— deja de ser un caso especial: cada salida
+  //    enseña el destino que tenga, y punto.)
   const porSentido = new Map<string, SalidasDeTerminal[]>();
   for (const [k, salidas] of acumulado) {
     const [route, dir, tipo] = k.split('|');
     const kk = `${route}|${dir}`;
     if (!porSentido.has(kk)) porSentido.set(kk, []);
-    const cab = cabecera.get(kk);
-    const terminal = terminalFiltrable.get(kk) ?? null;
+    const origen = cabeceraOrigen.get(kk);
+    const destino = cabeceraDestino.get(kk);
     // ⚠️ POR MINUTO GTFS, no por hora de reloj: así "las 5 primeras" y "las 5
     //    últimas" salen bien aunque las últimas crucen medianoche (1489, 1529…).
     const ord = [...salidas].sort((a, b) => a.min - b.min);
-    // ⚠️ El origen SOLO se rellena si NO es la cabecera. La norma va sin marca.
-    const conOrigen = (s: { min: number; ini: string }): SalidaDeTerminal => ({
+    // ⚠️ Cada extremo se marca SOLO si no es su cabecera. La norma va sin marca.
+    const conMarcas = (s: { min: number; ini: string; fin: string }): SalidaDeTerminal => ({
       minuto: s.min,
-      origen: s.ini === cab ? null : nombreDeParada(s.ini),
+      origen: s.ini === origen ? null : nombreDeParada(s.ini),
+      destino: s.fin === destino ? null : nombreDeParada(s.fin),
     });
-    // ⭐ LAS ÚLTIMAS SALIDAS HACIA {terminal}: SOLO las que LLEGAN a la terminal.
-    //    Una corta por el final (última parada ≠ terminal) NO es una última salida
-    //    hacia allí. Las PRIMERAS NO se tocan (regla de Antonio): una corta sí
-    //    puede ser la primera del día desde el origen. Y si al filtrar quedan menos
-    //    de 5 completas, se enseñan las que haya —no se rellena con cortas—.
-    const completas = terminal === null ? ord : ord.filter((s) => s.fin === terminal);
     porSentido.get(kk)!.push({
       tipo: tipo as TipoDeDia,
       primera: ord[0].min,
       ultima: ord[ord.length - 1].min,
       expediciones: ord.length,
-      primeras: ord.slice(0, 5).map(conOrigen),
-      ultimas: completas.slice(-5).map(conOrigen),
+      primeras: ord.slice(0, 5).map(conMarcas),
+      ultimas: ord.slice(-5).map(conMarcas),
     });
   }
 
