@@ -114,20 +114,43 @@ export function textoLegible(fondo: string, preferido: string): { texto: string;
 }
 
 /**
- * Los dos tonos de un chip. Es una función pura, y por eso se puede probar sin
- * navegador: el test le pasa las 44 líneas reales y comprueba que ninguna sale
- * ilegible.
+ * ⭐⭐ D1 (REGLA DE MARCA) · EL NÚMERO DE UNA DIURNA ES SIEMPRE BLANCO.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  El modelo anterior calculaba el color del texto por contraste caso a caso, y
+ *  daba LEGIBILIDAD pero rompía la COHERENCIA de marca: la 29 salía con el número
+ *  en negro entre 30 blancos, y el ojo lo lee como un error.
+ *
+ *  La regla: el número de una diurna es SIEMPRE blanco. Y se lee sobre CUALQUIER
+ *  color —hasta un amarillo— por un CONTORNO oscuro (`.zb-num-contorno`), NO
+ *  oscureciendo el fondo. Así la IDENTIDAD (el color de línea) queda INTACTA.
+ *
+ * ⚠️ POR QUÉ NO SE OSCURECE EL FONDO (fue el primer intento, y lo medí):
+ *    oscurecer a AA COLAPSA 20 pares de diurnas —la 25 y la 28 caían a distancia
+ *    4; la 38 y la 59, a 4—. La paleta del operador tiene ~20 claras agrupadas por
+ *    tono, y bajarlas todas a la misma luminancia baja las vuelve EL MISMO color.
+ *    El contorno da el contraste local sin tocar el color. Antonio eligió esta vía.
+ *
+ * ⭐ Y EL CONTRASTE ESTÁ GARANTIZADO, no prometido: el número lleva relleno blanco
+ *    y trazo negro, y `max(contraste(blanco, fondo), contraste(negro, fondo)) ≥
+ *    4,58` para CUALQUIER color (demostrado en el test). Sobre un fondo claro manda
+ *    el trazo; sobre uno oscuro, el relleno. Nunca hay un número ilegible.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 export function tonosDeChip(l: Line): { fondo: string; texto: string; buho: boolean } {
-  if (!esBuho(l)) {
-    // ⭐ EL CONTRASTE MANDA, no `route_text_color`.
-    return { fondo: l.color, texto: textoLegible(l.color, l.textColor).texto, buho: false };
+  if (esBuho(l)) {
+    // ⭐ NOCTURNAS, INTACTAS: fondo noche + número en el color de la línea (con la
+    //    red de D1 por si un búho no se leyera sobre el azul noche). La categoría
+    //    va en la INVERSIÓN, no en un color; y NO llevan contorno (su número no es
+    //    blanco, y un trazo negro sobre el azul noche no ayudaría).
+    return { fondo: NOCHE, texto: textoLegible(NOCHE, l.color).texto, buho: true };
   }
-  // ⭐ INVERTIDO. Y con la misma red: si el color de la línea no se lee sobre el
-  //    azul noche, el número cae al que sí. La CATEGORÍA (la inversión) no se
-  //    pierde nunca; lo que cede es el tono, que es lo accesorio.
-  return { fondo: NOCHE, texto: textoLegible(NOCHE, l.color).texto, buho: true };
+  // ⭐ DIURNAS: color de línea INTACTO + número blanco (el contorno lo pone el chip).
+  return { fondo: l.color, texto: '#FFFFFF', buho: false };
 }
+
+/** ¿Este número lleva contorno? Sí cuando es blanco (diurnas). Un solo sitio decide. */
+export const llevaContorno = (texto: string): boolean => texto.toUpperCase() === '#FFFFFF';
 
 export function ChipLinea({
   linea,
@@ -158,9 +181,11 @@ export function ChipLinea({
    *    Solo se caza midiendo la caja REAL. Es la décima vez que el píxel y el CSS
    *    no dicen lo mismo.
    */
-  const clase = grande
+  const base = grande
     ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-tarjeta text-seccion font-black'
     : 'flex h-6 w-6 shrink-0 items-center justify-center rounded-chip text-nota font-black';
+  // ⭐ El contorno oscuro que hace legible el número blanco sobre CUALQUIER color.
+  const clase = llevaContorno(texto) ? `${base} zb-num-contorno` : base;
 
   const contenido = (
     <span

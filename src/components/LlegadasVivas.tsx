@@ -6,7 +6,7 @@ import type { LlegadaViva, LlegadasDeParada } from '@/engine/llegadas';
 import type { Observacion } from '@/core';
 import { linea } from '@/engine/topologia';
 import { DeDondeSaleCadaDato, FichaVehiculo, NotaSinVerificar } from './FichaVehiculo';
-import { tonosDeChip } from './ChipLinea';
+import { tonosDeChip, llevaContorno } from './ChipLinea';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -336,7 +336,9 @@ function FiltroDeLineas({
               data-papel="chip-filtro"
               data-linea={etiqueta}
               data-apagada={off ? 'si' : 'no'}
-              className="flex h-14 w-14 items-center justify-center rounded-panel text-seccion font-bold"
+              className={`flex h-14 w-14 items-center justify-center rounded-panel text-seccion font-bold${
+                !off && color ? ' zb-num-contorno' : ''
+              }`}
               style={
                 off
                   ? {
@@ -647,7 +649,9 @@ function Llegada({
               el índice y en el itinerario. Si aquí se dedujeran otra vez, una N7
               podría salir de diurna en esta pantalla y de búho en la otra. */}
           <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-tarjeta text-cuerpo font-bold"
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-tarjeta text-cuerpo font-bold${
+              tonos && llevaContorno(tonos.texto) ? ' zb-num-contorno' : ''
+            }`}
             style={
               tonos
                 ? { backgroundColor: tonos.fondo, color: tonos.texto }

@@ -164,21 +164,34 @@ test.describe('⭐ B4 · el marcador de autobús: icono + número + punta', () =
   });
 
   /**
-   * ⭐⭐ EL FALLO D1, QUE AQUÍ ESTABA A PUNTO DE REPETIRSE.
+   * ⭐⭐ EL NÚMERO DEL MARCADOR SE LEE — Y AHORA POR REGLA DE MARCA + CONTORNO.
    *
-   * El marcador anterior pintaba el número en BLANCO sobre el color de la línea,
-   * copiado del GTFS. Con la línea 33 (#C5CE00) eso da **1,72:1**: un número que no
-   * se lee, en un mapa, en la calle, al sol. El mismo fallo que Antonio cazó en los
-   * chips — y que se habría colado otra vez por la puerta de atrás.
+   * El número de una diurna es SIEMPRE blanco (coherencia de marca), y se lee sobre
+   * CUALQUIER color de línea por un TRAZO NEGRO (`.zb-num-contorno`), no oscureciendo
+   * el fondo (eso colapsaba 20 pares de líneas al mismo tono). La legibilidad ya NO
+   * es "relleno vs fondo" —el blanco solo sobre la 29 da 1,68:1— sino:
+   *
+   *     sobre un fondo CLARO manda el TRAZO (negro); sobre uno OSCURO, el RELLENO.
+   *     ⇒ max(contraste(relleno, fondo), contraste(trazo, fondo)) ≥ AA, garantizado.
+   *
+   * Aquí se comprueba las dos cosas: que el número blanco LLEVA el trazo (si no, la
+   * garantía es papel mojado) y que la garantía se cumple sobre su color real.
    */
-  test('⭐ el número del marcador SE LEE (≥ 4,5:1), no va en blanco por costumbre', async ({ page }, info) => {
+  test('⭐ el número del marcador SE LEE (≥ 4,5:1) por relleno o por trazo', async ({ page }, info) => {
     await abrir(page);
 
     const tonos = await buses(page).evaluateAll((els) =>
       els.map((el) => {
         const pastilla = el.querySelector('span > span') as HTMLElement; // la píldora
         const cs = getComputedStyle(pastilla);
-        return { fondo: cs.backgroundColor, texto: cs.color, etiqueta: pastilla.innerText.trim() };
+        return {
+          fondo: cs.backgroundColor,
+          texto: cs.color,
+          etiqueta: pastilla.innerText.trim(),
+          // El grosor del trazo (0 si no lleva). El número blanco DEBE llevarlo.
+          trazo: parseFloat(cs.webkitTextStrokeWidth || '0') || 0,
+          trazoColor: cs.webkitTextStrokeColor || 'rgb(0, 0, 0)',
+        };
       }),
     );
 
@@ -186,11 +199,17 @@ test.describe('⭐ B4 · el marcador de autobús: icono + número + punta', () =
       const m = c.match(/\d+/g)!.map(Number);
       return { r: m[0], g: m[1], b: m[2] };
     };
+    const esBlanco = (c: string) => { const { r, g, b } = aRgb(c); return r > 240 && g > 240 && b > 240; };
 
     const malos: string[] = [];
     for (const t of tonos) {
-      const c = contraste(aRgb(t.fondo), aRgb(t.texto));
-      console.log(`  [${info.project.name}] marcador «${t.etiqueta}» ${t.fondo} / ${t.texto} → ${c.toFixed(2)}:1`);
+      const cRelleno = contraste(aRgb(t.fondo), aRgb(t.texto));
+      // Si hay trazo, el número también se lee por su borde: se toma el mejor canal.
+      const cTrazo = t.trazo > 0 ? contraste(aRgb(t.fondo), aRgb(t.trazoColor)) : 0;
+      const c = Math.max(cRelleno, cTrazo);
+      console.log(`  [${info.project.name}] «${t.etiqueta}» ${t.fondo}/${t.texto} relleno ${cRelleno.toFixed(2)} · trazo ${t.trazo}px ${cTrazo.toFixed(2)} → ${c.toFixed(2)}:1`);
+      // ⚠️ Un número BLANCO sin trazo sería el bug original (blanco por costumbre).
+      if (esBlanco(t.texto) && t.trazo <= 0) malos.push(`«${t.etiqueta}» blanco SIN contorno`);
       if (c < 4.5) malos.push(`«${t.etiqueta}» a ${c.toFixed(2)}:1`);
     }
     expect(tonos.length, 'no hay marcadores que medir').toBeGreaterThan(0);

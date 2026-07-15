@@ -130,6 +130,25 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ⭐⭐ D1 (REGLA DE MARCA) · EL CONTORNO QUE HACE LEGIBLE EL NÚMERO BLANCO.
+   ═══════════════════════════════════════════════════════════════════════════
+   El número de una línea diurna es SIEMPRE blanco (coherencia de marca). Para que
+   se lea sobre CUALQUIER color de línea —hasta un amarillo— sin tocar el color
+   (oscurecer el fondo COLAPSABA 20 pares de líneas del operador al mismo tono),
+   se le pone un TRAZO NEGRO. `paint-order: stroke fill` dibuja el trazo DEBAJO del
+   relleno: el blanco queda nítido y el borde da el contraste local.
+
+   ⭐ El contraste está GARANTIZADO: relleno blanco + trazo negro ⇒ sobre un fondo
+   claro manda el trazo (negro sobre claro), sobre uno oscuro manda el relleno
+   (blanco sobre oscuro). `max(blanco, negro) ≥ 4,58` para cualquier color. Ver
+   `tests/motor-vivo/contraste-de-los-chips`.
+   ───────────────────────────────────────────────────────────────────────── */
+.zb-num-contorno {
+  -webkit-text-stroke: 0.7px #000;
+  paint-order: stroke fill;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    ESTADOS, EN FORMA. Cada señal SOBREVIVE AL GRIS.
    ───────────────────────────────────────────────────────────────────────── */
 

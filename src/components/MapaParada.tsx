@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import type { LlegadaViva } from '@/engine/llegadas';
 import type { LatLon } from '@/core';
 import { linea } from '@/engine/topologia';
-import { tonosDeChip } from './ChipLinea';
+import { tonosDeChip, llevaContorno } from './ChipLinea';
 
 /**
  * ⭐ EL MAPA DE LA PARADA. ARRIBA, COMO EN LA REFERENCIA.
@@ -161,7 +161,7 @@ function iconoBus(
     className: 'zb-bus',
     html:
       `<span style="display:flex;flex-direction:column;align-items:center;width:${ANCHO_ICONO}px">` +
-      `<span class="${inminente ? 'zb-late' : ''}" style="display:inline-flex;align-items:center;gap:4px;` +
+      `<span class="${[inminente ? 'zb-late' : '', llevaContorno(texto) ? 'zb-num-contorno' : ''].filter(Boolean).join(' ')}" style="display:inline-flex;align-items:center;gap:4px;` +
       `height:26px;padding:0 8px;border-radius:9px;background:${fondo};color:${texto};` +
       `border:2px solid #fff;font:900 13px/1 system-ui,sans-serif;white-space:nowrap;${anillo}">` +
       `${glifoBus(texto)}<span>${etiqueta}</span></span>` +
