@@ -114,6 +114,13 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
   //    Una tabla vacía con guiones parece un fallo; no ponerla, no.
   if (!terminal || terminal.dias.length === 0) return null;
 
+  // ¿Algún día tiene salidas parciales? Solo entonces se dice, UNA vez al pie, POR
+  // QUÉ importa (que ese bus no sirve a quien espera antes de su origen). La
+  // excepción, no el aparato: un sentido sin parciales no lleva esta línea.
+  const hayParciales = terminal.dias.some((d) =>
+    [...d.primeras, ...d.ultimas].some((s) => s.origen !== null),
+  );
+
   return (
     <section className="mt-6" data-papel="terminal">
       <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
@@ -193,6 +200,17 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
           );
         })}
       </div>
+
+      {/* ⭐ LA CONSECUENCIA, una sola línea al pie: el número y "desde X" dicen QUÉ
+          y DE DÓNDE, pero no POR QUÉ importa. Solo si hay parciales. */}
+      {hayParciales && (
+        <p
+          className="mt-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+          data-papel="nota-parciales"
+        >
+          Las <strong>salidas parciales</strong> no pasan por las paradas anteriores a su origen.
+        </p>
+      )}
     </section>
   );
 }

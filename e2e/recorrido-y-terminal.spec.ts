@@ -198,6 +198,11 @@ test.describe('⭐ SALIDAS PARCIALES · índice numérico + leyenda, no un "desd
       expect(await cruceParcial.locator('[data-papel="indice-origen"]').count(), 'y lleva ¹, distinto').toBe(1);
     }
 
+    // ⭐ LA CONSECUENCIA: UNA sola línea al pie (no por salida, no por número).
+    const nota = terminal.locator('[data-papel="nota-parciales"]');
+    await expect(nota, 'se dice POR QUÉ importa, una vez').toHaveCount(1);
+    await expect(nota).toContainText(/no pasan por las paradas anteriores a su origen/i);
+
     await capturar(page, `capturas/zetabus/PARCIAL-terminal-35-${info.project.name}.png`);
   });
 
@@ -218,6 +223,12 @@ test.describe('⭐ SALIDAS PARCIALES · índice numérico + leyenda, no un "desd
     const l2 = await leyenda.nth(1).innerText();
     expect(l1, 'las dos calles no son la misma').not.toBe(l2);
 
+    // ⛔ Con ¹ Y ² (varios orígenes) la consecuencia SIGUE SIENDO UNA línea, no dos.
+    expect(
+      await terminal.locator('[data-papel="nota-parciales"]').count(),
+      'una sola línea al pie aunque haya dos orígenes',
+    ).toBe(1);
+
     await capturar(page, `capturas/zetabus/PARCIAL-terminal-23-${info.project.name}.png`);
   });
 
@@ -231,6 +242,10 @@ test.describe('⭐ SALIDAS PARCIALES · índice numérico + leyenda, no un "desd
     console.log(`\n  [${info.project.name}] la 22 · superíndices: ${nIdx} · leyendas: ${nLey}`);
     expect(nIdx, 'la 22 no marca ninguna salida').toBe(0);
     expect(nLey, 'ni enseña leyenda alguna').toBe(0);
+    expect(
+      await terminal.locator('[data-papel="nota-parciales"]').count(),
+      'ni la línea de consecuencia: sin parciales, sin aparato',
+    ).toBe(0);
     // Sí hay salidas normales (para no confundir "sin marca" con "sin bloque").
     expect(await terminal.locator('[data-papel="salida"]').count()).toBeGreaterThan(0);
   });
