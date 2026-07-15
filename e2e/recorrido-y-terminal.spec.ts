@@ -136,6 +136,68 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+test.describe('⭐ SALIDAS PARCIALES · el origen real cuando NO es la cabecera', () => {
+  test('la 35 marca las salidas que arrancan a mitad de línea, con su origen', async ({ page }, info) => {
+    // La 35 tiene 12 salidas de refuerzo que empiezan en "Coso n.º 126" (parada 19
+    // de 38), no en la cabecera. Antonio lo cazó cotejando con Avanza.
+    await page.goto('/linea/35', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await expect(terminal).toBeVisible();
+    await terminal.scrollIntoViewIfNeeded();
+
+    // Hay salidas parciales, marcadas con su origen inline.
+    const parciales = terminal.locator('[data-papel="origen-parcial"]');
+    const nP = await parciales.count();
+    console.log(`\n  [${info.project.name}] la 35 muestra ${nP} salidas parciales (5+5 vista)`);
+    expect(nP, 'la 35 tiene salidas que arrancan fuera de cabecera').toBeGreaterThan(0);
+    await expect(parciales.first(), 'la marca dice "desde {origen}"').toContainText(/desde\s+Coso/i);
+
+    // La nota que explica qué significa, UNA vez.
+    const nota = terminal.locator('[data-papel="nota-parciales"]');
+    await expect(nota, 'se explica qué es una salida parcial').toBeVisible();
+    await expect(nota).toContainText(/no pasa por las paradas anteriores/i);
+
+    // ⛔ CONTRAPRUEBA · una salida SIN data-origen (arranca en cabecera) NO puede
+    //    llevar la marca "desde …". Y una CON data-origen SÍ. Rómpelo y compruébalo.
+    const salidas = terminal.locator('[data-papel="salida"]');
+    const total = await salidas.count();
+    let cabeceraSinMarca = 0;
+    let parcialConMarca = 0;
+    for (let i = 0; i < total; i++) {
+      const s = salidas.nth(i);
+      const origen = await s.getAttribute('data-origen');
+      const marca = await s.locator('[data-papel="origen-parcial"]').count();
+      if (origen === null) {
+        expect(marca, 'una salida de CABECERA no puede salir marcada').toBe(0);
+        cabeceraSinMarca++;
+      } else {
+        expect(marca, 'una salida PARCIAL tiene que salir marcada').toBe(1);
+        parcialConMarca++;
+      }
+    }
+    console.log(`     cabecera sin marca: ${cabeceraSinMarca} · parciales con marca: ${parcialConMarca}`);
+    expect(cabeceraSinMarca, 'hay salidas normales, sin marca').toBeGreaterThan(0);
+    expect(parcialConMarca, 'y salidas parciales, marcadas').toBeGreaterThan(0);
+
+    await capturar(page, `capturas/zetabus/PARCIAL-terminal-35-${info.project.name}.png`);
+  });
+
+  test('⚠️ una línea SIN salidas parciales (la 22) NO inventa distintivos', async ({ page }, info) => {
+    await page.goto('/linea/22', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await expect(terminal).toBeVisible();
+    await terminal.scrollIntoViewIfNeeded();
+    const nP = await terminal.locator('[data-papel="origen-parcial"]').count();
+    const nNota = await terminal.locator('[data-papel="nota-parciales"]').count();
+    console.log(`\n  [${info.project.name}] la 22 · parciales: ${nP} · notas: ${nNota}`);
+    expect(nP, 'la 22 no marca ninguna salida como parcial').toBe(0);
+    expect(nNota, 'y no enseña la nota de parciales si no hay ninguna').toBe(0);
+    // Sí hay salidas normales (para no confundir "sin marca" con "sin bloque").
+    expect(await terminal.locator('[data-papel="salida"]').count()).toBeGreaterThan(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {
   test('el alto por parada es compacto y estable', async ({ page }, info) => {
     await page.goto('/linea/21', { waitUntil: 'networkidle' });

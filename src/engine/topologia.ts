@@ -40,11 +40,11 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
-import type { TerminalDeSentido, TipoDeDia } from '@/sources/gtfs-nap/terminal';
+import type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia } from '@/sources/gtfs-nap/terminal';
 import type { SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
 
-export type { TerminalDeSentido, TipoDeDia };
+export type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia };
 
 interface Artefacto {
   readonly generatedAt: string;

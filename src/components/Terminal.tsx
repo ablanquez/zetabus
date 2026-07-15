@@ -1,4 +1,4 @@
-import type { TerminalDeSentido, TipoDeDia } from '@/engine/topologia';
+import type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia } from '@/engine/topologia';
 
 /**
  * ⭐ C5 · EL FUNCIONAMIENTO DE TERMINAL. Primeras y últimas salidas.
@@ -42,15 +42,17 @@ export function reloj(minutos: number): { hora: string; siguiente: boolean } {
   };
 }
 
-/** Una salida, pintada. `1529` → "1:29" con marca "+1" si cruza medianoche. */
-function Salida({ minuto }: { minuto: number }) {
-  const r = reloj(minuto);
+/** Una salida, pintada. `1529` → "1:29" con marca "+1" si cruza medianoche, y su
+ *  origen real si NO arranca en la cabecera ("· desde Coso n.º 126"). */
+function Salida({ salida }: { salida: SalidaDeTerminal }) {
+  const r = reloj(salida.minuto);
   return (
     <span
-      className="tabular-nums"
+      className="inline-flex items-baseline tabular-nums"
       data-papel="salida"
-      data-minuto={minuto}
+      data-minuto={salida.minuto}
       data-siguiente={r.siguiente ? 'si' : 'no'}
+      data-origen={salida.origen ?? undefined}
     >
       {r.hora}
       {/* ⚠️ SIN ESTO, "1:29" SIGNIFICARÍA DOCE HORAS ANTES. La marca +1 lo ata a
@@ -60,22 +62,33 @@ function Salida({ minuto }: { minuto: number }) {
           +1
         </sup>
       )}
+      {/* ⭐ LA EXCEPCIÓN: esta salida arranca a mitad de línea. Se dice DE DÓNDE.
+          Nombre inline (no un símbolo) porque un sentido puede tener VARIOS
+          orígenes distintos, y un símbolo único no diría cuál es cuál. */}
+      {salida.origen && (
+        <span
+          className="ml-1 text-micro font-normal text-[var(--color-tinta-tenue)]"
+          data-papel="origen-parcial"
+        >
+          desde {salida.origen}
+        </span>
+      )}
     </span>
   );
 }
 
 /** Una fila de salidas (primeras / últimas / todas), separadas por puntos. */
-function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly number[] }) {
+function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly SalidaDeTerminal[] }) {
   return (
     <div className="flex gap-2" data-papel="fila-salidas" data-etiqueta={etiqueta}>
       <span className="w-16 shrink-0 pt-0.5 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
         {etiqueta}
       </span>
       <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-menor font-black leading-snug sin-recortar">
-        {salidas.map((m, i) => (
+        {salidas.map((s, i) => (
           <span key={i} className="inline-flex items-baseline">
             {i > 0 && <span className="mr-2 font-normal text-[var(--color-borde)]">·</span>}
-            <Salida minuto={m} />
+            <Salida salida={s} />
           </span>
         ))}
       </p>
@@ -88,24 +101,33 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
   //    Una tabla vacía con guiones parece un fallo; no ponerla, no.
   if (!terminal || terminal.dias.length === 0) return null;
 
+  // ¿Alguna salida (de cualquier día) arranca fuera de la cabecera? Solo entonces
+  // se enseña la nota de qué significa "desde …": la excepción, no la norma.
+  const hayParciales = terminal.dias.some((d) =>
+    [...d.primeras, ...d.ultimas].some((s) => s.origen !== null),
+  );
+
   return (
     <section className="mt-6" data-papel="terminal">
       <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
         funcionamiento de terminal
       </h2>
       <p className="mb-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
-        Las <strong>primeras</strong> y <strong>últimas</strong> salidas{' '}
-        <strong>desde la cabecera</strong> (del GTFS, no la hora a la que pasa por tu parada). Están
-        para cotejarlas: si el horario real no cuadra, es que el dato oficial va por detrás.
+        Las <strong>primeras</strong> y <strong>últimas</strong> salidas (del GTFS, no la hora a la
+        que pasa por tu parada). Están para cotejarlas: si el horario real no cuadra, es que el dato
+        oficial va por detrás.
       </p>
 
       <div className="overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
         {terminal.dias.map((d, i) => {
           // ⚠️ MENOS DE 10 SALIDAS: primeras y últimas se solapan; su unión son
           //    TODAS. No se fuerza 5+5 (sería repetir). Se dice cuántas hay.
+          //    Dedup por MINUTO (una salida se identifica por su hora GTFS).
           const pocas = d.expediciones <= 10;
-          const todas = [...new Set([...d.primeras, ...d.ultimas])].sort((a, b) => a - b);
-          const cruza = d.ultimas.some((m) => m >= 24 * 60);
+          const todas = [...new Map([...d.primeras, ...d.ultimas].map((s) => [s.minuto, s])).values()].sort(
+            (a, b) => a.minuto - b.minuto,
+          );
+          const cruza = d.ultimas.some((s) => s.minuto >= 24 * 60);
           return (
             <div
               key={d.tipo}
@@ -142,6 +164,17 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
           );
         })}
       </div>
+
+      {/* ⭐ QUÉ SIGNIFICA "desde …", una vez y sin tocho. Solo si hay parciales. */}
+      {hayParciales && (
+        <p
+          className="mt-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+          data-papel="nota-parciales"
+        >
+          <strong>«desde …»</strong>: esa salida arranca a mitad de línea;{' '}
+          <strong>no pasa por las paradas anteriores</strong> a ese punto.
+        </p>
+      )}
     </section>
   );
 }

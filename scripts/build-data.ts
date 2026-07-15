@@ -100,11 +100,15 @@ console.log('');
 //    cabecera de `terminal.ts`: hay dos convenciones distintas en el feed y una
 //    de ellas hace circular "domingos y festivos" un martes (porque un festivo
 //    CAE en martes). Se evalúa una fecha concreta, que es leer y no inferir.
+// El nombre a mostrar de cada parada (el MISMO que ve el usuario en el itinerario)
+// para que una salida parcial diga su origen real: "6:29 · desde Coso n.º 126".
+const nombrePorStop = new Map(stopsConNombre.map((s) => [String(s.id), s.name]));
 const term = calcularTerminales(
   files['calendar_dates.txt'],
   files['trips.txt'],
   files['stop_times.txt'],
   now,
+  (id) => nombrePorStop.get(id) ?? id,
 );
 console.log('FUNCIONAMIENTO DE TERMINAL (C5)\n');
 console.log(`  fechas representativas tomadas DEL PROPIO FEED:`);

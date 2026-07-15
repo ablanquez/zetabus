@@ -252,16 +252,18 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
     const lab = t.dias.find((d) => d.tipo === 'laborable')!;
     expect(lab.primeras.length, 'hay primeras').toBeGreaterThan(0);
     expect(lab.ultimas.length, 'hay últimas').toBeGreaterThan(0);
-    console.log(`\n  35 laborable · primeras: ${lab.primeras.map((m) => reloj(m).hora).join(' ')}`);
-    console.log(`  35 laborable · últimas:  ${lab.ultimas.map((m) => reloj(m).hora + (reloj(m).siguiente ? '+1' : '')).join(' ')}`);
+    const minP = lab.primeras.map((s) => s.minuto);
+    const minU = lab.ultimas.map((s) => s.minuto);
+    console.log(`\n  35 laborable · primeras: ${lab.primeras.map((s) => reloj(s.minuto).hora).join(' ')}`);
+    console.log(`  35 laborable · últimas:  ${lab.ultimas.map((s) => reloj(s.minuto).hora + (reloj(s.minuto).siguiente ? '+1' : '')).join(' ')}`);
     // Ascendentes por minuto GTFS, en ambas.
-    for (let i = 1; i < lab.primeras.length; i++) expect(lab.primeras[i]).toBeGreaterThan(lab.primeras[i - 1]);
-    for (let i = 1; i < lab.ultimas.length; i++) expect(lab.ultimas[i]).toBeGreaterThan(lab.ultimas[i - 1]);
+    for (let i = 1; i < minP.length; i++) expect(minP[i]).toBeGreaterThan(minP[i - 1]);
+    for (let i = 1; i < minU.length; i++) expect(minU[i]).toBeGreaterThan(minU[i - 1]);
     // Las primeras son de mañana; la última de las últimas cruza medianoche.
-    expect(lab.primeras[0], 'la primera es de mañana').toBeLessThan(24 * 60);
-    expect(lab.ultimas[lab.ultimas.length - 1], 'la última cruza medianoche').toBeGreaterThanOrEqual(24 * 60);
+    expect(minP[0], 'la primera es de mañana').toBeLessThan(24 * 60);
+    expect(minU[minU.length - 1], 'la última cruza medianoche').toBeGreaterThanOrEqual(24 * 60);
     // Con 122 salidas no hay solape: TODAS las primeras < TODAS las últimas.
-    expect(Math.max(...lab.primeras)).toBeLessThan(Math.min(...lab.ultimas));
+    expect(Math.max(...minP)).toBeLessThan(Math.min(...minU));
   });
 
   it('⭐⭐ C10 · las 5+5 salidas RENDERIZADAS: "1:29 del día siguiente", en su sitio, nunca "25:29"', () => {
@@ -272,8 +274,10 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
       lineId: 'x', directionId: 0,
       dias: [{
         tipo: 'laborable', primera: 300, ultima: 1529, expediciones: 122,
-        primeras: [300, 315, 330, 345, 360],     // 5:00 5:15 5:30 5:45 6:00
-        ultimas: [1380, 1410, 1440, 1489, 1529],  // 23:00 23:30 0:00+1 0:49+1 1:29+1
+        // 5:00 5:15 5:30 5:45 6:00 · todas desde cabecera (origen null)
+        primeras: [300, 315, 330, 345, 360].map((minuto) => ({ minuto, origen: null })),
+        // 23:00 23:30 0:00+1 0:49+1 1:29+1
+        ultimas: [1380, 1410, 1440, 1489, 1529].map((minuto) => ({ minuto, origen: null })),
       }],
     };
     const html = renderToStaticMarkup(createElement(Terminal, { terminal: t35 }));
@@ -305,8 +309,8 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
       lineId: 'y', directionId: 0,
       dias: [{
         tipo: 'sabado', primera: 60, ultima: 360, expediciones: 6,
-        primeras: [60, 120, 180, 240, 300],   // 1:00 2:00 3:00 4:00 5:00
-        ultimas: [120, 180, 240, 300, 360],    // 2:00 3:00 4:00 5:00 6:00
+        primeras: [60, 120, 180, 240, 300].map((minuto) => ({ minuto, origen: null })), // 1:00…5:00
+        ultimas: [120, 180, 240, 300, 360].map((minuto) => ({ minuto, origen: null })),  // 2:00…6:00
       }],
     };
     const html = renderToStaticMarkup(createElement(Terminal, { terminal: buho }));
