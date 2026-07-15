@@ -16,14 +16,19 @@ import type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia } from '@/engine/to
  *   · Hacerle `% 24` a secas → "01:29". Correcto... y MENTIROSO: alguien iría a
  *     las 01:29 de HOY, doce horas antes de que salga ese autobús.
  *
- * ⇒ Se pinta **1:29** y se dice **"del día siguiente"**. Las dos cosas.
+ * ⇒ Se pinta **1:29** con un superíndice **⁺¹**. Con "0:31" ya se entiende que es
+ *   de madrugada; el ⁺¹ mantiene el orden claro sin una línea que lo explique.
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * ⚠️ Y ESTO NO ES UN HORARIO. Es la PRIMERA y la ÚLTIMA salida de cabecera. No
- * decimos a qué hora pasa por tu parada, porque para eso habría que sumar el
- * tiempo de recorrido teórico — y el teórico es justo el que se equivoca cuando
- * hay tráfico, obras o un desvío. Lo que pasa por tu parada te lo dice la pantalla
- * de la parada, en vivo. Aquí solo decimos cuándo abre y cuándo cierra la línea.
+ * ⭐ Y NO TODA SALIDA ARRANCA EN LA CABECERA. Las de refuerzo empiezan a mitad de
+ * línea (la 35, en "Coso n.º 126"). Se marcan con un ÍNDICE numérico ¹ ² … que
+ * remite a la leyenda del día ("1 · salidas desde Coso n.º 126"). Un número por
+ * cada origen distinto. La cabecera va sin marca: se enseña la excepción.
+ *
+ * ⚠️ Y ESTO NO ES UN HORARIO. Es la PRIMERA y la ÚLTIMA salida. No decimos a qué
+ * hora pasa por tu parada, porque para eso habría que sumar el tiempo de recorrido
+ * teórico — y el teórico es justo el que se equivoca cuando hay tráfico, obras o un
+ * desvío. Lo que pasa por tu parada te lo dice la pantalla de la parada, en vivo.
  */
 
 const NOMBRE: Record<TipoDeDia, string> = {
@@ -42,43 +47,51 @@ export function reloj(minutos: number): { hora: string; siguiente: boolean } {
   };
 }
 
-/** Una salida, pintada. `1529` → "1:29" con marca "+1" si cruza medianoche, y su
- *  origen real si NO arranca en la cabecera ("· desde Coso n.º 126"). */
-function Salida({ salida }: { salida: SalidaDeTerminal }) {
+/**
+ * Una salida, pintada. `1529` → "1:29" con ⁺¹ si cruza medianoche, y un índice
+ * numérico si arranca a mitad de línea (remite a la leyenda del día).
+ */
+function Salida({ salida, numeroOrigen }: { salida: SalidaDeTerminal; numeroOrigen: number | null }) {
   const r = reloj(salida.minuto);
   return (
     <span
-      className="inline-flex items-baseline tabular-nums"
+      className="tabular-nums"
       data-papel="salida"
       data-minuto={salida.minuto}
       data-siguiente={r.siguiente ? 'si' : 'no'}
       data-origen={salida.origen ?? undefined}
+      data-indice={numeroOrigen ?? undefined}
     >
       {r.hora}
-      {/* ⚠️ SIN ESTO, "1:29" SIGNIFICARÍA DOCE HORAS ANTES. La marca +1 lo ata a
-          la leyenda "del día siguiente" de abajo. */}
+      {/* ⚠️ La ⁺¹ (madrugada) va en ÁMBAR y CON "+": así no se confunde con el
+          índice de origen, que es un dígito gris y sin "+". Son distintos. */}
       {r.siguiente && (
         <sup className="ml-0.5 font-bold text-[var(--color-aviso)]" data-papel="marca-dia-siguiente">
           +1
         </sup>
       )}
-      {/* ⭐ LA EXCEPCIÓN: esta salida arranca a mitad de línea. Se dice DE DÓNDE.
-          Nombre inline (no un símbolo) porque un sentido puede tener VARIOS
-          orígenes distintos, y un símbolo único no diría cuál es cuál. */}
-      {salida.origen && (
-        <span
-          className="ml-1 text-micro font-normal text-[var(--color-tinta-tenue)]"
-          data-papel="origen-parcial"
-        >
-          desde {salida.origen}
-        </span>
+      {/* ⭐ EL ÍNDICE DE ORIGEN: un dígito pequeño que remite a la leyenda de abajo.
+          Solo en las parciales. Nombre a números: una fila no se ensucia repitiendo
+          "desde Coso n.º 126" cinco veces. */}
+      {numeroOrigen !== null && (
+        <sup className="ml-0.5 text-[var(--color-tinta-tenue)]" data-papel="indice-origen">
+          {numeroOrigen}
+        </sup>
       )}
     </span>
   );
 }
 
 /** Una fila de salidas (primeras / últimas / todas), separadas por puntos. */
-function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly SalidaDeTerminal[] }) {
+function Fila({
+  etiqueta,
+  salidas,
+  indice,
+}: {
+  etiqueta: string;
+  salidas: readonly SalidaDeTerminal[];
+  indice: ReadonlyMap<string, number>;
+}) {
   return (
     <div className="flex gap-2" data-papel="fila-salidas" data-etiqueta={etiqueta}>
       <span className="w-16 shrink-0 pt-0.5 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
@@ -88,7 +101,7 @@ function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly Salid
         {salidas.map((s, i) => (
           <span key={i} className="inline-flex items-baseline">
             {i > 0 && <span className="mr-2 font-normal text-[var(--color-borde)]">·</span>}
-            <Salida salida={s} />
+            <Salida salida={s} numeroOrigen={s.origen ? (indice.get(s.origen) ?? null) : null} />
           </span>
         ))}
       </p>
@@ -100,12 +113,6 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
   // ⚠️ Si el feed no da horario para este sentido, NO SE INVENTA: no se pinta nada.
   //    Una tabla vacía con guiones parece un fallo; no ponerla, no.
   if (!terminal || terminal.dias.length === 0) return null;
-
-  // ¿Alguna salida (de cualquier día) arranca fuera de la cabecera? Solo entonces
-  // se enseña la nota de qué significa "desde …": la excepción, no la norma.
-  const hayParciales = terminal.dias.some((d) =>
-    [...d.primeras, ...d.ultimas].some((s) => s.origen !== null),
-  );
 
   return (
     <section className="mt-6" data-papel="terminal">
@@ -127,7 +134,18 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
           const todas = [...new Map([...d.primeras, ...d.ultimas].map((s) => [s.minuto, s])).values()].sort(
             (a, b) => a.minuto - b.minuto,
           );
-          const cruza = d.ultimas.some((s) => s.minuto >= 24 * 60);
+
+          // ⭐ LOS ORÍGENES PARCIALES QUE APARECEN EN ESTA TABLA, numerados por
+          //    primera aparición (por minuto). Solo los que salen de verdad: la
+          //    leyenda es la excepción, nunca un aparato fijo. Un sentido sin
+          //    parciales no tiene ni número ni leyenda.
+          const mostradas = pocas ? todas : [...d.primeras, ...d.ultimas];
+          const origenes: string[] = [];
+          for (const s of [...mostradas].sort((a, b) => a.minuto - b.minuto)) {
+            if (s.origen && !origenes.includes(s.origen)) origenes.push(s.origen);
+          }
+          const indice = new Map(origenes.map((o, n) => [o, n + 1]));
+
           return (
             <div
               key={d.tipo}
@@ -144,37 +162,37 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
               </div>
 
               {pocas ? (
-                <Fila etiqueta={d.expediciones === todas.length ? 'Todas' : 'Salidas'} salidas={todas} />
+                <Fila
+                  etiqueta={d.expediciones === todas.length ? 'Todas' : 'Salidas'}
+                  salidas={todas}
+                  indice={indice}
+                />
               ) : (
                 <div className="flex flex-col gap-1">
-                  <Fila etiqueta="Primeras" salidas={d.primeras} />
-                  <Fila etiqueta="Últimas" salidas={d.ultimas} />
+                  <Fila etiqueta="Primeras" salidas={d.primeras} indice={indice} />
+                  <Fila etiqueta="Últimas" salidas={d.ultimas} indice={indice} />
                 </div>
               )}
 
-              {cruza && (
-                <p
-                  className="mt-1 text-micro font-bold uppercase tracking-wide text-[var(--color-aviso)]"
-                  data-papel="dia-siguiente"
-                >
-                  <span className="not-italic">+1</span> · del día siguiente
-                </p>
+              {/* ⭐ LA LEYENDA DE ORÍGENES, solo con los números que aparecen arriba. */}
+              {origenes.length > 0 && (
+                <ul className="mt-1.5 flex flex-col gap-0.5" data-papel="leyenda-origenes">
+                  {origenes.map((o) => (
+                    <li
+                      key={o}
+                      className="text-micro leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+                      data-papel="leyenda-origen"
+                      data-indice={indice.get(o)}
+                    >
+                      <span className="font-bold">{indice.get(o)}</span> · salidas desde {o}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           );
         })}
       </div>
-
-      {/* ⭐ QUÉ SIGNIFICA "desde …", una vez y sin tocho. Solo si hay parciales. */}
-      {hayParciales && (
-        <p
-          className="mt-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
-          data-papel="nota-parciales"
-        >
-          <strong>«desde …»</strong>: esa salida arranca a mitad de línea;{' '}
-          <strong>no pasa por las paradas anteriores</strong> a ese punto.
-        </p>
-      )}
     </section>
   );
 }
