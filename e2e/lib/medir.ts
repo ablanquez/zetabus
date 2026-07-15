@@ -64,7 +64,21 @@ export async function pixel(page: Page, x: number, y: number): Promise<Rgb> {
   return { r: png.data[i], g: png.data[i + 1], b: png.data[i + 2] };
 }
 
-/** Muchos píxeles de una sola captura. Una captura por llamada, no N. */
+/**
+ * Muchos píxeles de una sola captura. Una captura por llamada, no N.
+ *
+ * ⚠️⚠️ ESTA FUNCIÓN MENTÍA EN SILENCIO, Y ME MORDIÓ MIDIENDO LOS NODOS (C6).
+ *
+ * `pixel()` (singular) revienta si el punto cae FUERA del viewport. Ésta NO lo
+ * hacía: un punto por debajo de la línea de flotación daba un índice más allá de
+ * `png.data`, y `png.data[i]` devolvía `undefined`. Resultado: un `Rgb` con
+ * `{r: undefined, ...}` que parece un color y no lo es. `aHex` reventaba tres
+ * llamadas después, lejos de la causa, con un "cannot read 'toString'" que no
+ * dice nada. El instrumento tiene que fallar DONDE está el fallo, no arrastrarlo.
+ *
+ * ⇒ Ahora comprueba los límites igual que `pixel()`. Si de verdad quieres mirar
+ *   un punto que está fuera de pantalla, primero haces scroll —como haría un ojo.
+ */
 export async function pixeles(page: Page, puntos: { x: number; y: number }[]): Promise<Rgb[]> {
   const buf = await page.screenshot({ fullPage: false });
   const png = PNG.sync.read(buf);
@@ -72,6 +86,9 @@ export async function pixeles(page: Page, puntos: { x: number; y: number }[]): P
   return puntos.map(({ x, y }) => {
     const px = Math.round(x * escala);
     const py = Math.round(y * escala);
+    if (px < 0 || py < 0 || px >= png.width || py >= png.height) {
+      throw new Error(`El punto (${x}, ${y}) está FUERA DEL VIEWPORT. No hay píxel que mirar (¿falta un scroll?).`);
+    }
     const i = (png.width * py + px) << 2;
     return { r: png.data[i], g: png.data[i + 1], b: png.data[i + 2] };
   });

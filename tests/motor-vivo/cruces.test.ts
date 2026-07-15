@@ -14,13 +14,24 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { CacheDosPisos } from '@/cache/dos-pisos';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { compararRecorrido, UMBRAL_ABSURDO } from '@/engine/desvios';
-import { canonLinea, lineaDeEtiqueta, terminalDe, idLinea, lineas, esBuho } from '@/engine/topologia';
+import { canonLinea, lineaDeEtiqueta, terminalDe, idLinea, lineas, sentidosDe, esBuho } from '@/engine/topologia';
+import type { TerminalDeSentido } from '@/engine/topologia';
 import { tonosDeChip, contraste, AA, NOCHE } from '@/components/ChipLinea';
-import { reloj } from '@/components/Terminal';
+import { reloj, Terminal } from '@/components/Terminal';
 import { POSTE_MUDO, respuestaPoste, siempre, transporteFalso } from './dobles';
+
+/**
+ * ⛔ EL DETECTOR DE HORAS IMPOSIBLES. La 1:29 de HOY es una hora; la "25:29" NO
+ * existe en ningún reloj. Cualquier `HH:MM` con `HH ≥ 24` en pantalla es la
+ * huella de que alguien pintó el minuto crudo del GTFS sin normalizarlo. Se usa
+ * en el test del render Y en su contraprueba, para que sea LA MISMA regla.
+ */
+const HORA_IMPOSIBLE = /\b(2[4-9]|[3-9]\d):[0-5]\d\b/;
 
 let dir: string;
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-x-')); });
@@ -229,6 +240,77 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
       `${reloj(lab.ultima).siguiente ? ' (del día siguiente)' : ''} · ${lab.expediciones} salidas`);
     expect(lab.ultima, 'la última salida pasa de medianoche').toBeGreaterThan(24 * 60);
     expect(reloj(lab.ultima).siguiente).toBe(true);
+  });
+
+  it('⭐⭐ C10 · EL Terminal RENDERIZADO enseña "1:29 del día siguiente", NUNCA "25:29"', () => {
+    // ⚠️ NO BASTA con que `reloj()` esté bien: hay que probar lo que el componente
+    //    PINTA. Se renderiza el Terminal REAL con el dato REAL de la 35 (última =
+    //    1529 min = las 25:29 del GTFS) y se le pasa el detector por encima.
+    const t35: TerminalDeSentido = {
+      lineId: 'x', directionId: 0,
+      dias: [{ tipo: 'laborable', primera: 300, ultima: 1529, expediciones: 122 }],
+    };
+    const html = renderToStaticMarkup(createElement(Terminal, { terminal: t35 }));
+    // ⚠️ Se juzga el TEXTO que se lee, no las clases ni los estilos: se quitan las
+    //    etiquetas para no cazar un "text-[15px]" como si fuera una hora.
+    const enPantalla = html.replace(/<[^>]+>/g, ' ');
+
+    expect(enPantalla, 'la última salida se pinta como 1:29').toContain('1:29');
+    expect(enPantalla, 'y se dice que es de la madrugada siguiente').toContain('del día siguiente');
+    expect(enPantalla, '⛔ en pantalla NO puede salir una hora ≥ 24').not.toMatch(HORA_IMPOSIBLE);
+
+    // ⭐ CONTRAPRUEBA: se mete un "25:29" CRUDO en lo mismo que enseña la pantalla y
+    //    se comprueba que el detector LO CAZA. Es exactamente lo que aparecería si
+    //    una regresión quitara el `% 24` de `reloj()`: el rojo antes del verde.
+    const regresion = enPantalla.replace('1:29', '25:29');
+    expect(regresion, 'el detector tiene que cazar el 25:29 crudo').toMatch(HORA_IMPOSIBLE);
+    // Y no caza cualquier cosa: una hora buena de madrugada NO la marca.
+    expect('1:29', 'la 1:29 real es una hora legítima').not.toMatch(HORA_IMPOSIBLE);
+    expect('23:59', 'las 23:59 son legítimas').not.toMatch(HORA_IMPOSIBLE);
+  });
+
+  it('⚠️ BACKTEST · festivo y laborable son FILAS DISTINTAS, no la misma copiada', () => {
+    // La 21 circula los tres tipos de día, y NO con el mismo servicio: el domingo
+    // hay menos expediciones. Si la pantalla pintara la misma fila para los tres,
+    // mentiría sobre el domingo. No se afirma un número (lo dice el feed): se
+    // afirma que DIFIEREN.
+    const l21 = lineas().find((x) => x.shortName === '21')!;
+    const t = terminalDe(idLinea(String(l21.id)), 0);
+    expect(t, 'la 21 tiene horario de terminal en el feed').not.toBeNull();
+    if (!t) return;
+    const lab = t.dias.find((d) => d.tipo === 'laborable');
+    const fes = t.dias.find((d) => d.tipo === 'festivo');
+    expect(lab, 'hay fila de laborable').toBeDefined();
+    expect(fes, 'hay fila de festivo').toBeDefined();
+    if (!lab || !fes) return;
+    console.log(`\n  21 · LAB ${reloj(lab.primera).hora}→${reloj(lab.ultima).hora} (${lab.expediciones} exp)  ` +
+      `FES ${reloj(fes.primera).hora}→${reloj(fes.ultima).hora} (${fes.expediciones} exp)`);
+    const difieren =
+      lab.primera !== fes.primera || lab.ultima !== fes.ultima || lab.expediciones !== fes.expediciones;
+    expect(difieren, 'laborable y festivo no pueden salir idénticos aquí').toBe(true);
+  });
+
+  it('⭐ BACKTEST · una CIRCULAR de bucle (Ci3) empieza y acaba en la MISMA parada', () => {
+    // La pregunta de Antonio: ¿una circular tiene cabecera y final, o es un bucle?
+    // Respuesta MEDIDA, no supuesta: hay DOS familias.
+    //   · Ci1/Ci2 → dos sentidos, cabecera y final DISTINTOS (como una línea normal).
+    //   · Ci3/Ci4 → un solo sentido, y la PRIMERA parada ES la última: un bucle.
+    // Para el bucle, pintar la misma parada como cabecera (cuadrado relleno) arriba
+    // y final (cuadrado hueco) abajo NO es un error: el autobús SALE de ahí y VUELVE
+    // a ahí. Es lo honesto. Aquí se fija el dato del que depende ese pintado.
+    const ci3 = lineas().find((x) => x.shortName === 'Ci3')!;
+    const sc = sentidosDe(idLinea(String(ci3.id)));
+    expect(sc.length, 'Ci3 es de un solo sentido (bucle)').toBe(1);
+    const stops = sc[0].official.stops;
+    expect(stops.length, 'y tiene recorrido').toBeGreaterThan(2);
+    expect(stops[0], 'Ci3 es un bucle: primera === última parada').toBe(stops[stops.length - 1]);
+
+    // Y una NO-bucle (Ci1) sí tiene cabecera y final distintos, para que la
+    // afirmación de arriba signifique algo.
+    const ci1 = lineas().find((x) => x.shortName === 'Ci1')!;
+    const sc1 = sentidosDe(idLinea(String(ci1.id)));
+    const st1 = sc1[0].official.stops;
+    expect(st1[0], 'Ci1 NO es bucle: cabecera ≠ final').not.toBe(st1[st1.length - 1]);
   });
 });
 
