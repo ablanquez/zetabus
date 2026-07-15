@@ -97,35 +97,50 @@ export function Itinerario({
               />
             </div>
 
-            {/* ── EL CONTENIDO ─────────────────────────────────────────────── */}
-            <div className="min-w-0 flex-1 pb-3">
+            {/* ── EL CONTENIDO. C1: TRES LÍNEAS. C2: TODO PULSABLE (sin <a> anidado) ─
+                nombre                                     ← línea 1
+                [POSTE 55]  [PROVISIONAL · DESVÍO]         ← línea 2, misma familia
+                [28] [32] [39] [N1] [N7]                   ← línea 3, transbordos
+                El `bloque-parada` es position:relative; el enlace del nombre estira
+                su zona pulsable a todo el bloque con un ::after; los chips flotan
+                por encima. Ver globals.css · C2/C3/C4. */}
+            <div className="bloque-parada min-w-0 flex-1 px-2 pb-3 pt-0.5" data-papel="bloque-parada">
+              {/* LÍNEA 1 · EL NOMBRE, SOLO. Y es el ÚNICO <a> a la parada. */}
               <Link
                 href={`/parada/${p.poste}${fingir ? `?fingir=${fingir}` : ''}`}
-                className="flex min-h-[44px] flex-col justify-center rounded-lg"
+                data-papel="ir-a-parada"
+                className="block min-h-[24px] text-[14px] font-bold leading-snug sin-recortar"
+                aria-label={`Parada ${p.nombre}, poste ${p.poste}`}
               >
-                <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
-                  <span className="text-[14px] font-bold leading-snug sin-recortar">{p.nombre}</span>
-                  <span className="shrink-0 rounded-md bg-[var(--color-fondo)] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-[var(--color-tinta-tenue)]">
-                    poste {p.poste}
-                  </span>
-                  {(primero || ultimo) && (
-                    <span className="sr-only">{primero ? 'cabecera de línea' : 'final de línea'}</span>
-                  )}
-                  {p.provisional && (
-                    <span
-                      className="shrink-0 rounded-md border border-dashed border-[var(--color-aviso)] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--color-aviso)]"
-                      data-papel="parada-provisional"
-                    >
-                      provisional · desvío
-                    </span>
-                  )}
-                </span>
+                {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
+                {p.nombre}
+                {(primero || ultimo) && (
+                  <span className="sr-only"> · {primero ? 'cabecera de línea' : 'final de línea'}</span>
+                )}
               </Link>
 
-              {/* ⭐ LOS TRANSBORDOS. Lo mejor que se han inventado. Y pulsables. */}
+              {/* LÍNEA 2 · POSTE + PROVISIONAL, CHIPS DE LA MISMA FAMILIA.
+                  Antes el poste era una pastilla gris tenue y "provisional" un chip
+                  aparte: dos familias para dos cosas del mismo rango (metadatos de la
+                  parada). Ahora son el mismo chip; lo que cambia es el ROL (neutro vs
+                  aviso), no la forma. NO son enlaces: pulsarlos cae en la zona de la
+                  parada, que es lo que se quiere. */}
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="chip-meta chip-meta--poste" data-papel="chip-poste">
+                  poste {p.poste}
+                </span>
+                {p.provisional && (
+                  <span className="chip-meta chip-meta--aviso" data-papel="parada-provisional">
+                    provisional · desvío
+                  </span>
+                )}
+              </div>
+
+              {/* LÍNEA 3 · LOS TRANSBORDOS. Lo mejor que se han inventado. Cada uno un
+                  <a> a SU línea, HERMANO del enlace de la parada (no anidado), y por
+                  encima de la zona estirada. */}
               {transbordos.length > 0 && (
-                <ul className="mt-1 flex flex-wrap gap-1" data-papel="transbordos">
+                <ul className="mt-1.5 flex flex-wrap gap-1" data-papel="transbordos">
                   {[...transbordos]
                     // ⭐ D1/C6: los búhos, AL FINAL. Como ellos. Otra categoría, detrás.
                     .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))

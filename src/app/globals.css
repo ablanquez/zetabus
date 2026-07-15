@@ -159,6 +159,92 @@ body {
 }
 
 /**
+ * ⭐⭐ C2 · C3 · C4 · EL BLOQUE DE PARADA ENTERO ES PULSABLE — SIN ANIDAR <a> EN <a>.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * El problema: TODO el bloque (nombre + chip de poste + fila de chips) tiene que
+ * llevar a la parada, PERO los chips de transbordo, que están DENTRO del bloque,
+ * tienen que llevar a SU línea.
+ *
+ * ⛔ LA ÑAPA QUE NO SE HACE: meter el bloque en un <a href="/parada"> y los chips,
+ *    que son <a href="/linea">, dentro. Un <a> dentro de otro <a> es HTML INVÁLIDO;
+ *    el navegador "arregla" la anidación partiendo el DOM, y al pulsar un chip se
+ *    disparan LOS DOS destinos. Es el mismo error que el <details> dentro del
+ *    <button> de la semana pasada: el clic se lo comía el ancestro.
+ *
+ * ⭐ LA SOLUCIÓN ESTÁNDAR (el "stretched link"): un ÚNICO <a> —el del nombre, que va
+ *    a la parada— extiende su zona pulsable a TODO el bloque con un ::after
+ *    absoluto. Los chips de transbordo son <a> HERMANOS, no anidados, y flotan por
+ *    ENCIMA de esa zona con un z-index mayor. Resultado:
+ *
+ *      · pulsas el nombre, el chip de poste, o cualquier hueco → la zona estirada → PARADA
+ *      · pulsas un chip de transbordo → el chip está por encima → SU LÍNEA
+ *      · CERO <a> anidados. HTML válido. Un solo enlace accesible por bloque.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+.bloque-parada {
+  position: relative;
+  border-radius: 8px;
+}
+/* El ::after del enlace de la parada cubre TODO el <li> (que es position:relative).
+   Es transparente: no tapa nada, solo captura el clic. */
+.bloque-parada a[data-papel="ir-a-parada"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* ⭐ C4 · Lo que tiene su PROPIO destino flota por encima de la zona estirada. */
+.bloque-parada [data-papel="transbordos"] {
+  position: relative;
+  z-index: 1;
+}
+/* ⭐ C1 · LOS CHIPS DE METADATOS DE LA PARADA, UNA SOLA FAMILIA. El poste y el
+   "provisional · desvío" son del mismo rango —datos ABOUT la parada, no destinos—,
+   así que comparten forma, tamaño y peso. Lo único que cambia es el ROL: neutro
+   (poste, siempre) vs. aviso (provisional, solo en desvío). Antes eran dos cosas
+   visualmente distintas y parecían de rangos distintos. */
+.chip-meta {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+.chip-meta--poste {
+  background: var(--color-fondo);
+  color: var(--color-tinta-tenue);
+  font-variant-numeric: tabular-nums;
+}
+.chip-meta--aviso {
+  /* Aviso: en FORMA (borde discontinuo) + palabra, no solo en tono. Sobrevive al gris. */
+  border: 1px dashed var(--color-aviso);
+  color: var(--color-aviso);
+  text-transform: uppercase;
+}
+
+/* ⭐ C3 · FEEDBACK TÁCTIL. En un móvil no hay hover: si al tocar no cambia nada, no
+   sabes si has acertado. Al pulsar la ZONA DE LA PARADA (no un chip) el bloque se
+   tiñe. `:has(...:active)` distingue el toque en el bloque del toque en un chip —
+   el chip, al estar por encima, activa el chip y NO el enlace de la parada. */
+.bloque-parada:has(a[data-papel="ir-a-parada"]:active) {
+  background: var(--color-fondo);
+}
+/* El chip de transbordo tiene su PROPIO acuse: se hunde un poco al pulsarlo. Movimiento,
+   que sobrevive al gris, no un cambio de tono (el tono es la identidad de la línea). */
+.bloque-parada [data-papel="transbordos"] a:active {
+  transform: scale(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bloque-parada [data-papel="transbordos"] a:active { transform: none; }
+}
+
+/**
  * RANCIO — el dato es viejo, Y LO DECIMOS.
  * Señales: (1) trama diagonal, (2) borde discontinuo, (3) el texto de la edad.
  * ⚠️ La trama es la clave: sobrevive al gris, al daltonismo y a un móvil al sol.

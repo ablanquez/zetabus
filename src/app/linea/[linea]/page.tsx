@@ -249,10 +249,14 @@ function Recorrido({
           {hayReal ? 'la ruta de HOY, según Avanza' : 'ruta oficial (GTFS)'}
         </span>
       </div>
-      <p className="mb-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
-        Los cuadraditos de colores son <strong>los transbordos</strong>: las otras líneas que pasan
-        por esa misma parada. Los <strong>oscuros</strong> son las nocturnas.
-      </p>
+      {/* ⭐ C5 · FUERA LA LEYENDA DE LOS CUADRADITOS. Decía: "Los cuadraditos de
+          colores son los transbordos... Los oscuros son las nocturnas." Si un sistema
+          visual necesita un rótulo que lo explique, el sistema visual no funciona: la
+          referencia NO lo tiene y se entiende igual. GEOMETRÍA, NO RÓTULOS. Y de paso
+          ese texto se solapaba con la cabecera. El chip de transbordo YA se entiende:
+          es el número de una línea, en su color; el búho, invertido sobre azul noche.
+          Quien no ve formas lo tiene en el `aria-label` de cada chip ("Ver el recorrido
+          de la línea N1, nocturna"). */}
 
       <Itinerario
         lineaId={lineaId}
