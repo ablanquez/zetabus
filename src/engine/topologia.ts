@@ -41,6 +41,7 @@ import {
   type StopId,
 } from '@/core';
 import type { TerminalDeSentido, TipoDeDia } from '@/sources/gtfs-nap/terminal';
+import type { SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
 
 export type { TerminalDeSentido, TipoDeDia };
@@ -159,6 +160,27 @@ export const lineas = (): readonly Line[] => A.lines;
 export const paradas = (): readonly Stop[] => A.stops;
 export const sentidosDe = (id: LineId) => sentidosPorLinea.get(String(id)) ?? [];
 export const parada = (id: StopId): Stop | null => paradaPorId.get(String(id)) ?? null;
+
+/**
+ * ⭐ LOS SENTIDOS, listos para calcular el RUMBO (origen → destino / circular).
+ *
+ * Resuelve los NOMBRES de la primera y la última parada de cada sentido y marca
+ * si es un bucle (primera parada === última). Lo hace AQUÍ, un solo sitio, para
+ * que la página y los tests partan del mismo dato. Ver `engine/rumbo.ts`.
+ */
+export function sentidosParaRumbo(id: LineId): SentidoParaRumbo[] {
+  const nombre = (sid: string): string => paradaPorId.get(sid)?.name ?? sid;
+  return sentidosDe(id).map((d) => {
+    const st = d.official.stops;
+    return {
+      directionId: d.directionId,
+      headsign: d.headsign,
+      primeraParada: st.length > 0 ? nombre(st[0]) : '',
+      ultimaParada: st.length > 0 ? nombre(st[st.length - 1]) : '',
+      esBucle: st.length > 0 && st[0] === st[st.length - 1],
+    };
+  });
+}
 export const linea = (id: LineId): Line | null => lineaPorId.get(String(id)) ?? null;
 export const posteDe = (id: StopId): number | null => posteDeParada.get(String(id)) ?? null;
 

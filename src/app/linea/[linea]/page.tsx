@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, terminalDe } from '@/engine/topologia';
+import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo, terminalDe } from '@/engine/topologia';
+import { destinoDeSentido, rumboDe, type Rumbo } from '@/engine/rumbo';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { motor, contador } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
@@ -66,6 +67,18 @@ export default async function LineaPage({ params, searchParams }: Props) {
   const activo = sentidos.find((s) => String(s.directionId) === pedido) ?? sentidos[0];
   const fingir = fingimientoDe(sp);
 
+  // ⭐ EL RUMBO. Qué origen y qué destino se pintan arriba, según el sentido
+  //    activo. Un bucle NO tiene flecha (mentiría). Ver `engine/rumbo.ts`.
+  const rumboSents = sentidosParaRumbo(id);
+  const activoRumbo = rumboSents.find((s) => s.directionId === activo.directionId);
+  const rumbo: Rumbo = activoRumbo
+    ? rumboDe(activoRumbo, rumboSents, { esBuho: esBuho(l), nombreLargo: l.longName })
+    : { tipo: 'nombre', texto: l.longName };
+  const etiquetaSentido = (dir: 0 | 1): string => {
+    const s = rumboSents.find((x) => x.directionId === dir);
+    return s ? destinoDeSentido(s, rumboSents) : '';
+  };
+
   // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
   const antes = contador.cuenta.peticiones;
   const desvios = await desviosDeLinea(id, motor(transporteDe(fingir), fingir));
@@ -80,7 +93,38 @@ export default async function LineaPage({ params, searchParams }: Props) {
     <div>
       <div className="mb-3 flex items-center gap-3">
         <ChipLinea linea={l} papel="chip-cabecera" grande />
-        <h1 className="text-titulo font-black leading-tight sin-recortar">{l.longName}</h1>
+        {/* ⭐ EL TÍTULO DICE EL RUMBO, no un rango. Una FLECHA para ida y vuelta
+            ("Seminario → Parque Goya"); "Circular por ..." para un bucle; y su
+            nombre para un búho que da la vuelta. Cambia con el sentido activo. */}
+        <h1
+          className="text-titulo font-black leading-tight sin-recortar"
+          data-papel="titulo-linea"
+          aria-label={
+            rumbo.tipo === 'trayecto'
+              ? `${rumbo.origen} hacia ${rumbo.destino}`
+              : rumbo.tipo === 'circular'
+                ? `Circular por ${rumbo.por}`
+                : rumbo.texto
+          }
+        >
+          {rumbo.tipo === 'trayecto' ? (
+            <>
+              {rumbo.origen}{' '}
+              <span
+                aria-hidden
+                className="font-normal text-[var(--color-tinta-tenue)]"
+                data-papel="flecha-rumbo"
+              >
+                →
+              </span>{' '}
+              {rumbo.destino}
+            </>
+          ) : rumbo.tipo === 'circular' ? (
+            <>Circular por {rumbo.por}</>
+          ) : (
+            rumbo.texto
+          )}
+        </h1>
       </div>
 
       {sentidos.length > 1 && (
@@ -92,15 +136,22 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 key={s.directionId}
                 href={`/linea/${encodeURIComponent(l.shortName)}?sentido=${s.directionId}${fingir ? `&fingir=${fingir}` : ''}`}
                 aria-current={esActivo ? 'true' : undefined}
-                className={`flex-1 rounded-tarjeta border px-3 py-2 text-center text-menor font-bold leading-snug sin-recortar ${
+                data-papel="sentido"
+                data-activo={esActivo ? 'si' : 'no'}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-tarjeta border px-3 py-2 text-center text-menor leading-snug sin-recortar ${
                   esActivo
-                    ? 'border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]'
-                    : 'border-[var(--color-borde)] bg-[var(--color-fondo)] text-[var(--color-tinta-tenue)]'
+                    ? 'border-transparent bg-[var(--color-tinta)] font-black text-[var(--color-papel)]'
+                    : 'border-[var(--color-borde)] bg-[var(--color-papel)] font-bold text-[var(--color-tinta-tenue)]'
                 }`}
               >
-                {/* El sentido activo se marca con BORDE GRUESO, no con color: el
-                    color ya está ocupado por la identidad de la línea. */}
-                {s.headsign}
+                {/* El sentido activo se marca por TRES canales que sobreviven al
+                    gris —RELLENO oscuro (valor), PESO, y el punto lleno ●/○—. El
+                    color se reserva para la identidad de la línea, no para decir
+                    "seleccionado". El "Hacia" deja claro que eliges DIRECCIÓN. */}
+                <span aria-hidden className="text-[0.8em] leading-none">
+                  {esActivo ? '●' : '○'}
+                </span>
+                <span>Hacia {etiquetaSentido(s.directionId)}</span>
               </Link>
             );
           })}
