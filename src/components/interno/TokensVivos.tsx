@@ -98,7 +98,7 @@ export function PaletaViva() {
       {tokens.map((t) => (
         <div
           key={t.nombre}
-          className="overflow-hidden rounded-xl border border-[var(--color-borde)]"
+          className="overflow-hidden rounded-tarjeta border border-[var(--color-borde)]"
           data-papel="token-color"
           data-token={t.nombre}
           data-valor={t.valor}
@@ -155,6 +155,73 @@ export function EscalaViva() {
   );
 }
 
+/** Fuera los radios por defecto de Tailwind (`--radius-md/lg/xl…`); quedan los nuestros. */
+const SOLO_NUESTROS_RADIOS = /^--radius-(xs|sm|md|lg|\d?xl)$/;
+
+/**
+ * ⭐ LOS RADIOS, LEÍDOS. Cada caja se dibuja CON su radio real (`var(--radius-…)`)
+ * y muestra el valor leído. El sistema 6/8/12/16 que estaba disperso, a la vista.
+ */
+export function RadiosVivos() {
+  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
+  useEffect(() => {
+    setTokens(leerTokens(['--radius-'], SOLO_NUESTROS_RADIOS));
+  }, []);
+
+  if (tokens === null) {
+    return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo los radios del CSS…</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-4" data-papel="radios-vivos">
+      {tokens.map((t) => (
+        <div key={t.nombre} data-papel="token-radio" data-token={t.nombre} data-valor={t.valor}>
+          <div
+            className="h-16 w-16 border-2 border-[var(--color-tinta)] bg-[var(--color-fondo)]"
+            style={{ borderRadius: `var(${t.nombre})` }}
+          />
+          <p className="mt-1 text-micro font-bold text-[var(--color-tinta)]">
+            {t.nombre.replace('--radius-', 'rounded-')}
+          </p>
+          <p className="text-micro tabular-nums text-[var(--color-tinta-tenue)]">{t.valor}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * ⭐ LAS ALTURAS DE CONTROL, LEÍDAS. Cada barra tiene la altura REAL del token.
+ * Son los objetivos táctiles (24 mín WCAG, 44 cómodo, 48 principal, 56 fila).
+ */
+export function ControlVivo() {
+  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
+  useEffect(() => {
+    setTokens(leerTokens(['--control']));
+  }, []);
+
+  if (tokens === null) {
+    return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo las alturas del CSS…</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-2" data-papel="control-vivo">
+      {tokens.map((t) => (
+        <div key={t.nombre} className="flex items-center gap-3" data-papel="token-control" data-token={t.nombre} data-valor={t.valor}>
+          <code className="w-40 shrink-0 text-micro text-[var(--color-tinta-tenue)]">
+            {t.nombre} <span className="tabular-nums">{t.valor}</span>
+          </code>
+          {/* La barra tiene la altura REAL del token. */}
+          <div
+            className="rounded-caja border border-[var(--color-borde)] bg-[var(--color-fondo)]"
+            style={{ height: `var(${t.nombre})`, width: 120 }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * ⭐ LA CONTRAPRUEBA DEL GRIS, EN VIVO. Un botón que pone la sección en escala de
  * grises. La regla del proyecto: el estado va en FORMA, no en tono — así que en
@@ -167,7 +234,7 @@ export function PruebaGris({ children }: { children: React.ReactNode }) {
       <button
         type="button"
         onClick={() => setGris((g) => !g)}
-        className="mb-3 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 py-1.5 text-menor font-semibold"
+        className="mb-3 rounded-caja border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 py-1.5 text-menor font-semibold"
         data-papel="toggle-gris"
         aria-pressed={gris}
       >

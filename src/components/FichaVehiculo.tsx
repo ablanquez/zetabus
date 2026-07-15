@@ -97,7 +97,7 @@ export const MARCAS: Record<Confidence, { simbolo: string; lectura: string } | n
 };
 
 /**
- * Un chip. 11 px, `px-2 py-0.5`, `rounded-md` — las medidas salen de medir los
+ * Un chip. 11 px, `px-2 py-0.5`, `rounded-chip` — las medidas salen de medir los
  * suyos con Playwright a 360 px (21 px de alto), no de elegirlas a ojo.
  */
 function Chip({
@@ -115,7 +115,7 @@ function Chip({
     <span
       data-papel={papel}
       className={
-        `inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-nota leading-[15px] sin-recortar ` +
+        `inline-flex shrink-0 items-center gap-1 rounded-chip px-1.5 py-0.5 text-nota leading-[15px] sin-recortar ` +
         (fuerte ? 'font-semibold ' : 'font-medium ') +
         (discontinuo
           ? 'border border-dashed border-[var(--color-tinta-tenue)] bg-[var(--color-fondo)] text-[var(--color-tinta-suave)]'
@@ -277,7 +277,7 @@ function Detalle({ perfil }: { perfil: BusProfile }) {
 
   return (
     <details className="mt-1 pl-[52px]" data-papel="procedencia-detalle">
-      <summary className="inline-flex min-h-[24px] cursor-pointer items-center text-nota font-semibold text-[var(--color-tinta-tenue)] underline underline-offset-2">
+      <summary className="inline-flex min-h-[var(--control-min)] cursor-pointer items-center text-nota font-semibold text-[var(--color-tinta-tenue)] underline underline-offset-2">
         De dónde sale cada dato
       </summary>
 
@@ -372,7 +372,7 @@ export function NotaSinVerificar({ presentes }: { presentes: readonly Confidence
       <p>
         <a
           href="/sobre-los-datos"
-          className="inline-flex min-h-[24px] items-center font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[var(--control-min)] items-center font-semibold underline underline-offset-2"
         >
           Sobre los datos
         </a>

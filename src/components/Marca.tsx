@@ -19,11 +19,11 @@ export function Marca() {
   return (
     <Link
       href="/"
-      // ⚠️ min-h-[24px]: es un ENLACE, y el token `text-seccion` empareja una
+      // ⚠️ min-h-[var(--control-min)]: es un ENLACE, y el token `text-seccion` empareja una
       //    interlínea ajustada (1.25) que dejaba la caja en 20 px — por debajo del
       //    mínimo táctil de WCAG 2.5.8. El tamaño de letra manda el token; la ZONA
       //    PULSABLE la garantiza el min-h. (Lo cazó el detector táctil, no yo.)
-      className="inline-flex min-h-[24px] items-center gap-2 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
+      className="inline-flex min-h-[var(--control-min)] items-center gap-2 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
       data-papel="marca"
     >
       {/* 🪧 Aquí entrará el logo en la Fase 5. */}

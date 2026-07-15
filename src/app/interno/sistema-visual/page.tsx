@@ -3,7 +3,7 @@ import { GRUPOS, grupoDe, lineas } from '@/engine/topologia';
 import { ChipLinea, NOCHE } from '@/components/ChipLinea';
 import { MARCAS } from '@/components/FichaVehiculo';
 import { Marca } from '@/components/Marca';
-import { PaletaViva, EscalaViva, PruebaGris } from '@/components/interno/TokensVivos';
+import { PaletaViva, EscalaViva, RadiosVivos, ControlVivo, PruebaGris } from '@/components/interno/TokensVivos';
 import type { Confidence } from '@/core';
 
 /**
@@ -108,6 +108,33 @@ export default function SistemaVisualPage() {
         </p>
       </Seccion>
 
+      {/* ── RADIOS ──────────────────────────────────────────────────────────── */}
+      <Seccion
+        titulo="Radios"
+        nota="El sistema 6/8/12/16 ya existía (rounded-md/lg/xl/2xl) pero además estaba copiado a mano como border-radius inline en 5 sitios. Nombrado: cada caja se dibuja con su radio real."
+      >
+        <RadiosVivos />
+      </Seccion>
+
+      {/* ── ALTURAS DE CONTROL ──────────────────────────────────────────────── */}
+      <Seccion
+        titulo="Alturas de control (táctil)"
+        nota="Lo que se PULSA. Estaban dispersas como alturas mínimas fijas a mano (24 en 6 sitios, 44 en 9, 48 en 3, 56 en 2). Cada barra tiene la altura real del token."
+      >
+        <ControlVivo />
+      </Seccion>
+
+      {/* ── SOMBRAS ─────────────────────────────────────────────────────────── */}
+      <Seccion titulo="Sombras">
+        <p className="text-menor text-[var(--color-tinta-suave)] sin-recortar">
+          <strong>No hay sistema de sombras, y es a propósito.</strong> La profundidad se da por
+          BORDE + contraste de fondo (papel sobre fondo), como en la referencia. Las únicas sombras
+          del proyecto viven en los marcadores del mapa (son el reborde de un icono, no una capa de
+          diseño). No se inventa una escala de sombras que no se usa — y el test guardián revienta si
+          aparece un <code>box-shadow</code> crudo fuera del mapa.
+        </p>
+      </Seccion>
+
       {/* ── PROCEDENCIA ─────────────────────────────────────────────────────── */}
       <Seccion
         titulo="Procedencia del dato"
@@ -146,7 +173,7 @@ export default function SistemaVisualPage() {
                 ya llega
               </span>
             </p>
-            <div className="es-rancio rounded-xl border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2">
+            <div className="es-rancio rounded-tarjeta border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2">
               <p className="text-menor">Rancio — el dato es viejo, y lo decimos (trama + borde + edad).</p>
             </div>
             <div className="es-sin-verificar px-3 py-2">
@@ -164,7 +191,7 @@ export default function SistemaVisualPage() {
         titulo="Marca"
         nota="Hoy un wordmark de texto con su token de color. El hueco del logo (Fase 5) está reservado en el componente <Marca>: se cambia una pieza."
       >
-        <div className="rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] p-4">
+        <div className="rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] p-4">
           <Marca />
         </div>
       </Seccion>

@@ -112,7 +112,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           — <strong>datos procesados</strong>. Tiempo real: Avanza Zaragoza.{' '}
           <Link
             href="/sobre-los-datos"
-            className="inline-flex min-h-[24px] items-center font-semibold underline underline-offset-2"
+            className="inline-flex min-h-[var(--control-min)] items-center font-semibold underline underline-offset-2"
           >
             Sobre los datos
           </Link>

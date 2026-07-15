@@ -427,7 +427,7 @@ export function MapaParada({
 
   return (
     <div className="mb-4" data-papel="mapa" data-aislado={enfocado ? 'si' : 'no'}>
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--color-borde)] shadow-sm">
+      <div className="relative overflow-hidden rounded-panel border border-[var(--color-borde)] shadow-sm">
         <MapContainer
           center={centro}
           zoom={ZOOM_TECHO}
@@ -496,7 +496,7 @@ export function MapaParada({
             type="button"
             onClick={verTodos}
             data-papel="ver-todos"
-            className="absolute right-2 top-2 z-[500] min-h-[44px] rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-menor font-bold shadow-md"
+            className="absolute right-2 top-2 z-[500] min-h-[var(--control)] rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-menor font-bold shadow-md"
           >
             Ver todos
           </button>
@@ -547,7 +547,7 @@ export function MapaParada({
             // ⚠️ 44 px de alto NO son negociables (WCAG 2.5.8 pide 24, y un pulgar
             //    en la calle pide más). Lo que se baja es el PESO VISUAL, no el
             //    tamaño del objetivo: es lo contrario de lo que suele hacerse.
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-nota font-semibold text-[var(--color-tinta-suave)]"
+            className="min-h-[var(--control)] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-nota font-semibold text-[var(--color-tinta-suave)]"
           >
             Encuadrarlos
           </button>

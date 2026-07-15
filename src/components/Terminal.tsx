@@ -57,7 +57,7 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
         <strong>desde la cabecera</strong>. No es la hora a la que pasa por tu parada.
       </p>
 
-      <div className="overflow-hidden rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)]">
+      <div className="overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
         {terminal.dias.map((d, i) => {
           const p = reloj(d.primera);
           const u = reloj(d.ultima);

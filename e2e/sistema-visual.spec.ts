@@ -69,6 +69,31 @@ test.describe('⭐ /interno/sistema-visual · LEE, no describe', () => {
     expect(colorApp, 'app y guía leen el mismo token: cambia el token, cambian los dos').toBe(colorMarca);
   });
 
+  test('⭐ radios y alturas de control se LEEN (los nuestros, no los de Tailwind)', async ({ page }, info) => {
+    await page.goto(RUTA, { waitUntil: 'networkidle' });
+
+    // Radios: exactamente los 4 nuestros (chip/caja/tarjeta/panel), con valor leído.
+    const radios = page.locator('[data-papel="token-radio"]');
+    await radios.first().scrollIntoViewIfNeeded();
+    const nombresRadio = await radios.evaluateAll((els) => els.map((e) => e.getAttribute('data-token')));
+    console.log(`\n  [${info.project.name}] radios: ${nombresRadio.join(', ')}`);
+    expect(nombresRadio.sort()).toEqual(['--radius-caja', '--radius-chip', '--radius-panel', '--radius-tarjeta']);
+    // La caja se dibuja con SU radio real: --radius-caja lee 8px.
+    const caja = page.locator('[data-token="--radius-caja"]');
+    expect((await caja.getAttribute('data-valor'))).toBe('8px');
+    await page.locator('[data-papel="radios-vivos"]').scrollIntoViewIfNeeded();
+    await capturar(page, `capturas/zetabus/GUIA-radios-control-${info.project.name}.png`);
+
+    // Alturas de control: los 4 táctiles, con su valor.
+    const controles = page.locator('[data-papel="token-control"]');
+    const nombresCtl = await controles.evaluateAll((els) => els.map((e) => e.getAttribute('data-token')));
+    console.log(`  control: ${nombresCtl.join(', ')}`);
+    expect(nombresCtl).toContain('--control-min');
+    expect(nombresCtl).toContain('--control');
+    const min = page.locator('[data-token="--control-min"]');
+    expect((await min.getAttribute('data-valor'))).toBe('24px');
+  });
+
   test('la contraprueba del gris está, y el estado sobrevive (forma, no tono)', async ({ page }) => {
     await page.goto(RUTA, { waitUntil: 'networkidle' });
     const toggle = page.locator('[data-papel="toggle-gris"]');

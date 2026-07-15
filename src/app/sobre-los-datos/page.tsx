@@ -43,7 +43,7 @@ export default function SobreLosDatos() {
       <div>
         <Link
           href="/"
-          className="inline-flex min-h-[44px] items-center text-menor font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[var(--control)] items-center text-menor font-semibold underline underline-offset-2"
         >
           ← volver
         </Link>
@@ -213,7 +213,7 @@ function Bloque({
 }) {
   return (
     <section
-      className={`rounded-2xl border bg-[var(--color-papel)] p-4 ${alerta ? 'es-sin-verificar' : 'border-[var(--color-borde)]'}`}
+      className={`rounded-panel border bg-[var(--color-papel)] p-4 ${alerta ? 'es-sin-verificar' : 'border-[var(--color-borde)]'}`}
       data-papel="bloque-datos"
     >
       <h2 className="text-seccion font-black leading-snug sin-recortar">{titulo}</h2>

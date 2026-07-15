@@ -44,7 +44,7 @@ const MapaParada = dynamic(() => import('./MapaParada').then((m) => m.MapaParada
   ssr: false,
   loading: () => (
     <div
-      className="mb-4 h-72 w-full animate-pulse rounded-2xl border border-[var(--color-borde)] bg-[var(--color-fondo)]"
+      className="mb-4 h-72 w-full animate-pulse rounded-panel border border-[var(--color-borde)] bg-[var(--color-fondo)]"
       data-papel="mapa-cargando"
       aria-label="Cargando el mapa"
     />
@@ -285,7 +285,7 @@ export function LlegadasVivas({
  *
  *     título "Líneas en esta parada"  h2 · 16 px · bold
  *     "Todas" / "Ninguna"             botones redondos, A LA DERECHA (66×34, 81×34)
- *     los chips de línea              56×56, rounded-2xl, 17 px, centrados
+ *     los chips de línea              56×56, rounded-panel, 17 px, centrados
  *
  * El título es lo que convierte dos botones en un FILTRO: sin él, nadie sabe
  * qué está tocando.
@@ -308,7 +308,7 @@ function FiltroDeLineas({
             type="button"
             onClick={onTodas}
             data-papel="filtro-todas"
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
+            className="min-h-[var(--control)] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
           >
             Todas
           </button>
@@ -316,7 +316,7 @@ function FiltroDeLineas({
             type="button"
             onClick={onNinguna}
             data-papel="filtro-ninguna"
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
+            className="min-h-[var(--control)] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
           >
             Ninguna
           </button>
@@ -336,7 +336,7 @@ function FiltroDeLineas({
               data-papel="chip-filtro"
               data-linea={etiqueta}
               data-apagada={off ? 'si' : 'no'}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl text-seccion font-bold"
+              className="flex h-14 w-14 items-center justify-center rounded-panel text-seccion font-bold"
               style={
                 off
                   ? {
@@ -384,7 +384,7 @@ function BarraDeEdad({
 
   return (
     <div
-      className={`mb-4 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
+      className={`mb-4 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
       data-papel="edad"
       data-rancio={rancio || fallando ? 'si' : 'no'}
       data-edad={edad}
@@ -404,7 +404,7 @@ function BarraDeEdad({
         <button
           type="button"
           onClick={onRefrescar}
-          className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 text-menor font-semibold"
+          className="min-h-[var(--control)] min-w-[var(--control)] shrink-0 rounded-caja border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 text-menor font-semibold"
           aria-label="Actualizar ahora"
         >
           ↻
@@ -526,7 +526,7 @@ function Cuerpo({
           llegadas donde nosotros metíamos 4 — y el que espera el bus quiere ver
           la siguiente, no admirar el margen. */}
       <ol
-        className={`overflow-hidden rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)] ${rancio ? 'es-rancio' : ''}`}
+        className={`overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] ${rancio ? 'es-rancio' : ''}`}
         data-papel="lista-llegadas"
       >
         {visibles.map((l, i) => (
@@ -647,7 +647,7 @@ function Llegada({
               el índice y en el itinerario. Si aquí se dedujeran otra vez, una N7
               podría salir de diurna en esta pantalla y de búho en la otra. */}
           <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cuerpo font-bold"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-tarjeta text-cuerpo font-bold"
             style={
               tonos
                 ? { backgroundColor: tonos.fondo, color: tonos.texto }
@@ -708,7 +708,7 @@ function Llegada({
 function Aviso({ titulo, cuerpo, papel }: { titulo: string; cuerpo: string; papel: string }) {
   return (
     <div
-      className="rounded-2xl border-2 border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-4"
+      className="rounded-panel border-2 border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-4"
       data-papel={papel}
       role="status"
     >

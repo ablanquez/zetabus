@@ -63,7 +63,7 @@ export default function Home() {
                 <li key={String(l.id)}>
                   <Link
                     href={`/linea/${encodeURIComponent(l.shortName)}`}
-                    className="flex min-h-[56px] items-center gap-3 rounded-xl border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
+                    className="flex min-h-[var(--control-fila)] items-center gap-3 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
                   >
                     {/* ⭐ D1 · UN SOLO SITIO SABE PINTAR UNA LÍNEA.
                         El color = IDENTIDAD (qué línea). La inversión = CATEGORÍA

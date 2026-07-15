@@ -98,7 +98,7 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
         value={q}
         onChange={(ev) => setQ(ev.target.value)}
         placeholder="744 · Plaza San Miguel · 35 · Ci3"
-        className="mt-1 min-h-[48px] w-full rounded-xl border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-seccion"
+        className="mt-1 min-h-[var(--control-fuerte)] w-full rounded-tarjeta border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-seccion"
         /* 16px: por debajo de eso, iOS hace zoom al enfocar y descoloca la página. */
       />
       <p className="mt-1 text-nota text-[var(--color-tinta-tenue)] sin-recortar">
@@ -106,18 +106,18 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
       </p>
 
       {buscando && resultados.length === 0 && (
-        <p className="mt-4 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-menor sin-recortar">
+        <p className="mt-4 rounded-tarjeta border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-menor sin-recortar">
           No encontramos nada con «{q}».
         </p>
       )}
 
       {resultados.length > 0 && (
-        <ul className="mt-3 overflow-hidden rounded-2xl border border-[var(--color-borde)] bg-[var(--color-papel)]">
+        <ul className="mt-3 overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
           {resultados.map((e, i) => (
             <li key={`${e.tipo}-${e.clave}`} className={i > 0 ? 'border-t border-[var(--color-borde)]' : ''}>
-              <Link href={e.href} className="flex min-h-[56px] items-center gap-3 px-4 py-3">
+              <Link href={e.href} className="flex min-h-[var(--control-fila)] items-center gap-3 px-4 py-3">
                 <span
-                  className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-1.5 text-nota font-black"
+                  className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-caja px-1.5 text-nota font-black"
                   style={
                     e.tipo === 'linea'
                       ? { backgroundColor: e.color, color: e.colorTexto }

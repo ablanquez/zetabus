@@ -109,7 +109,7 @@ export function Itinerario({
               <Link
                 href={`/parada/${p.poste}${fingir ? `?fingir=${fingir}` : ''}`}
                 data-papel="ir-a-parada"
-                className="block min-h-[24px] text-cuerpo font-bold leading-snug sin-recortar"
+                className="block min-h-[var(--control-min)] text-cuerpo font-bold leading-snug sin-recortar"
                 aria-label={`Parada ${p.nombre}, poste ${p.poste}`}
               >
                 {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
@@ -217,7 +217,7 @@ function Nodo({
         style={{
           width: 18,
           height: 18,
-          borderRadius: 6,
+          borderRadius: 'var(--radius-chip)',
           border: `4px solid ${color}`,
           background: primero ? color : 'var(--color-papel)',
         }}

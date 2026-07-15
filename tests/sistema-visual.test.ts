@@ -100,3 +100,64 @@ describe('⛔ NO SE CUELA UN HEX CRUDO DONDE DEBERÍA HABER TOKEN', () => {
     expect(hexCrudosEn(`/* la 33 es #C5CE00 y da 1,72:1 */\nconst y = 2;`, [])).toEqual([]);
   });
 });
+
+// ═════════════════════════════════════════════════════════════════════════════
+//  ⛔ Y LA MISMA VIGILANCIA PARA RADIO, SOMBRA Y ALTURA DE CONTROL.
+//
+//  La deuda que esto mata: si se cierra la tanda sin nombrar el sistema latente
+//  (radios 6/8/12/16, alturas táctiles 24/44/48/56), el cierre los fijaría a mano
+//  en los componentes que toque — recreando copias a mano JUSTO tras matarlas.
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('⛔ NI RADIO, NI SOMBRA, NI ALTURA DE CONTROL A MANO', () => {
+  // Los pocos crudos legítimos, por fichero y con motivo.
+  const CRUDO_PERMITIDO: Record<string, readonly RegExp[]> = {
+    // La píldora del marcador (border-radius:9px) y sus sombras son el REBORDE de
+    // un icono SVG, no superficie de diseño. Viven en el mapa, y solo ahí.
+    'src/components/MapaParada.tsx': [/border-radius:9px/, /box-shadow:/, /drop-shadow\(/],
+  };
+
+  const DETECTORES: readonly { readonly nombre: string; readonly re: RegExp }[] = [
+    { nombre: 'radio a mano', re: /border-radius:\s*\d+px|borderRadius:\s*\d+/g },
+    // ⚠️ Las dos cajas: `box-shadow:` (CSS/string) y `boxShadow:` (inline de React).
+    //    Un `style={{ boxShadow }}` a mano se colaba con solo la primera forma.
+    { nombre: 'sombra a mano', re: /box-shadow:|boxShadow:|drop-shadow\(/g },
+    { nombre: 'altura de control a mano', re: /min-[hw]-\[\d+px\]/g },
+  ];
+
+  function crudosEn(codigo: string, permitidos: readonly RegExp[]): string[] {
+    const limpio = sinComentarios(codigo);
+    const malos: string[] = [];
+    for (const d of DETECTORES) {
+      for (const m of limpio.matchAll(d.re)) {
+        if (!permitidos.some((p) => p.test(m[0]))) malos.push(`${d.nombre}: ${m[0]}`);
+      }
+    }
+    return malos;
+  }
+
+  it('ningún .ts/.tsx de src cablea radio/sombra/altura donde hay token', () => {
+    const infractores: string[] = [];
+    for (const f of ficherosDe('src')) {
+      const rel = f.replace(/\\/g, '/');
+      if (EXCLUIDOS.has(rel)) continue; // global-error: sin CSS de tokens
+      const malos = crudosEn(readFileSync(f, 'utf8'), CRUDO_PERMITIDO[rel] ?? []);
+      if (malos.length) infractores.push(`${rel} → ${[...new Set(malos)].join(' · ')}`);
+    }
+    // Rojo → usa rounded-*/var(--radius-*), var(--control-*), o ninguna sombra.
+    expect(infractores, 'radio/sombra/altura a mano donde debería haber token').toEqual([]);
+  });
+
+  it('⭐ CONTRAPRUEBA: caza un radio/sombra/altura plantados, y respeta lo tokenizado', () => {
+    // Plantados → cazados:
+    expect(crudosEn(`const s = { borderRadius: 8 };`, [])).toContain('radio a mano: borderRadius: 8');
+    expect(crudosEn(`.x{box-shadow:0 1px 2px #000}`, []).some((m) => m.startsWith('sombra'))).toBe(true);
+    expect(crudosEn(`style={{ boxShadow: '0 1px 2px' }}`, []).some((m) => m.startsWith('sombra'))).toBe(true);
+    expect(crudosEn(`<div className="min-h-[44px]" />`, [])).toContain('altura de control a mano: min-h-[44px]');
+    // Tokenizado → NO cazado:
+    expect(crudosEn(`borderRadius: 'var(--radius-chip)'`, [])).toEqual([]);
+    expect(crudosEn(`className="min-h-[var(--control)] rounded-caja"`, [])).toEqual([]);
+    // En comentario → NO cazado (es documentación):
+    expect(crudosEn(`// antes: border-radius: 8px y box-shadow: 0 1px\nconst x = 1;`, [])).toEqual([]);
+  });
+});

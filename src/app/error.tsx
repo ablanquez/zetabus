@@ -59,14 +59,14 @@ export default function Error({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--color-tinta)] px-4 text-cuerpo font-bold text-[var(--color-papel)]"
+          className="inline-flex min-h-[var(--control-fuerte)] items-center justify-center rounded-tarjeta bg-[var(--color-tinta)] px-4 text-cuerpo font-bold text-[var(--color-papel)]"
           data-papel="reintentar"
         >
           Volver a intentarlo
         </button>
         <Link
           href="/"
-          className="inline-flex min-h-[44px] items-center justify-center text-menor font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[var(--control)] items-center justify-center text-menor font-semibold underline underline-offset-2"
         >
           Ver todas las líneas
         </Link>

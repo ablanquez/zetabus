@@ -50,6 +50,18 @@
   --text-nota: 11px;    --text-nota--line-height: 1.35;   /* pie, poste, caption */
   --text-micro: 10px;   --text-micro--line-height: 1.2;   /* chip-meta, overline */
 
+  /* ───────────────────────────────────────────────────────────────────────
+     RADIOS · el sistema 6/8/12/16 ya EXISTÍA (rounded-md/lg/xl/2xl), pero
+     además estaba COPIADO A MANO como literal inline (`border-radius: 8px`) en
+     5 sitios. Se nombra el sistema y se generan utilidades (`rounded-caja`), de
+     modo que la clase Y el literal beben del MISMO token. `rounded-full` (píldora
+     / círculo) NO es un peldaño de escala: se queda como está.
+     ─────────────────────────────────────────────────────────────────────── */
+  --radius-chip: 6px;     /* chips, nodos pequeños */
+  --radius-caja: 8px;     /* bloques, avisos */
+  --radius-tarjeta: 12px; /* tarjetas, campos, botones */
+  --radius-panel: 16px;   /* paneles grandes, el mapa */
+
   --color-tinta: #0f172a;
   --color-tinta-suave: #475569;
   /**
@@ -96,6 +108,20 @@
    /interno/sistema-visual — lo toca quien entiende la regla del contraste del
    latido, no un diseñador. Está aquí solo para no escribir "1.4s" dos veces. */
 :root { color-scheme: light; --dur-latido: 1.4s; }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ALTURAS DE CONTROL · lo que se PULSA. Cuatro medidas que ya estaban dispersas
+   como `min-h-[44px]` a mano (24 en 6 sitios, 44 en 9, 48 en 3, 56 en 2). Son
+   accesibilidad —el pulgar en la calle— y por eso SÍ van a la guía: no es una
+   escala de espaciado general (esa la pone Tailwind: gap-*, px-*), son los
+   objetivos táctiles, que tienen un mínimo legal (WCAG 2.5.8 = 24) y uno cómodo.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --control-min: 24px;    /* mínimo táctil (WCAG 2.5.8): enlaces en una frase */
+  --control: 44px;        /* objetivo cómodo: botones, toggles, chips de acción */
+  --control-fuerte: 48px; /* control principal: el botón de acción, el buscador */
+  --control-fila: 56px;   /* fila de lista pulsable (resultados, índice) */
+}
 
 body {
   background: var(--color-fondo);
@@ -225,7 +251,7 @@ body {
  */
 .bloque-parada {
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--radius-caja);
 }
 /* El ::after del enlace de la parada cubre TODO el <li> (que es position:relative).
    Es transparente: no tapa nada, solo captura el clic. */
@@ -249,7 +275,7 @@ body {
   display: inline-flex;
   align-items: center;
   flex: none;
-  border-radius: 6px;
+  border-radius: var(--radius-chip);
   padding: 2px 6px;
   font-size: 10px;
   font-weight: 800;
@@ -307,13 +333,13 @@ body {
  */
 .es-sin-verificar {
   border: 1px dashed var(--color-tinta-tenue);
-  border-radius: 8px;
+  border-radius: var(--radius-caja);
 }
 
 /** SIN DATOS — no lo sabemos. Y se dice. */
 .es-sin-datos {
   border: 1px dotted var(--color-tinta-tenue);
-  border-radius: 8px;
+  border-radius: var(--radius-caja);
   font-style: italic;
 }
 

@@ -92,7 +92,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 key={s.directionId}
                 href={`/linea/${encodeURIComponent(l.shortName)}?sentido=${s.directionId}${fingir ? `&fingir=${fingir}` : ''}`}
                 aria-current={esActivo ? 'true' : undefined}
-                className={`flex-1 rounded-xl border px-3 py-2 text-center text-menor font-bold leading-snug sin-recortar ${
+                className={`flex-1 rounded-tarjeta border px-3 py-2 text-center text-menor font-bold leading-snug sin-recortar ${
                   esActivo
                     ? 'border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]'
                     : 'border-[var(--color-borde)] bg-[var(--color-fondo)] text-[var(--color-tinta-tenue)]'
@@ -170,7 +170,7 @@ function Recorrido({
       {/* ⭐⭐ EL AVISO DE DESVÍO. Y es DERIVADO: se auto-apaga cuando restauren. */}
       {desviada && (
         <div
-          className="mb-3 rounded-xl border-2 border-[var(--color-aviso)] bg-[var(--color-papel)] px-3 py-2.5"
+          className="mb-3 rounded-tarjeta border-2 border-[var(--color-aviso)] bg-[var(--color-papel)] px-3 py-2.5"
           data-papel="hay-desvio"
           role="status"
         >
@@ -229,7 +229,7 @@ function Recorrido({
       {/* ⚠️ Ci3 y Ci4 NO tienen trazado publicado. Se ETIQUETA, no se finge. */}
       {sinGeometria && (
         <p
-          className="mb-3 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+          className="mb-3 rounded-tarjeta border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
           data-papel="sin-geometria"
         >
           ⚠ Esta línea NO tiene trazado publicado en el GTFS oficial. Podemos decirte sus paradas y
