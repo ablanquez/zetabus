@@ -242,31 +242,80 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
     expect(reloj(lab.ultima).siguiente).toBe(true);
   });
 
-  it('⭐⭐ C10 · EL Terminal RENDERIZADO enseña "1:29 del día siguiente", NUNCA "25:29"', () => {
-    // ⚠️ NO BASTA con que `reloj()` esté bien: hay que probar lo que el componente
-    //    PINTA. Se renderiza el Terminal REAL con el dato REAL de la 35 (última =
-    //    1529 min = las 25:29 del GTFS) y se le pasa el detector por encima.
+  it('⭐ las 5+5 de la 35 salen ORDENADAS por minuto GTFS (el cruce va al FINAL, no al principio)', () => {
+    // El dato REAL horneado. Si se ordenara por hora de reloj, la salida de las
+    // 0:24 (que es 1464 y cruza medianoche) caería la PRIMERA en vez de la última.
+    const l35 = lineas().find((x) => x.shortName === '35')!;
+    const t = terminalDe(idLinea(String(l35.id)), 0);
+    expect(t).not.toBeNull();
+    if (!t) return;
+    const lab = t.dias.find((d) => d.tipo === 'laborable')!;
+    expect(lab.primeras.length, 'hay primeras').toBeGreaterThan(0);
+    expect(lab.ultimas.length, 'hay últimas').toBeGreaterThan(0);
+    console.log(`\n  35 laborable · primeras: ${lab.primeras.map((m) => reloj(m).hora).join(' ')}`);
+    console.log(`  35 laborable · últimas:  ${lab.ultimas.map((m) => reloj(m).hora + (reloj(m).siguiente ? '+1' : '')).join(' ')}`);
+    // Ascendentes por minuto GTFS, en ambas.
+    for (let i = 1; i < lab.primeras.length; i++) expect(lab.primeras[i]).toBeGreaterThan(lab.primeras[i - 1]);
+    for (let i = 1; i < lab.ultimas.length; i++) expect(lab.ultimas[i]).toBeGreaterThan(lab.ultimas[i - 1]);
+    // Las primeras son de mañana; la última de las últimas cruza medianoche.
+    expect(lab.primeras[0], 'la primera es de mañana').toBeLessThan(24 * 60);
+    expect(lab.ultimas[lab.ultimas.length - 1], 'la última cruza medianoche').toBeGreaterThanOrEqual(24 * 60);
+    // Con 122 salidas no hay solape: TODAS las primeras < TODAS las últimas.
+    expect(Math.max(...lab.primeras)).toBeLessThan(Math.min(...lab.ultimas));
+  });
+
+  it('⭐⭐ C10 · las 5+5 salidas RENDERIZADAS: "1:29 del día siguiente", en su sitio, nunca "25:29"', () => {
+    // ⚠️ NO BASTA con que `reloj()` esté bien: se prueba lo que el componente PINTA.
+    //    Un día con 5 primeras y 5 últimas, y las últimas CRUZAN medianoche (1440 =
+    //    0:00, 1489 = 0:49, 1529 = 1:29 del GTFS = "25:29").
     const t35: TerminalDeSentido = {
       lineId: 'x', directionId: 0,
-      dias: [{ tipo: 'laborable', primera: 300, ultima: 1529, expediciones: 122 }],
+      dias: [{
+        tipo: 'laborable', primera: 300, ultima: 1529, expediciones: 122,
+        primeras: [300, 315, 330, 345, 360],     // 5:00 5:15 5:30 5:45 6:00
+        ultimas: [1380, 1410, 1440, 1489, 1529],  // 23:00 23:30 0:00+1 0:49+1 1:29+1
+      }],
     };
     const html = renderToStaticMarkup(createElement(Terminal, { terminal: t35 }));
-    // ⚠️ Se juzga el TEXTO que se lee, no las clases ni los estilos: se quitan las
-    //    etiquetas para no cazar un "text-[15px]" como si fuera una hora.
     const enPantalla = html.replace(/<[^>]+>/g, ' ');
 
     expect(enPantalla, 'la última salida se pinta como 1:29').toContain('1:29');
     expect(enPantalla, 'y se dice que es de la madrugada siguiente').toContain('del día siguiente');
     expect(enPantalla, '⛔ en pantalla NO puede salir una hora ≥ 24').not.toMatch(HORA_IMPOSIBLE);
 
-    // ⭐ CONTRAPRUEBA: se mete un "25:29" CRUDO en lo mismo que enseña la pantalla y
-    //    se comprueba que el detector LO CAZA. Es exactamente lo que aparecería si
-    //    una regresión quitara el `% 24` de `reloj()`: el rojo antes del verde.
+    // ⭐ EN SU SITIO: la 1:29 va en las ÚLTIMAS (tras 23:00), NO entre las primeras.
+    //    Si se ordenara por hora de reloj, "0:00" y "1:29" saldrían las PRIMERAS.
+    expect(enPantalla.indexOf('1:29'), 'la 1:29 va DESPUÉS de las primeras (6:00)').toBeGreaterThan(enPantalla.indexOf('6:00'));
+    expect(enPantalla.indexOf('23:00'), 'las últimas empiezan en 23:00').toBeGreaterThan(enPantalla.indexOf('6:00'));
+    expect(enPantalla.indexOf('1:29'), 'y la 1:29 es la última de las últimas').toBeGreaterThan(enPantalla.indexOf('23:00'));
+    // La salida de 1529 lleva su marca de día siguiente (no es una 1:29 a secas).
+    expect(html, 'la salida 1529 va marcada como día siguiente').toContain('data-minuto="1529" data-siguiente="si"');
+
+    // ⭐ CONTRAPRUEBA: un "25:29" crudo en lo que enseña la pantalla → el detector lo caza.
     const regresion = enPantalla.replace('1:29', '25:29');
     expect(regresion, 'el detector tiene que cazar el 25:29 crudo').toMatch(HORA_IMPOSIBLE);
-    // Y no caza cualquier cosa: una hora buena de madrugada NO la marca.
     expect('1:29', 'la 1:29 real es una hora legítima').not.toMatch(HORA_IMPOSIBLE);
     expect('23:59', 'las 23:59 son legítimas').not.toMatch(HORA_IMPOSIBLE);
+  });
+
+  it('⚠️ POCAS SALIDAS · un día con < 10 no fuerza 5+5: enseña las que hay', () => {
+    // Un búho sábado con 6 salidas: primeras y últimas se solapan. La pantalla NO
+    // repite; muestra las 6, una sola vez, y dice que son 6.
+    const buho: TerminalDeSentido = {
+      lineId: 'y', directionId: 0,
+      dias: [{
+        tipo: 'sabado', primera: 60, ultima: 360, expediciones: 6,
+        primeras: [60, 120, 180, 240, 300],   // 1:00 2:00 3:00 4:00 5:00
+        ultimas: [120, 180, 240, 300, 360],    // 2:00 3:00 4:00 5:00 6:00
+      }],
+    };
+    const html = renderToStaticMarkup(createElement(Terminal, { terminal: buho }));
+    const enPantalla = html.replace(/<[^>]+>/g, ' ');
+    // La unión ordenada son las 6 reales, sin repetir ninguna.
+    expect(html).toContain('data-etiqueta="Todas"');
+    expect(html).not.toContain('data-etiqueta="Primeras"');
+    expect((html.match(/data-papel="salida"/g) ?? []).length, 'las 6 salidas, sin duplicar').toBe(6);
+    expect(enPantalla).toContain('6 salidas');
   });
 
   it('⚠️ BACKTEST · festivo y laborable son FILAS DISTINTAS, no la misma copiada', () => {

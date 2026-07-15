@@ -115,10 +115,21 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
     // ⛔ Y en NINGUNA parte del bloque puede leerse una hora ≥ 24.
     expect(texto, 'en pantalla no puede salir "25:29" ni ninguna hora ≥ 24').not.toMatch(HORA_IMPOSIBLE);
 
-    // La última salida marcada se lee como una hora de madrugada normal (0–5).
-    const ultima = await terminal.locator('[data-papel="ultima"]').first().innerText();
-    console.log(`     última salida pintada: "${ultima}"`);
-    expect(ultima, 'la última es de madrugada, no 25:xx').toMatch(/^[0-5]:[0-5]\d$/);
+    // ⭐ HAY 5+5 salidas de verdad, no un rango: la 35 tiene muchas expediciones.
+    const salidas = terminal.locator('[data-papel="salida"]');
+    expect(await salidas.count(), 'se pintan salidas concretas, no un rango').toBeGreaterThan(5);
+    await expect(terminal.locator('[data-papel="fila-salidas"][data-etiqueta="Primeras"]').first()).toBeVisible();
+    await expect(terminal.locator('[data-papel="fila-salidas"][data-etiqueta="Últimas"]').first()).toBeVisible();
+
+    // ⭐ ORDEN: al menos una salida cruza medianoche (data-minuto ≥ 1440) y sale
+    //    en las ÚLTIMAS, marcada, leída como madrugada (0–5), no como 25:xx.
+    const cruces = terminal.locator('[data-papel="salida"][data-siguiente="si"]');
+    expect(await cruces.count(), 'la 35 cruza medianoche en sus últimas salidas').toBeGreaterThan(0);
+    const min = Number(await cruces.first().getAttribute('data-minuto'));
+    const hora = (await cruces.first().innerText()).match(/^\d{1,2}:\d{2}/)?.[0] ?? ''; // sin el "+1"
+    console.log(`     cruce: minuto GTFS ${min} → "${hora}"`);
+    expect(min, 'el minuto GTFS de un cruce pasa de 1440').toBeGreaterThanOrEqual(24 * 60);
+    expect(hora, 'pintada como madrugada, no 25:xx').toMatch(/^[0-5]:[0-5]\d$/);
 
     await capturar(page, `capturas/zetabus/C10-terminal-35-${info.project.name}.png`);
   });

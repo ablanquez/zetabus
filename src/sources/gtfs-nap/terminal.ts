@@ -48,6 +48,22 @@ export interface SalidasDeTerminal {
   readonly ultima: number;
   /** Cuántas salidas hay ese día. Da idea de la frecuencia sin prometer un horario. */
   readonly expediciones: number;
+  /**
+   * ⭐ LAS 5 PRIMERAS Y LAS 5 ÚLTIMAS SALIDAS de cabecera, en MINUTOS GTFS.
+   *
+   * Es una PRUEBA DE FUENTE: un rango ("5:59 → 23:33") no se puede cotejar; una
+   * salida concreta SÍ —quien coge el bus verifica con los ojos si el GTFS es fiel
+   * o miente—. Salen de los MISMOS `stop_times` que el rango: nada se inventa.
+   *
+   * ⚠️ ORDENADAS POR EL MINUTO GTFS, que sigue subiendo pasada medianoche (1440,
+   *    1489, 1529…). Si se ordenara por la hora de reloj, un "0:24" (que es 1464 y
+   *    cruza medianoche) parecería la PRIMERA cuando es la ÚLTIMA.
+   *
+   * ⚠️ Si hay menos de 10 salidas, `primeras` y `ultimas` se solapan (5+5 ≥ n): su
+   *    unión son TODAS. La pantalla lo detecta por `expediciones` y no fuerza 5+5.
+   */
+  readonly primeras: readonly number[];
+  readonly ultimas: readonly number[];
 }
 
 export interface TerminalDeSentido {
@@ -171,11 +187,16 @@ export function calcularTerminales(
     const [route, dir, tipo] = k.split('|');
     const kk = `${route}|${dir}`;
     if (!porSentido.has(kk)) porSentido.set(kk, []);
+    // ⚠️ POR MINUTO GTFS, no por hora de reloj: así "las 5 primeras" y "las 5
+    //    últimas" salen bien aunque las últimas crucen medianoche (1489, 1529…).
+    const ord = [...mins].sort((a, b) => a - b);
     porSentido.get(kk)!.push({
       tipo: tipo as TipoDeDia,
-      primera: Math.min(...mins),
-      ultima: Math.max(...mins),
-      expediciones: mins.length,
+      primera: ord[0],
+      ultima: ord[ord.length - 1],
+      expediciones: ord.length,
+      primeras: ord.slice(0, 5),
+      ultimas: ord.slice(-5),
     });
   }
 
