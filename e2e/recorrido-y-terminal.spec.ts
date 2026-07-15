@@ -288,6 +288,84 @@ test.describe('⭐ EMPIEZA / ACABA EN … · se ENSEÑA cada salida y se marca, 
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+test.describe('⭐ LOS SUPERÍNDICES SE DISTINGUEN: ⁺¹ (madrugada) ≠ ¹ (leyenda)', () => {
+  const salida = (page: Page, min: number) =>
+    page.locator(`[data-papel="dia-terminal"][data-tipo="laborable"] [data-papel="salida"][data-minuto="${min}"]`);
+
+  test('los cuatro casos se pintan sin ambigüedad (solo ⁺¹, solo ¹, los dos, ⁺¹+²)', async ({ page }, info) => {
+    // →Parque Goya: 5:11 solo índice; 0:31 madrugada + índice.
+    await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
+    await page.locator('[data-papel="terminal"]').scrollIntoViewIfNeeded();
+    const soloIndice = salida(page, 311); // 5:11¹
+    expect(await soloIndice.locator('[data-papel="marca-dia-siguiente"]').count(), '5:11 no es madrugada').toBe(0);
+    expect(await soloIndice.locator('[data-papel="indice-parcial"]').count(), '5:11 lleva índice').toBe(1);
+    const ambos = salida(page, 1471); // 0:31⁺¹¹
+    expect(await ambos.locator('[data-papel="marca-dia-siguiente"]').count(), '0:31 es madrugada').toBe(1);
+    expect(await ambos.locator('[data-papel="indice-parcial"]').count(), '0:31 lleva índice').toBe(1);
+
+    // →Seminario: 0:27 solo madrugada; 0:11 madrugada + índice 2.
+    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
+    await page.locator('[data-papel="terminal"]').scrollIntoViewIfNeeded();
+    const soloMadrugada = salida(page, 1467); // 0:27⁺¹
+    expect(await soloMadrugada.locator('[data-papel="marca-dia-siguiente"]').count(), '0:27 es madrugada').toBe(1);
+    expect(await soloMadrugada.locator('[data-papel="indice-parcial"]').count(), '0:27 NO lleva índice').toBe(0);
+    const madrugadaMasDos = salida(page, 1451); // 0:11⁺¹²
+    expect(await madrugadaMasDos.locator('[data-papel="marca-dia-siguiente"]').count()).toBe(1);
+    const idx = madrugadaMasDos.locator('[data-papel="indice-parcial"]');
+    expect(await idx.count(), '0:11 lleva un índice').toBe(1);
+    expect(await idx.getAttribute('data-indice'), 'y es el 2 (acaba en Coso)').toBe('2');
+  });
+
+  test('separados por HUECO, PESO y "+": tres canales que aguantan el gris', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
+    await page.locator('[data-papel="terminal"]').scrollIntoViewIfNeeded();
+    const s = salida(page, 1471); // 0:31⁺¹¹: conviven ⁺¹ y ¹
+    const plus = s.locator('[data-papel="marca-dia-siguiente"]');
+    const ind = s.locator('[data-papel="indice-parcial"]');
+
+    const bp = (await plus.boundingBox())!;
+    const bi = (await ind.boundingBox())!;
+    const hueco = bi.x - (bp.x + bp.width);
+    const pesoPlus = await plus.evaluate((n) => Number(getComputedStyle(n).fontWeight));
+    const pesoInd = await ind.evaluate((n) => Number(getComputedStyle(n).fontWeight));
+    const txtPlus = (await plus.innerText()).trim();
+    const txtInd = (await ind.innerText()).trim();
+    console.log(`\n  [${info.project.name}] 0:31 · hueco ⁺¹→¹ = ${hueco.toFixed(1)}px · peso ⁺¹ ${pesoPlus} vs ¹ ${pesoInd} · "${txtPlus}" vs "${txtInd}"`);
+
+    // CANAL 1 · HUECO real entre los dos (antes iban pegados a ~2px).
+    expect(hueco, 'hay aire de verdad entre el ⁺¹ y el índice').toBeGreaterThan(3);
+    // CANAL 2 · PESO: el ⁺¹ es negrita, el índice fino.
+    expect(pesoPlus, 'el ⁺¹ pesa más que el índice').toBeGreaterThan(pesoInd);
+    // CANAL 3 · FORMA: el ⁺¹ lleva "+", el índice es un dígito a secas.
+    expect(txtPlus, 'el ⁺¹ lleva el "+"').toContain('+');
+    expect(txtInd, 'el índice es un dígito sin "+"').toMatch(/^\d+$/);
+
+    // ⭐ EN GRIS los tres canales siguen (son geometría y peso, no color): se vuelve
+    //    a medir con la página desaturada y no cambian.
+    await page.addStyleTag({ content: 'html { filter: grayscale(1) !important; }' });
+    await page.waitForTimeout(120);
+    const bp2 = (await plus.boundingBox())!;
+    const bi2 = (await ind.boundingBox())!;
+    expect(bi2.x - (bp2.x + bp2.width), 'el hueco sigue en gris').toBeGreaterThan(3);
+    expect(await plus.evaluate((n) => Number(getComputedStyle(n).fontWeight)), 'el peso sigue en gris').toBeGreaterThan(pesoInd);
+  });
+
+  test('a 360px real no hay scroll horizontal ni superíndices desbordados', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await terminal.scrollIntoViewIfNeeded();
+    const scroll = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(scroll, 'sin scroll horizontal en la página').toBeLessThanOrEqual(0);
+    // Captura AMPLIADA: solo el bloque de terminal, para leer los superíndices.
+    await terminal.screenshot({ path: `capturas/zetabus/SUPER-35-Seminario-${info.project.name}.png` });
+    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
+    const festivo = page.locator('[data-papel="dia-terminal"][data-tipo="festivo"]');
+    await festivo.scrollIntoViewIfNeeded();
+    await festivo.screenshot({ path: `capturas/zetabus/SUPER-35-festivo-${info.project.name}.png` });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {
   test('el alto por parada es compacto y estable', async ({ page }, info) => {
     await page.goto('/linea/21', { waitUntil: 'networkidle' });
