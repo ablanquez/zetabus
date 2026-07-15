@@ -141,6 +141,13 @@ export function calcularTerminales(
    * el mismo nombre que el usuario ve en el itinerario, sin acoplar esto a los nombres.
    */
   nombreDeParada: (stopId: string) => string,
+  /**
+   * ⭐ La TERMINAL OFICIAL de un sentido (última parada de su recorrido), por
+   * `route|dir`. Se inyecta (el build la tiene de las `directions`). Sirve para
+   * dos cosas: filtrar las ÚLTIMAS a las que LLEGAN, y —guardia de fiabilidad—
+   * saltarse los sentidos donde el destino es ambiguo (dos terminales, como la 44).
+   */
+  terminalOficial: (route: string, dir: 0 | 1) => string | undefined,
 ): ResultadoTerminal {
   // ── 1 · qué servicios circulan cada fecha ────────────────────────────────
   const activos = new Map<string, Set<string>>();
@@ -184,56 +191,82 @@ export function calcularTerminales(
     info.set(f[tTrip], { route: f[tRoute], svc: f[tSvc], dir });
   }
 
-  // ── 4 · la PRIMERA PARADA REAL de cada trip (la de secuencia mínima) ────────
-  //    ⚠️ Antes se guardaba solo el minuto. Ahora TAMBIÉN el stop: es lo que
-  //    distingue una salida de cabecera de una parcial (arranca a mitad de línea).
+  // ── 4 · PRIMERA y ÚLTIMA parada real de cada trip (secuencia mínima y máxima) ─
+  //    ⚠️ La PRIMERA (con su hora) distingue una salida de cabecera de una parcial
+  //    (arranca a mitad). La ÚLTIMA dice si el trip LLEGA a la terminal o se queda
+  //    corto (no cuenta como última salida hacia ella).
   const st = csv(stopTimesTxt);
   const sTrip = st.cabecera.indexOf('trip_id');
   const sStop = st.cabecera.indexOf('stop_id');
   const sDep = st.cabecera.indexOf('departure_time');
   const sSeq = st.cabecera.indexOf('stop_sequence');
   const salida = new Map<string, { min: number; seq: number; stop: string }>();
+  const llegada = new Map<string, { seq: number; stop: string }>();
   for (const f of st.filas) {
+    const trip = f[sTrip];
     const seq = Number(f[sSeq]);
-    const prev = salida.get(f[sTrip]);
-    if (prev && seq >= prev.seq) continue;
+    const stop = String(f[sStop]);
+    // ÚLTIMA parada (secuencia máxima).
+    const ll = llegada.get(trip);
+    if (!ll || seq > ll.seq) llegada.set(trip, { seq, stop });
+    // PRIMERA parada con hora de salida (secuencia mínima).
+    const pr = salida.get(trip);
+    if (pr && seq >= pr.seq) continue;
     const min = aMinutos(f[sDep]);
     if (min === null) continue;
-    salida.set(f[sTrip], { min, seq, stop: String(f[sStop]) });
+    salida.set(trip, { min, seq, stop });
   }
 
   // ── 5 · agrupar por (línea, sentido, tipo de día) ────────────────────────
-  //    Se guarda el minuto Y el stop de arranque. Y, aparte, cuántas veces
-  //    arranca cada parada por (línea, sentido): la CABECERA es la más frecuente.
-  const acumulado = new Map<string, { min: number; stop: string }[]>(); // route|dir|tipo
+  //    Se guarda el minuto, el stop de arranque (`ini`) y el de llegada (`fin`).
+  //    Aparte, cuántas veces arranca / acaba cada parada por (línea, sentido): la
+  //    CABECERA de origen y la de destino son las más frecuentes.
+  const acumulado = new Map<string, { min: number; ini: string; fin: string }[]>(); // route|dir|tipo
   const cuentaOrigen = new Map<string, Map<string, number>>(); // route|dir → stop → nº
+  const cuentaDestino = new Map<string, Map<string, number>>(); // route|dir → stop → nº
   for (const [tipo, fecha] of Object.entries(fechas) as [TipoDeDia, string | null][]) {
     if (fecha === null) continue;
     const act = activos.get(fecha)!;
     for (const [trip, s] of salida) {
       const i = info.get(trip);
       if (!i || !act.has(i.svc)) continue;
+      const fin = llegada.get(trip)?.stop ?? s.stop;
       const k = `${i.route}|${i.dir}|${tipo}`;
       if (!acumulado.has(k)) acumulado.set(k, []);
-      acumulado.get(k)!.push({ min: s.min, stop: s.stop });
+      acumulado.get(k)!.push({ min: s.min, ini: s.stop, fin });
       const kd = `${i.route}|${i.dir}`;
       if (!cuentaOrigen.has(kd)) cuentaOrigen.set(kd, new Map());
-      const cm = cuentaOrigen.get(kd)!;
-      cm.set(s.stop, (cm.get(s.stop) ?? 0) + 1);
+      cuentaOrigen.get(kd)!.set(s.stop, (cuentaOrigen.get(kd)!.get(s.stop) ?? 0) + 1);
+      if (!cuentaDestino.has(kd)) cuentaDestino.set(kd, new Map());
+      cuentaDestino.get(kd)!.set(fin, (cuentaDestino.get(kd)!.get(fin) ?? 0) + 1);
     }
   }
 
-  // ⭐ LA CABECERA de cada sentido = la parada de arranque MÁS FRECUENTE. No se
-  //    cablea: sale del propio dato. (Y coincide con la cabecera oficial: 35|1 →
-  //    16880.) Empate → el stop_id menor, para que sea determinista.
-  const cabecera = new Map<string, string>();
-  for (const [kd, m] of cuentaOrigen) {
+  // La parada MÁS FRECUENTE de un mapa (empate → stop_id menor, determinista).
+  const modal = (m: Map<string, number>): string => {
     let best = '';
-    let mejorCuenta = -1;
+    let mejor = -1;
     for (const [stop, n] of [...m].sort((a, b) => a[0].localeCompare(b[0]))) {
-      if (n > mejorCuenta) { mejorCuenta = n; best = stop; }
+      if (n > mejor) { mejor = n; best = stop; }
     }
-    cabecera.set(kd, best);
+    return best;
+  };
+
+  // ⭐ CABECERA de origen = arranque más frecuente. No se cablea: sale del dato.
+  //    (Coincide con la oficial: 35|1 → 16880.)
+  const cabecera = new Map<string, string>();
+  for (const [kd, m] of cuentaOrigen) cabecera.set(kd, modal(m));
+
+  // ⭐⭐ ¿SE PUEDE FILTRAR LAS ÚLTIMAS DE ESTE SENTIDO CON SEGURIDAD?
+  //    Solo si el destino es INEQUÍVOCO: la última parada más frecuente coincide
+  //    con la terminal oficial del recorrido. Cuando no coinciden, el sentido tiene
+  //    DOS terminales de verdad (la 44: Campus Río Ebro / Pablo Ruiz Picasso, según
+  //    la hora) y filtrar a ciegas tiraría salidas buenas. Ahí NO se filtra.
+  const terminalFiltrable = new Map<string, string | null>(); // route|dir → stop a exigir, o null
+  for (const [kd, m] of cuentaDestino) {
+    const [route, dir] = kd.split('|');
+    const oficial = terminalOficial(route, dir === '1' ? 1 : 0);
+    terminalFiltrable.set(kd, oficial !== undefined && modal(m) === oficial ? oficial : null);
   }
 
   const porSentido = new Map<string, SalidasDeTerminal[]>();
@@ -242,21 +275,28 @@ export function calcularTerminales(
     const kk = `${route}|${dir}`;
     if (!porSentido.has(kk)) porSentido.set(kk, []);
     const cab = cabecera.get(kk);
+    const terminal = terminalFiltrable.get(kk) ?? null;
     // ⚠️ POR MINUTO GTFS, no por hora de reloj: así "las 5 primeras" y "las 5
     //    últimas" salen bien aunque las últimas crucen medianoche (1489, 1529…).
     const ord = [...salidas].sort((a, b) => a.min - b.min);
     // ⚠️ El origen SOLO se rellena si NO es la cabecera. La norma va sin marca.
-    const conOrigen = (s: { min: number; stop: string }): SalidaDeTerminal => ({
+    const conOrigen = (s: { min: number; ini: string }): SalidaDeTerminal => ({
       minuto: s.min,
-      origen: s.stop === cab ? null : nombreDeParada(s.stop),
+      origen: s.ini === cab ? null : nombreDeParada(s.ini),
     });
+    // ⭐ LAS ÚLTIMAS SALIDAS HACIA {terminal}: SOLO las que LLEGAN a la terminal.
+    //    Una corta por el final (última parada ≠ terminal) NO es una última salida
+    //    hacia allí. Las PRIMERAS NO se tocan (regla de Antonio): una corta sí
+    //    puede ser la primera del día desde el origen. Y si al filtrar quedan menos
+    //    de 5 completas, se enseñan las que haya —no se rellena con cortas—.
+    const completas = terminal === null ? ord : ord.filter((s) => s.fin === terminal);
     porSentido.get(kk)!.push({
       tipo: tipo as TipoDeDia,
       primera: ord[0].min,
       ultima: ord[ord.length - 1].min,
       expediciones: ord.length,
       primeras: ord.slice(0, 5).map(conOrigen),
-      ultimas: ord.slice(-5).map(conOrigen),
+      ultimas: completas.slice(-5).map(conOrigen),
     });
   }
 

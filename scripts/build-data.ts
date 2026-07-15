@@ -103,12 +103,21 @@ console.log('');
 // El nombre a mostrar de cada parada (el MISMO que ve el usuario en el itinerario)
 // para que una salida parcial diga su origen real: "6:29 · desde Coso n.º 126".
 const nombrePorStop = new Map(stopsConNombre.map((s) => [String(s.id), s.name]));
+// La TERMINAL OFICIAL de cada sentido (última parada de su recorrido). Sirve para
+// descartar de las ÚLTIMAS las expediciones que no llegan, y para saltarse los
+// sentidos de destino ambiguo (dos terminales, como la 44). Ver terminal.ts.
+const terminalPorSentido = new Map<string, string>();
+for (const d of gtfs.directions) {
+  const st = d.official.stops;
+  if (st.length > 0) terminalPorSentido.set(`${d.lineId}|${d.directionId}`, String(st[st.length - 1]));
+}
 const term = calcularTerminales(
   files['calendar_dates.txt'],
   files['trips.txt'],
   files['stop_times.txt'],
   now,
   (id) => nombrePorStop.get(id) ?? id,
+  (route, dir) => terminalPorSentido.get(`${route}|${dir}`),
 );
 console.log('FUNCIONAMIENTO DE TERMINAL (C5)\n');
 console.log(`  fechas representativas tomadas DEL PROPIO FEED:`);

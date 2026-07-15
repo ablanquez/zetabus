@@ -252,6 +252,75 @@ test.describe('⭐ SALIDAS PARCIALES · índice numérico + leyenda, no un "desd
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+test.describe('⭐ ÚLTIMAS SALIDAS · solo las que LLEGAN a la cabecera final', () => {
+  /** Los minutos GTFS de las salidas de la fila "Últimas" de un día. */
+  async function ultimasMinutos(terminal: Locator, tipo = 'laborable'): Promise<number[]> {
+    const dia = terminal.locator(`[data-papel="dia-terminal"][data-tipo="${tipo}"]`);
+    const ult = dia.locator('[data-papel="fila-salidas"][data-etiqueta="Últimas"] [data-papel="salida"]');
+    const mins: number[] = [];
+    for (let i = 0; i < (await ult.count()); i++) mins.push(Number(await ult.nth(i).getAttribute('data-minuto')));
+    return mins;
+  }
+
+  test('la 35 →Seminario: última real 0:27, SIN las que acaban en P. Mina (Coso)', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-papel="titulo-linea"]'), 'es el sentido →Seminario').toContainText(/Seminario/);
+    const terminal = page.locator('[data-papel="terminal"]');
+    await terminal.scrollIntoViewIfNeeded();
+    const mins = await ultimasMinutos(terminal);
+    console.log(`\n  [${info.project.name}] 35 →Seminario últimas: ${JSON.stringify(mins)}`);
+    // ⛔ Las cortas 0:11 (1451), 0:51 (1491) y 1:29 (1529) acaban en Coso, NO llegan
+    //    a Seminario: NO pueden figurar como últimas salidas.
+    for (const corta of [1451, 1491, 1529]) {
+      expect(mins, `la corta ${corta} no llega a Seminario y no se muestra`).not.toContain(corta);
+    }
+    expect(Math.max(...mins), 'la última real hacia Seminario es 0:27 (1467)').toBe(1467);
+    await capturar(page, `capturas/zetabus/ULTIMAS-35-Seminario-${info.project.name}.png`);
+  });
+
+  test('la 35 →Parque Goya: última real MÁS TARDÍA (1:09), con "empieza en"', async ({ page }, info) => {
+    await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-papel="titulo-linea"]'), 'es el sentido →Parque Goya').toContainText(/Parque Goya/);
+    const terminal = page.locator('[data-papel="terminal"]');
+    await terminal.scrollIntoViewIfNeeded();
+    const mins = await ultimasMinutos(terminal);
+    console.log(`\n  [${info.project.name}] 35 →Parque Goya últimas: ${JSON.stringify(mins)}`);
+    // La 1:09 (1509) EMPIEZA en Coso pero LLEGA a Parque Goya: SÍ es última salida.
+    expect(mins, 'la 1:09 llega a la cabecera y se queda').toContain(1509);
+    const s = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"] [data-papel="salida"][data-minuto="1509"]');
+    expect(await s.getAttribute('data-origen'), 'y va marcada "empieza en Coso"').toMatch(/Coso/);
+    // ⭐ EL PUNTO DE ANTONIO: cada sentido mira SU cabecera. →Parque Goya acaba MÁS
+    //    TARDE (1:09) que →Seminario (0:27), y las dos cosas son correctas.
+    expect(Math.max(...mins), '→Parque Goya es más tardía que →Seminario (1467)').toBeGreaterThan(1467);
+    await capturar(page, `capturas/zetabus/ULTIMAS-35-ParqueGoya-${info.project.name}.png`);
+  });
+
+  test('OTRA LÍNEA afectada · la 23 dir0: últimas filtradas, última real 21:59', async ({ page }, info) => {
+    await page.goto('/linea/23?sentido=0', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await expect(terminal).toBeVisible();
+    await terminal.scrollIntoViewIfNeeded();
+    const mins = await ultimasMinutos(terminal);
+    console.log(`\n  [${info.project.name}] 23 dir0 últimas: ${JSON.stringify(mins)}`);
+    // 14 expediciones acaban antes (en Clara Campoamor) y quedan fuera; la última
+    // real completa es la 21:59 (1319).
+    expect(Math.max(...mins), 'la última real de la 23 dir0 es 21:59 (1319)').toBe(1319);
+    await capturar(page, `capturas/zetabus/ULTIMAS-23-${info.project.name}.png`);
+  });
+
+  test('⚠️ un sentido de destino AMBIGUO (44 dir0, dos terminales) NO se filtra', async ({ page }, info) => {
+    await page.goto('/linea/44?sentido=0', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await terminal.scrollIntoViewIfNeeded();
+    const mins = await ultimasMinutos(terminal);
+    console.log(`\n  [${info.project.name}] 44 dir0 últimas (sin filtrar, dos terminales): ${JSON.stringify(mins)}`);
+    // No se toca: la 44 tiene dos terminales reales (Campus Río Ebro / Pablo Ruiz
+    // Picasso según la hora); filtrar a ciegas tiraría salidas buenas.
+    expect(mins.length, 'la 44 conserva sus últimas').toBeGreaterThan(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {
   test('el alto por parada es compacto y estable', async ({ page }, info) => {
     await page.goto('/linea/21', { waitUntil: 'networkidle' });
