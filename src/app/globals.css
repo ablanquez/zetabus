@@ -26,6 +26,30 @@
  */
 
 @theme {
+  /* ───────────────────────────────────────────────────────────────────────
+     TIPOGRAFÍA · Inter, self-hosted por next/font (ver layout.tsx). Elegida
+     por Antonio: la app enseña NÚMEROS PEQUEÑOS en la calle (minutos, líneas,
+     postes) e Inter está hecha para eso — 1≠l, 0≠O. Self-host, no un <link> a
+     Google (privacidad + no depender de un CDN).
+     ─────────────────────────────────────────────────────────────────────── */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     LA ESCALA TIPOGRÁFICA, CON NOMBRE. Antes: 12 tamaños `text-[Npx]` a ojo,
+     5 de ellos para títulos. Ahora 7 peldaños que generan utilidades Tailwind
+     (`text-titulo` en vez de `text-[20px]`), cada uno con su interlínea. Un
+     `--text-*` en v4 crea la utilidad y `--text-*--line-height` su altura.
+     ⚠️ NO se llama `base`: `text-base` es un built-in de Tailwind (16px) y
+        redefinirlo sería un footgun. El peldaño de 13 se llama `menor`.
+     ─────────────────────────────────────────────────────────────────────── */
+  --text-dato: 22px;    --text-dato--line-height: 1.05;   /* el dato: minutos de llegada */
+  --text-titulo: 20px;  --text-titulo--line-height: 1.15; /* H1 de pantalla */
+  --text-seccion: 16px; --text-seccion--line-height: 1.25;/* H2 / chip grande / input */
+  --text-cuerpo: 14px;  --text-cuerpo--line-height: 1.45; /* texto de lectura */
+  --text-menor: 13px;   --text-menor--line-height: 1.4;   /* secundario, botones, rótulo */
+  --text-nota: 11px;    --text-nota--line-height: 1.35;   /* pie, poste, caption */
+  --text-micro: 10px;   --text-micro--line-height: 1.2;   /* chip-meta, overline */
+
   --color-tinta: #0f172a;
   --color-tinta-suave: #475569;
   /**
@@ -52,9 +76,26 @@
   --color-aviso: #92400e;
   --color-aviso-fondo: #fffbeb;
   --color-aviso-borde: #fcd34d;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     GRIS DE "SIN COLOR DE LÍNEA" — un par (fondo + tinta), UNA sola vez.
+     Antes: `#94a3b8` copiado a mano en 3 sitios (con dos casings) y `#1e293b`
+     en 2, y encima un sitio pintaba texto BLANCO sobre ese gris (~2:1,
+     ilegible). Un token, un par, y el bug muere. Lo usan el chip de la lista,
+     el chip de filtro y el marcador del mapa: los tres, de aquí.
+     ⚠️ Es el gris del RENDER (un bus cuya línea no está en el GTFS). NO es el
+        mismo que el fallback de build de una línea sin `route_color` en el
+        feed: ése es otro estado, y vive con nombre en el adapter. Ver la
+        auditoría §4.1 — se decidió mantenerlos distintos a propósito. */
+  --color-sin-color: #94a3b8;
+  --color-sin-color-tinta: #1e293b;
 }
 
-:root { color-scheme: light; }
+/* ⚠️ `--dur-latido` NO es un token de diseño: es COMPORTAMIENTO (la cadencia del
+   pulso "ya llega"). Vive fuera de `@theme` a propósito, para que NO salga en
+   /interno/sistema-visual — lo toca quien entiende la regla del contraste del
+   latido, no un diseñador. Está aquí solo para no escribir "1.4s" dos veces. */
+:root { color-scheme: light; --dur-latido: 1.4s; }
 
 body {
   background: var(--color-fondo);
@@ -122,7 +163,7 @@ body {
   color: var(--color-alerta);
   display: inline-block;
   transform-origin: right center;
-  animation: latido 1.4s ease-in-out infinite;
+  animation: latido var(--dur-latido) ease-in-out infinite;
 }
 @keyframes latido {
   0%, 100% { transform: scale(1); }
@@ -152,7 +193,7 @@ body {
  */
 .zb-late {
   transform-origin: center bottom;
-  animation: latido 1.4s ease-in-out infinite;
+  animation: latido var(--dur-latido) ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .zb-late { animation: none; }

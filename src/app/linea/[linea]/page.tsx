@@ -80,7 +80,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
     <div>
       <div className="mb-3 flex items-center gap-3">
         <ChipLinea linea={l} papel="chip-cabecera" grande />
-        <h1 className="text-[18px] font-black leading-tight sin-recortar">{l.longName}</h1>
+        <h1 className="text-titulo font-black leading-tight sin-recortar">{l.longName}</h1>
       </div>
 
       {sentidos.length > 1 && (
@@ -92,7 +92,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 key={s.directionId}
                 href={`/linea/${encodeURIComponent(l.shortName)}?sentido=${s.directionId}${fingir ? `&fingir=${fingir}` : ''}`}
                 aria-current={esActivo ? 'true' : undefined}
-                className={`flex-1 rounded-xl border px-3 py-2 text-center text-[13px] font-bold leading-snug sin-recortar ${
+                className={`flex-1 rounded-xl border px-3 py-2 text-center text-menor font-bold leading-snug sin-recortar ${
                   esActivo
                     ? 'border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]'
                     : 'border-[var(--color-borde)] bg-[var(--color-fondo)] text-[var(--color-tinta-tenue)]'
@@ -174,10 +174,10 @@ function Recorrido({
           data-papel="hay-desvio"
           role="status"
         >
-          <p className="text-[14px] font-black leading-snug text-[var(--color-aviso)] sin-recortar">
+          <p className="text-cuerpo font-black leading-snug text-[var(--color-aviso)] sin-recortar">
             ⚠ Esta línea está DESVIADA hoy
           </p>
-          <p className="mt-1 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
+          <p className="mt-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar">
             Lo que ves abajo es <strong>el recorrido que el autobús hace hoy</strong>, no el oficial.
             Sale de comparar el GTFS del Ministerio con la ruta que publica Avanza para esta jornada.
             {veredicto.fuera.length > 0 && (
@@ -215,10 +215,10 @@ function Recorrido({
           data-papel="desvio-indeterminado"
           role="status"
         >
-          <p className="text-[13px] font-bold leading-snug not-italic sin-recortar">
+          <p className="text-menor font-bold leading-snug not-italic sin-recortar">
             No hemos podido comprobar si esta línea está desviada
           </p>
-          <p className="mt-1 text-[11px] leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
+          <p className="mt-1 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
             Abajo va <strong>el recorrido oficial</strong>. Si hoy hay un desvío,{' '}
             <strong>no lo sabemos</strong> — y eso no es lo mismo que decir que no lo hay.
             ({veredicto.motivo})
@@ -229,7 +229,7 @@ function Recorrido({
       {/* ⚠️ Ci3 y Ci4 NO tienen trazado publicado. Se ETIQUETA, no se finge. */}
       {sinGeometria && (
         <p
-          className="mb-3 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+          className="mb-3 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
           data-papel="sin-geometria"
         >
           ⚠ Esta línea NO tiene trazado publicado en el GTFS oficial. Podemos decirte sus paradas y
@@ -238,11 +238,11 @@ function Recorrido({
       )}
 
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 className="text-[13px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
+        <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
           el recorrido · {aPintar.length} paradas
         </h2>
         <span
-          className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]"
+          className="text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]"
           data-papel="origen-recorrido"
           data-real={hayReal ? 'si' : 'no'}
         >
@@ -272,7 +272,7 @@ function Recorrido({
           por escrito que la parada estaba suprimida, su propia API seguía
           anunciando autobuses en ella). */}
       <p
-        className="mt-3 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+        className="mt-3 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
         data-papel="no-detectamos-supresiones"
       >
         ⚠ <strong>Una parada puede estar suprimida sin que se note aquí.</strong> Si el autobús pasa

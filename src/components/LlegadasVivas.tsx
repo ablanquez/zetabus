@@ -302,13 +302,13 @@ function FiltroDeLineas({
   return (
     <div className="mb-4" data-papel="filtro-lineas">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[16px] font-bold leading-snug sin-recortar">Líneas en esta parada</h2>
+        <h2 className="text-seccion font-bold leading-snug sin-recortar">Líneas en esta parada</h2>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onTodas}
             data-papel="filtro-todas"
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-[13px] font-semibold"
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
           >
             Todas
           </button>
@@ -316,7 +316,7 @@ function FiltroDeLineas({
             type="button"
             onClick={onNinguna}
             data-papel="filtro-ninguna"
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-[13px] font-semibold"
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3.5 text-menor font-semibold"
           >
             Ninguna
           </button>
@@ -336,7 +336,7 @@ function FiltroDeLineas({
               data-papel="chip-filtro"
               data-linea={etiqueta}
               data-apagada={off ? 'si' : 'no'}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl text-[17px] font-bold"
+              className="flex h-14 w-14 items-center justify-center rounded-2xl text-seccion font-bold"
               style={
                 off
                   ? {
@@ -348,7 +348,15 @@ function FiltroDeLineas({
                       border: '2px dashed var(--color-tinta-tenue)',
                       textDecoration: 'line-through',
                     }
-                  : { backgroundColor: color ?? '#94a3b8', color: '#fff', border: '2px solid transparent' }
+                  : color
+                    ? { backgroundColor: color, color: '#fff', border: '2px solid transparent' }
+                    : // Sin color de línea: el par de tokens (fondo + tinta). ⭐ Antes
+                      // era gris + texto BLANCO (~2:1, ilegible); el par lo arregla.
+                      {
+                        backgroundColor: 'var(--color-sin-color)',
+                        color: 'var(--color-sin-color-tinta)',
+                        border: '2px solid transparent',
+                      }
               }
             >
               {etiqueta}
@@ -382,7 +390,7 @@ function BarraDeEdad({
       data-edad={edad}
     >
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[13px] leading-snug sin-recortar">
+        <p className="text-menor leading-snug sin-recortar">
           {/* ⚠️ NUNCA "se actualiza cada 20 s". Eso es una PROMESA.
               Esto es un HECHO: cuándo se miró por última vez. */}
           <span className="text-[var(--color-tinta-tenue)]">Datos de Avanza </span>
@@ -396,7 +404,7 @@ function BarraDeEdad({
         <button
           type="button"
           onClick={onRefrescar}
-          className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 text-[13px] font-semibold"
+          className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg border border-[var(--color-borde)] bg-[var(--color-fondo)] px-3 text-menor font-semibold"
           aria-label="Actualizar ahora"
         >
           ↻
@@ -406,7 +414,7 @@ function BarraDeEdad({
       {/* ⭐ EL FALLO DEL REFRESCO **SE DICE**. Esto es lo que la referencia calla. */}
       {fallando && (
         <p
-          className="mt-2 text-[12px] font-semibold leading-snug text-[var(--color-alerta)] sin-recortar"
+          className="mt-2 text-nota font-semibold leading-snug text-[var(--color-alerta)] sin-recortar"
           data-papel="refresco-fallido"
           role="status"
         >
@@ -418,13 +426,13 @@ function BarraDeEdad({
       )}
 
       {!fallando && rancio && (
-        <p className="mt-2 text-[12px] leading-snug text-[var(--color-aviso)] sin-recortar" data-papel="rancio">
+        <p className="mt-2 text-nota leading-snug text-[var(--color-aviso)] sin-recortar" data-papel="rancio">
           ⚠ Este dato ya no es fresco. Un autobús se mueve mucho en {edad} segundos.
         </p>
       )}
 
       {origen === 'disco' && (
-        <p className="mt-1 text-[11px] text-[var(--color-tinta-tenue)]">
+        <p className="mt-1 text-nota text-[var(--color-tinta-tenue)]">
           servido de la caché compartida, no pedido de nuevo a Avanza
         </p>
       )}
@@ -501,11 +509,11 @@ function Cuerpo({
 
   return (
     <>
-      <h2 className="mb-3 text-[16px] font-bold leading-snug sin-recortar">Próximas llegadas</h2>
+      <h2 className="mb-3 text-seccion font-bold leading-snug sin-recortar">Próximas llegadas</h2>
 
       {ocultos > 0 && (
         <p
-          className="mb-2 text-[12px] font-semibold text-[var(--color-tinta-suave)] sin-recortar"
+          className="mb-2 text-nota font-semibold text-[var(--color-tinta-suave)] sin-recortar"
           data-papel="ocultos-por-filtro"
         >
           {ocultos === 1 ? 'Hay 1 autobús oculto' : `Hay ${ocultos} autobuses ocultos`} por el filtro
@@ -546,7 +554,7 @@ function Cuerpo({
       <NotaSinVerificar presentes={confianzasPresentes} />
 
       {/* ⚠️ EL CONTRATO DE DATOS. Ni una pantalla sin esto. */}
-      <p className="mt-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">
+      <p className="mt-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">
         Son los autobuses <strong>DETECTADOS</strong>, no todos. Avanza anuncia como mucho los dos
         siguientes de cada línea y sentido: puede haber un tercero circulando que no salga aquí.
       </p>
@@ -554,7 +562,7 @@ function Cuerpo({
       {avisos.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1" data-papel="avisos">
           {avisos.map((a, i) => (
-            <li key={i} className="text-[11px] leading-snug text-[var(--color-aviso)] sin-recortar">
+            <li key={i} className="text-nota leading-snug text-[var(--color-aviso)] sin-recortar">
               ⚠ {a}
             </li>
           ))}
@@ -639,13 +647,14 @@ function Llegada({
               el índice y en el itinerario. Si aquí se dedujeran otra vez, una N7
               podría salir de diurna en esta pantalla y de búho en la otra. */}
           <span
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[15px] font-bold"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-cuerpo font-bold"
             style={
               tonos
                 ? { backgroundColor: tonos.fondo, color: tonos.texto }
                 : // Avanza anuncia una línea que el GTFS no tiene. Se pinta gris y
-                  // SE ENSEÑA IGUAL: el autobús existe y va lleno de gente.
-                  { backgroundColor: '#94a3b8', color: '#1e293b' }
+                  // SE ENSEÑA IGUAL: el autobús existe y va lleno de gente. El par
+                  // de tokens, el mismo que el filtro y el marcador. Ver globals.css.
+                  { backgroundColor: 'var(--color-sin-color)', color: 'var(--color-sin-color-tinta)' }
             }
             data-papel="chip-linea"
             data-linea={l.linea ?? l.etiquetaCruda}
@@ -657,7 +666,7 @@ function Llegada({
           {/* ⚠️ AQUÍ NO SE TRUNCA. Ellos ponen `truncate` y "Vía Hispanidad N.º 73
               / Nuestra Señora De Los Ángeles" se queda en "Vía Hispanid…". Un dato
               recortado es un dato que miente. Preferimos que la fila crezca. */}
-          <p className="min-w-0 text-[15px] font-bold leading-snug sin-recortar" data-papel="destino">
+          <p className="min-w-0 text-cuerpo font-bold leading-snug sin-recortar" data-papel="destino">
             {l.destino}
           </p>
         </div>
@@ -665,11 +674,11 @@ function Llegada({
         {/* ⭐ LOS MINUTOS. LO PRIMERO, LO MÁS GRANDE, ARRIBA A LA DERECHA. */}
         <div className="flex shrink-0 flex-col items-end gap-0.5">
           <p
-            className={`text-[22px] font-black leading-none tabular-nums ${inminente ? 'es-inminente' : ''}`}
+            className={`text-dato font-black leading-none tabular-nums ${inminente ? 'es-inminente' : ''}`}
             data-papel="minutos"
           >
             {l.etaMinutos}
-            <span className="ml-0.5 text-[13px] font-bold">min</span>
+            <span className="ml-0.5 text-menor font-bold">min</span>
           </p>
           {/* ⚠️ EL TERCER CANAL: LA PALABRA. Ni el color ni el latido van solos.
               (La referencia la esconde con `motion-reduce:hidden` — es decir, a
@@ -680,7 +689,7 @@ function Llegada({
               // ⭐ B1 · EL ROJO ENTRA AQUÍ TAMBIÉN. Los tres canales: color +
               //    palabra + parpadeo. Y la palabra NO se esconde con
               //    `motion-reduce` — eso es lo único que NO se clona de ellos.
-              className="text-[10px] font-black uppercase tracking-wide text-[var(--color-alerta)]"
+              className="text-micro font-black uppercase tracking-wide text-[var(--color-alerta)]"
               data-papel="ya-llega"
             >
               ya llega
@@ -703,8 +712,8 @@ function Aviso({ titulo, cuerpo, papel }: { titulo: string; cuerpo: string; pape
       data-papel={papel}
       role="status"
     >
-      <p className="text-[15px] font-bold leading-snug sin-recortar">{titulo}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">{cuerpo}</p>
+      <p className="text-cuerpo font-bold leading-snug sin-recortar">{titulo}</p>
+      <p className="mt-1 text-menor leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">{cuerpo}</p>
     </div>
   );
 }

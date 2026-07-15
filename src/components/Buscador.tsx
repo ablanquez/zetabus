@@ -87,7 +87,7 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
 
   return (
     <div>
-      <label htmlFor="q" className="block text-[13px] font-bold text-[var(--color-tinta-suave)]">
+      <label htmlFor="q" className="block text-menor font-bold text-[var(--color-tinta-suave)]">
         Busca tu parada o tu línea
       </label>
       <input
@@ -98,15 +98,15 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
         value={q}
         onChange={(ev) => setQ(ev.target.value)}
         placeholder="744 · Plaza San Miguel · 35 · Ci3"
-        className="mt-1 min-h-[48px] w-full rounded-xl border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-[16px]"
+        className="mt-1 min-h-[48px] w-full rounded-xl border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-seccion"
         /* 16px: por debajo de eso, iOS hace zoom al enfocar y descoloca la página. */
       />
-      <p className="mt-1 text-[11px] text-[var(--color-tinta-tenue)] sin-recortar">
+      <p className="mt-1 text-nota text-[var(--color-tinta-tenue)] sin-recortar">
         El número del poste es el que está impreso en la marquesina.
       </p>
 
       {buscando && resultados.length === 0 && (
-        <p className="mt-4 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-[13px] sin-recortar">
+        <p className="mt-4 rounded-xl border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] p-3 text-menor sin-recortar">
           No encontramos nada con «{q}».
         </p>
       )}
@@ -117,7 +117,7 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
             <li key={`${e.tipo}-${e.clave}`} className={i > 0 ? 'border-t border-[var(--color-borde)]' : ''}>
               <Link href={e.href} className="flex min-h-[56px] items-center gap-3 px-4 py-3">
                 <span
-                  className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-1.5 text-[12px] font-black"
+                  className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-1.5 text-nota font-black"
                   style={
                     e.tipo === 'linea'
                       ? { backgroundColor: e.color, color: e.colorTexto }
@@ -129,8 +129,8 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
                 </span>
                 <span className="min-w-0">
                   {/* SIN TRUNCAR. Nunca. */}
-                  <span className="block text-[14px] font-semibold leading-snug sin-recortar">{e.titulo}</span>
-                  <span className="block text-[11px] text-[var(--color-tinta-tenue)] sin-recortar">{e.sub}</span>
+                  <span className="block text-cuerpo font-semibold leading-snug sin-recortar">{e.titulo}</span>
+                  <span className="block text-nota text-[var(--color-tinta-tenue)] sin-recortar">{e.sub}</span>
                 </span>
               </Link>
             </li>

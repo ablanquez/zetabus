@@ -43,12 +43,12 @@ export default function SobreLosDatos() {
       <div>
         <Link
           href="/"
-          className="inline-flex min-h-[44px] items-center text-[13px] font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[44px] items-center text-menor font-semibold underline underline-offset-2"
         >
           ← volver
         </Link>
-        <h1 className="mt-2 text-[24px] font-black leading-tight sin-recortar">Sobre los datos</h1>
-        <p className="mt-1 text-[14px] leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
+        <h1 className="mt-2 text-titulo font-black leading-tight sin-recortar">Sobre los datos</h1>
+        <p className="mt-1 text-cuerpo leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
           De dónde sale cada cosa. Y, sobre todo, <strong>qué no sabemos</strong>.
         </p>
       </div>
@@ -216,11 +216,11 @@ function Bloque({
       className={`rounded-2xl border bg-[var(--color-papel)] p-4 ${alerta ? 'es-sin-verificar' : 'border-[var(--color-borde)]'}`}
       data-papel="bloque-datos"
     >
-      <h2 className="text-[16px] font-black leading-snug sin-recortar">{titulo}</h2>
-      <p className="mt-0.5 text-[11px] font-semibold uppercase not-italic tracking-wide text-[var(--color-tinta-tenue)] sin-recortar">
+      <h2 className="text-seccion font-black leading-snug sin-recortar">{titulo}</h2>
+      <p className="mt-0.5 text-nota font-semibold uppercase not-italic tracking-wide text-[var(--color-tinta-tenue)] sin-recortar">
         {fuente}
       </p>
-      <div className="mt-2 text-[13px] leading-relaxed not-italic text-[var(--color-tinta-suave)] sin-recortar">
+      <div className="mt-2 text-menor leading-relaxed not-italic text-[var(--color-tinta-suave)] sin-recortar">
         {children}
       </div>
     </section>

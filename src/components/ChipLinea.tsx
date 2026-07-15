@@ -159,8 +159,8 @@ export function ChipLinea({
    *    no dicen lo mismo.
    */
   const clase = grande
-    ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-[16px] font-black'
-    : 'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-black';
+    ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-seccion font-black'
+    : 'flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-nota font-black';
 
   const contenido = (
     <span

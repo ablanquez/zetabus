@@ -37,7 +37,7 @@ export function AvisoFeed({ ahora = new Date() }: { ahora?: Date }) {
       data-estado={estado.kind}
       role="status"
     >
-      <p className="mx-auto max-w-2xl text-[12px] font-semibold leading-snug sin-recortar"
+      <p className="mx-auto max-w-2xl text-nota font-semibold leading-snug sin-recortar"
          style={{ color: caducado ? 'var(--color-alerta)' : 'var(--color-aviso)' }}>
         {caducado ? '⛔ ' : '⚠ '}
         {texto}

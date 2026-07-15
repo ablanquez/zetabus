@@ -23,6 +23,20 @@ import type { GtfsFiles } from './zip';
 const SOURCE = sourceId('gtfs-nap');
 
 /**
+ * ⚠️ EL COLOR DE UNA LÍNEA A LA QUE EL FEED NO LE DIO `route_color`. Con nombre,
+ * no un `#1F2937` suelto.
+ *
+ * ⚠️ Y NO es el mismo gris que `--color-sin-color` (el del render, para un bus
+ * cuya línea NO ESTÁ en el GTFS). Son DOS ESTADOS distintos y se decidió a
+ * propósito que se vean distintos (ver docs/AUDITORIA_SISTEMA_VISUAL.md §4.1):
+ *   · aquí: la línea EXISTE en el GTFS pero el feed olvidó su color → gris oscuro.
+ *   · allí: la línea no existe para nosotros → gris medio.
+ * Por eso vive aquí (build) y no en `@theme` (render): no comparten valor.
+ */
+const COLOR_LINEA_SIN_ROUTE_COLOR = '#1F2937';
+const COLOR_TEXTO_POR_DEFECTO = '#FFFFFF';
+
+/**
  * route_type → modo del núcleo.
  *
  * ⭐ ESTA TABLA ES TODO EL "SABER QUÉ ES UN BUS" QUE HAY EN EL PROYECTO.
@@ -194,8 +208,8 @@ export function loadGtfs(files: GtfsFiles, options: LoadOptions): GtfsDataset {
       mode,
       shortName: rget(r, 'route_short_name'),
       longName: hasColumn(routesT, 'route_long_name') ? rget(r, 'route_long_name') : '',
-      color: hex(hasColumn(routesT, 'route_color') ? rget(r, 'route_color') : '', '#1F2937'),
-      textColor: hex(hasColumn(routesT, 'route_text_color') ? rget(r, 'route_text_color') : '', '#FFFFFF'),
+      color: hex(hasColumn(routesT, 'route_color') ? rget(r, 'route_color') : '', COLOR_LINEA_SIN_ROUTE_COLOR),
+      textColor: hex(hasColumn(routesT, 'route_text_color') ? rget(r, 'route_text_color') : '', COLOR_TEXTO_POR_DEFECTO),
       operator: agencyName.get(agencyId) ?? agencyId,
       provenance: prov(feedUpdated, now),
     });

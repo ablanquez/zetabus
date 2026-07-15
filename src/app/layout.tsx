@@ -1,8 +1,22 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
 import { AvisoFeed } from '@/components/AvisoFeed';
+import { Marca } from '@/components/Marca';
 import { demoEncendido } from '@/engine/fingir';
+
+/**
+ * ⭐ INTER, SELF-HOSTED. `next/font/google` descarga la fuente EN EL BUILD y la
+ * sirve desde nuestro propio dominio: "no requests are sent to Google by the
+ * browser" (doc oficial de Next, `13-fonts.md`). Es lo que pidió Antonio —
+ * privacidad + sin depender de un CDN—, y es el modo Next, no un `<link>`.
+ *
+ * Inter es variable: no hace falta declarar pesos. Se expone como la variable
+ * CSS `--font-inter`, que `globals.css` cablea a `--font-sans` (el token de
+ * familia). Un solo sitio decide la tipografía de toda la app.
+ */
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'ZetaBus · el autobús de Zaragoza, ahora',
@@ -24,8 +38,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es">
-      <body className="min-h-dvh">
+    <html lang="es" className={inter.variable}>
+      {/* `font-sans` usa el token `--font-sans` (= Inter), fijado en globals.css. */}
+      <body className="min-h-dvh font-sans">
         {/* ⚠️ El feed caducado se anuncia ARRIBA DEL TODO, en todas las páginas.
             Afecta a los recorridos de TODA la app, no a una parada concreta. */}
         <AvisoFeed />
@@ -36,7 +51,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             es exactamente lo que este proyecto persigue. Así que se grita. */}
         {demoEncendido() && (
           <div
-            className="bg-[var(--color-alerta)] px-4 py-1.5 text-center text-[11px] font-black uppercase tracking-wide text-white"
+            className="bg-[var(--color-alerta)] px-4 py-1.5 text-center text-nota font-black uppercase tracking-wide text-white"
             data-papel="banda-demo"
           >
             ⚠ modo demo encendido · los datos pueden ser FINGIDOS
@@ -45,10 +60,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
         <header className="border-b border-[var(--color-borde)] bg-[var(--color-papel)]">
           <div className="mx-auto flex max-w-2xl items-baseline gap-2 px-4 py-2">
-            <Link href="/" className="text-[17px] font-black tracking-tight">
-              ZetaBus
-            </Link>
-            <span className="text-[11px] text-[var(--color-tinta-tenue)] sin-recortar">
+            <Marca />
+            <span className="text-nota text-[var(--color-tinta-tenue)] sin-recortar">
               el autobús de Zaragoza, ahora
             </span>
           </div>
@@ -83,7 +96,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           entero en `/sobre-los-datos`, a un toque.
         */}
         <footer
-          className="mx-auto max-w-2xl px-4 pb-8 text-[11px] leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar"
+          className="mx-auto max-w-2xl px-4 pb-8 text-nota leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar"
           data-papel="pie"
         >
           Recorridos: GTFS del{' '}

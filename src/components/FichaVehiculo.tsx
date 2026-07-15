@@ -67,7 +67,7 @@ const COMBUSTIBLE: Record<string, string> = {
  * de 403 (87%). Un símbolo que sale casi siempre no informa de nada — y encima
  * enseña a ignorar los símbolos, que es como se pierde el que sí importa.
  */
-const MARCAS: Record<Confidence, { simbolo: string; lectura: string } | null> = {
+export const MARCAS: Record<Confidence, { simbolo: string; lectura: string } | null> = {
   oficial: null,
   // ⚠️ LAS LECTURAS SON CORTAS, Y ESO TAMBIÉN SE APRENDIÓ ROMPIENDO ALGO.
   //
@@ -115,7 +115,7 @@ function Chip({
     <span
       data-papel={papel}
       className={
-        `inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] leading-[15px] sin-recortar ` +
+        `inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-nota leading-[15px] sin-recortar ` +
         (fuerte ? 'font-semibold ' : 'font-medium ') +
         (discontinuo
           ? 'border border-dashed border-[var(--color-tinta-tenue)] bg-[var(--color-fondo)] text-[var(--color-tinta-suave)]'
@@ -185,7 +185,7 @@ export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusPro
         <>
           <span
             aria-hidden="true"
-            className="shrink-0 text-[13px] font-black leading-none text-[var(--color-tinta-suave)]"
+            className="shrink-0 text-menor font-black leading-none text-[var(--color-tinta-suave)]"
             data-papel="marca-confianza"
             data-marca={perfil.confidence}
           >
@@ -277,11 +277,11 @@ function Detalle({ perfil }: { perfil: BusProfile }) {
 
   return (
     <details className="mt-1 pl-[52px]" data-papel="procedencia-detalle">
-      <summary className="inline-flex min-h-[24px] cursor-pointer items-center text-[11px] font-semibold text-[var(--color-tinta-tenue)] underline underline-offset-2">
+      <summary className="inline-flex min-h-[24px] cursor-pointer items-center text-nota font-semibold text-[var(--color-tinta-tenue)] underline underline-offset-2">
         De dónde sale cada dato
       </summary>
 
-      <dl className="mt-1 text-[11px] leading-snug text-[var(--color-tinta-tenue)]">
+      <dl className="mt-1 text-nota leading-snug text-[var(--color-tinta-tenue)]">
         {filas.map(([campo, p]) => (
           <div key={campo} className="flex flex-wrap gap-x-1.5">
             <dt className="font-semibold">{NOMBRE_DE_CAMPO[campo]}</dt>
@@ -301,7 +301,7 @@ function Detalle({ perfil }: { perfil: BusProfile }) {
       {[...citas.values()].map((c) => (
         <blockquote
           key={c.texto}
-          className="mt-1 border-l-2 border-[var(--color-borde)] pl-2 text-[11px] italic leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+          className="mt-1 border-l-2 border-[var(--color-borde)] pl-2 text-nota italic leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
           data-papel="como-lo-supe"
         >
           «{c.texto}»
@@ -333,7 +333,7 @@ export function NotaSinVerificar({ presentes }: { presentes: readonly Confidence
 
   return (
     <div
-      className="mt-2 space-y-1 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+      className="mt-2 space-y-1 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
       data-papel="nota-sin-verificar"
     >
       {hay('fuente_secundaria') && (

@@ -49,10 +49,10 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
 
   return (
     <section className="mt-6" data-papel="terminal">
-      <h2 className="text-[13px] font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
+      <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
         funcionamiento de terminal
       </h2>
-      <p className="mb-2 text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
+      <p className="mb-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
         Cuándo sale el <strong>primer</strong> y el <strong>último</strong> autobús{' '}
         <strong>desde la cabecera</strong>. No es la hora a la que pasa por tu parada.
       </p>
@@ -69,19 +69,19 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
               data-tipo={d.tipo}
             >
               <div className="min-w-0">
-                <p className="text-[14px] font-bold leading-snug sin-recortar">{NOMBRE[d.tipo]}</p>
-                <p className="text-[11px] leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
+                <p className="text-cuerpo font-bold leading-snug sin-recortar">{NOMBRE[d.tipo]}</p>
+                <p className="text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
                   {d.expediciones} salidas
                 </p>
               </div>
-              <p className="shrink-0 text-right text-[15px] font-black tabular-nums leading-snug sin-recortar">
+              <p className="shrink-0 text-right text-cuerpo font-black tabular-nums leading-snug sin-recortar">
                 <span data-papel="primera">{p.hora}</span>
                 <span className="mx-1 font-normal text-[var(--color-tinta-tenue)]">→</span>
                 <span data-papel="ultima">{u.hora}</span>
                 {/* ⚠️ SIN ESTO, "1:29" SIGNIFICARÍA DOCE HORAS ANTES. */}
                 {u.siguiente && (
                   <span
-                    className="ml-1 block text-[10px] font-bold uppercase tracking-wide text-[var(--color-aviso)]"
+                    className="ml-1 block text-micro font-bold uppercase tracking-wide text-[var(--color-aviso)]"
                     data-papel="dia-siguiente"
                   >
                     del día siguiente

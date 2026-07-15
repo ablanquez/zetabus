@@ -41,7 +41,14 @@ test.describe('⛔ RUTAS BASURA · ninguna revienta, ninguna enseña nada', () =
       for (const veneno of [
         'at object.', // el principio de un stack trace de Node
         'node_modules',
-        'f:\\', // una ruta absoluta de la máquina
+        // ⚠️ LA RUTA REAL DE LA MÁQUINA, NO un genérico "f:\". El genérico daba un
+        //    FALSO POSITIVO: el stream RSC de React Flight numera sus filas en hex
+        //    (`1:`, `2:`… `f:`, `10:`…), y la fila `f:` seguida de `\"` produce la
+        //    subcadena "f:\" sin que se filtre ninguna ruta. Cuando la carga del 404
+        //    creció (fuente Inter + <Marca>) llegó por primera vez a la fila 15 y el
+        //    test se puso rojo por el protocolo, no por un leak. Se comprueba lo que
+        //    de verdad importa: que NO aparezca el path absoluto de ESTE proyecto.
+        process.cwd().toLowerCase(),
         '/src/', // la estructura del proyecto
         'apikey',
         'econnrefused',

@@ -52,11 +52,11 @@ export default function Home() {
         if (delGrupo.length === 0) return null;
         return (
           <section key={g.clave} className="mt-7" data-papel="grupo-lineas" data-grupo={g.clave}>
-            <h2 className="mb-0.5 text-[13px] font-black uppercase tracking-wide">
+            <h2 className="mb-0.5 text-menor font-black uppercase tracking-wide">
               {g.titulo}{' '}
               <span className="font-bold text-[var(--color-tinta-tenue)]">({delGrupo.length})</span>
             </h2>
-            <p className="mb-2 text-[11px] text-[var(--color-tinta-tenue)] sin-recortar">{g.nota}</p>
+            <p className="mb-2 text-nota text-[var(--color-tinta-tenue)] sin-recortar">{g.nota}</p>
 
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {delGrupo.map((l) => (
@@ -73,7 +73,7 @@ export default function Home() {
                         allí. Es el fallo del "0C1" con otro traje. */}
                     <ChipLinea linea={l} papel="chip-indice" grande />
                     {/* SIN TRUNCAR. Si no cabe, baja de línea. */}
-                    <span className="text-[13px] font-semibold leading-snug sin-recortar">
+                    <span className="text-menor font-semibold leading-snug sin-recortar">
                       {l.longName}
                     </span>
                   </Link>

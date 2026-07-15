@@ -109,7 +109,7 @@ export function Itinerario({
               <Link
                 href={`/parada/${p.poste}${fingir ? `?fingir=${fingir}` : ''}`}
                 data-papel="ir-a-parada"
-                className="block min-h-[24px] text-[14px] font-bold leading-snug sin-recortar"
+                className="block min-h-[24px] text-cuerpo font-bold leading-snug sin-recortar"
                 aria-label={`Parada ${p.nombre}, poste ${p.poste}`}
               >
                 {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
@@ -168,21 +168,21 @@ export function Itinerario({
       {fuera && fuera.length > 0 && (
         <li className="mt-2" data-papel="paradas-fuera">
           <div className="es-rancio px-3 py-3">
-            <p className="text-[13px] font-black leading-snug text-[var(--color-aviso)] sin-recortar">
+            <p className="text-menor font-black leading-snug text-[var(--color-aviso)] sin-recortar">
               ⚠ Hoy el autobús NO pasa por{' '}
               {fuera.length === 1 ? 'esta parada' : `estas ${fuera.length} paradas`}
             </p>
-            <p className="mt-0.5 text-[11px] leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
+            <p className="mt-0.5 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
               Están en el recorrido oficial, pero el recorrido que Avanza publica{' '}
               <strong>para hoy</strong> no las incluye. No lo decimos nosotros: lo dice su ruta.
             </p>
             <ul className="mt-2 flex flex-col gap-1">
               {fuera.map((x) => (
-                <li key={x.poste} className="text-[13px] leading-snug not-italic sin-recortar">
+                <li key={x.poste} className="text-menor leading-snug not-italic sin-recortar">
                   <span className="line-through decoration-2" data-papel="parada-tachada">
                     {x.nombre}
                   </span>{' '}
-                  <span className="text-[11px] text-[var(--color-tinta-tenue)]">poste {x.poste}</span>
+                  <span className="text-nota text-[var(--color-tinta-tenue)]">poste {x.poste}</span>
                 </li>
               ))}
             </ul>

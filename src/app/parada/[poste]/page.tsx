@@ -73,13 +73,13 @@ export default async function ParadaPage({ params, searchParams }: Props) {
           href="/"
           data-papel="volver"
           aria-label="Volver a buscar otra parada o línea"
-          className="-ml-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-[22px] leading-none text-[var(--color-tinta-suave)]"
+          className="-ml-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-dato leading-none text-[var(--color-tinta-suave)]"
         >
           <span aria-hidden="true">←</span>
         </Link>
         <div className="min-w-0 flex-1">
           <h1
-            className="text-[20px] font-black leading-tight sin-recortar"
+            className="text-titulo font-black leading-tight sin-recortar"
             data-papel="nombre-parada"
             data-nombre-fuente={p.nombreProc.fuente}
           >
@@ -87,7 +87,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
                 "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
             {p.name}
           </h1>
-          <p className="text-[12px] text-[var(--color-tinta-tenue)]">
+          <p className="text-nota text-[var(--color-tinta-tenue)]">
             poste {numero}
             {fingir && (
               <span className="ml-2 font-bold text-[var(--color-alerta)]">· FINGIENDO «{fingir}»</span>
@@ -105,7 +105,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
                que montamos para la flota, aplicada al nombre de la parada. */}
         {p.nombreProc.fuente === 'gtfs-marcado' && (
           <p
-            className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-[11px] leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+            className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
             data-papel="nombre-sin-confirmar"
             role="note"
           >

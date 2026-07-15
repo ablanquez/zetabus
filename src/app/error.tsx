@@ -43,13 +43,13 @@ export default function Error({
   return (
     <div className="flex flex-col gap-5 py-6" data-papel="500">
       <div>
-        <p className="text-[13px] font-black uppercase tracking-wide text-[var(--color-alerta)]">
+        <p className="text-menor font-black uppercase tracking-wide text-[var(--color-alerta)]">
           Algo se ha roto
         </p>
-        <h1 className="mt-1 text-[24px] font-black leading-tight sin-recortar">
+        <h1 className="mt-1 text-titulo font-black leading-tight sin-recortar">
           No hemos podido pintar esta pantalla
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
+        <p className="mt-2 text-cuerpo leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
           El fallo es <strong>nuestro</strong>, no tuyo, y no tiene nada que ver con los autobuses:
           puede que estén llegando con toda normalidad. Vuelve a intentarlo.
         </p>
@@ -59,14 +59,14 @@ export default function Error({
         <button
           type="button"
           onClick={reset}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--color-tinta)] px-4 text-[15px] font-bold text-[var(--color-papel)]"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--color-tinta)] px-4 text-cuerpo font-bold text-[var(--color-papel)]"
           data-papel="reintentar"
         >
           Volver a intentarlo
         </button>
         <Link
           href="/"
-          className="inline-flex min-h-[44px] items-center justify-center text-[13px] font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[44px] items-center justify-center text-menor font-semibold underline underline-offset-2"
         >
           Ver todas las líneas
         </Link>
@@ -75,7 +75,7 @@ export default function Error({
       {/* El identificador, para poder cruzarlo con el log del servidor si alguien
           nos lo cuenta. No dice NADA del fallo: es un hash. */}
       {error.digest && (
-        <p className="text-[11px] text-[var(--color-tinta-tenue)]" data-papel="digest">
+        <p className="text-nota text-[var(--color-tinta-tenue)]" data-papel="digest">
           Referencia del fallo: <code className="font-mono">{error.digest}</code>
         </p>
       )}

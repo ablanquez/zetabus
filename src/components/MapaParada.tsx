@@ -194,7 +194,9 @@ const ICONO_PARADA = L.divIcon({
   className: 'zb-parada',
   html:
     '<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true" style="display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45))">' +
-    '<path d="M14 35C14 35 25 22.2 25 14A11 11 0 1 0 3 14c0 8.2 11 21 11 21Z" fill="#0F172A" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
+    // ⭐ El pin lee `--color-tinta`, NO un `#0F172A` congelado: si la tinta de marca
+    //    cambia, el pin se entera. La var cae por herencia dentro del SVG del divIcon.
+    '<path d="M14 35C14 35 25 22.2 25 14A11 11 0 1 0 3 14c0 8.2 11 21 11 21Z" fill="var(--color-tinta)" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
     '<circle cx="14" cy="13.6" r="4.4" fill="#fff"/>' +
     '</svg>',
   iconSize: [28, 36], // WCAG 2.5.8: de sobra sobre los 24×24.
@@ -206,7 +208,9 @@ const ICONO_PARADA = L.divIcon({
 /** Los tonos del marcador salen del MISMO sitio que los del chip de la lista. */
 function tonosDeBus(l: LlegadaViva): { fondo: string; texto: string } {
   const suya = l.lineaId ? linea(l.lineaId) : null;
-  if (!suya) return { fondo: '#94A3B8', texto: '#1E293B' };
+  // Sin color de línea (un bus cuya línea no está en el GTFS): el par de tokens,
+  // el mismo que usan el chip de la lista y el de filtro. Ver globals.css.
+  if (!suya) return { fondo: 'var(--color-sin-color)', texto: 'var(--color-sin-color-tinta)' };
   const t = tonosDeChip(suya);
   return { fondo: t.fondo, texto: t.texto };
 }
@@ -404,7 +408,7 @@ export function MapaParada({
   if (!parada && conPosicion.length === 0) {
     return (
       <div
-        className="es-sin-datos mb-4 px-3 py-3 text-[12px] leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+        className="es-sin-datos mb-4 px-3 py-3 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
         data-papel="mapa-sin-datos"
       >
         No podemos dibujar el mapa: no tenemos la posición de esta parada ni la de ningún autobús.
@@ -492,7 +496,7 @@ export function MapaParada({
             type="button"
             onClick={verTodos}
             data-papel="ver-todos"
-            className="absolute right-2 top-2 z-[500] min-h-[44px] rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-[13px] font-bold shadow-md"
+            className="absolute right-2 top-2 z-[500] min-h-[44px] rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 text-menor font-bold shadow-md"
           >
             Ver todos
           </button>
@@ -503,7 +507,7 @@ export function MapaParada({
           cuando la lista tiene 5 miente por omisión, y nadie lo nota. */}
       {sinPosicion > 0 && (
         <p
-          className="mt-1.5 text-[11px] leading-snug text-[var(--color-aviso)] sin-recortar"
+          className="mt-1.5 text-nota leading-snug text-[var(--color-aviso)] sin-recortar"
           data-papel="sin-posicion"
         >
           ⚠ {sinPosicion === 1 ? 'Un autobús no sale' : `${sinPosicion} autobuses no salen`} en el mapa:
@@ -513,7 +517,7 @@ export function MapaParada({
 
       {seleccionadoSinMapa && (
         <p
-          className="mt-1.5 text-[11px] font-semibold leading-snug text-[var(--color-aviso)] sin-recortar"
+          className="mt-1.5 text-nota font-semibold leading-snug text-[var(--color-aviso)] sin-recortar"
           data-papel="seleccionado-sin-mapa"
           role="status"
         >
@@ -531,7 +535,7 @@ export function MapaParada({
           texto ocupa su ancho y el botón se queda al lado, sin robar protagonismo. */}
       {!enfocado && fuera > 0 && (
         <div className="mt-1.5 flex items-center gap-2" data-papel="fuera-del-encuadre">
-          <p className="min-w-0 flex-1 text-[11px] leading-snug text-[var(--color-tinta-suave)] sin-recortar">
+          <p className="min-w-0 flex-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar">
             {fuera === 1
               ? 'Hay 1 autobús fuera del encuadre: está más lejos.'
               : `Hay ${fuera} autobuses fuera del encuadre: están más lejos.`}
@@ -543,7 +547,7 @@ export function MapaParada({
             // ⚠️ 44 px de alto NO son negociables (WCAG 2.5.8 pide 24, y un pulgar
             //    en la calle pide más). Lo que se baja es el PESO VISUAL, no el
             //    tamaño del objetivo: es lo contrario de lo que suele hacerse.
-            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-[12px] font-semibold text-[var(--color-tinta-suave)]"
+            className="min-h-[44px] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-nota font-semibold text-[var(--color-tinta-suave)]"
           >
             Encuadrarlos
           </button>

@@ -27,13 +27,13 @@ export default function NoEncontrado() {
   return (
     <div className="flex flex-col gap-5 py-6" data-papel="404">
       <div>
-        <p className="text-[13px] font-black uppercase tracking-wide text-[var(--color-tinta-tenue)]">
+        <p className="text-menor font-black uppercase tracking-wide text-[var(--color-tinta-tenue)]">
           Error 404
         </p>
-        <h1 className="mt-1 text-[24px] font-black leading-tight sin-recortar">
+        <h1 className="mt-1 text-titulo font-black leading-tight sin-recortar">
           Aquí no hay nada
         </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
+        <p className="mt-2 text-cuerpo leading-relaxed text-[var(--color-tinta-suave)] sin-recortar">
           Esa parada, esa línea o esa dirección <strong>no existen</strong> en la red de Zaragoza.
           Puede que el número esté mal escrito, o que la parada ya no esté en servicio.
         </p>
@@ -42,14 +42,14 @@ export default function NoEncontrado() {
       <div className="flex flex-col gap-2">
         <Link
           href="/"
-          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--color-tinta)] px-4 text-[15px] font-bold text-[var(--color-papel)]"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[var(--color-tinta)] px-4 text-cuerpo font-bold text-[var(--color-papel)]"
           data-papel="volver-al-indice"
         >
           Ver todas las líneas
         </Link>
         <Link
           href="/sobre-los-datos"
-          className="inline-flex min-h-[44px] items-center justify-center text-[13px] font-semibold underline underline-offset-2"
+          className="inline-flex min-h-[44px] items-center justify-center text-menor font-semibold underline underline-offset-2"
         >
           Sobre los datos
         </Link>
