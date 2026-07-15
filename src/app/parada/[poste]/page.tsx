@@ -61,22 +61,38 @@ export default async function ParadaPage({ params, searchParams }: Props) {
     <div>
       {/* Cabecera COMPACTA a propósito: cada píxel que gasta aquí es un píxel
           que le quita al primer tiempo de llegada. */}
-      <div className="mb-3">
-        <h1
-          className="text-[20px] font-black leading-tight sin-recortar"
-          data-papel="nombre-parada"
-          data-nombre-fuente={p.nombreProc.fuente}
+      {/* ⭐ B13 · LA FLECHA DE VOLVER, ARRIBA, COMO LA REFERENCIA ("← Plaza San
+          Miguel"). Y por eso DESAPARECE el "← buscar otra parada o línea" del pie:
+          era la MISMA función dos veces, y una app que se usa con prisa no repite el
+          mismo enlace arriba y abajo. Flecha a la izquierda, columna (nombre + poste
+          + aviso) a la derecha, alineada junta. La flecha comparte fila con el nombre
+          para no gastar altura que le quita al primer tiempo de llegada (la obsesión
+          de esta pantalla — ver el test de flotación). Objetivo táctil ≥ 24 px. */}
+      <div className="mb-3 flex gap-1.5">
+        <Link
+          href="/"
+          data-papel="volver"
+          aria-label="Volver a buscar otra parada o línea"
+          className="-ml-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-[22px] leading-none text-[var(--color-tinta-suave)]"
         >
-          {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
-              "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
-          {p.name}
-        </h1>
-        <p className="text-[12px] text-[var(--color-tinta-tenue)]">
-          poste {numero}
-          {fingir && (
-            <span className="ml-2 font-bold text-[var(--color-alerta)]">· FINGIENDO «{fingir}»</span>
-          )}
-        </p>
+          <span aria-hidden="true">←</span>
+        </Link>
+        <div className="min-w-0 flex-1">
+          <h1
+            className="text-[20px] font-black leading-tight sin-recortar"
+            data-papel="nombre-parada"
+            data-nombre-fuente={p.nombreProc.fuente}
+          >
+            {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
+                "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
+            {p.name}
+          </h1>
+          <p className="text-[12px] text-[var(--color-tinta-tenue)]">
+            poste {numero}
+            {fingir && (
+              <span className="ml-2 font-bold text-[var(--color-alerta)]">· FINGIENDO «{fingir}»</span>
+            )}
+          </p>
 
         {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA.
             Avanza no da el nombre de las paradas suprimidas por un desvío (los 4 de
@@ -100,21 +116,18 @@ export default async function ParadaPage({ params, searchParams }: Props) {
             </span>
           </p>
         )}
+        </div>
       </div>
 
       {/* ⭐ AQUÍ. LO PRIMERO. */}
       <LlegadasVivas inicial={inicial} poste={numero} fingir={fingir} />
 
-      {/* ⚠️ 44 px de alto MÍNIMO. El instrumento lo cazó: este enlace medía
-          152×16 px, por debajo del mínimo táctil de 24 (WCAG 2.5.8). En una app
-          que se usa CON EL PULGAR, DE PIE, EN LA CALLE, un blanco de 16 píxeles
-          de alto no se acierta. Y no lo vi leyendo el código: lo midió Chromium. */}
-      <Link
-        href="/"
-        className="mt-6 inline-flex min-h-[44px] items-center text-[13px] text-[var(--color-tinta-suave)] underline underline-offset-2"
-      >
-        ← buscar otra parada o línea
-      </Link>
+      {/* ⭐ B13 · AQUÍ ESTABA "← buscar otra parada o línea", Y SE HA IDO ARRIBA.
+          Era la misma función que la flecha de la cabecera: volver a la búsqueda. Dos
+          enlaces al mismo sitio, uno arriba y otro abajo, en una pantalla que se mira
+          con prisa, es ruido. La flecha de la referencia gana; el enlace del pie se
+          retira. (No se pierde nada: el logo "ZetaBus" de la cabecera también va a la
+          portada, y ahora además está la flecha.) */}
     </div>
   );
 }
