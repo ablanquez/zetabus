@@ -158,39 +158,30 @@ describe('⏳ EL DOMINGO, EL FESTIVO Y LAS CUATRO DE LA MAÑANA', () => {
     // y ZetaBus enseña menos autobuses. Sin explicar por qué, porque no lo sabe.
     //
     // ═══════════════════════════════════════════════════════════════════════
-    // ⚠️ ESTE TEST HA TENIDO QUE AFINARSE, Y LA DISTINCIÓN ES LA LECCIÓN.
+    // ⚠️ LA REGLA SE EXPRESA DONDE IMPORTA: EL CAMINO VIVO.
     //
-    // Antes buscaba las palabras "festivo|laborable|calendar_dates" en todo
-    // `src/engine` y exigía CERO. Con C5 (funcionamiento de terminal) esas
-    // palabras aparecen... en `topologia.ts`, que solo **LEE UN DATO HORNEADO**.
+    //   ⛔ PROHIBIDO: que el motor VIVO decida algo según el calendario
+    //      ("hoy es festivo, así que estos silencios son normales"). Ahí vive la
+    //      familia de bugs: el 12 de octubre en lunes, el horario de verano, el
+    //      festivo local que nadie metió en la lista.
     //
-    // Y no son lo mismo, ni de lejos:
-    //
-    //   ⛔ PROHIBIDO: que el motor VIVO decida algo según el calendario.
-    //      ("hoy es festivo, así que estos silencios son normales")
-    //      Ahí es donde vive la familia de bugs: el 12 de octubre en lunes, el
-    //      horario de verano, el festivo local que nadie metió en la lista.
-    //
-    //   ✅ PERMITIDO: enseñar un dato ESTÁTICO del GTFS, calculado en el build,
-    //      que dice a qué hora sale el primer autobús. Eso no decide nada: se
-    //      pinta. Y si el feed cambia, cambia en el build, no en caliente.
-    //
-    // ⇒ La regla se vuelve a expresar donde importa: EL CAMINO VIVO. Los tres
-    //   ficheros por los que pasa una petición no pueden mirar el calendario.
+    //   ✅ El "funcionamiento de terminal" (primeras/últimas) ya NO lo calcula
+    //      ZetaBus: lo trae day-true de la tabla web de Avanza (`horario.ts`).
+    //      No decidimos el día; lo dice la fuente. `horario.ts` recibe la fecha
+    //      como CLAVE DE CACHÉ, no la usa para razonar nada.
     // ═══════════════════════════════════════════════════════════════════════
-    const CAMINO_VIVO = ['src/engine/llegadas.ts', 'src/engine/desvios.ts', 'src/engine/motor.ts'];
+    const CAMINO_VIVO = [
+      'src/engine/llegadas.ts',
+      'src/engine/desvios.ts',
+      'src/engine/motor.ts',
+      'src/engine/horario.ts',
+    ];
     for (const f of CAMINO_VIVO) {
       const codigo = sinComentarios(readFileSync(f, 'utf8'));
       expect(codigo, `${f} NO puede decidir nada según el calendario`).not.toMatch(
         /calendar|festivo|laborable|esFestivo|diaDeLaSemana|getDay\(/i,
       );
     }
-
-    // Y el dato de terminal es de SOLO LECTURA: se hornea en el build y aquí solo
-    // se sirve. Si alguien lo calculara en runtime, esto se pone rojo.
-    const topo = sinComentarios(readFileSync('src/engine/topologia.ts', 'utf8'));
-    expect(topo, 'el terminal se LEE del artefacto, no se calcula').not.toMatch(/getDay\(|new Date\(/);
-    expect(topo).toMatch(/A\.terminales/);
   });
 
   it('a las 4 a.m. todos los postes están mudos, y eso NO es una anomalía', () => {

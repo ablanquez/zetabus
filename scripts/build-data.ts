@@ -12,7 +12,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { feedStatus, feedWarning, type Mode, type Stop } from '@/core';
 import { loadGtfs, readGtfsZip } from '@/sources/gtfs-nap';
-import { calcularTerminales } from '@/sources/gtfs-nap/terminal';
 import { loadFleet } from '@/sources/flota-zetabus/adapter';
 import { aplicarNombres } from '@/sources/avanza/aplicar-nombres';
 
@@ -94,34 +93,10 @@ if (status.kind === 'CADUCADO') {
 }
 console.log('');
 
-// ── ⭐ C5 · FUNCIONAMIENTO DE TERMINAL ───────────────────────────────────────
-//    Primeras y últimas salidas por tipo de día. Sale de stop_times + trips +
-//    calendar_dates, y NO de clasificar `service_id` por su nombre — ver la
-//    cabecera de `terminal.ts`: hay dos convenciones distintas en el feed y una
-//    de ellas hace circular "domingos y festivos" un martes (porque un festivo
-//    CAE en martes). Se evalúa una fecha concreta, que es leer y no inferir.
-const term = calcularTerminales(
-  files['calendar_dates.txt'],
-  files['trips.txt'],
-  files['stop_times.txt'],
-  now,
-);
-console.log('FUNCIONAMIENTO DE TERMINAL (C5)\n');
-console.log(`  fechas representativas tomadas DEL PROPIO FEED:`);
-for (const [k, v] of Object.entries(term.fechas)) {
-  console.log(`     ${k.padEnd(10)} ${v ?? '⚠️ el feed no cubre ningún día de este tipo'}`);
-}
-// ⭐ CONTADOR DE CONTROL (L1): los trips con salida de cabecera tienen que ser
-//    TODOS los trips. Si faltara alguno, es que stop_times no cubre un viaje — y
-//    entonces la "primera salida" de esa línea podría estar mal y no lo sabríamos.
-if (term.control.tripsConSalida !== term.control.tripsLeidos) {
-  throw new Error(
-    `stop_times no cubre todos los trips: ${term.control.tripsConSalida} de ${term.control.tripsLeidos}. ` +
-      'La primera/última salida de alguna línea saldría mal Y NADIE SE ENTERARÍA.',
-  );
-}
-console.log(`  ✅ ${term.control.tripsConSalida} / ${term.control.tripsLeidos}  trips con salida de cabecera`);
-console.log(`  ✅ ${term.terminales.length} sentidos con horario de terminal\n`);
+// ⭐ C5 · FUNCIONAMIENTO DE TERMINAL: ya NO se hornea del GTFS. Las primeras y
+//    últimas salidas se traen de la tabla web de Avanza en tiempo de vista (day-
+//    true) — ver `engine/horario.ts`. El motor de horarios derivado quedó
+//    aparcado (`docs/MOTOR-HORARIOS.md`).
 
 // ── Artefacto ───────────────────────────────────────────────────────────────
 mkdirSync(OUT, { recursive: true });
@@ -133,8 +108,6 @@ const artifact = {
   lines: gtfs.lines,
   directions: gtfs.directions,
   posteByStopId: gtfs.posteByStopId,
-  terminales: term.terminales,
-  fechasDeReferencia: term.fechas,
   // La flota viaja HORNEADA en el artefacto, no se lee de `data/` en runtime.
   // En producción el bundle no lleva `data/`, y un `readFileSync` que funciona
   // en `next dev` y falla en el servidor es la peor clase de bug: el que solo

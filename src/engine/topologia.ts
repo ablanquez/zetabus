@@ -40,11 +40,8 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
-import type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia } from '@/sources/gtfs-nap/terminal';
 import type { SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
-
-export type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia };
 
 interface Artefacto {
   readonly generatedAt: string;
@@ -57,8 +54,6 @@ interface Artefacto {
   }[];
   readonly posteByStopId: Record<string, number>;
   readonly flota: Record<string, BusProfile>;
-  readonly terminales?: TerminalDeSentido[];
-  readonly fechasDeReferencia?: Record<TipoDeDia, string | null>;
 }
 
 const A = artefacto as unknown as Artefacto;
@@ -306,25 +301,8 @@ export function grupoDe(l: Line): GrupoLinea {
  */
 export const esBuho = (l: Line): boolean => grupoDe(l) === 'buho';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  ⭐ C5 · FUNCIONAMIENTO DE TERMINAL. Primeras y últimas salidas por tipo de día.
-//
-//  ⚠️ SE COMPROBÓ QUE EL DATO EXISTE ANTES DE PROMETERLO: sale de stop_times
-//  (870.718 filas) + trips + calendar_dates, horneado en el build. Y NO de
-//  clasificar `service_id` por su nombre: el feed tiene dos convenciones y una de
-//  ellas hace circular "domingos y festivos" un martes — porque un festivo CAE en
-//  martes. Se evalúa una fecha concreta del propio feed. Ver `terminal.ts`.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const terminalPorSentido = new Map<string, TerminalDeSentido>();
-for (const t of A.terminales ?? []) {
-  terminalPorSentido.set(`${t.lineId}|${t.directionId}`, t);
-}
-
-/** `null` = ese sentido no tiene horario en el feed. Se calla, no se inventa. */
-export function terminalDe(id: LineId, directionId: 0 | 1): TerminalDeSentido | null {
-  return terminalPorSentido.get(`${String(id)}|${directionId}`) ?? null;
-}
-
-/** Las fechas del feed que se han usado como día representativo. Son auditables. */
-export const fechasDeReferencia = A.fechasDeReferencia ?? { laborable: null, sabado: null, festivo: null };
+// ⭐ El "funcionamiento de terminal" (primeras/últimas salidas) YA NO sale del
+//    GTFS: se trae de la tabla web de Avanza en tiempo de vista. Ver
+//    `engine/horario.ts` y `components/Terminal.tsx`. El aparato de cabeceras
+//    modales y el motor de horarios derivado quedaron aparcados
+//    (`docs/MOTOR-HORARIOS.md`).

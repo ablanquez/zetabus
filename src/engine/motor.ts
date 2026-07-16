@@ -16,9 +16,14 @@ import type { Dependencias } from './llegadas';
 
 /** Gitignorado (`/.cache/`). Es dato ajeno cacheado: NO entra al repo público. */
 const DIR_CACHE = process.env.ZETABUS_CACHE_DIR ?? '.cache/vivo';
+/** El horario web cambia como mucho una vez al día → su propia caché, TTL largo. */
+const DIR_HORARIO = process.env.ZETABUS_HORARIO_DIR ?? '.cache/horario';
+const TTL_HORARIO_MS = 24 * 60 * 60_000;
 
 let cache: CacheDosPisos | null = null;
 const cachesFingidas = new Map<string, CacheDosPisos>();
+let cacheHorario: CacheDosPisos | null = null;
+const cachesHorarioFingidas = new Map<string, CacheDosPisos>();
 
 /**
  * @param transporte Solo se pasa para FINGIR (modo demo). Por defecto, el real.
@@ -73,6 +78,31 @@ export function motor(
   }
   cache ??= new CacheDosPisos({ dir: DIR_CACHE });
   return { cache, transporte };
+}
+
+/**
+ * La caché del HORARIO WEB: mismo patrón que `motor()` pero con TTL de un día. Se
+ * separa porque el horario no es el vivo: no tiene sentido pedirlo cada 15 s.
+ */
+export function motorHorario(
+  transporte: Transporte = transporteReal,
+  fingiendo: string | null = null,
+): { cache: CacheDosPisos; transporte: Transporte } {
+  if (fingiendo) {
+    let c = cachesHorarioFingidas.get(fingiendo);
+    if (!c) {
+      c = new CacheDosPisos({
+        dir: `${DIR_CACHE}/_demo/${fingiendo}/horario`,
+        ttlMs: TTL_HORARIO_MS,
+        // Sin Avanza no hay techo que respetar (igual que en `motor()`).
+        limitador: new Limitador(`${DIR_CACHE}/_demo/${fingiendo}/horario/_techo`, 1e9, 1e9),
+      });
+      cachesHorarioFingidas.set(fingiendo, c);
+    }
+    return { cache: c, transporte };
+  }
+  cacheHorario ??= new CacheDosPisos({ dir: DIR_HORARIO, ttlMs: TTL_HORARIO_MS });
+  return { cache: cacheHorario, transporte };
 }
 
 export { contador };

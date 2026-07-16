@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo, terminalDe } from '@/engine/topologia';
+import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo } from '@/engine/topologia';
 import { destinoDeSentido, rumboDe, type Rumbo } from '@/engine/rumbo';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
-import { motor, contador } from '@/engine/motor';
+import { motor, motorHorario, contador } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
+import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Terminal } from '@/components/Terminal';
@@ -89,6 +90,12 @@ export default async function LineaPage({ params, searchParams }: Props) {
       ? (desvios.datos.find((d) => d.directionId === activo.directionId)?.veredicto ?? null)
       : null;
 
+  // ⭐ LA TABLA DE HORARIOS DE HOY, de la web de Avanza. Una petición más, pero
+  //    cacheada UN DÍA (el horario no es el vivo). La clave lleva la fecha para
+  //    renovarse al cambiar de día. Ver `engine/horario.ts`.
+  const hoy = new Date().toISOString().slice(0, 10);
+  const horario = await horarioDeLinea(l.shortName, activo.directionId, hoy, motorHorario(transporteDe(fingir), fingir));
+
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
@@ -168,7 +175,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
       />
 
       {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. */}
-      <Terminal terminal={terminalDe(id, activo.directionId)} />
+      <Terminal horario={horario} />
     </div>
   );
 }
