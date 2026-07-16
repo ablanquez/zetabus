@@ -97,7 +97,7 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
   // 24:00 y para arriba. La misma regla que el test unidad del render.
   const HORA_IMPOSIBLE = /\b(2[4-9]|[3-9]\d):[0-5]\d\b/;
 
-  test('la 35 cruza medianoche: pinta "1:29⁺¹", NUNCA "25:29" ni la línea "del día siguiente"', async ({ page }, info) => {
+  test('la 35 cruza medianoche: pinta "1:29" limpio (por su sitio), NUNCA "25:29"', async ({ page }, info) => {
     await page.goto('/linea/35', { waitUntil: 'networkidle' });
     const terminal = page.locator('[data-papel="terminal"]');
     await expect(terminal, 'la 35 tiene bloque de terminal').toBeVisible();
@@ -106,10 +106,10 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
     const texto = (await terminal.innerText());
     console.log(`\n  [${info.project.name}] terminal de la 35:\n${texto.split('\n').map((l) => '     ' + l).join('\n')}`);
 
-    // ⭐ El superíndice ⁺¹ SE QUEDA (ata la 1:29 a la madrugada), pero la LÍNEA
-    //    explicativa "del día siguiente" se ha ido: con "0:31⁺¹" ya se entiende.
-    await expect(terminal.locator('[data-papel="marca-dia-siguiente"]').first(), 'el ⁺¹ tiene que estar').toBeVisible();
-    expect(texto, 'ya no está la línea "del día siguiente"').not.toMatch(/del día siguiente/i);
+    // ⭐ HORAS LIMPIAS: nada cuelga de la cifra (ni "del día siguiente" ni el ⁺¹).
+    //    La 1:29 se entiende por su SITIO: va en las últimas, tras las 23:xx.
+    expect(await terminal.locator('[data-papel="marca-dia-siguiente"]').count(), 'ya no hay ⁺¹').toBe(0);
+    expect(texto, 'ni la línea "del día siguiente"').not.toMatch(/del día siguiente/i);
 
     // ⛔ Y en NINGUNA parte del bloque puede leerse una hora ≥ 24.
     expect(texto, 'en pantalla no puede salir "25:29" ni ninguna hora ≥ 24').not.toMatch(HORA_IMPOSIBLE);
@@ -135,145 +135,99 @@ test.describe('⭐ C10 · EL FUNCIONAMIENTO DE TERMINAL, EN LA PANTALLA REAL', (
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ SALIDAS PARCIALES · asterisco + nota de CABECERA, nunca el punto intermedio', () => {
-  /** Comprueba: toda salida con asterisco es parcial y toda parcial lo lleva. */
+test.describe('⭐ SALIDAS PARCIALES · índices 1/2 con leyenda FIJA, horas limpias', () => {
+  /**
+   * Para un día: toda salida parcial lleva índice(s) y toda completa ninguno; y el
+   * índice casa con la razón —noViene→1, noLlega→2—.
+   */
   async function cuadraElDia(dia: Locator) {
     const salidas = dia.locator('[data-papel="salida"]');
     let parciales = 0;
     let normales = 0;
     for (let i = 0; i < (await salidas.count()); i++) {
       const s = salidas.nth(i);
-      const parcial = (await s.getAttribute('data-noviene')) !== null || (await s.getAttribute('data-nollega')) !== null;
-      const ast = await s.locator('[data-papel="asterisco-parcial"]').count();
-      if (parcial) {
-        expect(ast, 'una salida parcial lleva UN asterisco').toBe(1);
+      const noViene = (await s.getAttribute('data-noviene')) !== null;
+      const noLlega = (await s.getAttribute('data-nollega')) !== null;
+      const indices = await s.locator('[data-papel="indice-parcial"]').evaluateAll((els) =>
+        els.map((e) => e.getAttribute('data-indice')),
+      );
+      if (noViene || noLlega) {
         parciales++;
+        // el 1 aparece sii noViene; el 2 sii noLlega.
+        expect(indices.includes('1'), 'índice 1 ⇔ no viene').toBe(noViene);
+        expect(indices.includes('2'), 'índice 2 ⇔ no llega').toBe(noLlega);
       } else {
-        expect(ast, 'una salida completa NO lleva asterisco').toBe(0);
+        expect(indices.length, 'una salida completa no lleva índice').toBe(0);
         normales++;
       }
     }
     return { parciales, normales };
   }
 
-  test('la 35 →Seminario: 00:11*/00:51* con "* No llega a Seminario", NUNCA el Coso', async ({ page }, info) => {
+  test('la 35 →Seminario: parciales con índices y leyenda FIJA al pie', async ({ page }, info) => {
     await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-papel="titulo-linea"]'), 'es →Seminario').toContainText(/Seminario/);
     const terminal = page.locator('[data-papel="terminal"]');
     await terminal.scrollIntoViewIfNeeded();
     const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
     const { parciales, normales } = await cuadraElDia(lab);
     console.log(`\n  [${info.project.name}] 35 →Seminario laborable · parciales ${parciales} · normales ${normales}`);
     expect(parciales, 'hay parciales').toBeGreaterThan(0);
-    expect(normales, 'y también salidas normales').toBeGreaterThan(0);
+    expect(normales, 'y también completas, sin índice').toBeGreaterThan(0);
 
-    // Las 00:11 (1451) y 00:51 (1491) acaban a mitad → asterisco.
-    for (const min of [1451, 1491]) {
-      const s = lab.locator(`[data-papel="salida"][data-minuto="${min}"]`);
-      expect(await s.getAttribute('data-nollega'), `la ${min} no llega`).toBe('si');
-      expect(await s.locator('[data-papel="asterisco-parcial"]').count(), 'con asterisco').toBe(1);
-    }
-    // La 00:27 (1467) llega a Seminario → SIN asterisco.
-    const completa = lab.locator('[data-papel="salida"][data-minuto="1467"]');
-    expect(await completa.getAttribute('data-nollega'), 'la 0:27 llega').toBeNull();
-    expect(await completa.locator('[data-papel="asterisco-parcial"]').count(), 'sin asterisco').toBe(0);
+    // 0:11 (1451) acaba a mitad → índice 2; 6:40 (400) empieza a mitad → índice 1.
+    expect(await lab.locator('[data-papel="salida"][data-minuto="1451"] [data-papel="indice-parcial"]').innerText()).toBe('2');
+    expect(await lab.locator('[data-papel="salida"][data-minuto="400"] [data-papel="indice-parcial"]').innerText()).toBe('1');
+    // 0:27 (1467) completa → sin índice.
+    expect(await lab.locator('[data-papel="salida"][data-minuto="1467"] [data-papel="indice-parcial"]').count()).toBe(0);
 
-    // ⭐ LA NOTA nombra la CABECERA (Seminario), NUNCA el punto intermedio (Coso).
-    const notas = terminal.locator('[data-papel="notas-parciales"]');
-    await expect(notas).toBeVisible();
-    await expect(notas.locator('[data-tipo="no-llega"]')).toHaveText(/^\*\s*No llega a Seminario$/);
-    const texto = await notas.innerText();
-    console.log(`     notas: ${JSON.stringify(texto.split('\n'))}`);
-    expect(texto, '⛔ jamás se nombra el Coso (punto teórico, con obras miente)').not.toMatch(/Coso/i);
+    // ⭐ LEYENDA FIJA: no nombra ni cabecera ni punto intermedio.
+    const leyenda = terminal.locator('[data-papel="leyenda-parciales"]');
+    await expect(leyenda.locator('[data-indice="1"]')).toHaveText(/^1\s*·\s*No viene desde principio de línea$/);
+    await expect(leyenda.locator('[data-indice="2"]')).toHaveText(/^2\s*·\s*No llega a final de línea$/);
+    expect(await leyenda.innerText(), '⛔ ni Coso, ni Seminario, ni Parque Goya').not.toMatch(/Coso|Seminario|Parque Goya/i);
 
-    await terminal.screenshot({ path: `capturas/zetabus/ASTERISCO-35-Seminario-${info.project.name}.png` });
+    // ⭐ HORAS LIMPIAS: nada cuelga de la cifra (ni ⁺¹ ni asterisco).
+    expect(await terminal.locator('[data-papel="marca-dia-siguiente"]').count(), 'sin ⁺¹').toBe(0);
+    expect(await terminal.locator('[data-papel="asterisco-parcial"]').count(), 'sin asterisco').toBe(0);
+
+    await terminal.screenshot({ path: `capturas/zetabus/INDICES-35-Seminario-${info.project.name}.png` });
   });
 
-  test('la 35 →Parque Goya: madrugada con "* No viene desde Seminario" (el ORIGEN, tu regla)', async ({ page }, info) => {
+  test('la 35 →Parque Goya: madrugadas con índice 1 y su leyenda fija', async ({ page }, info) => {
     await page.goto('/linea/35?sentido=1', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-papel="titulo-linea"]'), 'es →Parque Goya').toContainText(/Parque Goya/);
     const terminal = page.locator('[data-papel="terminal"]');
     await terminal.scrollIntoViewIfNeeded();
     const lab = terminal.locator('[data-papel="dia-terminal"][data-tipo="laborable"]');
     await cuadraElDia(lab);
-    // 00:31 (1471) y 01:09 (1509) empiezan a mitad → asterisco + "no viene".
-    for (const min of [1471, 1509]) {
-      const s = lab.locator(`[data-papel="salida"][data-minuto="${min}"]`);
-      expect(await s.getAttribute('data-noviene'), `la ${min} no viene de cabecera`).toBe('si');
-      expect(await s.locator('[data-papel="asterisco-parcial"]').count()).toBe(1);
-    }
-    // La nota nombra el ORIGEN del sentido = Seminario (NO "Parque Goya", que es el destino).
-    const notas = terminal.locator('[data-papel="notas-parciales"]');
-    await expect(notas.locator('[data-tipo="no-viene"]')).toHaveText(/^\*\s*No viene desde Seminario$/);
-    expect(await notas.innerText(), 'nunca el punto intermedio (Coso)').not.toMatch(/Coso/i);
-    await terminal.screenshot({ path: `capturas/zetabus/ASTERISCO-35-ParqueGoya-${info.project.name}.png` });
+    // 0:31 (1471) empieza a mitad → índice 1.
+    expect(await lab.locator('[data-papel="salida"][data-minuto="1471"] [data-papel="indice-parcial"]').innerText()).toBe('1');
+    await expect(terminal.locator('[data-papel="leyenda-parcial"][data-indice="1"]')).toHaveText(/No viene desde principio de línea/);
+    await terminal.screenshot({ path: `capturas/zetabus/INDICES-35-ParqueGoya-${info.project.name}.png` });
   });
 
-  test('⚠️ una línea SIN parciales (la 22): ni asterisco ni nota', async ({ page }, info) => {
+  test('una salida con las DOS cosas → "1 2" (la 23 dir0 tiene alguna)', async ({ page }, info) => {
+    await page.goto('/linea/23?sentido=0', { waitUntil: 'networkidle' });
+    const terminal = page.locator('[data-papel="terminal"]');
+    await expect(terminal).toBeVisible();
+    await terminal.scrollIntoViewIfNeeded();
+    // Se comprueban los tres días por si la "ambas" cae en sábado/festivo.
+    const ambas = terminal.locator('[data-papel="salida"][data-noviene="si"][data-nollega="si"]');
+    const n = await ambas.count();
+    console.log(`\n  [${info.project.name}] 23 dir0 · salidas con 1 Y 2: ${n}`);
+    expect(n, 'la 23 dir0 tiene alguna salida que empieza Y acaba a mitad').toBeGreaterThan(0);
+    const indices = await ambas.first().locator('[data-papel="indice-parcial"]').evaluateAll((els) => els.map((e) => e.textContent));
+    expect(indices, 'lleva el 1 y el 2').toEqual(['1', '2']);
+  });
+
+  test('⚠️ una línea SIN parciales (la 22): ni índices ni leyenda', async ({ page }, info) => {
     await page.goto('/linea/22', { waitUntil: 'networkidle' });
     const terminal = page.locator('[data-papel="terminal"]');
     await expect(terminal).toBeVisible();
     await terminal.scrollIntoViewIfNeeded();
-    console.log(`\n  [${info.project.name}] la 22 · asteriscos ${await terminal.locator('[data-papel="asterisco-parcial"]').count()} · notas ${await terminal.locator('[data-papel="notas-parciales"]').count()}`);
-    expect(await terminal.locator('[data-papel="asterisco-parcial"]').count(), 'sin asterisco').toBe(0);
-    expect(await terminal.locator('[data-papel="notas-parciales"]').count(), 'sin nota').toBe(0);
+    console.log(`\n  [${info.project.name}] la 22 · índices ${await terminal.locator('[data-papel="indice-parcial"]').count()} · leyenda ${await terminal.locator('[data-papel="leyenda-parciales"]').count()}`);
+    expect(await terminal.locator('[data-papel="indice-parcial"]').count(), 'sin índices').toBe(0);
+    expect(await terminal.locator('[data-papel="leyenda-parciales"]').count(), 'sin leyenda').toBe(0);
     expect(await terminal.locator('[data-papel="salida"]').count(), 'pero sí hay salidas').toBeGreaterThan(0);
-  });
-
-  test('una tabla con LAS DOS notas (→Seminario tiene "no llega" y "no viene")', async ({ page }) => {
-    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
-    const notas = page.locator('[data-papel="terminal"] [data-papel="notas-parciales"]');
-    // La 6:40 empieza a mitad (no viene) y las 0:11/0:51 acaban a mitad (no llega): dos notas.
-    await expect(notas.locator('[data-tipo="no-llega"]')).toHaveText(/No llega a Seminario/);
-    await expect(notas.locator('[data-tipo="no-viene"]')).toHaveText(/No viene desde Parque Goya/);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ EL ⁺¹ (madrugada) Y EL * (asterisco) SE DISTINGUEN, también en gris', () => {
-  const salida = (page: Page, min: number) =>
-    page.locator(`[data-papel="dia-terminal"][data-tipo="laborable"] [data-papel="salida"][data-minuto="${min}"]`);
-
-  test('los tres casos: solo ⁺¹, solo *, y ⁺¹+* sin ambigüedad', async ({ page }) => {
-    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
-    await page.locator('[data-papel="terminal"]').scrollIntoViewIfNeeded();
-    // 0:27 (1467): solo madrugada (llega, completa).
-    const soloMad = salida(page, 1467);
-    expect(await soloMad.locator('[data-papel="marca-dia-siguiente"]').count(), '0:27 madrugada').toBe(1);
-    expect(await soloMad.locator('[data-papel="asterisco-parcial"]').count(), '0:27 sin asterisco').toBe(0);
-    // 6:40 (400): solo asterisco (empieza a mitad, no es madrugada).
-    const soloAst = salida(page, 400);
-    expect(await soloAst.locator('[data-papel="marca-dia-siguiente"]').count(), '6:40 no es madrugada').toBe(0);
-    expect(await soloAst.locator('[data-papel="asterisco-parcial"]').count(), '6:40 asterisco').toBe(1);
-    // 0:11 (1451): los dos.
-    const ambos = salida(page, 1451);
-    expect(await ambos.locator('[data-papel="marca-dia-siguiente"]').count()).toBe(1);
-    expect(await ambos.locator('[data-papel="asterisco-parcial"]').count()).toBe(1);
-  });
-
-  test('separados por HUECO, PESO y forma ("+1" vs "*"): aguantan el gris', async ({ page }, info) => {
-    await page.goto('/linea/35?sentido=0', { waitUntil: 'networkidle' });
-    await page.locator('[data-papel="terminal"]').scrollIntoViewIfNeeded();
-    const s = salida(page, 1451); // 0:11⁺¹*
-    const plus = s.locator('[data-papel="marca-dia-siguiente"]');
-    const ast = s.locator('[data-papel="asterisco-parcial"]');
-    const bp = (await plus.boundingBox())!;
-    const ba = (await ast.boundingBox())!;
-    const hueco = ba.x - (bp.x + bp.width);
-    const pPlus = await plus.evaluate((n) => Number(getComputedStyle(n).fontWeight));
-    const pAst = await ast.evaluate((n) => Number(getComputedStyle(n).fontWeight));
-    console.log(`\n  [${info.project.name}] 0:11 · hueco ⁺¹→* = ${hueco.toFixed(1)}px · peso ${pPlus} vs ${pAst} · "${(await plus.innerText()).trim()}" vs "${(await ast.innerText()).trim()}"`);
-    expect(hueco, 'hay aire entre ⁺¹ y *').toBeGreaterThan(3);
-    expect(pPlus, 'el ⁺¹ pesa más que el *').toBeGreaterThan(pAst);
-    expect((await plus.innerText()).trim(), 'el ⁺¹ lleva "+"').toContain('+');
-    expect((await ast.innerText()).trim(), 'el * es un asterisco').toBe('*');
-    // ⭐ En GRIS los tres canales siguen (geometría y peso, no color).
-    await page.addStyleTag({ content: 'html { filter: grayscale(1) !important; }' });
-    await page.waitForTimeout(120);
-    const bp2 = (await plus.boundingBox())!;
-    const ba2 = (await ast.boundingBox())!;
-    expect(ba2.x - (bp2.x + bp2.width), 'el hueco sigue en gris').toBeGreaterThan(3);
-    expect(await plus.evaluate((n) => Number(getComputedStyle(n).fontWeight)), 'el peso sigue en gris').toBeGreaterThan(pAst);
   });
 });
 

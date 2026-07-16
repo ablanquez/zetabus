@@ -78,12 +78,6 @@ export default async function LineaPage({ params, searchParams }: Props) {
     const s = rumboSents.find((x) => x.directionId === dir);
     return s ? destinoDeSentido(s, rumboSents) : '';
   };
-  // La cabecera de origen y destino del sentido, para las notas de salidas parciales
-  // del bloque de terminal ("No viene desde …" / "No llega a …"). Es el MISMO rumbo
-  // del título: se sabe con certeza, y no nombra el punto intermedio (que con obras
-  // miente). Un bucle no tiene origen≠destino: se usa su nombre para ambos.
-  const cabeceraOrigen = rumbo.tipo === 'trayecto' ? rumbo.origen : rumbo.tipo === 'circular' ? rumbo.por : rumbo.texto;
-  const cabeceraDestino = rumbo.tipo === 'trayecto' ? rumbo.destino : rumbo.tipo === 'circular' ? rumbo.por : rumbo.texto;
 
   // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
   const antes = contador.cuenta.peticiones;
@@ -173,13 +167,8 @@ export default async function LineaPage({ params, searchParams }: Props) {
         peticiones={peticiones}
       />
 
-      {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. Las notas
-          de salidas parciales nombran la cabecera del sentido, no el punto intermedio. */}
-      <Terminal
-        terminal={terminalDe(id, activo.directionId)}
-        cabeceraOrigen={cabeceraOrigen}
-        cabeceraDestino={cabeceraDestino}
-      />
+      {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. */}
+      <Terminal terminal={terminalDe(id, activo.directionId)} />
     </div>
   );
 }

@@ -8,19 +8,18 @@ import type { SalidaDeTerminal, TerminalDeSentido, TipoDeDia } from '@/engine/to
  * `calendar_dates.txt`, horneado en el build. Ver `sources/gtfs-nap/terminal.ts`.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * ⚠️⚠️ LAS HORAS DE MADRUGADA. El GTFS escribe `25:29:00` para "la 1:29 del día
- * siguiente". Se pinta **1:29** con un superíndice **⁺¹**; con "0:31" ya se entiende
- * que es de madrugada, y el ⁺¹ mantiene el orden sin una línea que lo explique.
+ * ⚠️ LAS HORAS DE MADRUGADA. El GTFS escribe `25:29:00` para "la 1:29 del día
+ * siguiente". Se pinta **1:29** a secas: va en las ÚLTIMAS, tras las 23:xx (se
+ * ordena por MINUTO GTFS, no por reloj), así que su sitio ya dice que es de
+ * madrugada. Nunca se pinta "25:29" —eso lo vigila un test—.
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * ⭐ LAS SALIDAS QUE NO RECORREN LA LÍNEA ENTERA: un ASTERISCO y una nota que nombra
- * LA CABECERA DEL SENTIDO —nunca el punto intermedio—. La cabecera se sabe SIEMPRE
- * con certeza (es la que titula la lista); el punto intermedio, con obras, MIENTE
- * (ver docs/AUDITORIA_TERMINALES_EN_OBRAS.md).
- *   · acaba a mitad → "* No llega a {destino}"
- *   · empieza a mitad → "* No viene desde {origen}"
- * Solo se dice que NO cubre el trayecto entero: al usuario le basta eso para saber
- * que no le sirve. Se marca la excepción; una tabla sin parciales no lleva nada.
+ * ⭐ LAS SALIDAS QUE NO RECORREN LA LÍNEA ENTERA: dos índices, y solo dos, con
+ * TEXTO FIJO al pie —cero cálculo de nombres, cero posibilidad de equivocarse—:
+ *   1 · No viene desde principio de línea   (su primera parada ≠ cabecera de origen)
+ *   2 · No llega a final de línea           (su última parada ≠ cabecera de destino)
+ * Una salida puede llevar 1 y 2. Se marca la excepción; una tabla sin parciales no
+ * lleva ni índices ni leyenda.
  *
  * ⚠️ Y ESTO NO ES UN HORARIO. Es la PRIMERA y la ÚLTIMA salida. No decimos a qué
  * hora pasa por tu parada: para eso habría que sumar el recorrido teórico —el que
@@ -44,12 +43,11 @@ export function reloj(minutos: number): { hora: string; siguiente: boolean } {
 }
 
 /**
- * Una salida, pintada. `1529` → "1:29" con ⁺¹ si cruza medianoche, y un asterisco
- * si no recorre la línea entera (la nota está al pie, es de sentido).
+ * Una salida, pintada. La hora a secas, y un índice si no recorre la línea entera:
+ * 1 (no viene del principio) y/o 2 (no llega al final). El texto está al pie.
  */
 function Salida({ salida }: { salida: SalidaDeTerminal }) {
   const r = reloj(salida.minuto);
-  const parcial = salida.noViene || salida.noLlega;
   return (
     <span
       className="tabular-nums"
@@ -59,22 +57,23 @@ function Salida({ salida }: { salida: SalidaDeTerminal }) {
       data-noviene={salida.noViene ? 'si' : undefined}
       data-nollega={salida.noLlega ? 'si' : undefined}
     >
-      {/* ⭐ LA HORA Y SU ⁺¹ (madrugada) forman UN bloque que no se parte: el ⁺¹ va
-          PEGADO a la cifra —modifica la hora—, en ÁMBAR, negrita y CON "+". */}
-      <span className="whitespace-nowrap">
-        {r.hora}
-        {r.siguiente && (
-          <sup className="font-bold text-[var(--color-aviso)]" data-papel="marca-dia-siguiente">
-            +1
-          </sup>
-        )}
-      </span>
-      {/* ⭐ EL ASTERISCO va APARTE, con AIRE: gris, ligero y SIN "+". No se confunde
-          con el ⁺¹ —el "*", el peso (fino) y el hueco los separan, y esos tres
-          sobreviven a la escala de grises, que aquí el color solo nunca basta—. */}
-      {parcial && (
-        <sup className="ml-1.5 font-normal text-[var(--color-tinta-tenue)]" data-papel="asterisco-parcial">
-          *
+      {r.hora}
+      {salida.noViene && (
+        <sup
+          className="ml-1 font-normal text-[var(--color-tinta-tenue)]"
+          data-papel="indice-parcial"
+          data-indice="1"
+        >
+          1
+        </sup>
+      )}
+      {salida.noLlega && (
+        <sup
+          className={`font-normal text-[var(--color-tinta-tenue)] ${salida.noViene ? 'ml-0.5' : 'ml-1'}`}
+          data-papel="indice-parcial"
+          data-indice="2"
+        >
+          2
         </sup>
       )}
     </span>
@@ -100,26 +99,16 @@ function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly Salid
   );
 }
 
-export function Terminal({
-  terminal,
-  cabeceraOrigen,
-  cabeceraDestino,
-}: {
-  terminal: TerminalDeSentido | null;
-  /** El ORIGEN del sentido (de dónde viene la línea). Para la nota "No viene desde …". */
-  cabeceraOrigen?: string;
-  /** El DESTINO del sentido (adónde va). Para la nota "No llega a …". */
-  cabeceraDestino?: string;
-}) {
+export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
   // ⚠️ Si el feed no da horario para este sentido, NO SE INVENTA: no se pinta nada.
   //    Una tabla vacía con guiones parece un fallo; no ponerla, no.
   if (!terminal || terminal.dias.length === 0) return null;
 
-  // ¿Qué tipos de nota hacen falta? Se mira TODA la tabla (los tres días): la
-  // cabecera es la misma, así que la nota va UNA vez al pie, no por salida ni por día.
+  // ¿Qué índices hacen falta? Se mira TODA la tabla (los tres días): la leyenda va
+  // UNA vez al pie, solo con los índices que de verdad aparecen. La excepción.
   const todas = terminal.dias.flatMap((d) => [...d.primeras, ...d.ultimas]);
-  const hayNoLlega = todas.some((s) => s.noLlega);
   const hayNoViene = todas.some((s) => s.noViene);
+  const hayNoLlega = todas.some((s) => s.noLlega);
 
   return (
     <section className="mt-6" data-papel="terminal">
@@ -168,29 +157,30 @@ export function Terminal({
         })}
       </div>
 
-      {/* ⭐ LAS NOTAS, UNA VEZ AL PIE. Nombran la CABECERA del sentido, nunca el
-          punto intermedio (que con obras miente). Solo las que aparecen en la tabla. */}
-      {(hayNoLlega || hayNoViene) && (
-        <div className="mt-2 flex flex-col gap-0.5" data-papel="notas-parciales">
-          {hayNoLlega && cabeceraDestino && (
-            <p
+      {/* ⭐ LA LEYENDA, UNA VEZ AL PIE, con FRASES FIJAS. No se calcula ninguna
+          cabecera ni se nombra el punto: cero posibilidad de equivocarse. Solo los
+          índices que aparecen en la tabla. */}
+      {(hayNoViene || hayNoLlega) && (
+        <ul className="mt-2 flex flex-col gap-0.5" data-papel="leyenda-parciales">
+          {hayNoViene && (
+            <li
               className="text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
-              data-papel="nota-parcial"
-              data-tipo="no-llega"
+              data-papel="leyenda-parcial"
+              data-indice="1"
             >
-              <span className="font-bold">*</span> No llega a {cabeceraDestino}
-            </p>
+              <span className="font-bold">1</span> · No viene desde principio de línea
+            </li>
           )}
-          {hayNoViene && cabeceraOrigen && (
-            <p
+          {hayNoLlega && (
+            <li
               className="text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
-              data-papel="nota-parcial"
-              data-tipo="no-viene"
+              data-papel="leyenda-parcial"
+              data-indice="2"
             >
-              <span className="font-bold">*</span> No viene desde {cabeceraOrigen}
-            </p>
+              <span className="font-bold">2</span> · No llega a final de línea
+            </li>
           )}
-        </div>
+        </ul>
       )}
     </section>
   );

@@ -284,10 +284,10 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
     const enPantalla = html.replace(/<[^>]+>/g, ' ');
 
     expect(enPantalla, 'la última salida se pinta como 1:29').toContain('1:29');
-    // Ya NO hay línea "del día siguiente": con "1:29⁺¹" se entiende. Pero el ⁺¹
-    // (la marca de madrugada) SE QUEDA, que es lo que ata la 1:29 a la madrugada.
+    // ⭐ HORAS LIMPIAS: ya no cuelga nada de la cifra (ni "del día siguiente" ni el
+    //    ⁺¹). La 1:29 se entiende por su SITIO: va en las últimas, tras las 23:xx.
     expect(enPantalla, 'ya no está la línea explicativa').not.toContain('del día siguiente');
-    expect(html, 'pero el superíndice ⁺¹ se queda').toContain('data-papel="marca-dia-siguiente"');
+    expect(html, 'y no queda el superíndice ⁺¹').not.toContain('data-papel="marca-dia-siguiente"');
     expect(enPantalla, '⛔ en pantalla NO puede salir una hora ≥ 24').not.toMatch(HORA_IMPOSIBLE);
 
     // ⭐ EN SU SITIO: la 1:29 va en las ÚLTIMAS (tras 23:00), NO entre las primeras.
