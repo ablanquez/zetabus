@@ -275,9 +275,9 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
       dias: [{
         tipo: 'laborable', primera: 300, ultima: 1529, expediciones: 122,
         // 5:00 5:15 5:30 5:45 6:00 · todas normales (sin marca)
-        primeras: [300, 315, 330, 345, 360].map((minuto) => ({ minuto, origen: null, destino: null })),
+        primeras: [300, 315, 330, 345, 360].map((minuto) => ({ minuto, noViene: false, noLlega: false })),
         // 23:00 23:30 0:00+1 0:49+1 1:29+1
-        ultimas: [1380, 1410, 1440, 1489, 1529].map((minuto) => ({ minuto, origen: null, destino: null })),
+        ultimas: [1380, 1410, 1440, 1489, 1529].map((minuto) => ({ minuto, noViene: false, noLlega: false })),
       }],
     };
     const html = renderToStaticMarkup(createElement(Terminal, { terminal: t35 }));
@@ -312,8 +312,8 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
       lineId: 'y', directionId: 0,
       dias: [{
         tipo: 'sabado', primera: 60, ultima: 360, expediciones: 6,
-        primeras: [60, 120, 180, 240, 300].map((minuto) => ({ minuto, origen: null, destino: null })), // 1:00…5:00
-        ultimas: [120, 180, 240, 300, 360].map((minuto) => ({ minuto, origen: null, destino: null })),  // 2:00…6:00
+        primeras: [60, 120, 180, 240, 300].map((minuto) => ({ minuto, noViene: false, noLlega: false })), // 1:00…5:00
+        ultimas: [120, 180, 240, 300, 360].map((minuto) => ({ minuto, noViene: false, noLlega: false })),  // 2:00…6:00
       }],
     };
     const html = renderToStaticMarkup(createElement(Terminal, { terminal: buho }));
@@ -326,24 +326,30 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
   });
 
   it('⚠️ BACKTEST · festivo y laborable son FILAS DISTINTAS, no la misma copiada', () => {
-    // La 21 circula los tres tipos de día, y NO con el mismo servicio: el domingo
-    // hay menos expediciones. Si la pantalla pintara la misma fila para los tres,
-    // mentiría sobre el domingo. No se afirma un número (lo dice el feed): se
-    // afirma que DIFIEREN.
-    const l21 = lineas().find((x) => x.shortName === '21')!;
-    const t = terminalDe(idLinea(String(l21.id)), 0);
-    expect(t, 'la 21 tiene horario de terminal en el feed').not.toBeNull();
-    if (!t) return;
-    const lab = t.dias.find((d) => d.tipo === 'laborable');
-    const fes = t.dias.find((d) => d.tipo === 'festivo');
-    expect(lab, 'hay fila de laborable').toBeDefined();
-    expect(fes, 'hay fila de festivo').toBeDefined();
-    if (!lab || !fes) return;
-    console.log(`\n  21 · LAB ${reloj(lab.primera).hora}→${reloj(lab.ultima).hora} (${lab.expediciones} exp)  ` +
-      `FES ${reloj(fes.primera).hora}→${reloj(fes.ultima).hora} (${fes.expediciones} exp)`);
-    const difieren =
-      lab.primera !== fes.primera || lab.ultima !== fes.ultima || lab.expediciones !== fes.expediciones;
-    expect(difieren, 'laborable y festivo no pueden salir idénticos aquí').toBe(true);
+    // Si la pantalla pintara la misma fila para los tres tipos de día, mentiría
+    // sobre el domingo (que tiene menos expediciones). Se busca CUALQUIER sentido
+    // que circule laborable Y festivo y se comprueba que DIFIEREN. No se cablea una
+    // línea: qué línea tiene los tres días depende de la fecha representativa del
+    // feed —la 21, p.ej., no circula el 16/07—, así que se busca, no se supone.
+    let conAmbos = '';
+    let difiere = '';
+    for (const l of lineas()) {
+      for (const dir of [0, 1] as const) {
+        const t = terminalDe(idLinea(String(l.id)), dir);
+        const lab = t?.dias.find((d) => d.tipo === 'laborable');
+        const fes = t?.dias.find((d) => d.tipo === 'festivo');
+        if (!lab || !fes) continue;
+        conAmbos ||= `${l.shortName}/dir${dir}`;
+        if (lab.primera !== fes.primera || lab.ultima !== fes.ultima || lab.expediciones !== fes.expediciones) {
+          difiere = `${l.shortName} dir${dir} · LAB ${reloj(lab.primera).hora}→${reloj(lab.ultima).hora} (${lab.expediciones}) ≠ FES ${reloj(fes.primera).hora}→${reloj(fes.ultima).hora} (${fes.expediciones})`;
+          break;
+        }
+      }
+      if (difiere) break;
+    }
+    console.log(`\n  ${difiere || '(ninguno difiere)'}`);
+    expect(conAmbos, 'hay al menos un sentido con laborable Y festivo').not.toBe('');
+    expect(difiere, 'y en alguno, laborable y festivo DIFIEREN (no es copia)').not.toBe('');
   });
 
   it('⭐ BACKTEST · una CIRCULAR de bucle (Ci3) empieza y acaba en la MISMA parada', () => {

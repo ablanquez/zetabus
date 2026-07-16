@@ -42,33 +42,36 @@
 export type TipoDeDia = 'laborable' | 'sabado' | 'festivo';
 
 /**
- * Una salida concreta: su minuto GTFS y, si no recorre la línea entera, DÓNDE
- * empieza o dónde acaba de verdad.
+ * Una salida concreta: su minuto GTFS y si NO recorre la línea entera (empieza o
+ * acaba a mitad).
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * ⚠️ NO TODA SALIDA RECORRE LA LÍNEA ENTERA. Antonio lo cotejó con Avanza:
- *   · unas EMPIEZAN a mitad (refuerzos de punta que arrancan en "Coso n.º 126",
- *     no en la cabecera) → quien espera ANTES no las coge;
- *   · otras ACABAN a mitad (de madrugada, que se quedan en "Coso" y no llegan a
- *     Seminario) → quien espera DESPUÉS no las coge.
+ *   · unas EMPIEZAN a mitad (refuerzos de punta) → quien espera ANTES no las coge;
+ *   · otras ACABAN a mitad (de madrugada) → quien espera DESPUÉS no las coge.
  *
- * ⭐ Y AVANZA NO LAS ESCONDE: enseña el Desde/Hasta de cada salida y ya está. Es
- * más simple y más honesto que filtrarlas: la 0:11 no desaparece, se ve con "acaba
- * en Coso" y el usuario entiende que no llega. El GTFS lo sabe: la primera y la
- * última parada de cada trip son sus `stop_times` de secuencia mínima y máxima.
+ * ⭐ Y NO SE NOMBRA EL PUNTO INTERMEDIO, SOLO SI ES PARCIAL. El punto intermedio
+ * (dónde empieza/acaba de verdad) sale de la primera/última parada del TRIP del
+ * GTFS —el recorrido TEÓRICO—, y con obras ESO MIENTE: el GTFS dice "Coso n.º 126"
+ * pero el Coso está cortado y el bus arranca en Paseo de la Mina. No hay forma
+ * fiable de derivar el punto real (ver docs/AUDITORIA_TERMINALES_EN_OBRAS.md).
  *
- * ⚠️ SE MARCA LA EXCEPCIÓN, NO LA NORMA: `origen`/`destino` son `null` cuando la
- * salida empieza/acaba en la cabecera de ese extremo (lo normal). Solo las que se
- * salen de lo normal llevan nombre.
+ * ⇒ Por eso aquí solo se guarda un BOOLEANO por extremo. La pantalla lo marca con
+ * un asterisco y nombra LA CABECERA DEL SENTIDO —que SIEMPRE se sabe con certeza,
+ * es la que da nombre a la lista—, nunca el punto intermedio: "No llega a Seminario"
+ * / "No viene desde Parque Goya".
+ *
+ * ⚠️ DETECTAR es fiable (primera parada ≠ cabecera de origen, o última ≠ cabecera
+ * de destino). NOMBRAR el punto NO lo era. Se marca la excepción, no la norma.
  * ═══════════════════════════════════════════════════════════════════════════
  */
 export interface SalidaDeTerminal {
   /** Minutos desde medianoche. Puede pasar de 1440 (madrugada del día siguiente). */
   readonly minuto: number;
-  /** Nombre de dónde EMPIEZA, SOLO si no es la cabecera de origen. `null` = normal. */
-  readonly origen: string | null;
-  /** Nombre de dónde ACABA, SOLO si no es la cabecera de destino. `null` = normal. */
-  readonly destino: string | null;
+  /** EMPIEZA a mitad: su primera parada NO es la cabecera de origen del sentido. */
+  readonly noViene: boolean;
+  /** ACABA a mitad: su última parada NO es la cabecera de destino del sentido. */
+  readonly noLlega: boolean;
 }
 
 export interface SalidasDeTerminal {
@@ -79,8 +82,8 @@ export interface SalidasDeTerminal {
   /** Cuántas salidas hay ese día. Da idea de la frecuencia sin prometer un horario. */
   readonly expediciones: number;
   /**
-   * ⭐ LAS 5 PRIMERAS Y LAS 5 ÚLTIMAS SALIDAS, en MINUTOS GTFS, con dónde empieza y
-   *    acaba cada una. NO se filtra ninguna: se enseñan y se marcan (como Avanza).
+   * ⭐ LAS 5 PRIMERAS Y LAS 5 ÚLTIMAS SALIDAS, en MINUTOS GTFS, marcando si cada una
+   *    empieza/acaba a mitad. NO se filtra ninguna: se enseñan y se marcan (Avanza).
    *
    * Es una PRUEBA DE FUENTE: un rango ("5:59 → 23:33") no se puede cotejar; una
    * salida concreta SÍ —quien coge el bus verifica con los ojos si el GTFS es fiel
@@ -141,12 +144,6 @@ export function calcularTerminales(
   stopTimesTxt: string,
   /** Desde qué fecha se buscan los días representativos. Inyectable para el test. */
   desde: Date,
-  /**
-   * Nombre a mostrar de una parada por su `stop_id`. Se inyecta (el build lo tiene
-   * de la capa de nombres) para que las salidas parciales digan su origen REAL con
-   * el mismo nombre que el usuario ve en el itinerario, sin acoplar esto a los nombres.
-   */
-  nombreDeParada: (stopId: string) => string,
 ): ResultadoTerminal {
   // ── 1 · qué servicios circulan cada fecha ────────────────────────────────
   const activos = new Map<string, Set<string>>();
@@ -259,11 +256,10 @@ export function calcularTerminales(
   for (const [kd, m] of cuentaDestino) cabeceraDestino.set(kd, modal(m));
 
   // ⭐⭐ ENSEÑAR, NO FILTRAR (como Avanza). NO se descarta ninguna salida: se cogen
-  //    las 5 primeras y las 5 últimas TAL CUAL, y de cada una se dice si EMPIEZA o
-  //    ACABA a mitad. Así la 0:11 no desaparece —se ve "acaba en Coso"— y el usuario
-  //    entiende que no llega a Seminario. Más simple y más honesto que el filtro.
-  //    (Y de paso la 44 —dos terminales— deja de ser un caso especial: cada salida
-  //    enseña el destino que tenga, y punto.)
+  //    las 5 primeras y las 5 últimas TAL CUAL, y de cada una se dice SOLO si empieza
+  //    o acaba a mitad (booleano). El nombre del punto NO se guarda: con obras el
+  //    punto teórico del GTFS miente, y la pantalla nombra la cabecera del sentido,
+  //    no el punto. (Y la 44 —dos terminales— tampoco es un caso especial.)
   const porSentido = new Map<string, SalidasDeTerminal[]>();
   for (const [k, salidas] of acumulado) {
     const [route, dir, tipo] = k.split('|');
@@ -277,8 +273,8 @@ export function calcularTerminales(
     // ⚠️ Cada extremo se marca SOLO si no es su cabecera. La norma va sin marca.
     const conMarcas = (s: { min: number; ini: string; fin: string }): SalidaDeTerminal => ({
       minuto: s.min,
-      origen: s.ini === origen ? null : nombreDeParada(s.ini),
-      destino: s.fin === destino ? null : nombreDeParada(s.fin),
+      noViene: s.ini !== origen,
+      noLlega: s.fin !== destino,
     });
     porSentido.get(kk)!.push({
       tipo: tipo as TipoDeDia,
