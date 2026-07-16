@@ -1,6 +1,14 @@
 # Motor de horarios — documento maestro
 
-**Estado:** especificación (Fase 0), **reescrita** tras encontrar la tabla web de Avanza.
+> # ⏸️ APARCADO — diseño para v2. No implementado.
+> **Decisión del 2026-07-16 (Antonio):** se aparca el motor de horarios completo (las 5 piezas). Se
+> priorizó **cerrar la v1** con una vista de línea simple —tabla de terminal pelada + la cita literal
+> de "Información adicional" de Avanza— en vez de perseguir el motor perfecto. *"Una app cerrada bate a
+> dos al 80 %."* Este documento se conserva **entero** como especificación de v2; **ninguna de sus 5
+> piezas se construye ahora** (ni recogida de horario web, ni tramos de frecuencia, ni prolongación, ni
+> terminal dinámico, ni casado terminal→poste).
+
+**Estado:** especificación (Fase 0), **reescrita** tras encontrar la tabla web de Avanza. **APARCADO** (ver arriba).
 **Código de producción escrito:** ninguno. **Fecha:** 2026-07-16.
 
 > Esta versión sustituye a la anterior (que daba el GTFS como fuente única de horario). Las auditorías
