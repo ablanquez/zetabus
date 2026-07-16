@@ -325,6 +325,44 @@ describe('⏳ C5 · LA MEDIANOCHE, QUE ES DONDE SE MIENTE POR DOCE HORAS', () =>
     expect(enPantalla).toContain('6 salidas');
   });
 
+  it('⭐ EL ÍNDICE SEGÚN LA SECCIÓN: el 1 solo en primeras, el 2 solo en últimas', () => {
+    // Un servicio de noche que da la vuelta EMPIEZA a mitad (noViene) pero SÍ llega
+    // al final: en las últimas eso no pinta nada (a quien mira las últimas le importa
+    // hasta dónde llega). Y una que no llega lleva el 2.
+    const t: TerminalDeSentido = {
+      lineId: 'z', directionId: 0,
+      dias: [{
+        tipo: 'laborable', primera: 300, ultima: 1509, expediciones: 50,
+        // Una primera que empieza a mitad Y no llega: en PRIMERAS solo cuenta el 1.
+        primeras: [{ minuto: 300, noViene: true, noLlega: true }],
+        // 0:31 da la vuelta (noViene) pero llega → sin índice. 1:09 no llega → el 2.
+        ultimas: [
+          { minuto: 1471, noViene: true, noLlega: false },
+          { minuto: 1509, noViene: false, noLlega: true },
+        ],
+      }],
+    };
+    const html = renderToStaticMarkup(createElement(Terminal, { terminal: t }));
+    const pri = html.indexOf('data-etiqueta="Primeras"');
+    const ult = html.indexOf('data-etiqueta="Últimas"');
+    const htmlPri = html.slice(pri, ult);
+    // ⚠️ Hasta la LEYENDA, no hasta el final: la leyenda lleva data-indice="1" (su
+    //    entrada) y no es parte de la fila de últimas.
+    const htmlUlt = html.slice(ult, html.indexOf('data-papel="leyenda-parciales"'));
+    // PRIMERAS: la 300 lleva el 1 (noViene), NO el 2 (aunque noLlega sea true).
+    expect(htmlPri, 'en primeras aparece el 1').toContain('data-indice="1"');
+    expect(htmlPri, '⛔ en primeras NO aparece el 2').not.toContain('data-indice="2"');
+    // ÚLTIMAS: la 1509 lleva el 2 (noLlega); la 0:31 (noViene, llega) NO lleva índice.
+    expect(htmlUlt, 'en últimas aparece el 2').toContain('data-indice="2"');
+    expect(htmlUlt, '⛔ en últimas NO aparece el 1 (el servicio que da la vuelta se calla)').not.toContain('data-indice="1"');
+    // La 0:31 (1471) queda SIN índice: da la vuelta pero llega al final.
+    const s0031 = html.slice(html.indexOf('data-minuto="1471"'), html.indexOf('data-minuto="1509"'));
+    expect(s0031, 'la 0:31 (da la vuelta, llega) va limpia').not.toContain('data-indice');
+    // La leyenda lista los dos (el 1 aparece en primeras, el 2 en últimas).
+    expect(html).toContain('No viene desde principio de línea');
+    expect(html).toContain('No llega a final de línea');
+  });
+
   it('⚠️ BACKTEST · festivo y laborable son FILAS DISTINTAS, no la misma copiada', () => {
     // Si la pantalla pintara la misma fila para los tres tipos de día, mentiría
     // sobre el domingo (que tiene menos expediciones). Se busca CUALQUIER sentido

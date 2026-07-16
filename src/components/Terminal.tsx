@@ -43,11 +43,17 @@ export function reloj(minutos: number): { hora: string; siguiente: boolean } {
 }
 
 /**
- * Una salida, pintada. La hora a secas, y un índice si no recorre la línea entera:
- * 1 (no viene del principio) y/o 2 (no llega al final). El texto está al pie.
+ * Una salida, pintada. La hora a secas, y un índice si no recorre la línea entera.
+ *
+ * ⚠️ EL ÍNDICE DEPENDE DE LA SECCIÓN, no solo del dato: en PRIMERAS solo cuenta el 1
+ * (de dónde viene); en ÚLTIMAS solo el 2 (hasta dónde llega). Un servicio de noche
+ * que da la vuelta EMPIEZA a mitad (noViene) pero eso no pinta nada en las últimas
+ * —a quien mira las últimas le importa hasta dónde LLEGA—, así que ahí el 1 se calla.
  */
-function Salida({ salida }: { salida: SalidaDeTerminal }) {
+function Salida({ salida, mostrar1, mostrar2 }: { salida: SalidaDeTerminal; mostrar1: boolean; mostrar2: boolean }) {
   const r = reloj(salida.minuto);
+  const uno = mostrar1 && salida.noViene;
+  const dos = mostrar2 && salida.noLlega;
   return (
     <span
       className="tabular-nums"
@@ -58,18 +64,14 @@ function Salida({ salida }: { salida: SalidaDeTerminal }) {
       data-nollega={salida.noLlega ? 'si' : undefined}
     >
       {r.hora}
-      {salida.noViene && (
-        <sup
-          className="ml-1 font-normal text-[var(--color-tinta-tenue)]"
-          data-papel="indice-parcial"
-          data-indice="1"
-        >
+      {uno && (
+        <sup className="ml-1 font-normal text-[var(--color-tinta-tenue)]" data-papel="indice-parcial" data-indice="1">
           1
         </sup>
       )}
-      {salida.noLlega && (
+      {dos && (
         <sup
-          className={`font-normal text-[var(--color-tinta-tenue)] ${salida.noViene ? 'ml-0.5' : 'ml-1'}`}
+          className={`font-normal text-[var(--color-tinta-tenue)] ${uno ? 'ml-0.5' : 'ml-1'}`}
           data-papel="indice-parcial"
           data-indice="2"
         >
@@ -80,8 +82,21 @@ function Salida({ salida }: { salida: SalidaDeTerminal }) {
   );
 }
 
-/** Una fila de salidas (primeras / últimas / todas), separadas por puntos. */
-function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly SalidaDeTerminal[] }) {
+/**
+ * Una fila de salidas. `mostrar1`/`mostrar2` dicen qué índices pinta esta sección:
+ * primeras → solo el 1; últimas → solo el 2; "todas" (pocas salidas) → los dos.
+ */
+function Fila({
+  etiqueta,
+  salidas,
+  mostrar1,
+  mostrar2,
+}: {
+  etiqueta: string;
+  salidas: readonly SalidaDeTerminal[];
+  mostrar1: boolean;
+  mostrar2: boolean;
+}) {
   return (
     <div className="flex gap-2" data-papel="fila-salidas" data-etiqueta={etiqueta}>
       <span className="w-16 shrink-0 pt-0.5 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
@@ -91,7 +106,7 @@ function Fila({ etiqueta, salidas }: { etiqueta: string; salidas: readonly Salid
         {salidas.map((s, i) => (
           <span key={i} className="inline-flex items-baseline">
             {i > 0 && <span className="mr-2 font-normal text-[var(--color-borde)]">·</span>}
-            <Salida salida={s} />
+            <Salida salida={s} mostrar1={mostrar1} mostrar2={mostrar2} />
           </span>
         ))}
       </p>
@@ -104,11 +119,20 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
   //    Una tabla vacía con guiones parece un fallo; no ponerla, no.
   if (!terminal || terminal.dias.length === 0) return null;
 
-  // ¿Qué índices hacen falta? Se mira TODA la tabla (los tres días): la leyenda va
-  // UNA vez al pie, solo con los índices que de verdad aparecen. La excepción.
-  const todas = terminal.dias.flatMap((d) => [...d.primeras, ...d.ultimas]);
-  const hayNoViene = todas.some((s) => s.noViene);
-  const hayNoLlega = todas.some((s) => s.noLlega);
+  // ¿Qué índices hacen falta? SOLO los que de verdad se PINTAN (según la sección):
+  //   · el 1 solo aparece en PRIMERAS (o en "todas", si son pocas salidas);
+  //   · el 2 solo aparece en ÚLTIMAS  (o en "todas").
+  // La leyenda va UNA vez al pie, solo con esos. La excepción, nunca el aparato fijo.
+  const indicesDe = (d: TerminalDeSentido['dias'][number]) => {
+    const pocas = d.expediciones <= 10;
+    const union = [...d.primeras, ...d.ultimas];
+    return {
+      uno: pocas ? union.some((s) => s.noViene) : d.primeras.some((s) => s.noViene),
+      dos: pocas ? union.some((s) => s.noLlega) : d.ultimas.some((s) => s.noLlega),
+    };
+  };
+  const hay1 = terminal.dias.some((d) => indicesDe(d).uno);
+  const hay2 = terminal.dias.some((d) => indicesDe(d).dos);
 
   return (
     <section className="mt-6" data-papel="terminal">
@@ -145,11 +169,17 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
               </div>
 
               {pocas ? (
-                <Fila etiqueta={d.expediciones === union.length ? 'Todas' : 'Salidas'} salidas={union} />
+                // "Todas" no es primeras ni últimas: pinta los dos índices.
+                <Fila
+                  etiqueta={d.expediciones === union.length ? 'Todas' : 'Salidas'}
+                  salidas={union}
+                  mostrar1
+                  mostrar2
+                />
               ) : (
                 <div className="flex flex-col gap-1">
-                  <Fila etiqueta="Primeras" salidas={d.primeras} />
-                  <Fila etiqueta="Últimas" salidas={d.ultimas} />
+                  <Fila etiqueta="Primeras" salidas={d.primeras} mostrar1 mostrar2={false} />
+                  <Fila etiqueta="Últimas" salidas={d.ultimas} mostrar1={false} mostrar2 />
                 </div>
               )}
             </div>
@@ -160,9 +190,9 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
       {/* ⭐ LA LEYENDA, UNA VEZ AL PIE, con FRASES FIJAS. No se calcula ninguna
           cabecera ni se nombra el punto: cero posibilidad de equivocarse. Solo los
           índices que aparecen en la tabla. */}
-      {(hayNoViene || hayNoLlega) && (
+      {(hay1 || hay2) && (
         <ul className="mt-2 flex flex-col gap-0.5" data-papel="leyenda-parciales">
-          {hayNoViene && (
+          {hay1 && (
             <li
               className="text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
               data-papel="leyenda-parcial"
@@ -171,7 +201,7 @@ export function Terminal({ terminal }: { terminal: TerminalDeSentido | null }) {
               <span className="font-bold">1</span> · No viene desde principio de línea
             </li>
           )}
-          {hayNoLlega && (
+          {hay2 && (
             <li
               className="text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
               data-papel="leyenda-parcial"
