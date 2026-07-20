@@ -24,8 +24,10 @@ describe('InfoAdicional', () => {
     expect(html).toContain('data-papel="info-adicional"');
     expect(html).toContain('Información adicional');
     expect(html).not.toContain('según Avanza'); // la procedencia vive en /sobre-los-datos
-    // Neutro: borde y papel; NUNCA el ámbar del aviso (que es "algo de hoy").
+    // Borde NEUTRO y fondo papel; JAMÁS el ámbar del aviso (que es "algo de hoy").
+    // Se probó el borde de color de línea y 4 de 19 no llegaban a 3:1 sobre papel.
     expect(html).toContain('border-[var(--color-borde)]');
+    expect(html).toContain('bg-[var(--color-papel)]');
     expect(html).not.toContain('--color-aviso');
     // Mismo marco que el cuadro de suprimidas: 2 px y rounded-caja.
     expect(html).toContain('border-2');

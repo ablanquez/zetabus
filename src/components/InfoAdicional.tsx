@@ -56,6 +56,11 @@ export function InfoAdicional({ info }: { info: string | null }) {
   const parrafos = info.split('\n').filter((p) => p.trim().length > 0);
 
   return (
+    // ⚠️ BORDE NEUTRO, NO color de línea. Se probó el color de línea y 4 de las 19
+    //    líneas con info (29, 59, 38, 56) no llegaban a 3:1 sobre papel —el amarillo
+    //    y los limas quedaban por debajo del mínimo no-textual—. El neutro además NO
+    //    choca con el borde ámbar del cuadro de suprimidas de al lado (decisión de
+    //    Antonio: neutro para todas).
     <div
       className="mb-3 rounded-caja border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-3"
       data-papel="info-adicional"

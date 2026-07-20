@@ -3,6 +3,7 @@ import type { Line, LineId, StopId } from '@/core';
 import { esBuho, transbordosDe } from '@/engine/topologia';
 import { ChipLinea } from './ChipLinea';
 import { AcuseDeToque } from './AcuseDeToque';
+import { InfoAdicional } from './InfoAdicional';
 import type { ParadaDelDiff } from '@/engine/desvios';
 
 /**
@@ -109,6 +110,7 @@ export function Itinerario({
   paradas,
   fingir,
   fuera,
+  info,
   nombreAccesible,
 }: {
   lineaId: LineId;
@@ -118,6 +120,8 @@ export function Itinerario({
   fingir: string | null;
   /** Paradas del GTFS por las que HOY el autobús NO pasa. Se tachan, con motivo. */
   fuera?: readonly ParadaDelDiff[];
+  /** "Información adicional" de Avanza. Va DENTRO de la tarjeta, sobre las suprimidas. */
+  info?: string | null;
   /**
    * ⚠️ EL NOMBRE DE LA REGIÓN PARA QUIEN NO LA VE. Existía como un <h2> visible
    * ("EL RECORRIDO · 32 PARADAS") que se retiró por no decir nada a quien SÍ ve la
@@ -259,6 +263,16 @@ export function Itinerario({
           desvío de arriba, así que los dos avisos de la pantalla hablan igual.
 
           El TACHADO se queda: es forma, no color, y sobrevive al gris. */}
+      {/* ⭐ "Información adicional" (cómo funciona la línea) DENTRO de la tarjeta,
+          pegada encima del cuadro de suprimidas: los dos cuadros, al final del
+          recorrido. Hermanos de forma (borde 2 px), distintos de color: el neutro de
+          la info frente al ámbar del aviso. */}
+      {info && (
+        <li>
+          <InfoAdicional info={info} />
+        </li>
+      )}
+
       {fuera && fuera.length > 0 && (
         <li className="mb-3" data-papel="paradas-fuera">
           <div className="rounded-caja border-2 border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-3 py-3">

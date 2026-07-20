@@ -7,7 +7,6 @@ import { motor, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
-import { InfoAdicional } from '@/components/InfoAdicional';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
@@ -318,10 +317,6 @@ function Recorrido({
              el NOMBRE sí. Se conserva en el `aria-label` del <ol>: misma información
              para quien la necesita, cero píxeles para quien no. */}
 
-      {/* ⭐ CÓMO FUNCIONA LA LÍNEA, antes de la ruta. Marco neutro, hermano del cuadro
-          de suprimidas pero SIN el ámbar (que es de "hoy"; esto es de "siempre"). */}
-      <InfoAdicional info={info} />
-
       <Itinerario
         nombreAccesible={`El recorrido, ${aPintar.length} ${aPintar.length === 1 ? 'parada' : 'paradas'}`}
         lineaId={lineaId}
@@ -329,6 +324,7 @@ function Recorrido({
         paradas={aPintar}
         fingir={fingir}
         fuera={hayReal ? veredicto.fuera : undefined}
+        info={info}
       />
 
       {/* ⛔ AQUÍ FLOTABA LA NOTA DE «UNA PARADA PUEDE ESTAR SUPRIMIDA SIN QUE SE
