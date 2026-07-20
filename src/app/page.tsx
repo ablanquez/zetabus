@@ -65,7 +65,16 @@ export default function Home() {
                   <Link
                     href={`/linea/${encodeURIComponent(l.shortName)}`}
                     data-acusa="si"
-                    className="flex min-h-[var(--control-fila)] items-center gap-3 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
+                    /* ⭐ MARGEN UNIFORME AL CHIP POR SUS TRES LADOS (arriba, abajo,
+                       izquierda) = `p-2` (8 px), un peldaño de la escala. Antonio lo
+                       veía "centrado": el chip flotaba a 24 px del borde izquierdo y a
+                       solo 8 del de arriba. De esos 24, 12 eran `px-3` y OTROS 12 un
+                       `gap-3` FANTASMA — el <AcuseDeToque> es un <span> sin tamaño pero,
+                       dentro de un flex, es un ÍTEM que consume una ranura de gap antes
+                       del chip. Se quita el `gap` (mata el fantasma), el padding baja a
+                       8 en los cuatro lados, y la separación chip↔nombre vuelve como
+                       `ml-3` en el nombre. Así los 44 chips arrancan en la MISMA x. */
+                    className="flex min-h-[var(--control-fila)] items-center rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] p-2"
                   >
                     {/* Se queda marcada tras soltar, hasta que carga la línea. */}
                     <AcuseDeToque />
@@ -76,8 +85,9 @@ export default function Home() {
                         despistara para que la N7 saliera de diurna aquí y de búho
                         allí. Es el fallo del "0C1" con otro traje. */}
                     <ChipLinea linea={l} papel="chip-indice" grande />
-                    {/* SIN TRUNCAR. Si no cabe, baja de línea. */}
-                    <span className="text-menor font-semibold leading-snug sin-recortar">
+                    {/* SIN TRUNCAR. Si no cabe, baja de línea. `ml-3` da la
+                        separación chip↔nombre que antes ponía `gap-3` (ahora fuera). */}
+                    <span className="ml-3 text-menor font-semibold leading-snug sin-recortar">
                       {l.longName}
                     </span>
                   </Link>
