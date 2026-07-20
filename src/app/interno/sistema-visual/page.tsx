@@ -3,7 +3,15 @@ import { GRUPOS, grupoDe, lineas } from '@/engine/topologia';
 import { ChipLinea, NOCHE } from '@/components/ChipLinea';
 import { MARCAS } from '@/components/FichaVehiculo';
 import { Marca } from '@/components/Marca';
-import { PaletaViva, EscalaViva, RadiosVivos, ControlVivo, PruebaGris } from '@/components/interno/TokensVivos';
+import {
+  PaletaViva,
+  EscalaViva,
+  EspaciadoVivo,
+  RadiosVivos,
+  ControlVivo,
+  SuperficiesVivas,
+  PruebaGris,
+} from '@/components/interno/TokensVivos';
 import type { Confidence } from '@/core';
 
 /**
@@ -67,12 +75,28 @@ export default function SistemaVisualPage() {
         <PaletaViva />
       </Seccion>
 
+      {/* ── SUPERFICIES ─────────────────────────────────────────────────────── */}
+      <Seccion
+        titulo="Superficies"
+        nota="La jerarquía de planos: qué es lienzo y qué es tarjeta. Las muestras van APILADAS (una dentro de otra), que es como se usan, y el salto entre niveles se MIDE."
+      >
+        <SuperficiesVivas />
+      </Seccion>
+
       {/* ── TIPOGRAFÍA ──────────────────────────────────────────────────────── */}
       <Seccion
         titulo="Tipografía · Inter"
-        nota="Inter, self-hosted (next/font, sin CDN). 7 peldaños con nombre. Cada muestra usa su utilidad real (text-titulo…), así que enseña el tamaño de verdad; el px sale leído del token."
+        nota="Inter, self-hosted (next/font, sin CDN). 7 peldaños con nombre, ORDENADOS de mayor a menor por el px leído: una escala se lee cuando está ordenada. Cada muestra usa su utilidad real (text-titulo…)."
       >
         <EscalaViva />
+      </Seccion>
+
+      {/* ── ESPACIADO ───────────────────────────────────────────────────────── */}
+      <Seccion
+        titulo="Espaciado · ritmo vertical"
+        nota="No hay token propio: el sistema es el de Tailwind y estaba latente en los gap-*/p-* del código. Se nombra el que se USA (contado sobre el propio src), y cada barra se mide en píxeles."
+      >
+        <EspaciadoVivo />
       </Seccion>
 
       {/* ── LÍNEAS ──────────────────────────────────────────────────────────── */}
@@ -127,11 +151,9 @@ export default function SistemaVisualPage() {
       {/* ── SOMBRAS ─────────────────────────────────────────────────────────── */}
       <Seccion titulo="Sombras">
         <p className="text-menor text-[var(--color-tinta-suave)] sin-recortar">
-          <strong>No hay sistema de sombras, y es a propósito.</strong> La profundidad se da por
-          BORDE + contraste de fondo (papel sobre fondo), como en la referencia. Las únicas sombras
-          del proyecto viven en los marcadores del mapa (son el reborde de un icono, no una capa de
-          diseño). No se inventa una escala de sombras que no se usa — y el test guardián revienta si
-          aparece un <code>box-shadow</code> crudo fuera del mapa.
+          <strong>No hay sistema de sombras, y es a propósito:</strong> la profundidad se da por borde
+          + superficie. Las únicas viven en los marcadores del mapa (reborde de un icono, no una capa
+          de diseño), y el test guardián revienta si aparece un <code>box-shadow</code> crudo fuera.
         </p>
       </Seccion>
 
