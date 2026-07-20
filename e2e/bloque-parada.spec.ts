@@ -100,6 +100,34 @@ test.describe('⭐ C2 · TODO EL BLOQUE LLEVA A LA PARADA', () => {
     await page.waitForURL(new RegExp(`/parada/${poste}\\b`));
     expect(page.url()).toContain(`/parada/${poste}`);
   });
+
+  test('⭐ el HUECO entre el poste y el primer chip de línea → zona de la parada', async ({ page }) => {
+    await abrir(page);
+    const nodo = nodoConChips(page);
+    const poste = (await nodo.locator('[data-papel="chip-poste"]').boundingBox())!;
+    const chip = (await nodo.locator('[data-papel="chip-transbordo"]').first().boundingBox())!;
+    // El punto MEDIO del hueco entre el borde derecho del poste y el izquierdo del chip.
+    const xHueco = (poste.x + poste.width + chip.x) / 2;
+    const yHueco = poste.y + poste.height / 2;
+    const quien = await page.evaluate(({ x, y }) =>
+      document.elementFromPoint(x, y)?.closest('a')?.getAttribute('data-papel') ?? 'nada',
+    { x: xHueco, y: yHueco });
+    expect(quien, 'el hueco entre chips NO lleva a la parada: hay una zona muerta').toBe('ir-a-parada');
+  });
+
+  test('⭐ el MARGEN del bloque (padding, bajo la fila de chips) → zona de la parada', async ({ page }) => {
+    await abrir(page);
+    const nodo = nodoConChips(page);
+    const bloque = (await nodo.locator('[data-papel="bloque-parada"]').boundingBox())!;
+    const chip = (await nodo.locator('[data-papel="chip-transbordo"]').first().boundingBox())!;
+    // Un punto en el pb-3 del bloque: por debajo de la fila de chips pero dentro del bloque.
+    const x = bloque.x + 12;
+    const y = Math.min(chip.y + chip.height + 8, bloque.y + bloque.height - 2);
+    const quien = await page.evaluate(({ x, y }) =>
+      document.elementFromPoint(x, y)?.closest('a')?.getAttribute('data-papel') ?? 'nada',
+    { x, y });
+    expect(quien, 'el margen del bloque NO lleva a la parada: hay una zona muerta').toBe('ir-a-parada');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,26 +224,44 @@ test.describe('⭐ C3 · FEEDBACK TÁCTIL: al pulsar, el bloque cambia', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ C1 · TRES LÍNEAS, Y EL POSTE ES UN CHIP DE LA MISMA FAMILIA', () => {
-  test('nombre, chip de poste y transbordos están cada uno en su altura', async ({ page }, info) => {
+test.describe('⭐ C1 · DOS LÍNEAS: NOMBRE ARRIBA, Y POSTE+TRANSBORDOS EN LA MISMA FILA', () => {
+  test('poste y transbordo van en la MISMA fila (misma caja/base), bajo el nombre', async ({ page }, info) => {
     await abrir(page);
     const nodo = nodoConChips(page);
-    const y = async (sel: string) =>
-      (await nodo.locator(sel).first().boundingBox())!.y;
+    const caja = async (sel: string) => (await nodo.locator(sel).first().boundingBox())!;
 
-    const yNombre = await y('[data-papel="ir-a-parada"]');
-    const yPoste = await y('[data-papel="chip-poste"]');
-    const yChip = await y('[data-papel="chip-transbordo"]');
-    console.log(`\n  [${info.project.name}] nombre y=${Math.round(yNombre)} · poste y=${Math.round(yPoste)} · chip y=${Math.round(yChip)}`);
+    const nombre = await caja('[data-papel="ir-a-parada"]');
+    const poste = await caja('[data-papel="chip-poste"]');
+    const chip = await caja('[data-papel="chip-transbordo"]');
+    console.log(
+      `\n  [${info.project.name}] nombre y=${Math.round(nombre.y)} · ` +
+      `poste y=${Math.round(poste.y)} h=${Math.round(poste.height)} · ` +
+      `chip y=${Math.round(chip.y)} h=${Math.round(chip.height)}`,
+    );
 
-    // Tres líneas: cada bloque estrictamente por debajo del anterior.
-    expect(yPoste).toBeGreaterThan(yNombre);
-    expect(yChip).toBeGreaterThan(yPoste);
+    // Dos líneas: el poste va DEBAJO del nombre…
+    expect(poste.y, 'el poste debería ir bajo el nombre').toBeGreaterThan(nombre.y);
+    // …y el transbordo va en la MISMA fila que el poste (no una tercera línea).
+    expect(Math.abs(chip.y - poste.y), 'poste y transbordo NO están en la misma fila').toBeLessThanOrEqual(3);
+    // Comparten CAJA: misma altura (los tres chips crecen a la del chip de línea).
+    expect(Math.abs(chip.height - poste.height), 'poste y transbordo no comparten altura de caja').toBeLessThanOrEqual(1);
+    // Y LÍNEA DE BASE: mismo centro vertical (±1,5 px).
+    expect(Math.abs((chip.y + chip.height / 2) - (poste.y + poste.height / 2)), 'no comparten línea de base')
+      .toBeLessThanOrEqual(1.5);
   });
 
-  test('el chip de poste es de la familia chip-meta (la misma que "provisional · desvío")', async ({ page }) => {
+  test('el chip de línea pulsable cumple el mínimo táctil del sistema (24px)', async ({ page }) => {
     await abrir(page);
-    // C1: poste y "provisional · desvío" son del mismo rango → misma familia visual.
+    const chip = nodoConChips(page).locator('[data-papel="chip-transbordo"]').first();
+    const caja = (await chip.boundingBox())!;
+    // --control-min = 24px (WCAG 2.5.8). El chip de línea ES pulsable → debe cumplirlo.
+    expect(caja.height, 'el chip de línea no llega al mínimo táctil').toBeGreaterThanOrEqual(24);
+    expect(caja.width, 'el chip de línea no llega al mínimo táctil').toBeGreaterThanOrEqual(24);
+  });
+
+  test('el chip de poste es de la familia chip-meta (la misma que "provisional")', async ({ page }) => {
+    await abrir(page);
+    // C1: poste y "provisional" son del mismo rango → misma familia visual.
     // El poste está SIEMPRE; el provisional solo en desvío (fotografiado en vivo en el
     // backtest, poste 1248 de la línea 21). Ambos comparten la clase base `chip-meta`
     // en el código, así que basta con anclar aquí el poste: si alguien rompe la familia,

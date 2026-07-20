@@ -293,19 +293,24 @@ body {
   z-index: 1;
 }
 /* ⭐ C1 · LOS CHIPS DE METADATOS DE LA PARADA, UNA SOLA FAMILIA. El poste y el
-   "provisional · desvío" son del mismo rango —datos ABOUT la parada, no destinos—,
-   así que comparten forma, tamaño y peso. Lo único que cambia es el ROL: neutro
-   (poste, siempre) vs. aviso (provisional, solo en desvío). Antes eran dos cosas
-   visualmente distintas y parecían de rangos distintos. */
+   "provisional" son del mismo rango —datos ABOUT la parada, no destinos—, así que
+   comparten forma, tamaño y peso. Lo único que cambia es el ROL: neutro (poste,
+   siempre) vs. aviso (provisional, solo en desvío).
+   ⭐ ALTURA = LA DEL CHIP DE LÍNEA (h-6 = 24px). Al pasar el bloque a DOS filas
+   (poste + provisional + transbordos en la misma), los tres tipos de chip comparten
+   caja y línea de base. El de poste y el de provisional CRECEN a esa altura, pero se
+   quedan CALLADOS por TONO —el poste es gris de fondo; el aviso, borde discontinuo—:
+   el color saturado es de los chips de LÍNEA, que son lo que el ojo busca primero. */
 .chip-meta {
   display: inline-flex;
   align-items: center;
   flex: none;
+  height: 24px; /* = h-6 del chip de línea (ChipLinea, papel="chip-transbordo") */
   border-radius: var(--radius-chip);
-  padding: 2px 6px;
+  padding: 0 8px;
   font-size: 10px;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1;
   letter-spacing: 0.02em;
   border: 1px solid transparent;
 }

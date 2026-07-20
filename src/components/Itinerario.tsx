@@ -164,13 +164,13 @@ export function Itinerario({
               />
             </div>
 
-            {/* ── EL CONTENIDO. C1: TRES LÍNEAS. C2: TODO PULSABLE (sin <a> anidado) ─
+            {/* ── EL CONTENIDO. DOS LÍNEAS. C2: TODO PULSABLE (sin <a> anidado) ─────
                 nombre                                     ← línea 1
-                [POSTE 55]  [PROVISIONAL · DESVÍO]         ← línea 2, misma familia
-                [28] [32] [39] [N1] [N7]                   ← línea 3, transbordos
+                [POSTE 55] [PROVISIONAL] [28] [32] [N1]    ← línea 2: TODO junto
                 El `bloque-parada` es position:relative; el enlace del nombre estira
-                su zona pulsable a todo el bloque con un ::after; los chips flotan
-                por encima. Ver globals.css · C2/C3/C4. */}
+                su zona pulsable a todo el bloque con un ::after (z-index 0); los chips
+                de LÍNEA flotan por encima (z-index 1); los de poste/provisional NO se
+                elevan, así que caen a la zona de la parada. Ver globals.css · C1/C2/C4. */}
             <div
               className={`bloque-parada min-w-0 flex-1 px-2 pb-3 ${
                 primero ? 'pt-0.5' : 'border-t border-[var(--color-borde)] pt-3'
@@ -194,38 +194,38 @@ export function Itinerario({
                 <AcuseDeToque />
               </Link>
 
-              {/* LÍNEA 2 · POSTE + PROVISIONAL, CHIPS DE LA MISMA FAMILIA.
-                  Antes el poste era una pastilla gris tenue y "provisional" un chip
-                  aparte: dos familias para dos cosas del mismo rango (metadatos de la
-                  parada). Ahora son el mismo chip; lo que cambia es el ROL (neutro vs
-                  aviso), no la forma. NO son enlaces: pulsarlos cae en la zona de la
-                  parada, que es lo que se quiere. */}
+              {/* LÍNEA 2 · POSTE + PROVISIONAL + TRANSBORDOS, TODO EN UNA FILA.
+                  · poste y provisional: chips de METADATO (misma familia `chip-meta`);
+                    NO son enlaces → caen en la zona de la parada.
+                  · "provisional" a secas: las provisionales SOLO salen en desvío, y el
+                    chip de desvío de arriba ya lo dice — "· desvío" era contexto repetido.
+                  · transbordos: cada uno un <a> a SU línea, HERMANO del enlace de la
+                    parada (no anidado) y POR ENCIMA de la zona estirada (z-index 1).
+                  ⚠️ El `<ul>` es UN item flex que NO encoge (`flex-none`): cuando la fila
+                    no cabe, los chips de línea bajan JUNTOS a la siguiente, no uno
+                    colgando. El texto NUNCA se recorta: si no cabe, baja de línea. */}
               <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 <span className="chip-meta chip-meta--poste" data-papel="chip-poste">
                   poste {p.poste}
                 </span>
                 {p.provisional && (
                   <span className="chip-meta chip-meta--aviso" data-papel="parada-provisional">
-                    provisional · desvío
+                    provisional
                   </span>
                 )}
+                {transbordos.length > 0 && (
+                  <ul className="flex flex-none flex-wrap items-center gap-1.5" data-papel="transbordos">
+                    {[...transbordos]
+                      // ⭐ D1/C6: los búhos, AL FINAL. Como ellos. Otra categoría, detrás.
+                      .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
+                      .map((t) => (
+                        <li key={String(t.id)}>
+                          <ChipLinea linea={t} papel="chip-transbordo" enlace />
+                        </li>
+                      ))}
+                  </ul>
+                )}
               </div>
-
-              {/* LÍNEA 3 · LOS TRANSBORDOS. Lo mejor que se han inventado. Cada uno un
-                  <a> a SU línea, HERMANO del enlace de la parada (no anidado), y por
-                  encima de la zona estirada. */}
-              {transbordos.length > 0 && (
-                <ul className="mt-1.5 flex flex-wrap gap-1" data-papel="transbordos">
-                  {[...transbordos]
-                    // ⭐ D1/C6: los búhos, AL FINAL. Como ellos. Otra categoría, detrás.
-                    .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
-                    .map((t) => (
-                      <li key={String(t.id)}>
-                        <ChipLinea linea={t} papel="chip-transbordo" enlace />
-                      </li>
-                    ))}
-                </ul>
-              )}
             </div>
           </li>
         );
