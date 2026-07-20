@@ -54,6 +54,8 @@ interface Artefacto {
   }[];
   readonly posteByStopId: Record<string, number>;
   readonly flota: Record<string, BusProfile>;
+  /** Recuento del build que NO se puede rehacer aquí: ver `nombresControl`. */
+  readonly nombresControl?: { comparables: number; distintos: number };
 }
 
 const A = artefacto as unknown as Artefacto;
@@ -151,6 +153,13 @@ for (const d of A.directions) {
 
 export const validez = A.validity;
 export const generadoEn = A.generatedAt;
+
+/**
+ * ⭐ Cuántos nombres del GTFS escribe el operador DE OTRA FORMA. Se mide en el
+ * build (es el único momento en que conviven los dos nombres) y se sirve aquí
+ * para que /sobre-los-datos lo derive en vez de llevarlo cableado en la prosa.
+ */
+export const nombresControl = A.nombresControl ?? { comparables: 0, distintos: 0 };
 export const lineas = (): readonly Line[] => A.lines;
 export const paradas = (): readonly Stop[] => A.stops;
 export const sentidosDe = (id: LineId) => sentidosPorLinea.get(String(id)) ?? [];

@@ -56,6 +56,8 @@ if (nombres.sinCapa) {
   if (nombres.sobrantesDeAvanza > 0) {
     console.log(`  ·  ${nombres.sobrantesDeAvanza} poste(s) que Avanza da y no están en nuestro GTFS (paradas provisionales)`);
   }
+  const pctRotos = Math.round((nombres.distintos / nombres.comparables) * 1000) / 10;
+  console.log(`  ⚠️  ${nombres.distintos} / ${nombres.comparables}  el operador los escribe DISTINTO (${pctRotos}%) — el ucwords() del export`);
   console.log('');
 }
 
@@ -108,6 +110,10 @@ const artifact = {
   lines: gtfs.lines,
   directions: gtfs.directions,
   posteByStopId: gtfs.posteByStopId,
+  // ⭐ El único recuento de nombres que NO se puede rehacer en runtime: después del
+  //    merge, el nombre roto del GTFS ya no existe. Se hornea para que
+  //    /sobre-los-datos lo DERIVE en vez de llevarlo escrito a mano.
+  nombresControl: { comparables: nombres.comparables, distintos: nombres.distintos },
   // La flota viaja HORNEADA en el artefacto, no se lee de `data/` en runtime.
   // En producción el bundle no lleva `data/`, y un `readFileSync` que funciona
   // en `next dev` y falla en el servidor es la peor clase de bug: el que solo

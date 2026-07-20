@@ -31,6 +31,16 @@ export interface InformeNombres {
   readonly sobrantesDeAvanza: number;
   /** `true` si no había tabla: TODO se quedó en gtfs-marcado. La app lo dirá. */
   readonly sinCapa: boolean;
+  /**
+   * ⭐ LA MEDIDA DEL DESTROZO DEL `ucwords()`, y se CUENTA aquí porque aquí es el
+   * único sitio donde conviven los dos nombres: el del GTFS y el del operador.
+   * Después del merge, el del GTFS ya no existe y el dato sería incontable.
+   *
+   * `comparables` = paradas en las que Avanza da nombre (se pueden comparar).
+   * `distintos`   = de esas, en cuántas el operador lo escribe DE OTRA FORMA.
+   */
+  readonly comparables: number;
+  readonly distintos: number;
 }
 
 export function aplicarNombres(
@@ -44,6 +54,8 @@ export function aplicarNombres(
   const usados = new Set<number>();
   let deAvanza = 0;
   let deGtfsMarcado = 0;
+  let comparables = 0;
+  let distintos = 0;
 
   const nuevas = stops.map((s): Stop => {
     const poste = posteByStopId[String(s.id)];
@@ -52,6 +64,9 @@ export function aplicarNombres(
     if (nombreAvanza !== undefined && nombreAvanza.trim() !== '') {
       usados.add(poste!);
       deAvanza++;
+      // ⭐ Se mide AQUÍ, con los dos nombres delante. Después ya no se puede.
+      comparables++;
+      if (nombreAvanza !== s.name) distintos++;
       return {
         ...s,
         name: nombreAvanza,
@@ -84,5 +99,7 @@ export function aplicarNombres(
     total: stops.length,
     sobrantesDeAvanza,
     sinCapa: tabla === null,
+    comparables,
+    distintos,
   };
 }
