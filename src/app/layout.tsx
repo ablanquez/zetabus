@@ -4,7 +4,6 @@ import Link from 'next/link';
 import './globals.css';
 import { AvisoFeed } from '@/components/AvisoFeed';
 import { Marca } from '@/components/Marca';
-import { demoEncendido } from '@/engine/fingir';
 
 /**
  * ⭐ INTER, SELF-HOSTED. `next/font/google` descarga la fuente EN EL BUILD y la
@@ -45,19 +44,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             Afecta a los recorridos de TODA la app, no a una parada concreta. */}
         <AvisoFeed />
 
-        {/* ⚠️ EL MODO DEMO NO PUEDE PASAR DESAPERCIBIDO.
-            Si está encendido, la pantalla puede estar enseñando datos FINGIDOS.
-            Un modo de prueba invisible es una fábrica de pantallas falsas — que
-            es exactamente lo que este proyecto persigue. Así que se grita. */}
-        {demoEncendido() && (
-          <div
-            className="bg-[var(--color-alerta)] px-4 py-1.5 text-center text-nota font-black uppercase tracking-wide text-white"
-            data-papel="banda-demo"
-          >
-            ⚠ modo demo encendido · los datos pueden ser FINGIDOS
-          </div>
-        )}
+        {/* ⛔ AQUÍ HABÍA UNA BANDA ROJA — "MODO DEMO ENCENDIDO · LOS DATOS PUEDEN
+            SER FINGIDOS"— Y AFIRMABA ALGO FALSO.
 
+            `ZETABUS_DEMO=1` no finge nada: solo desbloquea la lectura de `?fingir=`.
+            Sin ese parámetro en la URL los datos son REALES, y se comprobó byte a
+            byte. La banda confundía "la puerta está abierta" con "ha entrado
+            alguien" — y este layout es justo lo único que NO puede saber si la
+            página que envuelve está fingiendo.
+
+            ⇒ La marca se ha movido a donde SÍ se sabe: cada página pinta
+              <Fingiendo/> con su fingimiento concreto, y solo si lo hay.
+              Ver `components/Fingiendo.tsx`. */}
         <header className="border-b border-[var(--color-borde)] bg-[var(--color-papel)]">
           <div className="mx-auto flex max-w-2xl items-baseline gap-2 px-4 py-2">
             <Marca />

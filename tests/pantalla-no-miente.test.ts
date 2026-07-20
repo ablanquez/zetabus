@@ -11,6 +11,9 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Fingiendo } from '@/components/Fingiendo';
 
 function ficheros(dir: string, ext: string[]): string[] {
   const out: string[] = [];
@@ -153,10 +156,62 @@ describe('⚠️ EL MODO DEMO NO PUEDE COLARSE EN PRODUCCIÓN', () => {
     else process.env.ZETABUS_DEMO = anterior;
   });
 
-  it('si el modo demo está encendido, el layout GRITA', () => {
+  /**
+   * ⭐⭐ EL CONTRATO NUEVO, Y ES EL OPUESTO DEL QUE HABÍA AQUÍ.
+   *
+   * ⛔ ANTES SE EXIGÍA: *"si el modo demo está encendido, el layout GRITA"* —
+   *    `expect(layout).toMatch(/demoEncendido/)` y `/FINGIDOS/`.
+   *
+   * Y ESE TEST BLINDABA UNA MENTIRA. `ZETABUS_DEMO=1` **no finge nada**: lo único
+   * que hace es desbloquear la lectura de `?fingir=`. Sin ese parámetro en la URL
+   * los datos son REALES —comprobado con dos servidores del mismo build, mismo
+   * poste, mismo instante: llegadas idénticas byte a byte— y la banda seguía
+   * diciendo "los datos pueden ser FINGIDOS".
+   *
+   * Un aviso que avisa de algo que no está pasando no es prudencia: **entrena a
+   * desconfiar de datos buenos**, y el que grita siempre deja de ser oído.
+   *
+   * ⇒ Ahora se exige lo contrario: que el layout NO sepa nada del modo demo. La
+   *   marca la pone cada página, con su fingimiento concreto.
+   */
+  it('⛔ el layout NO puede volver a avisar por el FLAG: no es él quien lo sabe', () => {
     const c = readFileSync('src/app/layout.tsx', 'utf8');
-    expect(c).toMatch(/demoEncendido\(\)/);
-    expect(c).toMatch(/FINGIDOS/);
+    // ⚠️ Se mira el CÓDIGO, no los comentarios: la explicación de por qué se quitó
+    //    la banda sí la menciona, y tiene que poder mencionarla.
+    const codigo = c.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '');
+    expect(codigo, 'el layout ha vuelto a mirar el flag').not.toMatch(/demoEncendido/);
+    expect(codigo, 'ha vuelto la banda genérica').not.toMatch(/FINGIDOS|banda-demo/);
+  });
+
+  it('⭐ la marca depende del FINGIMIENTO, no del flag: sin fingir NO se pinta nada', () => {
+    // Es toda la corrección, y por eso es lo primero que se prueba. Ni un hueco,
+    // ni un borde: cadena vacía.
+    expect(renderToStaticMarkup(createElement(Fingiendo, { que: null }))).toBe('');
+  });
+
+  it('⭐ y cuando SÍ se finge, dice QUÉ se finge — no un "puede ser mentira" genérico', () => {
+    const h = renderToStaticMarkup(createElement(Fingiendo, { que: 'caido' }));
+    expect(h, 'tiene que nombrar el fingimiento CONCRETO').toContain('caido');
+    expect(h, 'y marcarse para poder encontrarla').toContain('data-papel="fingiendo"');
+    expect(h, 'y decir que el dato es inventado').toMatch(/inventados/);
+    // ⚠️ NO SOLO EL TONO (regla de la casa): símbolo + palabra + forma.
+    expect(h, 'falta el símbolo').toContain('⚠');
+    expect(h, 'falta la palabra').toMatch(/Fingiendo/i);
+    expect(h, 'falta la FORMA: en escala de grises el color no existe').toMatch(/border-2/);
+  });
+
+  it('⛔ CONTRAPRUEBA · una marca que se pintara SIEMPRE sí pasaría por el aro', () => {
+    // Se reconstruye la regresión exacta que venimos a impedir: un aviso que sale
+    // pase lo que pase, como hacía la banda. Si el guardián de arriba no
+    // distinguiera `null` de un fingimiento, esto se colaría sin que nadie lo viera.
+    const Mentirosa = ({ que }: { que: string | null }) =>
+      createElement('p', { 'data-papel': 'fingiendo' }, `⚠ FINGIENDO «${que ?? 'demo'}»`);
+
+    expect(
+      renderToStaticMarkup(createElement(Mentirosa, { que: null })),
+      'la versión mentirosa SÍ pinta con null — por eso la prueba de arriba mide algo',
+    ).not.toBe('');
+    expect(renderToStaticMarkup(createElement(Fingiendo, { que: null })), 'y la buena no').toBe('');
   });
 
   it('⚠️ y cada fingimiento tiene su PROPIA caché', () => {

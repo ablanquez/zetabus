@@ -174,9 +174,17 @@ test('⭐ EN ESCALA DE GRISES, EL ESTADO SIGUE VIÉNDOSE', async ({ page }, info
   //    ruido, y además miente sobre lo que el usuario tiene delante.
   const limpia = await page.context().newPage();
   await limpia.goto(`/parada/${POSTE}?fingir=solo-oficiales`, { waitUntil: 'networkidle' });
-  // ⚠️ Y SE EXIGE LA BANDA DEL MODO DEMO: si el fingimiento no ha ocurrido, este
-  //    test estaría mirando datos REALES y aprobando por casualidad.
-  await expect(limpia.locator('text=MODO DEMO').first()).toBeVisible();
+  // ⚠️ Y SE EXIGE LA PRUEBA DE QUE EL FINGIMIENTO HA OCURRIDO: si no, este test
+  //    estaría mirando datos REALES y aprobando por casualidad.
+  //
+  // ⭐ ANTES SE MIRABA LA BANDA "MODO DEMO", Y ERA EL PROXY EQUIVOCADO: aquella
+  //    banda salía con `ZETABUS_DEMO=1` estuviera fingiendo o no, así que
+  //    demostraba que el FLAG estaba puesto, no que el fingimiento se aplicara.
+  //    La marca de página sí lo demuestra, y además dice cuál.
+  await expect(limpia.locator('[data-papel="fingiendo"]')).toHaveAttribute(
+    'data-fingimiento',
+    'solo-oficiales',
+  );
   expect(
     await limpia.locator('[data-papel="nota-sin-verificar"]').count(),
     'sin marcados en pantalla, la leyenda NO se pinta',

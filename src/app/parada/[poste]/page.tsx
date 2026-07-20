@@ -4,6 +4,7 @@ import { llegadasDePoste } from '@/engine/llegadas';
 import { motor } from '@/engine/motor';
 import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
+import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
 
 /**
@@ -87,12 +88,11 @@ export default async function ParadaPage({ params, searchParams }: Props) {
                 "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
             {p.name}
           </h1>
-          <p className="text-nota text-[var(--color-tinta-tenue)]">
-            poste {numero}
-            {fingir && (
-              <span className="ml-2 font-bold text-[var(--color-alerta)]">· FINGIENDO «{fingir}»</span>
-            )}
-          </p>
+          <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
+          {/* ⭐ Solo si de verdad se está fingiendo, y diciendo QUÉ. Antes esto era
+              un «· FINGIENDO «x»» diminuto al lado del poste, y encima competía con
+              una banda roja del layout que salía SIEMPRE. Ver `Fingiendo.tsx`. */}
+          <Fingiendo que={fingir} />
 
         {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA.
             Avanza no da el nombre de las paradas suprimidas por un desvío (los 4 de

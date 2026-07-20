@@ -9,6 +9,7 @@ import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Terminal } from '@/components/Terminal';
+import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
 import type { Line, LineId, StopId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
@@ -134,6 +135,13 @@ export default async function LineaPage({ params, searchParams }: Props) {
           )}
         </h1>
       </div>
+
+      {/* ⚠️ /linea ACEPTA `?fingir=` Y NO LO DECÍA. Mientras existió la banda roja
+          del layout el agujero quedaba tapado por accidente —la banda salía en todas
+          las páginas—, pero tapado por algo que además mentía. Al quitarla, esta
+          pantalla se habría quedado fingiendo EN SILENCIO, que es peor que el
+          problema original. Va en el mismo commit, no en el siguiente. */}
+      <Fingiendo que={fingir} />
 
       {sentidos.length > 1 && (
         <nav className="mt-4 flex gap-2" aria-label="Sentido">
