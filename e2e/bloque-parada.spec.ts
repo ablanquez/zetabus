@@ -176,7 +176,22 @@ test.describe('⭐ C3 · FEEDBACK TÁCTIL: al pulsar, el bloque cambia', () => {
 
     console.log(`\n  [${info.project.name}] fondo reposo=${enReposo} · pulsado=${pulsado} · soltado=${trasSoltar}`);
     expect(pulsado, 'al pulsar el bloque NO cambia el fondo: sin feedback táctil').not.toBe(enReposo);
-    expect(trasSoltar, 'el feedback no se retira al soltar').toBe(enReposo);
+
+    /**
+     * ⚠️ AQUÍ ANTES SE EXIGÍA LO CONTRARIO: `expect(trasSoltar).toBe(enReposo)`,
+     * o sea "el feedback SE RETIRA al soltar". Y ESTE TEST HIZO SU TRABAJO: se
+     * puso rojo el día que cambiamos el contrato, en vez de dejarlo pasar.
+     *
+     * ⭐ EL CONTRATO NUEVO ES EL OPUESTO, Y A PROPÓSITO: al soltar, el bloque SE
+     * QUEDA MARCADO hasta que llega la pantalla nueva. Apagarlo al soltar dejaba
+     * un hueco mudo —entre el dedo y la pantalla— en el que una persona con mala
+     * cobertura vuelve a pulsar porque cree que no ha entrado. Ver
+     * `components/AcuseDeToque.tsx` y `e2e/acuse-de-toque.spec.ts`, que es donde
+     * se prueba la persistencia y la vuelta a reposo al navegar atrás.
+     *
+     * Lo que este test sigue guardando es lo suyo: que el toque SE ACUSA.
+     */
+    expect(trasSoltar, 'la marca desapareció al soltar: vuelve el hueco mudo').not.toBe(enReposo);
   });
 });
 

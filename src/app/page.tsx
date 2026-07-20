@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Buscador, type Entrada } from '@/components/Buscador';
 import { ChipLinea } from '@/components/ChipLinea';
+import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { GRUPOS, grupoDe, idParada, lineas, paradas, posteDe } from '@/engine/topologia';
 
 /**
@@ -63,8 +64,11 @@ export default function Home() {
                 <li key={String(l.id)}>
                   <Link
                     href={`/linea/${encodeURIComponent(l.shortName)}`}
+                    data-acusa="si"
                     className="flex min-h-[var(--control-fila)] items-center gap-3 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
                   >
+                    {/* Se queda marcada tras soltar, hasta que carga la línea. */}
+                    <AcuseDeToque />
                     {/* ⭐ D1 · UN SOLO SITIO SABE PINTAR UNA LÍNEA.
                         El color = IDENTIDAD (qué línea). La inversión = CATEGORÍA
                         (¿es nocturna?). Dos canales, dos preguntas. Y si cada

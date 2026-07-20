@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Line } from '@/core';
 import { esBuho } from '@/engine/topologia';
+import { AcuseDeToque } from './AcuseDeToque';
 
 /**
  * ⭐⭐ D1 · EL CHIP DE UNA LÍNEA. Y ESTO ES SISTEMA, NO ESTÉTICA.
@@ -208,6 +209,9 @@ export function ChipLinea({
       className="block"
     >
       {contenido}
+      {/* ⭐ El chip se queda HUNDIDO tras soltar, hasta que carga su línea. Sigue
+          sin teñirse: el tono del chip es la identidad de la línea. */}
+      <AcuseDeToque />
     </Link>
   );
 }

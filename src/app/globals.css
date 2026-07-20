@@ -333,6 +333,66 @@ body {
 .bloque-parada [data-papel="transbordos"] a:active {
   transform: scale(0.92);
 }
+
+/**
+ * ⭐⭐ EL ACUSE QUE NO SE APAGA AL SOLTAR. Ver `components/AcuseDeToque.tsx`.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  `:active` muere al levantar el dedo, y entre eso y la pantalla nueva no había
+ *  NINGUNA señal: en una red lenta acabas pulsando dos veces. El marcador que
+ *  planta `useLinkStatus` dentro del enlace mantiene la marca hasta que la
+ *  navegación termina — o hasta que se deshace (volver atrás la limpia sola,
+ *  porque el componente se desmonta con su pantalla).
+ *
+ * ⚠️ ESTO EXTIENDE EL `:active`, NO LO SUSTITUYE. Mientras el dedo está encima
+ *    manda la regla de arriba, que es idéntica. Lo único que cambia es que ahora
+ *    la marca SIGUE puesta después.
+ *
+ * ⚠️ Y SOBREVIVE AL GRIS por dos canales, ninguno de los cuales es el tono:
+ *    el tinte es un cambio de LUMINANCIA (blanco → #e2e8f0, 1,23:1) y el latido
+ *    es MOVIMIENTO. En blanco y negro se siguen leyendo los dos.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+.bloque-parada:has([data-papel="acuse-de-toque"][data-pendiente="si"]) {
+  background: var(--color-fondo);
+  animation: acuse-esperando var(--dur-latido) ease-in-out infinite;
+}
+/* El chip mantiene SU acuse, el hundido, por el mismo motivo que no se tiñe:
+   teñirlo pisaría el color de la línea, que es su identidad. */
+[data-papel="transbordos"] a:has([data-papel="acuse-de-toque"][data-pendiente="si"]) {
+  transform: scale(0.92);
+}
+/**
+ * Y LO MISMO PARA LAS FILAS-ENLACE: el índice de líneas, los resultados del
+ * buscador y la botonera de sentido. El criterio es «TODO LO QUE NAVEGA lo lleva»
+ * — sería raro que una parada se quedara marcada y una línea del índice no.
+ *
+ * ⚠️ NO se le pone a lo que NO navega. Las tarjetas de llegada de la vista de
+ *    parada son `<button>` que seleccionan un autobús y resaltan su marcador en el
+ *    mapa: no cambian de pantalla, así que no hay ninguna espera que acusar (y
+ *    marcarlas mentiría, porque su acuse ya es la selección misma).
+ *
+ * ⚠️ Estas reglas ganan a las utilidades `bg-*` de Tailwind sin `!important`:
+ *    `@import "tailwindcss"` mete las utilidades en una CAPA, y el CSS sin capa
+ *    —éste— siempre vence a una capa. Comprobado en el navegador, no supuesto.
+ */
+[data-acusa]:has([data-papel="acuse-de-toque"][data-pendiente="si"]) {
+  background: var(--color-fondo);
+  animation: acuse-esperando var(--dur-latido) ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-acusa]:has([data-papel="acuse-de-toque"][data-pendiente="si"]) { animation: none; }
+}
+
+/* Un pulso de opacidad MUY suave: dice "sigo trabajando" sin llamar la atención y
+   —a diferencia de un `scale`— no mueve nada de sitio en una lista larga. */
+@keyframes acuse-esperando {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+/* Quien pide menos movimiento pierde el pulso. Y NADA MÁS: el tinte se queda, que
+   es el canal que de verdad dice "te he oído". Mismo criterio que `.es-inminente`. */
+@media (prefers-reduced-motion: reduce) {
+  .bloque-parada:has([data-papel="acuse-de-toque"][data-pendiente="si"]) { animation: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .bloque-parada [data-papel="transbordos"] a:active { transform: none; }
 }

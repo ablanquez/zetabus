@@ -9,6 +9,7 @@ import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Terminal } from '@/components/Terminal';
+import { AcuseDeToque } from '@/components/AcuseDeToque';
 import type { Line, LineId, StopId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
@@ -144,6 +145,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 href={`/linea/${encodeURIComponent(l.shortName)}?sentido=${s.directionId}${fingir ? `&fingir=${fingir}` : ''}`}
                 aria-current={esActivo ? 'true' : undefined}
                 data-papel="sentido"
+                data-acusa="si"
                 data-activo={esActivo ? 'si' : 'no'}
                 className={`flex flex-1 items-center justify-center gap-1.5 rounded-tarjeta border px-3 py-2 text-center text-menor leading-snug sin-recortar ${
                   esActivo
@@ -151,6 +153,8 @@ export default async function LineaPage({ params, searchParams }: Props) {
                     : 'border-[var(--color-borde)] bg-[var(--color-papel)] font-bold text-[var(--color-tinta-tenue)]'
                 }`}
               >
+                {/* Se queda marcado tras soltar, hasta que carga el otro sentido. */}
+                <AcuseDeToque />
                 {/* El sentido activo se marca por TRES canales que sobreviven al
                     gris —RELLENO oscuro (valor), PESO, y el punto lleno ●/○—. El
                     color se reserva para la identidad de la línea, no para decir

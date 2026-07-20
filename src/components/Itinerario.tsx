@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Line, LineId, StopId } from '@/core';
 import { esBuho, transbordosDe } from '@/engine/topologia';
 import { ChipLinea } from './ChipLinea';
+import { AcuseDeToque } from './AcuseDeToque';
 import type { ParadaDelDiff } from '@/engine/desvios';
 
 /**
@@ -175,6 +176,9 @@ export function Itinerario({
                 {(primero || ultimo) && (
                   <span className="sr-only"> · {primero ? 'cabecera de línea' : 'final de línea'}</span>
                 )}
+                {/* ⭐ «Te he oído, voy»: mantiene el bloque marcado tras soltar el
+                    dedo, hasta que aparece la parada. Ver `AcuseDeToque.tsx`. */}
+                <AcuseDeToque />
               </Link>
 
               {/* LÍNEA 2 · POSTE + PROVISIONAL, CHIPS DE LA MISMA FAMILIA.

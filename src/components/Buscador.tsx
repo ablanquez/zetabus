@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { AcuseDeToque } from './AcuseDeToque';
 
 /**
  * EL BUSCADOR. Conocimiento pagado por la referencia, y se reutiliza.
@@ -115,7 +116,13 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
         <ul className="mt-3 overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
           {resultados.map((e, i) => (
             <li key={`${e.tipo}-${e.clave}`} className={i > 0 ? 'border-t border-[var(--color-borde)]' : ''}>
-              <Link href={e.href} className="flex min-h-[var(--control-fila)] items-center gap-3 px-4 py-3">
+              <Link
+                href={e.href}
+                data-acusa="si"
+                className="flex min-h-[var(--control-fila)] items-center gap-3 px-4 py-3"
+              >
+                {/* Se queda marcado tras soltar, hasta que carga el destino. */}
+                <AcuseDeToque />
                 <span
                   className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-caja px-1.5 text-nota font-black"
                   style={
