@@ -116,6 +116,27 @@ import { tonosDeChip, llevaContorno } from './ChipLinea';
 const ZOOM_SUELO = 13;
 const ZOOM_TECHO = 16;
 
+/**
+ * ⭐ «A 7,5 KM», NO «A 7.523 M». La cifra está para DECIDIR, no para presumir.
+ *
+ * La pregunta que se contesta es *"¿me merece la pena pulsar «Encuadrarlos»?"*, y
+ * para eso 7,5 km y 7.523 m valen exactamente lo mismo — pero el segundo se lee
+ * peor y, sobre todo, **finge una precisión que el dato no tiene**: la posición
+ * viene de un GPS que Avanza refresca cada pocos segundos y el autobús se mueve
+ * mientras lo lees. Un metro de resolución sería una mentira de precisión.
+ *
+ * ⚠️ Se redondea SIN inventar hacia abajo: 950 m se dice «a 1 km», no «a 900 m».
+ *    Y por debajo del kilómetro se va de 50 en 50, que es el orden de lo que un
+ *    peatón distingue.
+ */
+function distanciaCorta(metros: number): string {
+  if (metros >= 1000) {
+    const km = Math.round(metros / 100) / 10;
+    return `${km.toFixed(1).replace('.', ',')} km`;
+  }
+  return `${Math.round(metros / 50) * 50} m`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  B4 · EL MARCADOR DE AUTOBÚS. CLONADO DE LA REFERENCIA, PÍXEL A PÍXEL.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -370,17 +391,30 @@ function Encuadre({
  */
 function ContarFuera({
   posiciones,
+  parada,
   onContar,
 }: {
   posiciones: readonly LatLon[];
-  onContar: (n: number) => void;
+  /** El origen desde el que se mide «lejos». Es la referencia del usuario. */
+  parada: LatLon | null;
+  onContar: (r: { n: number; lejos: number | null }) => void;
 }) {
   const map = useMap();
 
   const contar = useCallback(() => {
     const b = map.getBounds();
-    onContar(posiciones.filter((p) => !b.contains([p.lat, p.lon])).length);
-  }, [map, posiciones, onContar]);
+    const fuera = posiciones.filter((p) => !b.contains([p.lat, p.lon]));
+    /**
+     * ⚠️ La distancia la calcula LEAFLET (`map.distance`, gran círculo del CRS), no
+     *    una fórmula mía. Mismo criterio que con `getBoundsZoom`: reimplementarla
+     *    sería medir mi aritmética en vez de la del mapa que el usuario está viendo.
+     */
+    const lejos =
+      parada && fuera.length > 0
+        ? Math.max(...fuera.map((p) => map.distance([parada.lat, parada.lon], [p.lat, p.lon])))
+        : null;
+    onContar({ n: fuera.length, lejos });
+  }, [map, posiciones, parada, onContar]);
 
   useMapEvents({ moveend: contar, zoomend: contar, resize: contar });
   useEffect(contar, [contar]);
@@ -432,7 +466,7 @@ export function MapaParada({
 
   const posicionesBus = useMemo(() => conPosicion.map((l) => l.posicion!), [conPosicion]);
 
-  const [fuera, setFuera] = useState(0);
+  const [fuera, setFuera] = useState<{ n: number; lejos: number | null }>({ n: 0, lejos: null });
   const [orden, setOrden] = useState(0);
 
   /** «Ver todos» = quitar el foco Y devolver el encuadre a LOS FILTRADOS. */
@@ -489,7 +523,7 @@ export function MapaParada({
             maxZoom={19}
           />
           <Encuadre parada={parada} foco={enfocado?.posicion ?? null} puntos={puntos} orden={orden} />
-          <ContarFuera posiciones={posicionesBus} onContar={setFuera} />
+          <ContarFuera posiciones={posicionesBus} parada={parada} onContar={setFuera} />
 
           {/* ⭐ LA PARADA, SIEMPRE ENCIMA. Es la referencia del usuario: si un autobús
               la tapa, el mapa deja de contestar «¿dónde está respecto A MÍ?». */}
@@ -570,12 +604,41 @@ export function MapaParada({
           botonazo de 44 px compitiendo con el mapa por la atención. Ningún test lo
           habría cazado — HTML válido, contraste correcto, nada truncado. Ahora el
           texto ocupa su ancho y el botón se queda al lado, sin robar protagonismo. */}
-      {!enfocado && fuera > 0 && (
-        <div className="mt-1.5 flex items-center gap-2" data-papel="fuera-del-encuadre">
-          <p className="min-w-0 flex-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar">
-            {fuera === 1
-              ? 'Hay 1 autobús fuera del encuadre: está más lejos.'
-              : `Hay ${fuera} autobuses fuera del encuadre: están más lejos.`}
+      {/* ⭐⭐ Y AHORA PESA, PORQUE AHORA ES UNA EXCEPCIÓN. Con el suelo en 14 esto
+          saltaba en el **70,7 %** de las aperturas (medido: `docs/SPIKE_SUELO_DE_ZOOM.md`):
+          era un cartel permanente, y un cartel permanente se vuelve parte del
+          decorado — por eso era texto gris pequeño, y por eso no se veía. Con el
+          suelo en 13 salta en el **22 %**, y eso es lo que le da derecho a llamar la
+          atención sin convertirse en ruido.
+
+          ⚠️ ÁMBAR Y NO ROJO, como en las paradas suprimidas: el rojo es ALERTA y
+             exige acción (el "YA LLEGA"). Que un autobús quede fuera del encuadre
+             CUESTA pero no rompe — hay un botón al lado que lo arregla. Es AVISO.
+
+          ⚠️ Y DESTACA SIN GRITAR, que aquí es media batalla: esto vive JUSTO DEBAJO
+             del mapa, que ya está lleno de información. Por eso el peso lo llevan el
+             fondo ámbar y un borde de 1 px —no de 2, como el bloque de suprimidas,
+             que no compite con nada— y por eso el texto sigue siendo `text-nota`. */}
+      {!enfocado && fuera.n > 0 && (
+        <div
+          className="mt-1.5 flex items-center gap-2 rounded-caja border border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-2.5 py-1.5"
+          data-papel="fuera-del-encuadre"
+          data-lejos-m={fuera.lejos === null ? undefined : Math.round(fuera.lejos)}
+        >
+          <p className="min-w-0 flex-1 text-nota leading-snug text-[var(--color-tinta)] sin-recortar">
+            <span aria-hidden>⚠ </span>
+            <strong className="font-black">
+              {fuera.n === 1 ? '1 autobús' : `${fuera.n} autobuses`} fuera del encuadre
+            </strong>
+            {/* ⭐ EL DATO QUE FALTABA. "Está más lejos" no dice si merece la pena
+                pulsar; "a 7,5 km" sí. Y sale de las posiciones que `contar()` ya
+                tiene en la mano: ni una petición más. */}
+            {fuera.lejos !== null && (
+              <>
+                {' · el más lejano, a '}
+                <strong className="font-black tabular-nums">{distanciaCorta(fuera.lejos)}</strong>
+              </>
+            )}
           </p>
           <button
             type="button"
@@ -584,9 +647,14 @@ export function MapaParada({
             // ⚠️ 44 px de alto NO son negociables (WCAG 2.5.8 pide 24, y un pulgar
             //    en la calle pide más). Lo que se baja es el PESO VISUAL, no el
             //    tamaño del objetivo: es lo contrario de lo que suele hacerse.
-            className="min-h-[var(--control)] shrink-0 rounded-full border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 text-nota font-semibold text-[var(--color-tinta-suave)]"
+            // ⚠️ El borde pasa a ámbar para que el botón PERTENEZCA al aviso: es su
+            //    salida, no un control suelto que ha caído al lado. El relleno sigue
+            //    siendo papel, que sobre el ámbar claro lo hace obvio como pulsable.
+            className="min-h-[var(--control)] shrink-0 rounded-full border border-[var(--color-aviso)] bg-[var(--color-papel)] px-3 text-nota font-semibold text-[var(--color-aviso)]"
           >
-            Encuadrarlos
+            {/* Con un solo autobús, «Encuadrarlos» chirriaba justo al lado de un
+                «1 autobús». Concuerda, como concuerda el resto del aviso. */}
+            {fuera.n === 1 ? 'Encuadrarlo' : 'Encuadrarlos'}
           </button>
         </div>
       )}
