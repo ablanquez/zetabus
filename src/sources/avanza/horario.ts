@@ -36,6 +36,14 @@ export interface HorarioWeb {
   readonly ultimas: readonly SalidaWeb[];
   /** "Información adicional" de Avanza, cita literal. `null` si la línea no trae. */
   readonly info: string | null;
+  /**
+   * "Frecuencia media" de Avanza, cita literal (p. ej. "Frecuencia media:
+   * laborables: 13, sábados: 17, domingos y festivos: 17 min."). `null` si no la
+   * trae. ⚠️ Va en un `<p>` **fuera** de `#infoCaracteristicas`, así que el bloque
+   * de "Información adicional" no la pisa. Se saca del MISMO HTML: cero peticiones
+   * extra. Quien la interpreta es `engine/salidas.ts`; aquí solo se cita.
+   */
+  readonly frecuencia: string | null;
 }
 
 export class HorarioIlegible extends Error {
@@ -93,7 +101,16 @@ export function parsearHorarioWeb(html: string): HorarioWeb {
   const suelto = caja && parrafos.length === 0 ? caja.text.replace(/\s+/g, ' ').trim() : '';
   const info = parrafos.length > 0 ? parrafos.join('\n') : suelto.length > 0 ? suelto : null;
 
-  return { primeras, ultimas, info };
+  // ⭐ "Frecuencia media": un `<p>` suelto, FUERA de #infoCaracteristicas. Se
+  //    reconoce por su encabezado y se cita entero, tal cual. Medido: aparece en
+  //    los 65 sentidos con tabla y NUNCA dentro de #infoCaracteristicas.
+  const frecuencia =
+    root
+      .querySelectorAll('p')
+      .map((p) => p.text.replace(/\s+/g, ' ').trim())
+      .find((t) => /^Frecuencia media/i.test(t)) ?? null;
+
+  return { primeras, ultimas, info, frecuencia };
 }
 
 export async function leerHorarioWeb(

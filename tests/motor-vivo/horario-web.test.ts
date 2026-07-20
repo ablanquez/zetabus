@@ -69,6 +69,22 @@ describe('parsearHorarioWeb', () => {
     expect(h.info).toBeNull();
   });
 
+  it('⭐ "Frecuencia media" se cita literal, y va FUERA de #infoCaracteristicas', () => {
+    // El <p> de frecuencia vive entre el formulario y las tablas, no en la caja de
+    // "Información adicional". Por eso el parser lo busca en toda la página.
+    const html =
+      `<p style="text-align:left;">Frecuencia media: laborables: 13, sábados: 17, domingos y festivos: 17 min. </p>` +
+      pagina(fila('06:00', 'A', 'B'), fila('22:00', 'A', 'B'), '<p>Una nota.</p>');
+    const h = parsearHorarioWeb(html);
+    expect(h.frecuencia).toBe('Frecuencia media: laborables: 13, sábados: 17, domingos y festivos: 17 min.');
+    expect(h.info).toBe('Una nota.'); // y no se contamina con la frecuencia
+  });
+
+  it('⚠️ si no hay "Frecuencia media", el campo es null (no se inventa)', () => {
+    const html = pagina(fila('06:00', 'A', 'B'), fila('22:00', 'A', 'B'), '');
+    expect(parsearHorarioWeb(html).frecuencia).toBeNull();
+  });
+
   it('⛔ FRENO DE MANO: si la página no trae la estructura conocida, se declara ilegible', () => {
     // Si aceptáramos esto como "tabla vacía", el bloque desaparecería en silencio
     // el día que cambien la plantilla, y nadie se enteraría.
