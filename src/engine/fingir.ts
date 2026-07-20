@@ -219,17 +219,28 @@ const SIN_VERIFICAR = respuesta([
  *   4132  eta 3   CON GPS   → otra línea (otro color de chip: se ve que el marcador
  *                             lleva el color de SU línea, no uno genérico)
  *   4845  eta 7   SIN GPS   → ⭐ NO SE PINTA. Y se dice que no se pinta.
- *   4610  eta 12  CON GPS   → el más lejano: cae FUERA DEL ENCUADRE de barrio
+ *   4610  eta 25  CON GPS   → el más lejano: cae FUERA DEL ENCUADRE de barrio
  *
  * ⚠️ Sin el 4845 no se podía comprobar que el mapa NO MIENTE POR OMISIÓN, y sin el
  *    4610 no se podía comprobar que B3 (abrir en la parada) **paga su precio a la
  *    vista** en lugar de esconder los autobuses lejanos.
+ *
+ * ⭐⭐ EL 4610 ESTABA A ETA 12 (3,6 km) Y HA HABIDO QUE ALEJARLO. Y el motivo es
+ *    justamente la buena noticia: al bajar `ZOOM_SUELO` de 14 a 13, el encuadre pasó
+ *    de 2.042 a 4.084 m útiles de ancho — **y un autobús a 3,6 km YA CABE**. O sea
+ *    que el caso que este fixture existía para provocar dejó de ser un problema.
+ *
+ * ⚠️ Pero si lo dejáramos en 12, el test del aviso «Hay N fuera» y del botón
+ *    «Encuadrarlos» se quedaría SIN CASO QUE PROBAR y pasaría a verde sin comprobar
+ *    nada — un verde vacío, que es peor que un rojo. Se aleja a 25 min (7,5 km, del
+ *    orden de los de Montañana o Peñaflor, medidos en el spike hasta 13,6 km) para
+ *    que siga habiendo un autobús de verdad fuera del encuadre.
  */
 const MAPA = respuesta([
   { coche: '4889', linea: '035', destino: 'PARQUE GOYA', eta: 1 },
   { coche: '4132', linea: '029', destino: 'SAN GREGORIO', eta: 3 },
   { coche: '4845', linea: '035', destino: 'PARQUE GOYA', eta: 7, sinGps: true },
-  { coche: '4610', linea: '035', destino: 'PARQUE GOYA', eta: 12 },
+  { coche: '4610', linea: '035', destino: 'PARQUE GOYA', eta: 25 },
 ]);
 
 /** Dos líneas, cuatro autobuses. Para poder PULSAR el filtro y ver qué se apaga. */

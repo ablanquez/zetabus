@@ -31,11 +31,20 @@ import { capturar, contraste, TACTIL_MINIMO } from './lib/medir';
  *   4889 · 1 min  · CON GPS  → inminente (late)
  *   4132 · 3 min  · CON GPS  → otra línea, otro color
  *   4845 · 7 min  · SIN GPS  → NO se pinta. Y se dice.
- *   4610 · 12 min · CON GPS  → a 3,6 km: FUERA del encuadre de barrio
+ *   4610 · 25 min · CON GPS  → a 7,5 km: FUERA del encuadre de barrio
+ *
+ * ⚠️ El 4610 estaba a 12 min (3,6 km) y hubo que alejarlo: con `ZOOM_SUELO` en 13
+ *    un autobús a 3,6 km YA CABE, así que este fixture se habría quedado sin caso
+ *    que provocar y el test del aviso pasaría a verde sin comprobar nada.
  */
 const URL = '/parada/744?fingir=mapa';
 
-const ZOOM_SUELO = 14;
+/**
+ * ⚠️ DUPLICADO A MANO desde `MapaParada.tsx` (no se exporta). Si allí cambia y
+ *    aquí no, este test aprueba un suelo que ya no existe. Era 14; el spike de
+ *    `docs/SPIKE_SUELO_DE_ZOOM.md` lo bajó a 13.
+ */
+const ZOOM_SUELO = 13;
 const ZOOM_TECHO = 16;
 
 const buses = (p: Page) => p.locator('.zb-bus');
@@ -127,7 +136,7 @@ test.describe('⭐ B3 · el zoom abre en la parada, no en media provincia', () =
     await abrir(page);
 
     const aviso = page.locator('[data-papel="fuera-del-encuadre"]');
-    await expect(aviso, 'el 4610 está a 3,6 km: TIENE que quedar fuera y decirse').toBeVisible();
+    await expect(aviso, 'el 4610 está a 7,5 km: TIENE que quedar fuera y decirse').toBeVisible();
     console.log(`  [${info.project.name}] ${(await aviso.innerText()).split('\n')[0]}`);
 
     // Y el botón ROMPE el suelo de zoom a propósito: si no, no serviría de nada.
@@ -339,7 +348,7 @@ test.describe('⭐ B6 · pulsar una fila: se marca, el mapa AÍSLA, y sale «Ver
     await abrir(page);
 
     /**
-     * ⚠️ EL 4610 ES LA ÚLTIMA FILA (12 min) Y SU MARCADOR EMPIEZA **FUERA DEL
+     * ⚠️ EL 4610 ES LA ÚLTIMA FILA (25 min) Y SU MARCADOR EMPIEZA **FUERA DEL
      *    ENCUADRE** — o sea, recortado por el `overflow:hidden` del mapa y por tanto
      *    IMPULSABLE. Mi primera versión de este test hacía `click({force:true})` sobre
      *    él y no pasaba nada, y yo iba a culpar al código.

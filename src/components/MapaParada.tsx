@@ -50,13 +50,21 @@ import { tonosDeChip, llevaContorno } from './ChipLinea';
  *  la parada y el autobús que tienes encima quedaban a tres píxeles uno del otro.
  *  El mapa perdía su función justo cuando más importa.
  *
- *  ⛔ PERO LA ORDEN ERA *"zoom centrado en la parada"*, Y MEDIDA NO SE SOSTIENE:
+ *  ⛔ PERO LA ORDEN ERA *"zoom centrado en la parada"*, Y MEDIDA NO SE SOSTIENE.
  *
- *      zoom 16 → radio visible  257 m       zoom 14 → radio visible 1.028 m
- *      zoom 15 → radio visible  514 m       zoom 13 → radio visible 2.056 m
+ *  ⚠️ La tabla va en ANCHO VISIBLE REAL, no en un radio teórico: el contenedor del
+ *     mapa mide **326×288 px a 360 px de pantalla** (medido en /parada, no supuesto),
+ *     y a 41,65° de latitud sale así:
+ *
+ *      zoom 16 →   582 m de ancho       zoom 13 → 4.656 m   ← EL SUELO
+ *      zoom 15 → 1.164 m                zoom 12 → 9.310 m   ← el bug de la Tanda 7
+ *      zoom 14 → 2.328 m
  *
  *      un autobús a  1 min está a ~0,3 km      a  7 min → ~2,1 km
  *      un autobús a  3 min está a ~0,9 km      a 12 min → ~3,6 km
+ *
+ *      Y medido de verdad sobre 82 paradas, la distancia al autobús MÁS LEJANO:
+ *      mediana 2.377 m · p75 3.354 m · p90 5.511 m · max 13.611 m (Peñaflor).
  *
  *  ⇒ Abrir SIEMPRE en la parada a zoom 16 enseñaría, casi siempre, **el pin y nada
  *    más**. Y B5 —la orden de la línea siguiente— dice que el usuario tiene que ver
@@ -65,18 +73,47 @@ import { tonosDeChip, llevaContorno } from './ChipLinea';
  *  LA REGLA, QUE CUMPLE LAS DOS: se encuadra la parada CON los autobuses, pero el
  *  zoom tiene SUELO y TECHO.
  *
- *      · si todo cabe entre 14 y 16 → se encuadra todo (el caso normal, y es lo
- *        que hace la referencia: medida en su captura, abre a zoom ~14).
- *      · si para caberlo todo habría que bajar de 14 → **NO SE BAJA**. Se planta en
- *        14 CENTRADO EN LA PARADA, que es exactamente lo que Antonio pedía para el
- *        caso que le molestaba: el del autobús lejano.
+ *      · si todo cabe entre el suelo y 16 → se encuadra todo.
+ *      · si para caberlo todo habría que bajar del suelo → **NO SE BAJA**. Se planta
+ *        en el suelo CENTRADO EN LA PARADA, que es exactamente lo que Antonio pedía
+ *        para el caso que le molestaba: el del autobús lejano.
  *
  * ⚠️ Y ESO DEJA AUTOBUSES FUERA DEL ENCUADRE, QUE ES UNA MENTIRA POR OMISIÓN: el
  *    mapa parecería decir "no viene ninguno". **No se calla: se cuenta cuántos hay
  *    fuera y se da el botón para encuadrarlos.**
  * ═══════════════════════════════════════════════════════════════════════════
+ *  ⭐⭐ EL SUELO ERA 14 Y AHORA ES 13. EL PRINCIPIO NO CAMBIA; EL NÚMERO SÍ.
+ *
+ *  Antonio: *"cuando hay varias líneas el zoom es muy grande y no se ven todos los
+ *  buses"*. Se midió antes de tocar nada — `docs/SPIKE_SUELO_DE_ZOOM.md`, 90 paradas
+ *  repartidas por toda la red, con el `getBoundsZoom` del Leaflet de verdad sobre un
+ *  contenedor del tamaño real (326×288 a 360 px):
+ *
+ *      con suelo 14 → se recortan  58 de 82   **70,7 %**
+ *      con suelo 13 → se recortan  18 de 82   **22,0 %**   (−69 % de los recortes)
+ *
+ *  ⚠️ O SEA QUE EL CASO RARO ERA EL NORMAL: siete de cada diez aperturas ocultaban
+ *     autobuses, y el aviso que lo confesaba es texto pequeño gris. Y la MEDIANA del
+ *     zoom necesario cae **exactamente en 13**: el caso típico no estaba un poco por
+ *     debajo de 14, estaba justo un peldaño. Por eso un solo escalón se lleva tanto.
+ *
+ *  ⭐ Y EL MIEDO DE ENTONCES —"la parada se vuelve un punto"— NO SE CONFIRMA A 13,
+ *     porque el pin es un `divIcon` de TAMAÑO FIJO EN PÍXELES: mide 22 px a 14 y 22 px
+ *     a 13. **No encoge.** Lo que cambia es el contexto: se baja de nivel calle a
+ *     nivel barrio (a 13 se siguen leyendo Torrero, La Paz, Casablanca, la Ronda
+ *     Hispanidad). El zoom 12 del bug original abría a **9,3 km de ancho, cuatro veces
+ *     el área de 13** — por eso 13 no es "un poco de aquello": es otra cosa.
+ *
+ *  ⛔ Y UN SUELO DE 13,5 NO EXISTE: `zoomSnap` vale 1, así que `getBoundsZoom`
+ *     devuelve ENTEROS y 13,5 se comporta idéntico a 14. Medido, no supuesto.
+ *
+ *  ⚠️ LA LIMITACIÓN, DICHA: la medición es UNA FOTO, un lunes ~13:15. En hora punta
+ *     hay más autobuses por parada, así que el 70,7 % es probablemente un SUELO y no
+ *     un techo — el problema era, si acaso, mayor. Se vuelve a medir con el mismo
+ *     script cuando haga falta: `npx tsx scripts/spike-suelo-zoom.ts`.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
-const ZOOM_SUELO = 14;
+const ZOOM_SUELO = 13;
 const ZOOM_TECHO = 16;
 
 // ─────────────────────────────────────────────────────────────────────────────
