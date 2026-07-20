@@ -77,10 +77,17 @@
    * entonces la pantalla estaría diciendo "todos" por omisión.
    *
    * No lo vi eligiendo el color. Lo midió Chromium.
+   *
+   * ⭐ Y ESTE TOKEN ES EL QUE PONE EL TECHO DEL LIENZO. Al subir `--color-fondo`
+   * para separar tarjeta de fondo, lo primero que se rompe es ESTA tinta: es la
+   * más tenue que va DIRECTA sobre el lienzo, así que su 4,5:1 es la restricción.
+   * Medido: con el lienzo en #E2E8F0 da **5,17:1** ✅; en #DAE1EA, 4,84 ✅; en
+   * #CBD5E1 ya cae a 4,29 ⛔. El lienzo no puede pasar de ~#DAE1EA sin aclarar
+   * también esta tinta — y por eso el salto de superficies se queda en 1,23:1.
    */
   --color-tinta-tenue: #556070;
   --color-papel: #ffffff;
-  --color-fondo: #f1f5f9;
+  --color-fondo: #e2e8f0;
   --color-borde: #cbd5e1;
 
   /* Semánticos. NO se usan JAMÁS para pintar una línea. */
