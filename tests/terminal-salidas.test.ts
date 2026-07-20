@@ -73,7 +73,26 @@ describe('Terminal (bloque de salidas)', () => {
     });
     expect(html).toContain('data-marca="a"');
     expect(html).toContain('termina en H. CORTES, 9, no en PUERTA DEL CARMEN');
-    expect(html).toContain('Cada 20 min de media'); // uniforme → un solo número
+    // uniforme → un solo número, ahora como CIFRA (negrita, el dato)
+    expect(html).toContain('Cada ');
+    expect(html).toContain('min de media');
+    expect(html).toMatch(/data-papel="frecuencia-cifra"[^>]*>20</);
+  });
+
+  it('⭐ la franja de frecuencia va en TINTA con el dato en cifra y «según Avanza» tenue', () => {
+    const html = pinta({
+      primeras: [s('05:00', 'PARQUE GOYA', 'SEMINARIO')],
+      ultimas: [s('21:51', 'PARQUE GOYA', 'SEMINARIO')],
+      info: null,
+      frecuencia: 'Frecuencia media: laborables: 9, sábados: 16, domingos y festivos: 16 min.',
+    });
+    // Fondo tinta (la bisagra entre las dos tablas) y por tokens, no hex crudo.
+    expect(html).toMatch(/bg-\[var\(--color-tinta\)\][^>]*data-papel="frecuencia"/);
+    // Las tres cifras van marcadas como dato (para la jerarquía peso/color).
+    expect(html.match(/data-papel="frecuencia-cifra"/g) ?? []).toHaveLength(3);
+    // La atribución recede con el token de texto tenue sobre tinta.
+    expect(html).toContain('según Avanza');
+    expect(html).toContain('var(--color-papel-tenue)');
   });
 
   it('⚠️ el orden de la web se respeta: la salida de después de medianoche va al final', () => {

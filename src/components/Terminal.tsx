@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { HorarioWeb } from '@/sources/avanza/horario';
 import { modelarSalidas, type FrecuenciaModelo, type SalidaMarcada } from '@/engine/salidas';
 
@@ -15,15 +16,62 @@ import { modelarSalidas, type FrecuenciaModelo, type SalidaMarcada } from '@/eng
  *    significa "fuente secundaria" en la ficha de flota (no se reutiliza).
  */
 
-/** Cómo se lee la frecuencia: un número si los tres días coinciden, los tres si no. */
-function textoFrecuencia(f: FrecuenciaModelo): string {
-  if (f.uniforme && f.laborables !== null) return `Cada ${f.laborables} min de media · según Avanza`;
-  const partes: string[] = [];
-  if (f.laborables !== null) partes.push(`laborables ${f.laborables}`);
-  if (f.sabados !== null) partes.push(`sábados ${f.sabados}`);
-  if (f.festivos !== null) partes.push(`domingos y festivos ${f.festivos}`);
-  if (partes.length === 0) return `${f.literal} · según Avanza`; // plan B: la cita cruda
-  return `De media: ${partes.join(' · ')} min · según Avanza`;
+/**
+ * ⭐ LA FRANJA DE FRECUENCIA. Fondo TINTA (negro), texto blanco — hace de BISAGRA
+ * entre las dos tablas (primeras / últimas). En gris se leía como un bloque más; en
+ * tinta la estructura del bloque se entiende de un vistazo.
+ *
+ * ⚠️ Jerarquía por PESO, no por color: la CIFRA va en blanco pleno y negrita (es el
+ * dato); las etiquetas, en blanco normal; y «· según Avanza» en `papel-tenue` —la
+ * atribución recede, sin competir, y aun así pasa AA (7,32:1)—.
+ *
+ * ⚠️ Y sí, el negro sólido también lo usa la botonera de sentido para "activo". No
+ * chocan: aquella es una PÍLDORA redondeada entre iguales (eliges una); ésta, una
+ * franja de ANCHO COMPLETO, sola, con una cifra dentro. Forma y contexto las
+ * separan —comprobado a 360—. La bisagra no se lee como "seleccionado".
+ */
+function cifra(n: number) {
+  return (
+    <strong className="font-black text-[var(--color-papel)]" data-papel="frecuencia-cifra">
+      {n}
+    </strong>
+  );
+}
+
+function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
+  let cuerpo: ReactNode;
+  if (f.uniforme && f.laborables !== null) {
+    cuerpo = <>Cada {cifra(f.laborables)} min de media</>;
+  } else {
+    const dias: ReactNode[] = [];
+    if (f.laborables !== null) dias.push(<>laborables {cifra(f.laborables)}</>);
+    if (f.sabados !== null) dias.push(<>sábados {cifra(f.sabados)}</>);
+    if (f.festivos !== null) dias.push(<>domingos y festivos {cifra(f.festivos)}</>);
+    cuerpo =
+      dias.length === 0 ? (
+        f.literal // plan B: la cita cruda, si el formato no se dejó parsear
+      ) : (
+        <>
+          De media:{' '}
+          {dias.map((d, i) => (
+            <span key={i}>
+              {i > 0 && ' · '}
+              {d}
+            </span>
+          ))}{' '}
+          min
+        </>
+      );
+  }
+  return (
+    <p
+      className="bg-[var(--color-tinta)] px-4 py-2 text-nota font-medium leading-snug text-[var(--color-papel)] sin-recortar"
+      data-papel="frecuencia"
+    >
+      {cuerpo}
+      <span className="text-[var(--color-papel-tenue)]"> · según Avanza</span>
+    </p>
+  );
 }
 
 /**
@@ -93,14 +141,7 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
               <Flujo salidas={modelo.primeras} notaPorMarca={notaPorMarca} />
             </div>
 
-            {modelo.frecuencia && (
-              <p
-                className="border-y border-[var(--color-borde)] bg-[var(--color-fondo)] px-4 py-1.5 text-nota font-bold leading-snug text-[var(--color-tinta-suave)] sin-recortar"
-                data-papel="frecuencia"
-              >
-                {textoFrecuencia(modelo.frecuencia)}
-              </p>
-            )}
+            {modelo.frecuencia && <FranjaFrecuencia f={modelo.frecuencia} />}
 
             <div className="px-4 py-3" data-papel="tabla-salidas" data-etiqueta="Últimas salidas">
               <p className="mb-1 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">

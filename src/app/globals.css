@@ -87,6 +87,15 @@
    */
   --color-tinta-tenue: #556070;
   --color-papel: #ffffff;
+  /**
+   * TEXTO TENUE SOBRE SUPERFICIE TINTA (negra). El equivalente de `tinta-tenue`
+   * pero al revés: para lo secundario que va SOBRE fondo oscuro, donde el blanco
+   * pleno se reserva para el dato. Lo usa la «· según Avanza» de la franja de
+   * frecuencia. Medido: sobre `--color-tinta` da **7,32:1** ✅ (AA pide 4,5), y
+   * queda claramente por debajo del blanco (17,85:1), que es justo lo que se
+   * busca: que la atribución no compita con la cifra.
+   */
+  --color-papel-tenue: #9aa7ba;
   --color-fondo: #e2e8f0;
   --color-borde: #cbd5e1;
 
