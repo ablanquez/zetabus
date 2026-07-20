@@ -236,42 +236,24 @@ function Recorrido({
 
   return (
     <div className="mt-4">
-      {/* ⭐⭐ EL AVISO DE DESVÍO. Y es DERIVADO: se auto-apaga cuando restauren. */}
+      {/* ⭐⭐ EL AVISO DE DESVÍO, ENCOGIDO A UN CHIP. Y es DERIVADO: se auto-apaga.
+          ⛔ FUERA EL PÁRRAFO que explicaba el cruce y contaba las caídas/provisionales:
+             REDUNDABA con lo que ya está a la vista —el cuadro de suprimidas lista las
+             caídas una a una, y las provisionales salen marcadas en el propio itinerario—,
+             y encima lo contaba ANTES de que se vieran.
+          ⚠️ SOLO EL TÍTULO, y sin causa: ZetaBus NO sabe POR QUÉ (obras, cabalgata, un
+             corte…), solo que la ruta de hoy difiere de la oficial. Afirmar la causa sería
+             inventar. La frase "el recorrido es el de hoy, no el oficial" no se pierde: es
+             comportamiento normal de la app (el itinerario SIEMPRE es el de hoy), y vive en
+             /sobre-los-datos. */}
       {desviada && (
-        <div
-          className="mb-3 rounded-tarjeta border-2 border-[var(--color-aviso)] bg-[var(--color-papel)] px-3 py-2.5"
+        <p
+          className="mb-3 rounded-tarjeta border-2 border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-3 py-2 text-cuerpo font-black leading-snug text-[var(--color-aviso)] sin-recortar"
           data-papel="hay-desvio"
           role="status"
         >
-          <p className="text-cuerpo font-black leading-snug text-[var(--color-aviso)] sin-recortar">
-            ⚠ Esta línea está DESVIADA hoy
-          </p>
-          <p className="mt-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar">
-            Lo que ves abajo es <strong>el recorrido que el autobús hace hoy</strong>, no el oficial.
-            Sale de comparar el GTFS del Ministerio con la ruta que publica Avanza para esta jornada.
-            {veredicto.fuera.length > 0 && (
-              <>
-                {' '}
-                <strong>
-                  {veredicto.fuera.length}{' '}
-                  {veredicto.fuera.length === 1 ? 'parada ha caído' : 'paradas han caído'}
-                </strong>{' '}
-                del recorrido.
-              </>
-            )}
-            {veredicto.hacia.length > 0 && (
-              <>
-                {' '}
-                Hay{' '}
-                <strong>
-                  {veredicto.hacia.length}{' '}
-                  {veredicto.hacia.length === 1 ? 'parada provisional' : 'paradas provisionales'}
-                </strong>
-                .
-              </>
-            )}
-          </p>
-        </div>
+          ⚠ Esta línea está DESVIADA hoy
+        </p>
       )}
 
       {/* ⚠️ NO SE PUDO LEER LA RUTA DE HOY. Y "no lo sé" NO ES "no hay desvío".

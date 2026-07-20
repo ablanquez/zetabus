@@ -260,10 +260,12 @@ export default function SobreLosDatos() {
             fuente="Cruce: recorrido oficial (GTFS) × ruta real de hoy (Avanza)"
           >
             <p>
-              Comparamos el recorrido oficial con la ruta que Avanza publica <strong>para hoy</strong>.
-              Lo que está en el GTFS y <strong>no</strong> en la ruta de hoy: el autobús{' '}
-              <strong>ya no pasa</strong>, y se tacha. Lo que está en la ruta y <strong>no</strong> en
-              el GTFS: <strong>parada provisional</strong>, y se pinta como tal.
+              El recorrido que ves es el de <strong>hoy</strong> —la ruta que Avanza publica para
+              esta jornada—, <strong>no el plano oficial</strong>, haya desvío o no. Lo comparamos
+              con el recorrido oficial del GTFS: lo que está en el GTFS y <strong>no</strong> en la
+              ruta de hoy, el autobús <strong>ya no pasa</strong>, y se tacha; lo que está en la ruta
+              y <strong>no</strong> en el GTFS: <strong>parada provisional</strong>, y se pinta como
+              tal. (Si esa ruta de hoy no se puede leer, se pinta el oficial y se avisa.)
             </p>
             <p className="mt-2">
               <strong>Se auto-apaga</strong>: el día que restauren la calle las dos listas vuelven a
