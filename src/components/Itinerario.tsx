@@ -109,6 +109,7 @@ export function Itinerario({
   paradas,
   fingir,
   fuera,
+  nombreAccesible,
 }: {
   lineaId: LineId;
   linea: Line;
@@ -117,11 +118,19 @@ export function Itinerario({
   fingir: string | null;
   /** Paradas del GTFS por las que HOY el autobús NO pasa. Se tachan, con motivo. */
   fuera?: readonly ParadaDelDiff[];
+  /**
+   * ⚠️ EL NOMBRE DE LA REGIÓN PARA QUIEN NO LA VE. Existía como un <h2> visible
+   * ("EL RECORRIDO · 32 PARADAS") que se retiró por no decir nada a quien SÍ ve la
+   * tarjeta. Pero quien navega por encabezados lo usaba para llegar hasta aquí, así
+   * que el nombre se queda — en el sitio donde no gasta píxeles.
+   */
+  nombreAccesible?: string;
 }) {
   return (
     <ol
-      className="mt-2 overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 pt-3"
+      className="mt-6 overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 pt-3"
       data-papel="itinerario"
+      aria-label={nombreAccesible}
     >
       {paradas.map((p, i) => {
         const primero = i === 0;

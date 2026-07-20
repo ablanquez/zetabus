@@ -307,18 +307,6 @@ function Recorrido({
         </p>
       )}
 
-      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-          el recorrido · {aPintar.length} paradas
-        </h2>
-        <span
-          className="text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]"
-          data-papel="origen-recorrido"
-          data-real={hayReal ? 'si' : 'no'}
-        >
-          {hayReal ? 'la ruta de HOY, según Avanza' : 'ruta oficial (GTFS)'}
-        </span>
-      </div>
       {/* ⭐ C5 · FUERA LA LEYENDA DE LOS CUADRADITOS. Decía: "Los cuadraditos de
           colores son los transbordos... Los oscuros son las nocturnas." Si un sistema
           visual necesita un rótulo que lo explique, el sistema visual no funciona: la
@@ -328,7 +316,29 @@ function Recorrido({
           Quien no ve formas lo tiene en el `aria-label` de cada chip ("Ver el recorrido
           de la línea N1, nocturna"). */}
 
+      {/* ⭐⭐ Y POR EL MISMO MOTIVO SE VA LA FRANJA QUE HABÍA AQUÍ:
+          «EL RECORRIDO · 32 PARADAS»  +  «LA RUTA DE HOY, SEGÚN AVANZA»
+
+          Las tres partes decían algo que ya estaba dicho, y ninguna era accionable:
+
+            · «32 PARADAS» — la gente sabe contar, y se ven. Nadie decide nada
+              distinto porque haya 32 en vez de 28.
+            · «LA RUTA DE HOY, SEGÚN AVANZA» — redundante cuando hay desvío (el aviso
+              ámbar de arriba ya lo explica mucho mejor: "Lo que ves abajo es el
+              recorrido que el autobús hace hoy, no el oficial") y vacío cuando no lo
+              hay. La procedencia vive en /sobre-los-datos, enlazada desde el pie.
+            · «EL RECORRIDO» — un título que dice "EL RECORRIDO" encima de un recorrido
+              es como poner "FOTO" debajo de una foto. La tarjeta con sus nodos, su hilo
+              y sus nombres se explica sola.
+
+          ⚠️ LO QUE SÍ HACÍA ESA FRANJA Y NO SE PIERDE: era el único <h2> que NOMBRABA
+             la región, y quien navega por encabezados lo usaba para saltar aquí. El
+             recuento no hace falta —un <ol> ya anuncia cuántos elementos tiene—, pero
+             el NOMBRE sí. Se conserva en el `aria-label` del <ol>: misma información
+             para quien la necesita, cero píxeles para quien no. */}
+
       <Itinerario
+        nombreAccesible={`El recorrido, ${aPintar.length} ${aPintar.length === 1 ? 'parada' : 'paradas'}`}
         lineaId={lineaId}
         linea={linea}
         paradas={aPintar}
