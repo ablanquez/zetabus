@@ -66,18 +66,15 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
   const notaPorMarca = new Map(modelo.notas.map((n) => [n.marca, n.texto]));
 
   return (
-    <section className="mt-6" data-papel="terminal">
-      <h2 className="text-menor font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-        funcionamiento de terminal
-      </h2>
-
+    // ⛔ FUERA "FUNCIONAMIENTO DE TERMINAL" Y EL SUBTÍTULO. Mismo criterio que la
+    //    franja "EL RECORRIDO · 32 PARADAS": un título que dice "terminal" encima de
+    //    algo ya rotulado "PRIMERAS"/"ÚLTIMAS" no añade nada, y "tal y como las publica
+    //    Avanza" es PROCEDENCIA, que vive en /sobre-los-datos (allí se cuenta entera).
+    //    El nombre de la región, que el <h2> daba a quien navega por encabezados, se
+    //    conserva en el `aria-label` del <section>: misma información, cero píxeles.
+    <section className="mt-6" data-papel="terminal" aria-label="Primeras y últimas salidas">
       {modelo.hay && modelo.cabecera ? (
         <>
-          <p className="mb-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar">
-            Las <strong>primeras</strong> y <strong>últimas</strong> salidas de hoy, tal y como las publica
-            Avanza. No es la hora a la que pasa por tu parada.
-          </p>
-
           <div className="overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
             {/* Cabecera: el par mayoritario. HACIA {destino} manda; desde {origen} lo acompaña. */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-[var(--color-borde)] px-4 py-2.5">
@@ -129,6 +126,19 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
               </ul>
             )}
           </div>
+
+          {/* ⚠️ ESTO NO ES PROCEDENCIA —que se fue a /sobre-los-datos—, es una
+              ADVERTENCIA contra un malentendido real y con consecuencias: "05:00" es
+              la salida DE CABECERA, no la hora a la que el bus llega a TU parada. En
+              la vista de línea, recién pulsada una parada, confundirlas es fácil y
+              puede costar perder el autobús. /sobre-los-datos NO lo cubre (allí está
+              la procedencia, no este aviso), así que se queda —en su forma mínima—. */}
+          <p
+            className="mt-1.5 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
+            data-papel="aviso-salidas"
+          >
+            Es la hora de salida, no la de paso por tu parada.
+          </p>
         </>
       ) : (
         // ⚠️ Sin tabla (los 14 búhos). Un bloque en blanco parece "no hay servicio":

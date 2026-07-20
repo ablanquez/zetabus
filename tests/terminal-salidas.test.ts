@@ -38,6 +38,29 @@ describe('Terminal (bloque de salidas)', () => {
     expect(html).toContain('De media:'); // los tres tipos de día
   });
 
+  it('⛔ ya NO lleva la cabecera "funcionamiento de terminal" ni la procedencia (viven en /sobre-los-datos)', () => {
+    const html = pinta({
+      primeras: [s('05:00', 'A', 'B')],
+      ultimas: [s('22:00', 'A', 'B')],
+      info: null,
+      frecuencia: null,
+    });
+    expect(html.toLowerCase()).not.toContain('funcionamiento de terminal');
+    expect(html).not.toContain('tal y como las publica'); // procedencia → /sobre-los-datos
+  });
+
+  it('⚠️ PERO conserva el aviso contra el malentendido: es la hora de salida, no la de paso', () => {
+    // No es procedencia: es una advertencia con consecuencias (perder el bus). Se queda.
+    const html = pinta({
+      primeras: [s('05:00', 'A', 'B')],
+      ultimas: [s('22:00', 'A', 'B')],
+      info: null,
+      frecuencia: null,
+    });
+    expect(html).toContain('data-papel="aviso-salidas"');
+    expect(html).toContain('Es la hora de salida, no la de paso por tu parada.');
+  });
+
   it('⭐ con excepción: la salida lleva marca y el pie la explica', () => {
     const html = pinta({
       primeras: [s('06:00', 'ROSALES DEL CANAL', 'PUERTA DEL CARMEN')],
