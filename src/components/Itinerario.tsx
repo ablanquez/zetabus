@@ -280,6 +280,27 @@ export function Itinerario({
                 </li>
               ))}
             </ul>
+
+            {/* ⭐⭐ LA ADVERTENCIA, AQUÍ DENTRO Y EN UNA LÍNEA. Antes flotaba SOLA
+                debajo de la tarjeta, sobre el lienzo: hablaba de este cuadro y no
+                pertenecía a nada. Su sitio es este, que es donde el usuario acaba de
+                leer una lista de paradas caídas y está pensando «¿y me puedo fiar?».
+
+                ⚠️ Y SE QUEDA EN DOS IDEAS. La versión larga explicaba POR QUÉ no se
+                   detectan (la ruta no cambia, ninguna fuente lo publica) y de paso
+                   contaba las peticiones y la caché. Eso es FONTANERÍA: al que está
+                   en la marquesina no le sirve de nada, y la asimetría entera —que es
+                   la que gobierna el proyecto— ya está contada en /sobre-los-datos,
+                   en «Lo que NO detectamos», enlazado desde el pie.
+
+                Lo que queda es lo único accionable: que puede haber más, y qué hacer. */}
+            <p
+              className="mt-2.5 border-t border-[var(--color-aviso-borde)] pt-2 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar"
+              data-papel="no-detectamos-supresiones"
+            >
+              ⚠ Puede haber <strong>otras paradas suprimidas que no detectamos</strong>. Si ves un
+              cartel en el poste, hazle caso a él.
+            </p>
           </div>
         </li>
       )}

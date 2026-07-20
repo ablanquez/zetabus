@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo } from '@/engine/topologia';
 import { destinoDeSentido, rumboDe, type Rumbo } from '@/engine/rumbo';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
-import { motor, motorHorario, contador } from '@/engine/motor';
+import { motor, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
@@ -83,9 +83,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
   };
 
   // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
-  const antes = contador.cuenta.peticiones;
   const desvios = await desviosDeLinea(id, motor(transporteDe(fingir), fingir));
-  const peticiones = contador.cuenta.peticiones - antes;
 
   const veredicto: Veredicto | null =
     desvios.estado === 'ok'
@@ -183,7 +181,6 @@ export default async function LineaPage({ params, searchParams }: Props) {
         lineaId={id}
         fingir={fingir}
         veredicto={veredicto}
-        peticiones={peticiones}
       />
 
       {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. */}
@@ -195,14 +192,13 @@ export default async function LineaPage({ params, searchParams }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Recorrido({
-  sentido, linea, lineaId, fingir, veredicto, peticiones,
+  sentido, linea, lineaId, fingir, veredicto,
 }: {
   sentido: ReturnType<typeof sentidosDe>[number];
   linea: Line;
   lineaId: LineId;
   fingir: Fingimiento | null;
   veredicto: Veredicto | null;
-  peticiones: number;
 }) {
   // ── LA RUTA OFICIAL (GTFS). Es el plan B, y se dice cuando se usa. ─────────
   const oficial: ParadaDelItinerario[] = [];
@@ -346,24 +342,20 @@ function Recorrido({
         fuera={hayReal ? veredicto.fuera : undefined}
       />
 
-      {/* ⚠️ LO QUE NO PODEMOS SABER, DICHO SIN ADJUDICAR NADA. Ver `desvios.ts`:
-          un desvío de RUTA es detectable; una SUPRESIÓN de parada NO lo es por
-          ninguna fuente, y está comprobado (con el comunicado de Avanza diciendo
-          por escrito que la parada estaba suprimida, su propia API seguía
-          anunciando autobuses en ella). */}
-      <p
-        className="mt-3 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
-        data-papel="no-detectamos-supresiones"
-      >
-        ⚠ <strong>Una parada puede estar suprimida sin que se note aquí.</strong> Si el autobús pasa
-        por la calle pero no para, su recorrido no cambia y{' '}
-        <strong>ninguna fuente lo publica</strong>: lo ponen en un cartel en la marquesina. Si ves
-        un aviso pegado en el poste, hazle caso a él.{' '}
-        <span data-papel="coste-peticiones">
-          ({peticiones} {peticiones === 1 ? 'petición' : 'peticiones'} a Avanza para saber la ruta de
-          hoy; se guarda 30 minutos.)
-        </span>
-      </p>
+      {/* ⛔ AQUÍ FLOTABA LA NOTA DE «UNA PARADA PUEDE ESTAR SUPRIMIDA SIN QUE SE
+          NOTE», y estaba HUÉRFANA: hablaba del cuadro ámbar de paradas caídas —que
+          desde que el itinerario tiene tarjeta vive DENTRO de ella— pero ella se
+          quedaba fuera, suelta sobre el lienzo, sin pertenecer a nada.
+
+          ⇒ Se ha mudado al final de ese cuadro (ver `Itinerario.tsx`), que es donde
+            el usuario está pensando "¿y me puedo fiar de esto?", y se ha quedado en
+            las dos ideas accionables: que puede haber más, y qué hacer.
+
+          ⛔ Y SE VA EL RECUENTO DE PETICIONES Y LA CACHÉ. Era fontanería: al que
+             está en la marquesina no le sirve saber cuántas peticiones hacemos ni
+             cuánto las guardamos, y eso ya está contado en /sobre-los-datos. El coste
+             real se sigue vigilando donde importa —`e2e/linea-sin-barrido.spec.ts` lo
+             lee de `/api/diag`, no de la pantalla—, así que no se pierde control. */}
     </div>
   );
 }
