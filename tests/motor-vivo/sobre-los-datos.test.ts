@@ -16,6 +16,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import SobreLosDatos from '@/app/sobre-los-datos/page';
 import { nombresControl, paradas, validez } from '@/engine/topologia';
 import artefacto from '@/generated';
+import { MARCAS } from '@/components/FichaVehiculo';
 import type { BusProfile } from '@/modes/bus/profile';
 
 /** El texto que de verdad lee una persona: sin etiquetas y con los espacios sanos. */
@@ -26,6 +27,17 @@ const flota = Object.values(A.flota);
 const cuantos = (c: BusProfile['confidence']) => flota.filter((v) => v.confidence === c).length;
 
 const render = () => texto(renderToStaticMarkup(createElement(SobreLosDatos)));
+const html = () => renderToStaticMarkup(createElement(SobreLosDatos));
+
+/**
+ * El recuento que la TABLA de procedencia pinta para un nivel, leído del DOM.
+ * Se mira el atributo y no la prosa: así el control sobrevive a un rediseño y sigue
+ * vigilando lo único que importa — que el número sea el del dato.
+ */
+const vehEnTabla = (c: BusProfile['confidence']): number | null => {
+  const m = html().match(new RegExp(`data-confianza="${c}"[^>]*data-veh="(\\d+)"`));
+  return m ? Number(m[1]) : null;
+};
 
 describe('/sobre-los-datos · los números se DERIVAN, no se escriben', () => {
   it('⭐ los recuentos de flota que pinta la página son los del artefacto', () => {
@@ -36,10 +48,12 @@ describe('/sobre-los-datos · los números se DERIVAN, no se escriben', () => {
     const marcados = cuantos('sin_verificar');
 
     // Contados por un camino distinto del de la página. Tienen que cuadrar.
-    expect(t, 'el titular de la ficha oficial').toContain(`${oficiales} de ${flota.length} vehículos`);
-    expect(t, 'fuente secundaria').toContain(`${secundarios} vehículos`);
-    expect(t, 'observación propia').toContain(`${observados} vehículos`);
-    expect(t, 'sin procedencia').toContain(`${marcados} vehículos`);
+    expect(t, 'el total de la familia').toContain(`${flota.length} vehículos`);
+    // ⭐ Y nivel a nivel, leyendo la TABLA de procedencia del DOM.
+    expect(vehEnTabla('oficial'), 'oficial').toBe(oficiales);
+    expect(vehEnTabla('fuente_secundaria'), 'busesmadrid').toBe(secundarios);
+    expect(vehEnTabla('observacion_propia'), 'observados').toBe(observados);
+    expect(vehEnTabla('sin_verificar'), 'sin procedencia').toBe(marcados);
 
     // ⭐ Y la suma por niveles TIENE que dar el total, o falta gente por clasificar.
     expect(oficiales + secundarios + observados + marcados).toBe(flota.length);
@@ -67,12 +81,26 @@ describe('/sobre-los-datos · los números se DERIVAN, no se escriben', () => {
   });
 
   it('⛔ CONTRAPRUEBA: un recuento equivocado NO aparece (si estuviera cableado, aquí seguiría)', () => {
-    const t = render();
-    const oficiales = cuantos('oficial');
     // Si el número estuviera escrito a mano, cambiar la flota no lo movería. Se
     // comprueba que la página NO pinta un valor vecino: solo pinta el real.
-    expect(t).not.toContain(`${oficiales + 1} de ${flota.length} vehículos`);
-    expect(t).not.toContain(`${flota.length + 1} vehículos`);
+    expect(render()).not.toContain(`${flota.length + 1} vehículos`);
+    expect(html()).not.toMatch(new RegExp(`data-confianza="oficial"[^>]*data-veh="${cuantos('oficial') + 1}"`));
+  });
+
+  it('⭐ los 4 niveles se pintan con el símbolo REAL del mapa MARCAS, no escrito a mano', () => {
+    const h = html();
+    // El mismo símbolo que la app pinta en cada ficha. `oficial` es la NORMA y no
+    // lleva marca: si algún día la llevara, esto lo caza.
+    expect(MARCAS.oficial, 'la norma no se marca').toBeNull();
+    for (const c of ['fuente_secundaria', 'observacion_propia', 'sin_verificar'] as const) {
+      expect(h, `${c} debe pintar «${MARCAS[c]?.simbolo}»`).toContain(MARCAS[c]!.simbolo);
+    }
+  });
+
+  it('⭐ la página está AGRUPADA en tres familias, no en tarjetas sueltas', () => {
+    const h = html();
+    expect((h.match(/data-papel="familia"/g) ?? []).length, 'tres familias').toBe(3);
+    expect((h.match(/data-papel="nivel-procedencia"/g) ?? []).length, 'la tabla, 4 filas').toBe(4);
   });
 
   it('⛔ los números que YA NO se pueden derivar se han QUITADO, no cableado', () => {
