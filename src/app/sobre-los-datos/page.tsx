@@ -124,13 +124,15 @@ export default function SobreLosDatos() {
           >
             <p>
               De aquí salen las <strong>primeras y últimas salidas de hoy</strong> —hora, desde y
-              hasta—, tal y como las publica el operador. Son <strong>del día</strong>: si hoy una
-              línea acorta su terminal, la tabla lo dice. Se rasca <strong>una vez al día</strong>.
+              hasta— y la <strong>frecuencia media</strong>, tal y como las publica el operador. Son{' '}
+              <strong>del día</strong>: si hoy una línea acorta su terminal, la tabla lo dice. Se rasca{' '}
+              <strong>una vez al día</strong>. Son horas de <strong>salida</strong> (de cabecera),{' '}
+              <strong>no la hora a la que el bus pasa por tu parada</strong>.
             </p>
             <Nota>
               El texto de <strong>«Información adicional»</strong>{' '}
-              <strong>lo mantienen ellos a mano</strong>. Lo enseñamos entrecomillado y marcado{' '}
-              <strong>«según Avanza»</strong>: es una cita, no una afirmación nuestra.{' '}
+              <strong>lo mantienen ellos a mano</strong>, y lo enseñamos <strong>tal cual</strong>: es
+              una cita <strong>según Avanza</strong>, no una afirmación nuestra.{' '}
               <strong>Si lo dejan viejo, no lo podemos saber.</strong>
             </Nota>
           </Fuente>

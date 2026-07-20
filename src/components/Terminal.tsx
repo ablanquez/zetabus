@@ -21,9 +21,9 @@ import { modelarSalidas, type FrecuenciaModelo, type SalidaMarcada } from '@/eng
  * entre las dos tablas (primeras / últimas). En gris se leía como un bloque más; en
  * tinta la estructura del bloque se entiende de un vistazo.
  *
- * ⚠️ Jerarquía por PESO, no por color: la CIFRA va en blanco pleno y negrita (es el
- * dato); las etiquetas, en blanco normal; y «· según Avanza» en `papel-tenue` —la
- * atribución recede, sin competir, y aun así pasa AA (7,32:1)—.
+ * ⚠️ Jerarquía por PESO: la CIFRA va en blanco pleno y negrita (es el dato); las
+ * etiquetas, en blanco normal. La procedencia ("según Avanza") NO va aquí: vive en
+ * /sobre-los-datos, que ya cuenta que la frecuencia la publica el operador.
  *
  * ⚠️ Y sí, el negro sólido también lo usa la botonera de sentido para "activo". No
  * chocan: aquella es una PÍLDORA redondeada entre iguales (eliges una); ésta, una
@@ -69,7 +69,6 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
       data-papel="frecuencia"
     >
       {cuerpo}
-      <span className="text-[var(--color-papel-tenue)]"> · según Avanza</span>
     </p>
   );
 }
@@ -134,9 +133,12 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
               </p>
             </div>
 
+            {/* ⚠️ "PRIMERAS SALIDAS" / "ÚLTIMAS SALIDAS" — con la palabra "salidas".
+                Es lo que sostiene NO poner un aviso "no es la hora de tu parada": el
+                propio rótulo ya dice que son SALIDAS (de cabecera), no horas de paso. */}
             <div className="px-4 py-3" data-papel="tabla-salidas" data-etiqueta="Primeras salidas">
               <p className="mb-1 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-                Primeras
+                Primeras salidas
               </p>
               <Flujo salidas={modelo.primeras} notaPorMarca={notaPorMarca} />
             </div>
@@ -145,7 +147,7 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
 
             <div className="px-4 py-3" data-papel="tabla-salidas" data-etiqueta="Últimas salidas">
               <p className="mb-1 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-                Últimas
+                Últimas salidas
               </p>
               <Flujo salidas={modelo.ultimas} notaPorMarca={notaPorMarca} />
             </div>
@@ -167,19 +169,9 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
               </ul>
             )}
           </div>
-
-          {/* ⚠️ ESTO NO ES PROCEDENCIA —que se fue a /sobre-los-datos—, es una
-              ADVERTENCIA contra un malentendido real y con consecuencias: "05:00" es
-              la salida DE CABECERA, no la hora a la que el bus llega a TU parada. En
-              la vista de línea, recién pulsada una parada, confundirlas es fácil y
-              puede costar perder el autobús. /sobre-los-datos NO lo cubre (allí está
-              la procedencia, no este aviso), así que se queda —en su forma mínima—. */}
-          <p
-            className="mt-1.5 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar"
-            data-papel="aviso-salidas"
-          >
-            Es la hora de salida, no la de paso por tu parada.
-          </p>
+          {/* ⛔ FUERA el aviso "es la hora de salida, no la de paso por tu parada":
+              los rótulos "PRIMERAS SALIDAS"/"ÚLTIMAS SALIDAS" ya llevan la palabra
+              "salidas", que es lo que lo dice. Y /sobre-los-datos lo remata. */}
         </>
       ) : (
         // ⚠️ Sin tabla (los 14 búhos). Un bloque en blanco parece "no hay servicio":
@@ -191,23 +183,10 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
           Avanza no publica los horarios de esta línea.
         </p>
       )}
-
-      {/* ⭐ "Información adicional": CITA LITERAL de Avanza. Condicional. */}
-      {horario.info && (
-        <aside
-          className="mt-3 rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] px-4 py-3"
-          data-papel="info-adicional"
-        >
-          <p className="mb-1 text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)]">
-            Información adicional · según Avanza
-          </p>
-          {horario.info.split('\n').map((parrafo, i) => (
-            <p key={i} className="text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar [&:not(:first-of-type)]:mt-1">
-              {parrafo}
-            </p>
-          ))}
-        </aside>
-      )}
+      {/* ⛔ La "Información adicional" YA NO vive aquí (llegaba tarde, al final de
+          todo). Explica CÓMO FUNCIONA la línea, así que sube ENCIMA del itinerario
+          —hay que leerla antes de la ruta, no después—. Ver `InfoAdicional` y su
+          colocación en `linea/[linea]/page.tsx`. */}
     </section>
   );
 }

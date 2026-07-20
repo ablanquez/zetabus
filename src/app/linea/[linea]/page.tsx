@@ -7,6 +7,7 @@ import { motor, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
+import { InfoAdicional } from '@/components/InfoAdicional';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
@@ -181,6 +182,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
         lineaId={id}
         fingir={fingir}
         veredicto={veredicto}
+        info={horario?.info ?? null}
       />
 
       {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. */}
@@ -192,13 +194,14 @@ export default async function LineaPage({ params, searchParams }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Recorrido({
-  sentido, linea, lineaId, fingir, veredicto,
+  sentido, linea, lineaId, fingir, veredicto, info,
 }: {
   sentido: ReturnType<typeof sentidosDe>[number];
   linea: Line;
   lineaId: LineId;
   fingir: Fingimiento | null;
   veredicto: Veredicto | null;
+  info: string | null;
 }) {
   // ── LA RUTA OFICIAL (GTFS). Es el plan B, y se dice cuando se usa. ─────────
   const oficial: ParadaDelItinerario[] = [];
@@ -332,6 +335,10 @@ function Recorrido({
              recuento no hace falta —un <ol> ya anuncia cuántos elementos tiene—, pero
              el NOMBRE sí. Se conserva en el `aria-label` del <ol>: misma información
              para quien la necesita, cero píxeles para quien no. */}
+
+      {/* ⭐ CÓMO FUNCIONA LA LÍNEA, antes de la ruta. Marco neutro, hermano del cuadro
+          de suprimidas pero SIN el ámbar (que es de "hoy"; esto es de "siempre"). */}
+      <InfoAdicional info={info} />
 
       <Itinerario
         nombreAccesible={`El recorrido, ${aPintar.length} ${aPintar.length === 1 ? 'parada' : 'paradas'}`}

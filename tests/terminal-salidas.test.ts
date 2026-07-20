@@ -49,16 +49,20 @@ describe('Terminal (bloque de salidas)', () => {
     expect(html).not.toContain('tal y como las publica'); // procedencia → /sobre-los-datos
   });
 
-  it('⚠️ PERO conserva el aviso contra el malentendido: es la hora de salida, no la de paso', () => {
-    // No es procedencia: es una advertencia con consecuencias (perder el bus). Se queda.
+  it('⛔ el aviso "es la hora de salida…" ya NO va: los rótulos "…SALIDAS" lo dicen', () => {
+    // El rótulo "PRIMERAS SALIDAS"/"ÚLTIMAS SALIDAS" lleva la palabra "salidas", que
+    // es lo que sostiene quitar el aviso suelto. Y /sobre-los-datos lo remata.
     const html = pinta({
       primeras: [s('05:00', 'A', 'B')],
       ultimas: [s('22:00', 'A', 'B')],
       info: null,
       frecuencia: null,
     });
-    expect(html).toContain('data-papel="aviso-salidas"');
-    expect(html).toContain('Es la hora de salida, no la de paso por tu parada.');
+    expect(html).not.toContain('data-papel="aviso-salidas"');
+    expect(html).not.toContain('no la de paso por tu parada');
+    // …y los rótulos llevan "salidas", no solo "Primeras"/"Últimas":
+    expect(html).toContain('Primeras salidas');
+    expect(html).toContain('Últimas salidas');
   });
 
   it('⭐ con excepción: la salida lleva marca y el pie la explica', () => {
@@ -79,7 +83,7 @@ describe('Terminal (bloque de salidas)', () => {
     expect(html).toMatch(/data-papel="frecuencia-cifra"[^>]*>20</);
   });
 
-  it('⭐ la franja de frecuencia va en TINTA con el dato en cifra y «según Avanza» tenue', () => {
+  it('⭐ la franja de frecuencia va en TINTA con el dato en cifra, y SIN "según Avanza"', () => {
     const html = pinta({
       primeras: [s('05:00', 'PARQUE GOYA', 'SEMINARIO')],
       ultimas: [s('21:51', 'PARQUE GOYA', 'SEMINARIO')],
@@ -90,9 +94,8 @@ describe('Terminal (bloque de salidas)', () => {
     expect(html).toMatch(/bg-\[var\(--color-tinta\)\][^>]*data-papel="frecuencia"/);
     // Las tres cifras van marcadas como dato (para la jerarquía peso/color).
     expect(html.match(/data-papel="frecuencia-cifra"/g) ?? []).toHaveLength(3);
-    // La atribución recede con el token de texto tenue sobre tinta.
-    expect(html).toContain('según Avanza');
-    expect(html).toContain('var(--color-papel-tenue)');
+    // ⛔ La procedencia se fue a /sobre-los-datos: la franja NO la lleva.
+    expect(html).not.toContain('según Avanza');
   });
 
   it('⚠️ el orden de la web se respeta: la salida de después de medianoche va al final', () => {
