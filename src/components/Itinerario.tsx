@@ -225,10 +225,30 @@ export function Itinerario({
           que hay que acordarse de quitar acaba mintiendo, siempre.
 
           El `mb-3` iguala el aire de abajo con el `pb-3` que deja la última parada
-          cuando este bloque no está: la tarjeta cierra igual en los dos casos. */}
+          cuando este bloque no está: la tarjeta cierra igual en los dos casos.
+
+          ⚠️ AQUÍ HABÍA UN RAYADO DIAGONAL, Y SE COMÍA EL TEXTO. Usaba `es-rancio`,
+          que además era MENTIRA SEMÁNTICA: "rancio" es un dato VIEJO —el estado de
+          las llegadas cuando dejan de refrescarse—, y esto no es viejo, es la ruta
+          de HOY. Se tomó prestado un estado por su aspecto y se heredó su trama.
+          `.es-rancio` NO se toca: sigue significando lo que significa en
+          `LlegadasVivas`, que es quien la necesita.
+
+          ⚠️ ÁMBAR Y NO ROJO, Y ES SEMÁNTICA: el rojo es ALERTA y exige acción (el
+          "YA LLEGA"). Una parada que hoy no se sirve CUESTA, pero no rompe: es
+          AVISO. Gastar rojo aquí le quitaría fuerza al que sí la necesita.
+
+          ⭐ EL BORDE VA CON `--color-aviso`, NO CON `--color-aviso-borde`, y lo
+          decidió el medidor: sobre el papel blanco de la tarjeta, #fcd34d da
+          **1,44:1** —invisible, no llega ni al 3,0 de elemento no textual— y
+          #92400e da **7,09:1**. `--color-aviso-borde` funciona sobre el ámbar
+          claro, no sobre blanco. Es además el mismo borde que ya lleva el aviso de
+          desvío de arriba, así que los dos avisos de la pantalla hablan igual.
+
+          El TACHADO se queda: es forma, no color, y sobrevive al gris. */}
       {fuera && fuera.length > 0 && (
-        <li className="mt-2 mb-3" data-papel="paradas-fuera">
-          <div className="es-rancio px-3 py-3">
+        <li className="mb-3" data-papel="paradas-fuera">
+          <div className="rounded-caja border-2 border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-3 py-3">
             <p className="text-menor font-black leading-snug text-[var(--color-aviso)] sin-recortar">
               ⚠ Hoy el autobús NO pasa por{' '}
               {fuera.length === 1 ? 'esta parada' : `estas ${fuera.length} paradas`}
