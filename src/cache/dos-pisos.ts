@@ -22,6 +22,16 @@
  * caduca y NO PASA NADA hasta que alguien pregunta. De madrugada, con la web
  * abierta y nadie delante, ZetaBus hace exactamente cero peticiones a Avanza.
  * Eso no es una promesa: es que no existe el código que las haría.
+ *
+ * ⚠️ AÑADIR UN CAMPO A LO CACHEADO ES UN CAMBIO DE CONTRATO SILENCIOSO.
+ * Esta caché guarda `Entrada<T>` tal cual la escribió. Si mañana `T` gana un campo,
+ * las entradas de disco escritas AYER se leen sin él —y no da error: se sirve la
+ * forma vieja hasta que caduca—. El remedio es meter una VERSIÓN DE FORMA en la
+ * CLAVE, de modo que ampliar `T` cambie el nombre de fichero y las viejas dejen de
+ * servirse (miss → se vuelven a pedir). Ejemplo y explicación larga en
+ * `FORMA_HORARIO` (`engine/horario.ts`) — la caché a la que más le duele, por su TTL
+ * de un día. Las claves `recorrido:` y `poste:` corren el MISMO riesgo, pero su TTL
+ * de 15 s lo cura solo en segundos, así que aún no llevan versión (a conciencia).
  */
 
 import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';

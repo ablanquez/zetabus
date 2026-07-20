@@ -31,6 +31,12 @@ export interface SalidaWeb {
   readonly hasta: string;
 }
 
+/**
+ * ⚠️ ESTO SE CACHEA UN DÍA (`engine/horario.ts`). Si añades, renombras o quitas un
+ * campo aquí, **sube `FORMA_HORARIO`** allí: si no, las entradas ya guardadas en
+ * disco se sirven con la forma vieja —sin tu campo nuevo— hasta que caduquen, un día
+ * entero, y sin dar ningún error. La versión en la clave es lo que lo evita.
+ */
 export interface HorarioWeb {
   readonly primeras: readonly SalidaWeb[];
   readonly ultimas: readonly SalidaWeb[];

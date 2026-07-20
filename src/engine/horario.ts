@@ -21,6 +21,32 @@ import type { SentidoAvanza } from '@/sources/avanza/recorrido';
  */
 const SENTIDO_AVANZA: Record<0 | 1, SentidoAvanza> = { 0: -1, 1: -2 };
 
+/**
+ * ⭐ LA VERSIÓN DE FORMA DE LO CACHEADO. Va en la CLAVE, y es un seguro contra un
+ * fallo que no da la cara.
+ *
+ * La caché guarda un `HorarioWeb` serializado. Si alguien AÑADE un campo a
+ * `HorarioWeb` (como pasó con `frecuencia`), las entradas que YA están en disco se
+ * quedan con la forma vieja —sin ese campo—. Y ahí está la trampa: **no da error, no
+ * lanza excepción, no se pone nada rojo.** La caché sirve fielmente lo que guardó, y
+ * la pantalla sale MANCA. Es el mismo patrón que "el push que nadie hizo": la
+ * ausencia de fallo no es la presencia del dato.
+ *
+ * Con TTL de un día, una entrada manca miente TODO EL DÍA (hasta que la clave, que
+ * lleva la fecha, rueda al día siguiente). `frecuencia` se estrenó justo así: las
+ * líneas cacheadas antes del cambio salían sin frecuencia y las pedidas después con
+ * ella —"a veces sí, a veces no"— sin un solo error en los logs.
+ *
+ * ⚠️ SI AMPLÍAS `HorarioWeb` (un campo nuevo, un rename, un borrado), **SUBE ESTE
+ * NÚMERO**. Al cambiar, cambia la clave → cambia el nombre de fichero → las entradas
+ * viejas dejan de encontrarse y se vuelven a pedir con la forma nueva. Si NO lo
+ * subes, se sirve la forma vieja hasta que caduque: un día entero de datos mancos.
+ *
+ *   v1 = forma sin `frecuencia` (implícita: el código viejo no ponía token)
+ *   v2 = forma con `frecuencia`
+ */
+export const FORMA_HORARIO = 2;
+
 export interface DependenciasHorario {
   readonly cache: CacheDosPisos;
   readonly transporte: Transporte;
@@ -37,7 +63,8 @@ export async function horarioDeLinea(
   dep: DependenciasHorario,
 ): Promise<HorarioWeb | null> {
   const sentido = SENTIDO_AVANZA[directionId];
-  const clave = `horario-web:${etiqueta}:${sentido}:${hoy}`;
+  // ⚠️ `f${FORMA_HORARIO}` invalida en seco lo cacheado con una forma anterior. Ver arriba.
+  const clave = `horario-web:f${FORMA_HORARIO}:${etiqueta}:${sentido}:${hoy}`;
   const r = await dep.cache.obtener(clave, () => leerHorarioWeb(etiqueta, sentido, dep.transporte));
   return r.tipo === 'fallo' ? null : r.datos;
 }
