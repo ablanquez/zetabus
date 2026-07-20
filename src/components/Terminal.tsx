@@ -122,7 +122,11 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
     <section className="mt-6" data-papel="terminal" aria-label="Primeras y últimas salidas">
       {modelo.hay && modelo.cabecera ? (
         <>
-          <div className="overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
+          {/* ⭐ CONTORNO DE TINTA (2 px, el mismo grosor que el cuadro ámbar de
+              suprimidas). Cierra la caja: sin él, la franja negra de frecuencia iba a
+              ras del borde de 1 px y parecía salirse por los lados. `overflow-hidden`
+              + `rounded-panel` recortan la franja en las esquinas. */}
+          <div className="overflow-hidden rounded-panel border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]">
             {/* Cabecera: el par mayoritario. HACIA {destino} manda; desde {origen} lo acompaña. */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-[var(--color-borde)] px-4 py-2.5">
               <p className="text-menor font-black uppercase tracking-wide sin-recortar" data-papel="cabecera-hacia">

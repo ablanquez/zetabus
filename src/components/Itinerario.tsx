@@ -132,7 +132,7 @@ export function Itinerario({
 }) {
   return (
     <ol
-      className="mt-6 overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 pt-3"
+      className="mt-6 overflow-hidden rounded-panel border-2 border-[var(--color-tinta)] bg-[var(--color-papel)] px-3 pt-3"
       data-papel="itinerario"
       aria-label={nombreAccesible}
     >
