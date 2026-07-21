@@ -7,6 +7,7 @@ import type { Observacion } from '@/core';
 import { linea } from '@/engine/topologia';
 import { DeDondeSaleCadaDato, FichaVehiculo, NotaSinVerificar } from './FichaVehiculo';
 import { tonosDeChip, llevaContorno } from './ChipLinea';
+import { Cita } from './Cita';
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -671,7 +672,8 @@ function Llegada({
               / Nuestra Señora De Los Ángeles" se queda en "Vía Hispanid…". Un dato
               recortado es un dato que miente. Preferimos que la fila crezca. */}
           <p className="min-w-0 text-cuerpo font-bold leading-snug sin-recortar" data-papel="destino">
-            {l.destino}
+            {/* <Cita>: el destino lo publica Avanza; el traductor no lo reescribe. */}
+            <Cita>{l.destino}</Cita>
           </p>
         </div>
 

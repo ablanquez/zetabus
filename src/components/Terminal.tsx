@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { HorarioWeb } from '@/sources/avanza/horario';
 import { modelarSalidas, type FrecuenciaModelo, type SalidaMarcada } from '@/engine/salidas';
+import { Cita } from './Cita';
 
 /**
  * ⭐ PRIMERAS Y ÚLTIMAS SALIDAS DE HOY — el MODELO ESTÁNDAR (`docs/MODELO-BLOQUE-SALIDAS.md`).
@@ -52,9 +53,8 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
     if (f.festivos !== null) dias.push(<>domingos y festivos {cifra(f.festivos)}</>);
     cuerpo =
       dias.length === 0 ? (
-        // plan B: la cita cruda de Avanza, si el formato no se dejó parsear →
-        // translate="no", es una cita literal.
-        <span translate="no">{f.literal}</span>
+        // plan B: la cita cruda de Avanza, si el formato no se dejó parsear.
+        <Cita>{f.literal}</Cita>
       ) : (
         <>
           De media:{' '}
@@ -86,32 +86,28 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
  */
 function Flujo({ salidas, notaPorMarca }: { salidas: readonly SalidaMarcada[]; notaPorMarca: Map<string, string> }) {
   return (
-    // ⚠️ translate="no": las horas son CITA de Avanza. El traductor del navegador
-    //    reescribiría una tabla de horarios en silencio, y ningún test lo caza
-    //    (el ataque viene de FUERA del código). Aquí solo hay horas y puntuación:
-    //    congelar el <p> entero no pierde chrome traducible.
-    <p
-      className="text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar"
-      data-papel="flujo-salidas"
-      translate="no"
-    >
-      {salidas.map((x, i) => (
-        <span key={i} aria-label={x.marca ? `${x.hora}, ${notaPorMarca.get(x.marca) ?? ''}` : undefined}>
-          {i > 0 && (
-            <span aria-hidden className="text-[var(--color-tinta-tenue)]">
-              {' · '}
+    // Las horas son CITA de Avanza; solo hay horas y puntuación, así que la <Cita>
+    // envuelve el flujo entero (nada de chrome traducible se pierde).
+    <p className="text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar" data-papel="flujo-salidas">
+      <Cita>
+        {salidas.map((x, i) => (
+          <span key={i} aria-label={x.marca ? `${x.hora}, ${notaPorMarca.get(x.marca) ?? ''}` : undefined}>
+            {i > 0 && (
+              <span aria-hidden className="text-[var(--color-tinta-tenue)]">
+                {' · '}
+              </span>
+            )}
+            <span aria-hidden={x.marca ? true : undefined} className="font-bold tabular-nums">
+              {x.hora}
             </span>
-          )}
-          <span aria-hidden={x.marca ? true : undefined} className="font-bold tabular-nums">
-            {x.hora}
+            {x.marca && (
+              <sup aria-hidden className="ml-px text-[0.72em] font-black" data-marca={x.marca}>
+                {x.marca}
+              </sup>
+            )}
           </span>
-          {x.marca && (
-            <sup aria-hidden className="ml-px text-[0.72em] font-black" data-marca={x.marca}>
-              {x.marca}
-            </sup>
-          )}
-        </span>
-      ))}
+        ))}
+      </Cita>
     </p>
   );
 }
@@ -142,14 +138,13 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
           <div className="overflow-hidden rounded-panel border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]">
             {/* Cabecera: el par mayoritario. HACIA {destino} manda; desde {origen} lo acompaña. */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-[var(--color-borde)] px-4 py-2.5">
-              {/* ⚠️ El nombre de terminal es CITA de Avanza → translate="no" (que el
-                  navegador no lo reescriba al traducir). "Hacia"/"desde" son NUESTROS:
-                  se traducen con normalidad. */}
+              {/* El nombre de terminal es CITA de Avanza → <Cita>. "Hacia"/"desde"
+                  son NUESTROS: se traducen con normalidad. */}
               <p className="text-menor font-black uppercase tracking-wide sin-recortar" data-papel="cabecera-hacia">
-                Hacia <span translate="no">{modelo.cabecera.destino}</span>
+                Hacia <Cita>{modelo.cabecera.destino}</Cita>
               </p>
               <p className="text-nota text-[var(--color-tinta-tenue)] sin-recortar" data-papel="cabecera-desde">
-                desde <span translate="no">{modelo.cabecera.origen}</span>
+                desde <Cita>{modelo.cabecera.origen}</Cita>
               </p>
             </div>
 
@@ -174,9 +169,9 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
 
             {/* Al pie, una línea por marca: en qué se aparta del par de cabecera.
                 ⚠️ El texto de la nota INCRUSTA nombres de terminal citados ("termina en
-                {'{X}'}, no en {'{Y}'}") → translate="no" en el texto. Se congela junto con
-                sus dos o tres conectores nuestros ("termina en", "no en"): coste ínfimo
-                frente a dejar un nombre propio a merced del traductor. */}
+                {'{X}'}, no en {'{Y}'}") → <Cita>. Se congela junto con sus dos o tres
+                conectores nuestros ("termina en", "no en"): coste ínfimo frente a dejar
+                un nombre propio a merced del traductor. */}
             {modelo.notas.length > 0 && (
               <ul className="border-t border-[var(--color-borde)] px-4 py-2.5" data-papel="notas-salidas">
                 {modelo.notas.map((n) => (
@@ -187,7 +182,7 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
                     <span className="font-black text-[var(--color-tinta)]" data-marca={n.marca}>
                       {n.marca}
                     </span>{' '}
-                    <span translate="no">{n.texto}</span>
+                    <Cita>{n.texto}</Cita>
                   </li>
                 ))}
               </ul>

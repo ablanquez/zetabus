@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Line, LineId, StopId } from '@/core';
 import { esBuho, transbordosDe } from '@/engine/topologia';
 import { ChipLinea } from './ChipLinea';
+import { Cita } from './Cita';
 import { AcuseDeToque } from './AcuseDeToque';
 import { InfoAdicional } from './InfoAdicional';
 import type { ParadaDelDiff } from '@/engine/desvios';
@@ -184,8 +185,9 @@ export function Itinerario({
                 className="block min-h-[var(--control-min)] text-cuerpo font-bold leading-snug sin-recortar"
                 aria-label={`Parada ${p.nombre}, poste ${p.poste}`}
               >
-                {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea. */}
-                {p.nombre}
+                {/* SIN TRUNCAR. Si el nombre mide 53 caracteres, baja de línea.
+                    <Cita>: el nombre es del GTFS/Avanza, el traductor no lo reescribe. */}
+                <Cita>{p.nombre}</Cita>
                 {(primero || ultimo) && (
                   <span className="sr-only"> · {primero ? 'cabecera de línea' : 'final de línea'}</span>
                 )}

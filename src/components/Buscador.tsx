@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { AcuseDeToque } from './AcuseDeToque';
+import { Cita } from './Cita';
 
 /**
  * EL BUSCADOR. Conocimiento pagado por la referencia, y se reutiliza.
@@ -135,8 +136,12 @@ export function Buscador({ entradas }: { entradas: Entrada[] }) {
                   {e.clave}
                 </span>
                 <span className="min-w-0">
-                  {/* SIN TRUNCAR. Nunca. */}
-                  <span className="block text-cuerpo font-semibold leading-snug sin-recortar">{e.titulo}</span>
+                  {/* SIN TRUNCAR. Nunca. El título es CITA (nombre de parada o de
+                      línea, del GTFS) → <Cita>: el traductor no lo reescribe. El `sub`
+                      ("línea 35" / "poste 744") es NUESTRO rótulo + un número. */}
+                  <span className="block text-cuerpo font-semibold leading-snug sin-recortar">
+                    <Cita>{e.titulo}</Cita>
+                  </span>
                   <span className="block text-nota text-[var(--color-tinta-tenue)] sin-recortar">{e.sub}</span>
                 </span>
               </Link>

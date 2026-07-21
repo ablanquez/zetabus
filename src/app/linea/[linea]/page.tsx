@@ -8,6 +8,7 @@ import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
 import { ChipLinea } from '@/components/ChipLinea';
+import { Cita } from '@/components/Cita';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
@@ -114,9 +115,11 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 : rumbo.texto
           }
         >
+          {/* Origen/destino/nombre son CITA (nombres de parada del GTFS y el nombre
+              largo de la línea) → <Cita>. La flecha y "Circular por" son NUESTROS. */}
           {rumbo.tipo === 'trayecto' ? (
             <>
-              {rumbo.origen}{' '}
+              <Cita>{rumbo.origen}</Cita>{' '}
               <span
                 aria-hidden
                 className="font-normal text-[var(--color-tinta-tenue)]"
@@ -124,12 +127,12 @@ export default async function LineaPage({ params, searchParams }: Props) {
               >
                 →
               </span>{' '}
-              {rumbo.destino}
+              <Cita>{rumbo.destino}</Cita>
             </>
           ) : rumbo.tipo === 'circular' ? (
-            <>Circular por {rumbo.por}</>
+            <>Circular por <Cita>{rumbo.por}</Cita></>
           ) : (
-            rumbo.texto
+            <Cita>{rumbo.texto}</Cita>
           )}
         </h1>
       </div>

@@ -41,12 +41,14 @@ describe('InfoAdicional', () => {
     expect(html).toMatch(/<h2[^>]*>\s*Información adicional\s*<\/h2>/);
   });
 
-  it('⭐⭐ la CITA de Avanza va con translate="no"; el título NUESTRO, con translate="yes"', () => {
+  it('⭐⭐ la CITA de Avanza va en <Cita> (translate=no); el título NUESTRO, no', () => {
     // El traductor del navegador reescribiría la cita literal en silencio —deshaciendo
-    // desde FUERA el "se cita, no se razona"—. El bloque se congela; el título, no.
+    // desde FUERA el "se cita, no se razona"—. Se congela la HOJA de texto citada; el
+    // título y la estructura son nuestros y se traducen.
     const html = pinta('Amplía su recorrido los días de feria.');
-    expect(html).toMatch(/data-papel="info-adicional"[^>]*translate="no"/);
-    expect(html).toMatch(/<h2[^>]*translate="yes"/);
+    expect(html).toMatch(/<span[^>]*translate="no"[^>]*data-cita[^>]*>Amplía su recorrido los días de feria\.<\/span>/);
+    // el título NO es cita (no lleva data-cita): se traduce con normalidad
+    expect(html).not.toContain('data-cita="">Información adicional');
   });
 
   it('⭐ el texto se CITA TAL CUAL, sin cambiar palabras', () => {

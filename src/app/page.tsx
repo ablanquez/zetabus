@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Buscador, type Entrada } from '@/components/Buscador';
 import { ChipLinea } from '@/components/ChipLinea';
+import { Cita } from '@/components/Cita';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { GRUPOS, grupoDe, idParada, lineas, paradas, posteDe } from '@/engine/topologia';
 
@@ -86,9 +87,10 @@ export default function Home() {
                         allí. Es el fallo del "0C1" con otro traje. */}
                     <ChipLinea linea={l} papel="chip-indice" grande />
                     {/* SIN TRUNCAR. Si no cabe, baja de línea. `ml-3` da la
-                        separación chip↔nombre que antes ponía `gap-3` (ahora fuera). */}
+                        separación chip↔nombre que antes ponía `gap-3` (ahora fuera).
+                        <Cita>: el nombre de línea es del GTFS; el traductor no lo reescribe. */}
                     <span className="ml-3 text-menor font-semibold leading-snug sin-recortar">
-                      {l.longName}
+                      <Cita>{l.longName}</Cita>
                     </span>
                   </Link>
                 </li>

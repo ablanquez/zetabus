@@ -6,6 +6,7 @@ import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
+import { Cita } from '@/components/Cita';
 
 /**
  * ⭐ LA PANTALLA DE PARADA. Y EL ORDEN **ES** EL DISEÑO.
@@ -85,8 +86,9 @@ export default async function ParadaPage({ params, searchParams }: Props) {
             data-nombre-fuente={p.nombreProc.fuente}
           >
             {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
-                "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo. */}
-            {p.name}
+                "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo.
+                <Cita>: nombre del GTFS/Avanza; el traductor del navegador no lo reescribe. */}
+            <Cita>{p.name}</Cita>
           </h1>
           <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
           {/* ⭐ Solo si de verdad se está fingiendo, y diciendo QUÉ. Antes esto era

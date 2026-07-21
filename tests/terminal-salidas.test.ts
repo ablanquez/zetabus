@@ -33,9 +33,9 @@ describe('Terminal (bloque de salidas)', () => {
       info: null,
       frecuencia: 'Frecuencia media: laborables: 9, sábados: 16, domingos y festivos: 16 min.',
     });
-    // El nombre de terminal es CITA de Avanza → va envuelto en translate="no"
-    // (que el traductor del navegador no reescriba el dato). "Hacia" es nuestro.
-    expect(html).toContain('Hacia <span translate="no">SEMINARIO</span>');
+    // El nombre de terminal es CITA de Avanza → va en <Cita> (translate="no" +
+    // data-cita), que el traductor del navegador no reescriba el dato. "Hacia" es nuestro.
+    expect(html).toMatch(/Hacia <span[^>]*translate="no"[^>]*data-cita[^>]*>SEMINARIO<\/span>/);
     expect(html).not.toContain('data-papel="notas-salidas"');
     expect(html).toContain('De media:'); // los tres tipos de día
   });
@@ -114,14 +114,15 @@ describe('Terminal (bloque de salidas)', () => {
       info: null,
       frecuencia: 'cada 12 min aprox.', // formato que NO parsea → cae a la cita literal
     });
+    // Todas pasan por <Cita> (translate="no" + data-cita):
     // nombres de terminal (cabecera)
-    expect(html).toContain('<span translate="no">PUERTA DEL CARMEN</span>');
+    expect(html).toMatch(/<span[^>]*translate="no"[^>]*data-cita[^>]*>PUERTA DEL CARMEN<\/span>/);
     // las horas (el flujo entero, que solo lleva horas + puntuación)
-    expect(html).toMatch(/data-papel="flujo-salidas"[^>]*translate="no"/);
+    expect(html).toMatch(/data-papel="flujo-salidas"[^>]*>\s*<span[^>]*translate="no"[^>]*data-cita/);
     // la nota del pie, que incrusta nombres citados
-    expect(html).toContain('<span translate="no">termina en H. CORTES, 9, no en PUERTA DEL CARMEN</span>');
+    expect(html).toMatch(/<span[^>]*data-cita[^>]*>termina en H\. CORTES, 9, no en PUERTA DEL CARMEN<\/span>/);
     // la frecuencia en su plan B (cita cruda) también se congela
-    expect(html).toContain('<span translate="no">cada 12 min aprox.</span>');
+    expect(html).toMatch(/<span[^>]*data-cita[^>]*>cada 12 min aprox\.<\/span>/);
   });
 
   it('⚠️ el orden de la web se respeta: la salida de después de medianoche va al final', () => {
