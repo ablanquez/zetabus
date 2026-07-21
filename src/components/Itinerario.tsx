@@ -174,9 +174,11 @@ export function Itinerario({
               }`}
               data-papel="bloque-parada"
             >
-              {/* LÍNEA 1 · EL NOMBRE, SOLO. Y es el ÚNICO <a> a la parada. */}
+              {/* LÍNEA 1 · EL NOMBRE, SOLO. Y es el ÚNICO <a> a la parada.
+                  ⭐ Se pasa `?desde=<línea>` para que la flecha de "volver" de la parada
+                     sepa regresar AQUÍ, a esta línea, y no a la home. */}
               <Link
-                href={`/parada/${p.poste}${fingir ? `?fingir=${fingir}` : ''}`}
+                href={`/parada/${p.poste}?desde=${encodeURIComponent(linea.shortName)}${fingir ? `&fingir=${fingir}` : ''}`}
                 data-papel="ir-a-parada"
                 className="block min-h-[var(--control-min)] text-cuerpo font-bold leading-snug sin-recortar"
                 aria-label={`Parada ${p.nombre}, poste ${p.poste}`}

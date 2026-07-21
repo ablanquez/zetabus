@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { motor } from '@/engine/motor';
-import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
+import { lineaDeEtiqueta, parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
@@ -60,6 +60,20 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   const fingir = fingimientoDe(sp);
   const inicial = await llegadasDePoste(numero, motor(transporteDe(fingir), fingir));
 
+  // ⭐ LA FLECHA DE VOLVER, SEGÚN DE DÓNDE VIENES. A una parada se llega por varios
+  //    caminos: desde el ITINERARIO de una línea (que pasa `?desde=<línea>`) o desde
+  //    el BUSCADOR / un enlace directo / un marcador (sin parámetro). Con parámetro y
+  //    línea que EXISTE, se vuelve a esa línea; si no —sin parámetro, o `?desde=999`,
+  //    o `?desde=abc`—, se vuelve a la home. Nunca se enseña una línea que no existe.
+  const desdeCrudo = Array.isArray(sp.desde) ? sp.desde[0] : sp.desde;
+  const lineaDesde = desdeCrudo ? lineaDeEtiqueta(desdeCrudo) : null;
+  const volver = lineaDesde
+    ? {
+        href: `/linea/${encodeURIComponent(lineaDesde.shortName)}${fingir ? `?fingir=${fingir}` : ''}`,
+        etiqueta: `Volver a la línea ${lineaDesde.shortName}`,
+      }
+    : { href: '/', etiqueta: 'Volver a buscar otra parada o línea' };
+
   return (
     <div>
       {/* Cabecera COMPACTA a propósito: cada píxel que gasta aquí es un píxel
@@ -72,11 +86,14 @@ export default async function ParadaPage({ params, searchParams }: Props) {
           para no gastar altura que le quita al primer tiempo de llegada (la obsesión
           de esta pantalla — ver el test de flotación). Objetivo táctil ≥ 24 px. */}
       <div className="mb-3 flex gap-1.5">
+        {/* ⭐ Objetivo táctil 44 px (`--control`). La `aria-label` dice A DÓNDE va, no
+            solo "volver": a la línea de la que vienes, o al inicio. `items-start` +
+            `pt` para que el glifo quede a la altura del nombre, no del centro. */}
         <Link
-          href="/"
+          href={volver.href}
           data-papel="volver"
-          aria-label="Volver a buscar otra parada o línea"
-          className="-ml-1.5 inline-flex h-8 w-8 shrink-0 items-center justify-center text-dato leading-none text-[var(--color-tinta-suave)]"
+          aria-label={volver.etiqueta}
+          className="-ml-1.5 inline-flex h-[var(--control)] w-[var(--control)] shrink-0 items-start justify-center pt-1 text-dato leading-none text-[var(--color-tinta-suave)]"
         >
           <span aria-hidden="true">←</span>
         </Link>

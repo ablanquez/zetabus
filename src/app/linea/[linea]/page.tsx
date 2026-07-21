@@ -102,6 +102,17 @@ export default async function LineaPage({ params, searchParams }: Props) {
   return (
     <div>
       <div className="mb-3 flex items-center gap-3">
+        {/* ⭐ LA FLECHA DE VUELTA A LA HOME, a la izquierda del chip. La vista de línea
+            no tenía ninguna; ahora sí, y es la simétrica de la de parada. Objetivo
+            táctil 44 px (`--control`), y su `aria-label` dice A DÓNDE va. */}
+        <Link
+          href="/"
+          data-papel="volver"
+          aria-label="Volver al inicio"
+          className="-ml-1.5 inline-flex h-[var(--control)] w-[var(--control)] shrink-0 items-center justify-center text-dato leading-none text-[var(--color-tinta-suave)]"
+        >
+          <span aria-hidden="true">←</span>
+        </Link>
         <ChipLinea linea={l} papel="chip-cabecera" grande />
         {/* ⭐ EL TÍTULO DICE EL RUMBO, no un rango. Una FLECHA para ida y vuelta
             ("Seminario → Parque Goya"); "Circular por ..." para un bucle; y su
