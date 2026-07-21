@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { Buscador, type Entrada } from '@/components/Buscador';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Cita } from '@/components/Cita';
+import { Toponimo } from '@/components/Toponimo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
-import { GRUPOS, grupoDe, idParada, lineas, paradas, posteDe } from '@/engine/topologia';
+import { GRUPOS, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
+import { dosDestinos } from '@/engine/rumbo';
 
 /**
  * LA PORTADA. Buscador arriba, y las 44 líneas debajo.
@@ -61,7 +63,17 @@ export default function Home() {
             <p className="mb-2 text-nota text-[var(--color-tinta-tenue)] sin-recortar">{g.nota}</p>
 
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {delGrupo.map((l) => (
+              {delGrupo.map((l) => {
+                // ⭐ Las DIURNAS DE DOBLE SENTIDO enseñan sus DOS destinos, uno por
+                //    renglón (corregidos, del GTFS), en vez del nombre largo que se
+                //    parte donde cae. El resto —circulares, sentido único, lanzaderas,
+                //    búhos— se quedan con su nombre. `dosDestinos` devuelve null si no
+                //    hay dos extremos distintos; `grupoDe` filtra la taxonomía.
+                const destinos =
+                  grupoDe(l) === 'diurna'
+                    ? dosDestinos(sentidosParaRumbo(idLinea(String(l.id))), l.longName)
+                    : null;
+                return (
                 <li key={String(l.id)}>
                   <Link
                     href={`/linea/${encodeURIComponent(l.shortName)}`}
@@ -86,15 +98,28 @@ export default function Home() {
                         despistara para que la N7 saliera de diurna aquí y de búho
                         allí. Es el fallo del "0C1" con otro traje. */}
                     <ChipLinea linea={l} papel="chip-indice" grande />
-                    {/* SIN TRUNCAR. Si no cabe, baja de línea. `ml-3` da la
-                        separación chip↔nombre que antes ponía `gap-3` (ahora fuera).
-                        <Cita>: el nombre de línea es del GTFS; el traductor no lo reescribe. */}
-                    <span className="ml-3 text-menor font-semibold leading-snug sin-recortar">
-                      <Cita>{l.longName}</Cita>
-                    </span>
+                    {/* SIN TRUNCAR (regla del proyecto: si no cabe, baja de línea).
+                        `ml-3` da la separación chip↔nombre (antes `gap-3`).
+                        · Diurna doble sentido → DOS destinos, uno por renglón, en
+                          <Toponimo> (corregidos, protegidos del traductor).
+                        · El resto → su nombre largo verbatim, en <Cita>. */}
+                    {destinos ? (
+                      <span
+                        className="ml-3 flex flex-col text-menor font-semibold leading-snug sin-recortar"
+                        data-papel="destinos-home"
+                      >
+                        <Toponimo>{destinos[0]}</Toponimo>
+                        <Toponimo>{destinos[1]}</Toponimo>
+                      </span>
+                    ) : (
+                      <span className="ml-3 text-menor font-semibold leading-snug sin-recortar">
+                        <Cita>{l.longName}</Cita>
+                      </span>
+                    )}
                   </Link>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </section>
         );

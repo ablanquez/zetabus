@@ -41,11 +41,14 @@ async function protegidosCongeladosYChromeNo(page: Page) {
 }
 
 test.describe('⭐ el dato externo va protegido y el traductor no lo toca', () => {
-  test('HOME · los nombres de línea protegidos; los rótulos nuestros SÍ se traducen', async ({ page }) => {
+  test('HOME · destinos (topónimo) y nombres de línea (cita) congelados; los rótulos, no', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
     await protegidosCongeladosYChromeNo(page);
 
-    // El nombre de línea de cada tarjeta va protegido (cita).
+    // Las diurnas de doble sentido pintan sus DOS destinos como TOPÓNIMO (corregidos).
+    const destino = page.locator('[data-papel="destinos-home"] [data-toponimo]').first();
+    await expect(destino).toHaveJSProperty('translate', false);
+    // El resto (circulares, sentido único, búhos…) conservan su nombre como CITA.
     const nombre = page.locator('[data-papel="grupo-lineas"] li a [data-cita]').first();
     await expect(nombre).toHaveJSProperty('translate', false);
 
