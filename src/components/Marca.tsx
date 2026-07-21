@@ -1,33 +1,81 @@
 import Link from 'next/link';
+import {
+  BANDERA,
+  POSTE,
+  STROKE_MARCA,
+  VISTA_MARCA,
+  Z_PATH,
+} from '@/components/marca-fuente';
 
 /**
- * ⭐ LA MARCA. Hoy es un WORDMARK de texto; mañana (Fase 5) será un logo.
+ * ⭐ LA MARCA. Ya no es un wordmark suelto: es el SÍMBOLO (V4) + "ZetaBus".
  *
- * Antonio: el logo NO se hace ahora —un logo sobre una app a medio pulir se
- * rehace—, pero SÍ se reserva su sitio. Por eso la marca es un componente y no
- * texto suelto en el layout: el día que haya logo, se cambia esta pieza y nada
- * más.
+ * El símbolo es una Z-recorrido con un poste de parada plantado en la base — el
+ * recorrido llega a la parada. Sale de la FUENTE ÚNICA (`marca-fuente.ts`): el
+ * mismo `Z_PATH` que usa el favicon, aquí con stroke 6 + poste + bandera. No hay
+ * un segundo dibujo de la Z en ninguna parte (lo vigila `marca-z-unica.test.ts`).
  *
- * ⚠️ El color sale del TOKEN `--color-tinta`, no de un literal. Si la tinta de
- *    marca cambia, el wordmark se entera (es la misma lección que el pin del mapa).
+ * ⚠️ COLOR POR TOKEN, no hex: la Z en `--color-marca`, el poste en
+ *    `--color-marca-poste`. El guardián anti-hex de /interno/sistema-visual
+ *    exige que aquí no haya ni un `#`.
  *
- * 🪧 HUECO DEL LOGO (Fase 5): cuando exista el símbolo, va JUSTO AQUÍ, a la
- *    izquierda del wordmark (un <svg> o un next/image), y el wordmark se queda de
- *    acompañante o desaparece. La firma del componente no cambia.
+ * ⚠️ EL SÍMBOLO NO ES UNA CITA NI UN TOPÓNIMO: es identidad nuestra, dibujada,
+ *    no un dato externo. Por eso NO lleva <Cita>/<Toponimo> — no hay nada que
+ *    proteger de una fuente ajena. PERO el wordmark "ZetaBus" SÍ lleva
+ *    `translate="no"`: es un nombre propio, y un traductor de navegador que lo
+ *    reescriba ("ZetaBus" → "Autobús Zeta") es el MISMO agujero que L21. El
+ *    símbolo es decorativo para el lector de pantalla (`aria-hidden`): el enlace
+ *    ya se llama "ZetaBus" por su texto; anunciar el dibujo sería redundante.
  */
 export function Marca() {
   return (
     <Link
       href="/"
-      // ⚠️ min-h-[var(--control-min)]: es un ENLACE, y el token `text-seccion` empareja una
-      //    interlínea ajustada (1.25) que dejaba la caja en 20 px — por debajo del
-      //    mínimo táctil de WCAG 2.5.8. El tamaño de letra manda el token; la ZONA
-      //    PULSABLE la garantiza el min-h. (Lo cazó el detector táctil, no yo.)
-      className="inline-flex min-h-[var(--control-min)] items-center gap-2 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
+      // ⚠️ min-h-[var(--control-min)]: es un ENLACE, y `text-seccion` deja la caja
+      //    en ~20 px, por debajo del mínimo táctil de WCAG 2.5.8. El tamaño de letra
+      //    lo pone el token; la ZONA pulsable la garantiza el min-h.
+      className="inline-flex min-h-[var(--control-min)] items-center gap-1.5 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
       data-papel="marca"
     >
-      {/* 🪧 Aquí entrará el logo en la Fase 5. */}
-      <span data-papel="marca-wordmark">ZetaBus</span>
+      <svg
+        viewBox={VISTA_MARCA}
+        className="h-[1.15em] w-[1.15em] shrink-0"
+        aria-hidden="true"
+        focusable="false"
+        data-papel="marca-simbolo"
+      >
+        {/* La Z (el recorrido). Mismo path que el favicon; aquí stroke 6. */}
+        <path
+          d={Z_PATH}
+          fill="none"
+          stroke="var(--color-marca)"
+          strokeWidth={STROKE_MARCA}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* El poste, plantado en la prolongación (la acera). */}
+        <line
+          x1={POSTE.x}
+          y1={POSTE.yBase}
+          x2={POSTE.x}
+          y2={POSTE.yAlto}
+          stroke="var(--color-marca-poste)"
+          strokeWidth={POSTE.grosor}
+          strokeLinecap="round"
+        />
+        {/* La señal en bandera (que se lea "parada", no "i"). */}
+        <rect
+          x={BANDERA.x}
+          y={BANDERA.y}
+          width={BANDERA.ancho}
+          height={BANDERA.alto}
+          rx={BANDERA.radio}
+          fill="var(--color-marca-poste)"
+        />
+      </svg>
+      <span data-papel="marca-wordmark" translate="no">
+        ZetaBus
+      </span>
     </Link>
   );
 }

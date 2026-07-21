@@ -108,6 +108,19 @@
         auditoría §4.1 — se decidió mantenerlos distintos a propósito. */
   --color-sin-color: #94a3b8;
   --color-sin-color-tinta: #1e293b;
+
+  /* ───────────────────────────────────────────────────────────────────────
+     LA MARCA. El violeta-índigo de ZetaBus, medido contra los 44 colores de
+     línea (barrido del gamut en `docs/LOGO_ANALISIS_COLOR.md`): a ΔE 12 de la
+     línea más cercana —el máximo práctico— y a ΔE 12,8 del azul institucional
+     de Avanza, del que NO debe parecer. Dos tonos: la Z (el recorrido) y el
+     poste (el ancla, más oscuro).
+     ⚠️ NO es color de línea (identidad ajena) NI semántico (rojo/ámbar/verde):
+        es identidad PROPIA, y solo la pinta la marca. El favicon repite estos
+        hex a pelo porque un asset de imagen no lee `var(--…)`; que no derive se
+        vigila en `tests/marca-z-unica.test.ts`. */
+  --color-marca: #7048e8;
+  --color-marca-poste: #4e22b8;
 }
 
 /* ⚠️ `--dur-latido` NO es un token de diseño: es COMPORTAMIENTO (la cadencia del
