@@ -94,6 +94,65 @@ test.describe('⭐ EL INSTRUMENTO CAZA LO QUE DICE CAZAR', () => {
     expect(c.some((x) => /lector de pantalla/.test(x.texto)), 'un sr-only NO es un truncado').toBe(false);
   });
 
+  test('⭐ un truncado EN EL ENVOLTORIO (texto dentro de <Cita>) también se caza', async ({ page }) => {
+    // ⚠️ EL AGUJERO QUE ABRIMOS NOSOTROS. Al meter los títulos en <Cita>/<Toponimo>,
+    //    el texto dejó de ser HOJA del contenedor. El `truncate` va en el ENVOLTORIO
+    //    (el <h1>, el <span data-papel="destino">, el <a> del buscador), y su texto
+    //    cuelga de un <span> hijo. El detector "solo hojas" se lo comía. Se reproducen
+    //    TRES sitios de la lista, cada uno con su envoltorio distinto:
+    await page.setContent(`
+      <div style="width:120px">
+        <h1 data-papel="nombre-parada" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span data-cita>Vía Hispanidad N.º 73 / Nuestra Señora de Los Ángeles</span>
+        </h1>
+        <span data-papel="destino" style="display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span data-cita>Parque Goya / Actur Sur</span>
+        </span>
+        <a data-papel="resultado" style="display:inline-block;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span data-toponimo>Plaza Emperador Carlos V - Miralbueno</span>
+        </a>
+      </div>
+    `);
+    const c = await truncados(page);
+    console.log(`\n  envoltorios cazados: ${c.length}`);
+    for (const x of c) console.log(`     <${x.etiqueta}> "${x.texto}" · ${x.detalle}`);
+
+    // 🔴→🟢: con el detector "solo hojas" salían 0 (los tres son ENVOLTORIOS); ahora, 3.
+    expect(c.length, 'los tres envoltorios con el texto en un <span> dentro').toBe(3);
+    expect(c.map((x) => x.etiqueta).sort()).toEqual(['a', 'h1', 'span']);
+    // Y el <span> hijo (la Cita) NO se cuenta dos veces: no lleva el ellipsis, lo lleva su padre.
+    expect(c.some((x) => x.etiqueta === 'span' && /Parque Goya/.test(x.texto))).toBe(true);
+  });
+
+  test('⭐ REAL · el ellipsis vuelve a cazarse en los sitios que envolvimos ayer', async ({ page }) => {
+    // No un fixture: PÁGINAS de verdad. Se le mete el `truncate` prohibido a los
+    // envoltorios reales cuyo texto va en <Cita>/<Toponimo>, y se comprueba que el
+    // guardián —ciego desde ayer— vuelve a cazarlo.
+
+    // LÍNEA · el <h1> del rumbo (Toponimo) y los nombres de parada del itinerario (Cita).
+    await page.goto('/linea/53?fingir=caido', { waitUntil: 'networkidle' });
+    await page.addStyleTag({
+      content:
+        '[data-papel="titulo-linea"],[data-papel="ir-a-parada"]{display:block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    });
+    await page.waitForTimeout(100);
+    const enLinea = await truncados(page);
+    expect(enLinea.some((x) => /Carlos V|Miralbueno/.test(x.texto)), 'el <h1> del rumbo (Toponimo) se caza').toBe(true);
+    expect(enLinea.length, 'y los nombres de parada del itinerario (Cita) también').toBeGreaterThan(1);
+
+    // PARADA · el nombre de la parada (Cita) y el destino de cada llegada (Cita).
+    await page.goto('/parada/744?fingir=sin-verificar', { waitUntil: 'networkidle' });
+    await page.addStyleTag({
+      content:
+        '[data-papel="nombre-parada"],[data-papel="destino"]{display:block;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    });
+    await page.waitForTimeout(100);
+    const enParada = await truncados(page);
+    console.log(`\n  cazados en línea: ${enLinea.length} · en parada: ${enParada.length}`);
+    expect(enParada.some((x) => /miguel/i.test(x.texto)), 'el nombre de la parada (Cita) se caza').toBe(true);
+    expect(enParada.some((x) => /goya/i.test(x.texto)), 'el destino de la llegada (Cita) se caza').toBe(true);
+  });
+
   test('⛔ ROTO 2 · TEXTO CORTADO → el instrumento lo caza', async ({ page }) => {
     await page.setContent(banco(['texto-cortado']));
 

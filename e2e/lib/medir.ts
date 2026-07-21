@@ -361,13 +361,32 @@ export async function truncados(page: Page): Promise<Culpable[]> {
 
     const rotos: { etiqueta: string; texto: string; detalle: string }[] = [];
     for (const n of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
-      if (n.children.length > 0) continue; // solo hojas: las que llevan el texto
       const s = getComputedStyle(n);
       if (s.display === 'none' || s.visibility === 'hidden') continue;
       if (visualmenteOculto(n, s)) continue; // ← no está en la pantalla: no se juzga
       const t = (n.innerText ?? '').trim();
       if (!t) continue;
-      const recorta = s.overflow === 'hidden' || s.overflowX === 'hidden' || s.textOverflow === 'ellipsis';
+
+      /**
+       * ⚠️⚠️ Y AQUÍ EL DETECTOR SE QUEDÓ CIEGO SIN QUE NADIE LO VIERA. Antes solo
+       * miraba HOJAS ("las que llevan el texto"). Pero desde que los títulos meten su
+       * texto en `<Cita>`/`<Toponimo>` —un `<span>`—, el texto YA NO es hoja del
+       * contenedor: `<h1><span data-cita>Nombre</span></h1>`. Un `truncate` en el
+       * `<h1>` (que es donde se pondría) recorta con puntos suspensivos, pero el `<h1>`
+       * tiene un hijo, así que el filtro "solo hojas" lo saltaba. La LEY —"el texto
+       * nunca se recorta con `…`"— se quedó sin vigilancia en todos los nombres que
+       * envolvimos. Lo cazó el propio test, poniéndose rojo. Ver `revision.spec`.
+       *
+       * ⇒ EL ARREGLO: el `text-overflow: ellipsis` es la firma de esa ley, y solo la
+       *   pone un texto amputado a propósito. Se juzga en CUALQUIER elemento —hoja o
+       *   ENVOLTORIO—. El `overflow:hidden` A SECAS (sin puntos) se sigue juzgando solo
+       *   en HOJAS: en un envoltorio casi siempre es recorte de layout (el mapa con sus
+       *   tiles, un panel `rounded` con `overflow-hidden`, un contenedor con scroll), no
+       *   un texto cortado — y marcarlo sería un falso positivo.
+       */
+      const hoja = n.children.length === 0;
+      const recorta =
+        s.textOverflow === 'ellipsis' || (hoja && (s.overflow === 'hidden' || s.overflowX === 'hidden'));
       if (recorta && n.scrollWidth > n.clientWidth + 1) {
         rotos.push({
           etiqueta: n.tagName.toLowerCase(),
