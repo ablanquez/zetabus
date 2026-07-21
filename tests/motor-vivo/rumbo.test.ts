@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { rumboDe, destinoDeSentido, corregirDestino, destinoDeCampo, dosDestinos, type SentidoParaRumbo } from '@/engine/rumbo';
+import { rumboDe, destinoDeSentido, corregirDestino, corregirNombreLargo, destinoDeCampo, dosDestinos, type SentidoParaRumbo } from '@/engine/rumbo';
 import { lineas, idLinea, esBuho, giroDe, grupoDe, sentidosParaRumbo } from '@/engine/topologia';
 
 const CTX_DIURNA = { esBuho: false, nombreLargo: 'x' };
@@ -153,6 +153,65 @@ describe('rumboDe · contra los datos REALES del feed', () => {
       expect(etiquetas).toContain('Siglo XXI');
       expect(etiquetas).not.toContain('Siglo Xxi'); // el roto NO se cuela en pantalla
     });
+
+    // ── DESTINOS DE CIRCULAR que no seguían el patrón "el barrio" (58, 59) ──────
+    it('la 58 y la 59: el "Circular por X" ya sale con el barrio bien escrito', () => {
+      // 58: el headsign era "Fuente Junquera" (sin "de La"); 59: "Tranvia-Arcosur".
+      expect(rumboReal('58')).toEqual({ tipo: 'circular', por: 'Fuente de La Junquera' });
+      expect(rumboReal('59')).toEqual({ tipo: 'circular', por: 'Arcosur' });
+    });
+  });
+
+  // ── EL NOMBRE LARGO (route_long_name), corregido ───────────────────────────
+  describe('corregirNombreLargo · los 8 rotos del longName, y solo esos', () => {
+    it('arregla los conocidos (acento, romano, guion, barra, abreviatura)', () => {
+      expect(corregirNombreLargo('Estacion Delicias - Cementerio')).toBe('Estación Delicias - Cementerio');
+      expect(corregirNombreLargo('Plaza Emperador Carlos Quinto - Miralbueno')).toBe('Plaza Emperador Carlos V - Miralbueno');
+      expect(corregirNombreLargo('Estación Miraflores - Actur Rey Fernando')).toBe('Estación Miraflores - Actur-Rey Fernando');
+      expect(corregirNombreLargo('Avda Estudiantes -  Actur Rey Fernando')).toBe('Avenida Estudiantes - Actur-Rey Fernando');
+      expect(corregirNombreLargo('Coso - Montañana/Peñaflor')).toBe('Coso - Montañana / Peñaflor');
+      expect(corregirNombreLargo('Barrio Jesús - Oliver - Miralbueno')).toBe('Barrio Jesús - Oliver / Miralbueno');
+    });
+    it('deja intactos los que ya estaban bien (incl. C1/C4 con "Las" mayúscula, y los búhos)', () => {
+      expect(corregirNombreLargo('Plaza de Las Canteras - Complejo Funerario')).toBe('Plaza de Las Canteras - Complejo Funerario');
+      expect(corregirNombreLargo('Parque Venecia - Siglo XXI')).toBe('Parque Venecia - Siglo XXI');
+      expect(corregirNombreLargo('Pza. Aragón - La Almozara - Actur Rey F. - P. Goya - Arrabal'))
+        .toBe('Pza. Aragón - La Almozara - Actur Rey F. - P. Goya - Arrabal'); // N2: no se toca
+    });
+    it('lo que expone la topología YA viene corregido (la 53 real)', () => {
+      const l = lineas().find((x) => x.shortName === '53')!;
+      expect(l.longName).toBe('Plaza Emperador Carlos V - Miralbueno');
+    });
+  });
+
+  // ── ⭐ DE 10 CONTRADICCIONES A 0 · el longName casa con sus destinos ─────────
+  // La auditoría contó 10 líneas donde el longName y los destinos NO coincidían.
+  // Tras la corrección, NINGUNA debe contradecirse: cada destino (o el "por" de la
+  // circular) tiene que aparecer, ya corregido, dentro de su longName corregido.
+  it('⭐ ninguna línea contradice hoy su longName (folded, ignora acentos)', () => {
+    const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const contradicen: string[] = [];
+    for (const l of lineas()) {
+      const g = grupoDe(l);
+      const long = fold(l.longName);
+      const sents = sentidosParaRumbo(idLinea(String(l.id)));
+      if (esBuho(l)) continue; // los búhos son rondas: su longName es la lista, no A-B
+      if (g === 'circular') continue; // Ci1-4 se llaman "Circular N": el longName no nombra el destino
+      if (g === 'diurna' || g === 'lanzadera') {
+        const par = dosDestinos(sents, l.longName);
+        if (par) {
+          for (const d of par) if (!long.includes(fold(d))) contradicen.push(`${l.shortName}: "${d}" ∉ "${l.longName}"`);
+          continue;
+        }
+      }
+      // circular / sentido único: el "por" (o el destino) debe estar en el longName
+      const activo = sents[0];
+      if (!activo) continue;
+      const r = rumboDe(activo, sents, { esBuho: esBuho(l), nombreLargo: l.longName });
+      const clave = r.tipo === 'circular' ? r.por : r.tipo === 'trayecto' ? r.destino : '';
+      if (clave && !long.includes(fold(clave))) contradicen.push(`${l.shortName}: "${clave}" ∉ "${l.longName}"`);
+    }
+    expect(contradicen, `líneas que se contradicen: ${contradicen.join(' ; ')}`).toEqual([]);
   });
 
   // ── EL DESTINO DE CAMPO (Antonio manda sobre el GTFS) ──────────────────────
@@ -161,10 +220,10 @@ describe('rumboDe · contra los datos REALES del feed', () => {
       expect(destinoDeCampo('21', 'Miralbueno')).toBe('Oliver / Miralbueno');
       expect(destinoDeCampo('28', 'Peñaflor')).toBe('Montañana / Peñaflor');
     });
-    it('las lanzaderas C1/C4 traen el par mal: se pone a mano', () => {
+    it('las lanzaderas C1/C4 traen el par mal: se pone a mano ("Las" en mayúscula)', () => {
       expect(destinoDeCampo('C1', 'Complejo')).toBe('Complejo Funerario');
-      expect(destinoDeCampo('C1', 'Plaza Canteras')).toBe('Plaza de las Canteras');
-      expect(destinoDeCampo('C4', 'Plaza De Las Canteras')).toBe('Plaza de las Canteras');
+      expect(destinoDeCampo('C1', 'Plaza Canteras')).toBe('Plaza de Las Canteras');
+      expect(destinoDeCampo('C4', 'Plaza De Las Canteras')).toBe('Plaza de Las Canteras');
     });
     it('no toca "Miralbueno" de OTRA línea (52, 53): está indexado por línea', () => {
       expect(destinoDeCampo('52', 'Miralbueno')).toBeUndefined();
@@ -194,12 +253,18 @@ describe('rumboDe · contra los datos REALES del feed', () => {
     it('la 23: el destino CORREGIDO ("Siglo XXI") sale en su renglón', () => {
       expect(dd('23')).toEqual(['Parque Venecia', 'Siglo XXI']);
     });
-    it('la 34: el orden aguanta el acento (longName "Estacion", destino "Estación")', () => {
+    it('la 34: "Estación Delicias" arriba, casando con el longName ya corregido', () => {
       expect(dd('34')).toEqual(['Estación Delicias', 'Cementerio']);
     });
+    it('la 53: al corregir el longName, "Carlos V" sube al primer renglón', () => {
+      expect(dd('53')).toEqual(['Plaza Emperador Carlos V', 'Miralbueno']);
+    });
+    it('la 60: "Avenida Estudiantes" arriba (antes "Avda" no casaba y caía)', () => {
+      expect(dd('60')).toEqual(['Avenida Estudiantes', 'Actur-Rey Fernando']);
+    });
     it('las lanzaderas C1/C4 también van a dos renglones, con el par de Antonio', () => {
-      expect(dd('C1')).toEqual(['Plaza de las Canteras', 'Complejo Funerario']);
-      expect(dd('C4')).toEqual(['Plaza de las Canteras', 'Puerto Venecia']);
+      expect(dd('C1')).toEqual(['Plaza de Las Canteras', 'Complejo Funerario']);
+      expect(dd('C4')).toEqual(['Plaza de Las Canteras', 'Puerto Venecia']);
     });
     it('una circular de bucle (Ci3) → null: no tiene dos extremos', () => {
       expect(dd('Ci3')).toBeNull();

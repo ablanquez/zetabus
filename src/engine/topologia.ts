@@ -40,7 +40,7 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
-import { destinoDeCampo, type SentidoParaRumbo } from '@/engine/rumbo';
+import { corregirNombreLargo, destinoDeCampo, type SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
 
 interface Artefacto {
@@ -117,8 +117,18 @@ export const canonLinea = (etiqueta: string): string => {
 
 // ── Índices, construidos una vez al cargar el módulo ─────────────────────────
 
+/**
+ * ⭐ LAS LÍNEAS, con el `longName` YA corregido, en UN SOLO SITIO. El mismo
+ * `ucwords()` que rompió los headsigns tocó también este campo (8 de 44). Se
+ * arregla aquí, al exponer las líneas, para que TODO lo que lee `l.longName` —el
+ * buscador, la tarjeta de la home, el orden de los dos renglones, el `<h1>` del
+ * búho— vea la forma buena sin que cada sitio tenga que acordarse. Ver
+ * `rumbo.ts` (`corregirNombreLargo`) y `docs/AUDITORIA_NOMBRES_LARGOS.md`.
+ */
+const LINEAS: readonly Line[] = A.lines.map((l) => ({ ...l, longName: corregirNombreLargo(l.longName) }));
+
 const paradaPorId = new Map<string, Stop>(A.stops.map((s) => [String(s.id), s]));
-const lineaPorId = new Map<string, Line>(A.lines.map((l) => [String(l.id), l]));
+const lineaPorId = new Map<string, Line>(LINEAS.map((l) => [String(l.id), l]));
 
 const posteDeParada = new Map<string, number>(Object.entries(A.posteByStopId));
 /** El puente al revés. Es el que valida la entrada del usuario. */
@@ -127,7 +137,7 @@ const paradaDePoste = new Map<number, StopId>(
 );
 
 const lineaPorCanon = new Map<string, Line>();
-for (const l of A.lines) {
+for (const l of LINEAS) {
   const c = canonLinea(l.shortName);
   // Si dos líneas del GTFS colapsan al mismo canon, la comparación insensible
   // sería ambigua y estaríamos coloreando buses al azar. Preferimos saberlo.
@@ -160,7 +170,7 @@ export const generadoEn = A.generatedAt;
  * para que /sobre-los-datos lo derive en vez de llevarlo cableado en la prosa.
  */
 export const nombresControl = A.nombresControl ?? { comparables: 0, distintos: 0 };
-export const lineas = (): readonly Line[] => A.lines;
+export const lineas = (): readonly Line[] => LINEAS;
 export const paradas = (): readonly Stop[] => A.stops;
 export const sentidosDe = (id: LineId) => sentidosPorLinea.get(String(id)) ?? [];
 export const parada = (id: StopId): Stop | null => paradaPorId.get(String(id)) ?? null;

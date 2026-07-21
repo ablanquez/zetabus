@@ -123,6 +123,10 @@ const CORRECCIONES: Readonly<Record<string, string>> = {
   'Puerta Del Carmen': 'Puerta del Carmen',
   'Pinares De Venecia': 'Pinares de Venecia',
   'Rosales Del Canal': 'Rosales del Canal',
+  // ── Headsigns de CIRCULAR que se desvían del patrón "el barrio" (54-57 lo
+  //    cumplen: su headsign ES el barrio). La forma buena sale del `longName`:
+  'Fuente Junquera': 'Fuente de La Junquera', // 58 · le falta "de La"; el longName y la parada lo tienen
+  'Tranvia-Arcosur': 'Arcosur', // 59 · el barrio (1er tramo del longName "Arcosur - Tranvía"), no "Tranvia-Arcosur"
 };
 
 /** Aplica la corrección si el destino es un roto conocido; si no, lo deja igual. */
@@ -166,8 +170,11 @@ export function corregirDestino(bruto: string): string {
 const DESTINO_DE_CAMPO: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   '21': { Miralbueno: 'Oliver / Miralbueno' }, // la cabecera es la zona, no solo Miralbueno
   '28': { Peñaflor: 'Montañana / Peñaflor' },
-  C1: { Complejo: 'Complejo Funerario', 'Plaza Canteras': 'Plaza de las Canteras' },
-  C4: { 'Plaza De Las Canteras': 'Plaza de las Canteras' }, // el otro sentido («Puerto Venecia») ya está bien
+  // "Plaza de Las Canteras" con "Las" en MAYÚSCULA: Antonio corrige su propio string
+  // para casar con "Las Fuentes"/"Las Torres", donde "Las" es nombre propio. La misma
+  // forma va en el `longName` de C1/C4 (que ya la trae así) — un solo sitio del sitio.
+  C1: { Complejo: 'Complejo Funerario', 'Plaza Canteras': 'Plaza de Las Canteras' },
+  C4: { 'Plaza De Las Canteras': 'Plaza de Las Canteras' }, // el otro sentido («Puerto Venecia») ya está bien
 };
 
 /**
@@ -176,6 +183,48 @@ const DESTINO_DE_CAMPO: Readonly<Record<string, Readonly<Record<string, string>>
  */
 export function destinoDeCampo(shortName: string, headsignBruto: string): string | undefined {
   return DESTINO_DE_CAMPO[shortName]?.[limpio(headsignBruto)];
+}
+
+/**
+ * ⭐ EL NOMBRE LARGO (`route_long_name`), corregido. El MISMO `ucwords()` que rompió
+ * paradas y destinos tocó también este campo, pero mucho menos: de las 44 líneas,
+ * 34 vienen bien (los acentos y las preposiciones YA están; el ucwords se cebó con
+ * los headsigns, no con esto). Solo 8 estaban rotas, y Antonio marcó a mano cuáles.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Se indexa por la CADENA CRUDA COMPLETA (no por trozos): cada entrada es una línea
+ *  concreta, revisada. La forma buena de cada una NO es opinión —sale de otro dato
+ *  del propio proyecto (auditoría en `docs/AUDITORIA_NOMBRES_LARGOS.md`)—:
+ *
+ *   · 34 · acento comido        (destino ya corregido + longName de la 51 + parada)
+ *   · 44 · guion perdido        (longName de la 42/43 "Actur-Rey Fernando")
+ *   · 53 · romano deletreado    (parada "Plaza Emperador Carlos V / Intercambiador")
+ *   · 60 · abreviatura + guion  (destino "Avenida Estudiantes"; doble espacio de paso)
+ *   · 28 · espaciado de barra   (destino de campo "Montañana / Peñaflor")
+ *   · 21 · el 2.º guion es zona  (destino de campo "Oliver / Miralbueno")
+ *
+ *  ⚠️ C1/C4 NO ESTÁN AQUÍ: su longName ya trae "Plaza de Las Canteras" bien (con
+ *     "Las" mayúscula). Lo que se corrige de ellas es el DESTINO_DE_CAMPO, para que
+ *     case con el longName (ver arriba). Un solo sitio nombra el sitio.
+ *
+ *  ⚠️ Y LAS BARRAS NO SE PARTEN (21, 28): "Oliver / Miralbueno" es UNA zona. El
+ *     longName corregido las lleva, alineado con el destino.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+const NOMBRES_LARGOS: Readonly<Record<string, string>> = {
+  'Estacion Delicias - Cementerio': 'Estación Delicias - Cementerio',
+  'Estación Miraflores - Actur Rey Fernando': 'Estación Miraflores - Actur-Rey Fernando',
+  'Plaza Emperador Carlos Quinto - Miralbueno': 'Plaza Emperador Carlos V - Miralbueno',
+  'Avda Estudiantes -  Actur Rey Fernando': 'Avenida Estudiantes - Actur-Rey Fernando',
+  'Coso - Montañana/Peñaflor': 'Coso - Montañana / Peñaflor',
+  'Barrio Jesús - Oliver - Miralbueno': 'Barrio Jesús - Oliver / Miralbueno',
+};
+
+/** El nombre largo corregido si es un roto conocido; si no, igual. Lo aplica la
+ *  topología una vez, al exponer las líneas, para que todo lea la forma buena. */
+export function corregirNombreLargo(bruto: string): string {
+  const s = limpio(bruto);
+  return NOMBRES_LARGOS[s] ?? s;
 }
 
 /**
@@ -215,7 +264,9 @@ export function rumboDe(
     // Un búho da la vuelta, pero no es "una circular" en nuestra taxonomía: se
     // enseña su nombre oficial (que ya es una lista de barrios).
     if (ctx.esBuho) return { tipo: 'nombre', texto: ctx.nombreLargo };
-    return { tipo: 'circular', por: limpio(activo.headsign) || activo.ultimaParada };
+    // "Circular por {barrio}". El headsign también pasa por la corrección: la 58
+    // llegaba "Fuente Junquera" y la 59 "Tranvia-Arcosur" (ver CORRECCIONES).
+    return { tipo: 'circular', por: corregirDestino(limpio(activo.headsign) || activo.ultimaParada) };
   }
 
   // ── IDA Y VUELTA: origen → destino. ───────────────────────────────────────
