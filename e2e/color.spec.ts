@@ -106,104 +106,36 @@ test('⭐ EN ESCALA DE GRISES, EL ESTADO SIGUE VIÉNDOSE', async ({ page }, info
   console.log('  ⭐ y en GRIS, el inminente SIGUE distinguiéndose: late y lo dice.');
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 3 · SIN VERIFICAR. ⚠️ LA SEÑAL SE HA MOVIDO, Y EL TEST LA HA CAZADO.
+  // 3 · LA PROCEDENCIA SE FUE DE ESTA PANTALLA. Y ESO TAMBIÉN SE PRUEBA.
   //
-  // Antes el borde discontinuo iba en el CAJÓN de la ficha entera. Ahora la ficha
-  // son CHIPS (clonados de la referencia) y el borde va en cada chip afectado.
-  // El test miraba el contenedor, encontró "solid", y se puso rojo. Correcto: la
-  // señal ya no estaba donde él miraba.
-  //
-  // ⚠️ Y AQUÍ ESTABA LA TENTACIÓN: cambiar el selector y seguir. Pero lo que hay
-  //    que volver a demostrar es que la señal SIGUE SOBREVIVIENDO AL GRIS, que es
-  //    para lo que existe este test. Así que se comprueban los TRES canales otra
-  //    vez, sobre el sitio nuevo.
+  // Antes cada nivel se distinguía por FORMA (borde discontinuo + símbolo †*?).
+  // Antonio: «al usuario le importa tres pimientos de dónde saques el dato». Se
+  // quitó de la vista de parada (vive entera en /sobre-los-datos). Aquí se invierte
+  // el test: lo que antes exigía que se DISTINGUIERAN, ahora exige que se pinten
+  // TODOS IGUAL. `data-confianza` (invisible) sigue ahí solo para poder mirarlos.
   // ═══════════════════════════════════════════════════════════════════════════
-  // ⚠️ Y EN LA TANDA 7 SE VOLVIÓ A MOVER: ya no hay UN "sin verificar", hay TRES
-  //    procedencias no oficiales, cada una con su símbolo. El riesgo nuevo no es
-  //    que se confundan con el oficial —eso ya estaba probado— sino que **SE
-  //    CONFUNDAN ENTRE ELLAS**. Así que el test sube de exigencia.
-  const NIVELES = [
-    { conf: 'fuente_secundaria', simbolo: '*', que: 'busesmadrid.es — citable, NO oficial' },
-    { conf: 'observacion_propia', simbolo: '†', que: 'Antonio se sube a él. NO citable' },
-    { conf: 'sin_verificar', simbolo: '?', que: 'no consta en ninguna parte' },
-  ] as const;
+  const CONF = ['fuente_secundaria', 'observacion_propia', 'sin_verificar', 'oficial'] as const;
+  for (const conf of CONF) {
+    const ficha = page.locator(`[data-papel="ficha"][data-confianza="${conf}"]`).first();
+    expect(await ficha.count(), `el fingimiento debería traer un coche ${conf}`).toBeGreaterThan(0);
 
-  const simbolosVistos: string[] = [];
-  for (const n of NIVELES) {
-    const ficha = page.locator(`[data-papel="ficha"][data-confianza="${n.conf}"]`).first();
-    expect(await ficha.count(), `el fingimiento debería traer un coche ${n.conf}`).toBeGreaterThan(0);
-
-    // CANAL 1 · LA FORMA. Borde discontinuo en los chips que afirman algo del bus.
+    // Ni marca †*? …
+    expect(await ficha.locator('[data-papel="marca-confianza"]').count(), `${conf} no lleva marca`).toBe(0);
+    // … ni borde discontinuo: el chip-clase es SÓLIDO en los cuatro niveles.
     const borde = await ficha
       .locator('[data-papel="chip-clase"]')
       .evaluate((el) => getComputedStyle(el).borderStyle);
-    expect(borde).toBe('dashed');
-
-    // CANAL 2 · EL SÍMBOLO. No es un color: en gris sigue ahí.
-    const marca = ficha.locator('[data-papel="marca-confianza"]');
-    await expect(marca).toHaveText(n.simbolo);
-    // ⚠️ Con TRES autobuses, la tercera ficha cae por debajo del pliegue a 360×740.
-    //    Eso NO es un defecto —se baja y ya—, pero `seVe` mide contra el viewport y
-    //    dijo "fuera del viewport (265, 752)". Tenía razón, y por eso se trae. Lo
-    //    que este test prueba es que el símbolo SOBREVIVE AL GRIS, no que quepa sin
-    //    hacer scroll.
-    await marca.scrollIntoViewIfNeeded();
-    const ve = await seVe(page, `[data-marca="${n.conf}"]`);
-    expect(ve.visible).toBe(true);
-    simbolosVistos.push(n.simbolo);
-
-    console.log(
-      `\n  ${n.conf.padEnd(18)} → borde "${borde}" · símbolo "${n.simbolo}" ${ve.visible ? 'SE VE' : `NO — ${ve.motivo}`}  (${n.que})`,
-    );
+    expect(borde, `${conf}: el chip-clase no puede ir discontinuo`).not.toBe('dashed');
+    console.log(`  ${conf.padEnd(18)} → chip-clase "${borde}" · sin marca  (todos IGUAL)`);
   }
 
-  // ⭐ Y LOS SÍMBOLOS SON DISTINTOS ENTRE SÍ. Si los tres niveles llevaran el mismo
-  //    asterisco, el usuario no podría distinguir "lo dice una web de aficionados"
-  //    de "no lo dice nadie" — y esas dos cosas NO son lo mismo.
-  expect(new Set(simbolosVistos).size, 'cada procedencia, SU símbolo').toBe(NIVELES.length);
-
-  // CANAL 3 · LA PALABRA. Al pie, UNA vez, y solo la de los niveles PRESENTES.
-  const nota = page.locator('[data-papel="nota-sin-verificar"]');
-  await expect(nota).toContainText(/No consta en el pliego municipal/i);
-  await expect(nota).toContainText(/Visto circular/i);
-  await expect(nota).toContainText(/Sin procedencia conocida/i);
-  console.log('  la leyenda al pie: SE VE, con las TRES entradas');
-
-  // ⚠️ Y LA CONTRAPRUEBA DE LA LEYENDA: en una parada donde SOLO hay oficiales, no
-  //    se pinta NINGUNA línea. Una leyenda que explica símbolos que no están es
-  //    ruido, y además miente sobre lo que el usuario tiene delante.
-  const limpia = await page.context().newPage();
-  await limpia.goto(`/parada/${POSTE}?fingir=solo-oficiales`, { waitUntil: 'networkidle' });
-  // ⚠️ Y SE EXIGE LA PRUEBA DE QUE EL FINGIMIENTO HA OCURRIDO: si no, este test
-  //    estaría mirando datos REALES y aprobando por casualidad.
-  //
-  // ⭐ ANTES SE MIRABA LA BANDA "MODO DEMO", Y ERA EL PROXY EQUIVOCADO: aquella
-  //    banda salía con `ZETABUS_DEMO=1` estuviera fingiendo o no, así que
-  //    demostraba que el FLAG estaba puesto, no que el fingimiento se aplicara.
-  //    La marca de página sí lo demuestra, y además dice cuál.
-  await expect(limpia.locator('[data-papel="fingiendo"]')).toHaveAttribute(
-    'data-fingimiento',
-    'solo-oficiales',
-  );
+  // Ni leyenda al pie, ni enlace "De dónde sale cada dato" colgando de un autobús.
+  expect(await page.locator('[data-papel="nota-sin-verificar"]').count(), 'fuera la leyenda').toBe(0);
   expect(
-    await limpia.locator('[data-papel="nota-sin-verificar"]').count(),
-    'sin marcados en pantalla, la leyenda NO se pinta',
+    await page.getByText(/De dónde sale cada dato/i).count(),
+    'fuera el enlace por autobús',
   ).toBe(0);
-  console.log('  ⭐ CONTRAPRUEBA: con solo oficiales, la leyenda NO aparece');
-  await limpia.close();
-
-  // ⭐ 4 · Y EL OFICIAL NO LLEVA NINGUNA DE LAS TRES. Si los tratamientos solo se
-  //        distinguieran por el TONO, en escala de grises serían idénticos y el
-  //        usuario no podría saber de cuál fiarse. Esto es lo que de verdad prueba
-  //        el test: que la diferencia NO está en el color.
-  const oficial = page.locator('[data-papel="ficha"][data-confianza="oficial"]').first();
-  expect(await oficial.count(), 'hace falta un oficial CON QUÉ COMPARAR').toBeGreaterThan(0);
-  const bordeOf = await oficial
-    .locator('[data-papel="chip-clase"]')
-    .evaluate((n) => getComputedStyle(n).borderStyle);
-  console.log(`  oficial            → borde "${bordeOf}" · sin símbolo  (es la NORMA: no se anuncia)`);
-  expect(bordeOf).not.toBe('dashed'); // ⭐ distinguibles por FORMA, sin color
-  expect(await oficial.locator('[data-papel="marca-confianza"]').count()).toBe(0);
+  console.log('  ⭐ ni marca, ni borde, ni enlace: la vista de parada quedó operativa y limpia.');
 });
 
 test('⭐ EL COLOR DE LÍNEA NO SE USA NUNCA PARA UN ESTADO', async ({ page }) => {

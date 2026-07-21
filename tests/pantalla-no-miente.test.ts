@@ -268,51 +268,38 @@ describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
     expect(sobre, 'y lo que NO sabemos, también').toMatch(/NO detectamos supresiones/);
   });
 
-  it('⭐⭐ A4 · el "sin verificar" ya no GRITA, pero sigue estando', () => {
-    // Pintábamos un ⚠ ÁMBAR en mayúsculas sobre 53 de 403 autobuses (1 de cada 8).
-    // Un aviso que sale siempre no es un aviso: es ruido. Y enseña al usuario a
-    // ignorar los avisos — con lo cual el día que uno importe, no lo leerá.
+  it('⭐⭐ FUERA la procedencia de la vista de parada: ni marca, ni borde, ni enlace', () => {
+    // Antonio: «al usuario le importa tres pimientos de dónde saques el dato». La
+    // vista de parada es operativa; la procedencia se fue ENTERA a /sobre-los-datos.
     const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+    // Nada de alarmas ámbar (nunca las hubo aquí) y, ahora, nada de las TRES señales:
     expect(c, 'nada de alarmas ámbar en cada tarjeta').not.toMatch(/color-aviso|SIN VERIFICAR/);
+    expect(c, 'la marca †*? ya no se pinta en la ficha').not.toMatch(/marca-confianza/);
+    // El borde discontinuo POR CONFIANZA se fue (los chips clase/combustible ya no lo
+    // reciben). El único `discontinuo` que queda es el del chip "Sin datos de este
+    // autobús", que NO es procedencia: es "no tenemos ficha", y se explica solo.
+    expect(c, 'los chips de confianza ya no van discontinuos').not.toMatch(/discontinuo=\{!oficial\}/);
 
-    // ⚠️ PERO LA MARCA SE QUEDA: es VERDAD que no consta en el registro oficial.
-    //    Un símbolo, un borde discontinuo (FORMA, no tono: sobrevive al gris) y
-    //    la explicación UNA vez al pie, no 53 veces encima de cada autobús.
-    expect(c).toMatch(/marca-confianza/);
-    expect(c).toMatch(/border-dashed/);
-    expect(c, 'la nota, una sola vez').toMatch(/No consta en el pliego municipal/);
+    const llegadas = sinComentarios(readFileSync('src/components/LlegadasVivas.tsx', 'utf8'));
+    expect(llegadas, 'fuera el enlace "De dónde sale cada dato"').not.toMatch(/DeDondeSaleCadaDato/);
+    expect(llegadas, 'fuera la leyenda al pie').not.toMatch(/NotaSinVerificar/);
   });
 
-  /**
-   * ⭐⭐ TANDA 7 · LA MARCA DICE **DE QUIÉN** ES EL DATO, no solo que no es oficial.
-   *
-   * Antonio aportó busesmadrid.es, y 43 de los 53 huérfanos ganaron procedencia.
-   * ⚠️ Pero una web de aficionados NO ES UN PLIEGO MUNICIPAL. El riesgo de esta
-   * tanda entera es que, al mezclarlos en el mismo array, la pantalla los pinte
-   * igual — y entonces habremos hecho exactamente lo que el JSON heredado hacía.
-   */
-  it('⭐⭐ las TRES procedencias no oficiales se distinguen EN PANTALLA', () => {
-    const c = sinComentarios(readFileSync('src/components/FichaVehiculo.tsx', 'utf8'));
+  it('⭐ pero la procedencia NO desaparece: sigue entera en /sobre-los-datos', () => {
+    // No puede irse de los DOS sitios. La tabla de los cuatro niveles, con recuentos
+    // derivados y el mapa MARCAS, se queda en /sobre-los-datos.
+    const sobre = sinComentarios(readFileSync('src/app/sobre-los-datos/page.tsx', 'utf8'));
+    expect(sobre, 'lee el mapa MARCAS').toMatch(/import \{ MARCAS \}/);
+    expect(sobre, 'la tabla cuenta por nivel').toMatch(/data-papel="nivel-procedencia"/);
+    expect(sobre, 'busesmadrid, con su matiz').toMatch(/busesmadrid\.es/);
+    expect(sobre, 'no oficial, dicho').toMatch(/no es oficial/i);
 
-    // Tres símbolos distintos. Y el oficial NO tiene: es la norma, no se anuncia.
-    expect(c).toMatch(/oficial:\s*null/);
-    for (const [nivel, simbolo] of [
-      ['fuente_secundaria', "'\\*'"],
-      ['observacion_propia', "'†'"],
-      ['sin_verificar', "'\\?'"],
-    ] as const) {
-      expect(c, `${nivel} necesita su símbolo`).toMatch(new RegExp(`${nivel}:[\\s\\S]{0,80}simbolo: ${simbolo}`));
+    // Y el mapa MARCAS sigue vivo en el módulo (lo leen sobre-los-datos y sistema-visual).
+    const ficha = readFileSync('src/components/FichaVehiculo.tsx', 'utf8');
+    expect(ficha).toMatch(/export const MARCAS/);
+    for (const simbolo of ["'\\*'", "'†'", "'\\?'"]) {
+      expect(ficha, `MARCAS conserva ${simbolo}`).toMatch(new RegExp(`simbolo: ${simbolo}`));
     }
-
-    // ⚠️ Y la leyenda tiene que decir que busesmadrid NO ES OFICIAL, con su enlace.
-    expect(c).toMatch(/busesmadrid\.es/);
-    expect(c, 'sin esto, un aficionado se disfraza de pliego').toMatch(/que no es oficial/i);
-    expect(c, 'la observación propia NO es citable, y se dice').toMatch(/No es un dato citable/i);
-
-    // ⚠️ La leyenda solo explica los símbolos QUE HAY. Si en esta parada no hay
-    //    ningún bus observado a mano, la línea del † no se pinta.
-    const llegadas = sinComentarios(readFileSync('src/components/LlegadasVivas.tsx', 'utf8'));
-    expect(llegadas).toMatch(/NotaSinVerificar presentes=\{confianzasPresentes\}/);
   });
 
   it('los cinco estados tienen CINCO mensajes distintos', () => {

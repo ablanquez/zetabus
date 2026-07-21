@@ -187,7 +187,7 @@ export default function SobreLosDatos() {
       {/* ═══ FAMILIA 2 ═══════════════════════════════════════════════════════ */}
       <Familia
         titulo={`La ficha de cada autobús — ${flota.length} vehículos`}
-        nota="Cuatro niveles de procedencia. El símbolo es el MISMO que pinta la app en cada ficha."
+        nota="Cuatro niveles de procedencia. La ficha de la parada los pinta todos IGUAL; aquí es donde se cuentan y se explican."
       >
         <div className="overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)]">
           <table className="w-full border-collapse text-menor leading-snug">
@@ -274,9 +274,9 @@ export default function SobreLosDatos() {
             <Etiqueta>? {marcados} sin procedencia</Etiqueta> No constan{' '}
             <strong>en ninguna parte</strong>: ni en el pliego, ni en busesmadrid. Vienen de un
             fichero heredado del proyecto anterior, <strong>sin matrícula y sin procedencia
-            documentada</strong>. En pantalla van con <strong>interrogación</strong> y borde
-            discontinuo: no se disfrazan de oficiales, y tampoco se les grita encima — es probable que
-            el dato sea correcto, simplemente <strong>no lo podemos demostrar</strong>.
+            documentada</strong>. No se disfrazan de oficiales —su procedencia se cuenta aquí—, pero
+            tampoco se les grita encima: es probable que el dato sea correcto, simplemente{' '}
+            <strong>no lo podemos demostrar</strong>.
           </p>
         </div>
       </Familia>

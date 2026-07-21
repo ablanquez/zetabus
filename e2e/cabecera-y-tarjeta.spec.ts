@@ -69,26 +69,18 @@ test.describe('⭐ B10 · LA TARJETA DE LLEGADA MIDE LO QUE LA REFERENCIA (≈10
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ B7/B8 · LA FICHA EN CHIPS, CON LOS 4 NIVELES DE PROCEDENCIA', () => {
-  test('cuatro niveles, cuatro tratamientos distintos, y "Dato oficial" NO aparece', async ({ page }, info) => {
+test.describe('⭐ LA FICHA EN CHIPS, TODOS LOS NIVELES IGUAL (la procedencia se fue)', () => {
+  test('ni "Dato oficial", ni marca de procedencia en ningún autobús', async ({ page }) => {
     await page.goto('/parada/744?fingir=sin-verificar', { waitUntil: 'networkidle' });
 
-    // B8: la frase "Dato oficial" era la norma (87%). Ya no se pinta.
+    // La frase "Dato oficial" era la norma (87%). Ya no se pinta (se quitó antes).
     await expect(page.getByText(/Dato oficial/i)).toHaveCount(0);
 
-    // Los cuatro niveles, cada uno con su marca (o sin ella, el oficial).
-    const marcas = await page.locator('[data-papel="marca-confianza"]').evaluateAll((els) =>
-      els.map((e) => e.textContent?.trim()),
-    );
-    console.log(`\n  [${info.project.name}] marcas presentes: ${marcas.join(' ')} (oficial no lleva marca)`);
-    // Hay al menos una de cada de las tres marcadas (*, †, ?).
-    expect(marcas).toContain('*');
-    expect(marcas).toContain('†');
-    expect(marcas).toContain('?');
-
-    // El oficial (4889) NO lleva marca: su ficha no tiene [data-papel="marca-confianza"].
-    const oficial = filas(page).filter({ hasText: '4889' });
-    await expect(oficial.locator('[data-papel="marca-confianza"]')).toHaveCount(0);
+    // Y AHORA tampoco la marca †*?: la procedencia salió de esta pantalla operativa.
+    // Con `fingir=sin-verificar` hay buses de los cuatro niveles; NINGUNO lleva marca.
+    await expect(page.locator('[data-papel="marca-confianza"]')).toHaveCount(0);
+    // Ni el enlace por autobús.
+    await expect(page.getByText(/De dónde sale cada dato/i)).toHaveCount(0);
   });
 
   test('⚠️ un bus SIN ficha lo dice, no se lo inventa', async ({ page }) => {
