@@ -9,6 +9,7 @@ import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Cita } from '@/components/Cita';
+import { Toponimo } from '@/components/Toponimo';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
@@ -115,11 +116,12 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 : rumbo.texto
           }
         >
-          {/* Origen/destino/nombre son CITA (nombres de parada del GTFS y el nombre
-              largo de la línea) → <Cita>. La flecha y "Circular por" son NUESTROS. */}
+          {/* Origen/destino son DESTINOS corregidos (ucwords del GTFS arreglado) →
+              <Toponimo> (protege del traductor sin decir "verbatim"). La flecha es
+              nuestra. El "por" del circular y el nombre largo SÍ son verbatim → <Cita>. */}
           {rumbo.tipo === 'trayecto' ? (
             <>
-              <Cita>{rumbo.origen}</Cita>{' '}
+              <Toponimo>{rumbo.origen}</Toponimo>{' '}
               <span
                 aria-hidden
                 className="font-normal text-[var(--color-tinta-tenue)]"
@@ -127,7 +129,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
               >
                 →
               </span>{' '}
-              <Cita>{rumbo.destino}</Cita>
+              <Toponimo>{rumbo.destino}</Toponimo>
             </>
           ) : rumbo.tipo === 'circular' ? (
             <>Circular por <Cita>{rumbo.por}</Cita></>
@@ -171,7 +173,9 @@ export default async function LineaPage({ params, searchParams }: Props) {
                 <span aria-hidden className="text-[0.8em] leading-none">
                   {esActivo ? '●' : '○'}
                 </span>
-                <span>Hacia {etiquetaSentido(s.directionId)}</span>
+                {/* El destino va en <Toponimo> (corregido + protegido del traductor):
+                    el MISMO texto que el h1 y que la home. "Hacia" es nuestro. */}
+                <span>Hacia <Toponimo>{etiquetaSentido(s.directionId)}</Toponimo></span>
               </Link>
             );
           })}

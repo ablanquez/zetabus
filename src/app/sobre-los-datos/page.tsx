@@ -152,6 +152,24 @@ export default function SobreLosDatos() {
               ni uno: de «Pedro Iii» no se recupera «Pedro III» sin adivinar.
             </Nota>
           </Fuente>
+
+          <Fuente titulo="Los destinos de las líneas" fuente="GTFS (trip_headsign). Con el mismo ucwords roto.">
+            <p>
+              El destino que ves arriba de una línea (<strong>«Hacia Siglo XXI»</strong>) y en la
+              home sale del mismo GTFS, con el mismo <code>ucwords()</code>: «Siglo XXI» llegaba como
+              «Siglo Xxi», «Aljafería» como «Aljaferia», «San José» como «San Jose». Aquí{' '}
+              <strong>sí se corrigen a mano</strong>, y es la diferencia con las paradas: son{' '}
+              <strong>un puñado</strong> de topónimos conocidos de Zaragoza —no cientos— y no hay una
+              fuente limpia que pedir. La forma correcta es un hecho del callejero, no una adivinanza.
+            </p>
+            <Nota>
+              Por eso el destino corregido <strong>ya no es una cita</strong> literal —lo hemos
+              reescrito—: se protege de la traducción automática del navegador, pero no se marca como
+              verbatim. Y la <strong>línea 60</strong> es el cabo suelto: su GTFS dice «Actur-Rey
+              Fernando» y la web de Avanza «Valle de Broto». Son dos fuentes que no coinciden y no
+              sabemos cuál es la de hoy: se muestra la del GTFS, sin inventar.
+            </Nota>
+          </Fuente>
         </div>
       </Familia>
 

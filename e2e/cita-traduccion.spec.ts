@@ -1,47 +1,51 @@
 /**
- * ⭐⭐ <Cita> EN UN NAVEGADOR DE VERDAD. El guardián de unidad (`tests/cita-guardian`)
- * comprueba la ESTRUCTURA (data-cita) sobre los componentes; esto comprueba el
- * CONTRATO REAL: `element.translate === false` es la bandera EXACTA que consulta el
- * traductor de Chrome/Edge/Firefox para saltar un subárbol. Si es false, no lo toca.
+ * ⭐⭐ <Cita> Y <Toponimo> EN UN NAVEGADOR DE VERDAD. El guardián de unidad
+ * (`tests/cita-guardian`) comprueba la ESTRUCTURA sobre los componentes; esto
+ * comprueba el CONTRATO REAL: `element.translate === false` es la bandera EXACTA que
+ * consulta el traductor de Chrome/Edge/Firefox para saltar un subárbol.
  *
- * Cubre los sitios que se construyen INLINE en las páginas (el <h1> del rumbo, el
- * nombre de parada) o tras interacción (resultados del Buscador) —que el guardián de
- * unidad no puede renderizar—. Se prueban las vistas que se pintan SIN Avanza
- * (`?fingir=caido` cae al GTFS oficial), así el test no depende de datos vivos.
+ * Dos marcadores, misma defensa (translate="no"), distinta semántica:
+ *   · [data-cita]     → dato externo VERBATIM (nombre de parada, de línea).
+ *   · [data-toponimo] → destino CORREGIDO por nosotros (el ucwords del GTFS arreglado).
+ *
+ * Cubre los sitios que se construyen INLINE en las páginas (el <h1> del rumbo, la
+ * botonera "Hacia X", el nombre de parada) o tras interacción (Buscador) —que el
+ * guardián de unidad no puede renderizar—. Se prueban las vistas que se pintan SIN
+ * Avanza (`?fingir=caido` cae al GTFS oficial), así no depende de datos vivos.
  *
  * ⚠️ Lo único que NO llega aquí es el destino de LlegadasVivas: necesita buses vivos
- *    de Avanza, que en `caido` no hay. Queda cubierto por el <Cita> en el código y
- *    verificado a mano; sin clave de API no hay forma honesta de automatizarlo.
+ *    de Avanza, que en `caido` no hay. Queda cubierto en el código y verificado a
+ *    mano; sin clave de API no hay forma honesta de automatizarlo.
  */
 
 import { test, expect, type Page } from '@playwright/test';
 
-/** Toda cita pintada declara translate=no (el traductor la salta). Y algo NUESTRO, no. */
-async function citasCongeladasYChromeNo(page: Page) {
+/** Todo lo protegido (cita o topónimo) declara translate=no. Y algo NUESTRO, no. */
+async function protegidosCongeladosYChromeNo(page: Page) {
   const r = await page.evaluate(() => {
-    const citas = [...document.querySelectorAll('[data-cita]')];
+    const prot = [...document.querySelectorAll('[data-cita], [data-toponimo]')];
     return {
-      nCitas: citas.length,
-      todasFrias: citas.every((e) => (e as HTMLElement).translate === false),
-      // element.translate hereda: un hijo de la cita también es false.
-      hijosFrios: citas.every((e) => {
+      n: prot.length,
+      todosFrios: prot.every((e) => (e as HTMLElement).translate === false),
+      // element.translate hereda: un hijo de un nodo protegido también es false.
+      hijosFrios: prot.every((e) => {
         const hijo = e.querySelector('*') as HTMLElement | null;
         return !hijo || hijo.translate === false;
       }),
     };
   });
-  expect(r.nCitas, 'la vista no tiene ninguna cita: ¿se pinta el dato externo?').toBeGreaterThan(0);
-  expect(r.todasFrias, 'una cita NO lleva translate=no: el traductor la reescribiría').toBe(true);
+  expect(r.n, 'la vista no protege ningún dato externo: ¿se pinta sin Cita/Toponimo?').toBeGreaterThan(0);
+  expect(r.todosFrios, 'un nodo protegido NO lleva translate=no: el traductor lo reescribiría').toBe(true);
   expect(r.hijosFrios).toBe(true);
-  return r.nCitas;
+  return r.n;
 }
 
-test.describe('⭐ el dato externo va en <Cita> y el traductor no lo toca', () => {
-  test('HOME · nombres de línea citados; los rótulos nuestros SÍ se traducen', async ({ page }) => {
+test.describe('⭐ el dato externo va protegido y el traductor no lo toca', () => {
+  test('HOME · los nombres de línea protegidos; los rótulos nuestros SÍ se traducen', async ({ page }) => {
     await page.goto('/', { waitUntil: 'networkidle' });
-    await citasCongeladasYChromeNo(page);
+    await protegidosCongeladosYChromeNo(page);
 
-    // El nombre de línea de cada tarjeta es cita.
+    // El nombre de línea de cada tarjeta va protegido (cita).
     const nombre = page.locator('[data-papel="grupo-lineas"] li a [data-cita]').first();
     await expect(nombre).toHaveJSProperty('translate', false);
 
@@ -62,15 +66,19 @@ test.describe('⭐ el dato externo va en <Cita> y el traductor no lo toca', () =
     await expect(titulo).toHaveJSProperty('translate', false);
   });
 
-  test('LÍNEA · el <h1> del rumbo y los nombres de parada del itinerario, citados', async ({ page }) => {
+  test('LÍNEA · el <h1> del rumbo y la botonera (topónimo) y las paradas (cita), protegidos', async ({ page }) => {
     await page.goto('/linea/21?fingir=caido', { waitUntil: 'networkidle' });
-    await citasCongeladasYChromeNo(page);
+    await protegidosCongeladosYChromeNo(page);
 
-    // El h1 del rumbo CONTIENE cita (origen/destino son nombres de parada del GTFS).
-    const enH1 = await page.locator('[data-papel="titulo-linea"] [data-cita]').count();
-    expect(enH1, 'el <h1> del rumbo no tiene cita: el nombre no está protegido').toBeGreaterThan(0);
+    // El h1 del rumbo: origen/destino son DESTINOS corregidos → topónimo.
+    const enH1 = await page.locator('[data-papel="titulo-linea"] [data-toponimo]').count();
+    expect(enH1, 'el <h1> del rumbo no protege el destino corregido').toBeGreaterThan(0);
 
-    // Los nombres de parada del itinerario son cita.
+    // La botonera "Hacia X" usa el MISMO destino, también topónimo.
+    const enBotonera = await page.locator('[data-papel="sentido"] [data-toponimo]').count();
+    expect(enBotonera, 'la botonera "Hacia X" no protege el destino').toBeGreaterThan(0);
+
+    // Los nombres de parada del itinerario son cita verbatim.
     const enParada = await page.locator('[data-papel="ir-a-parada"] [data-cita]').count();
     expect(enParada, 'los nombres de parada del itinerario no son cita').toBeGreaterThan(0);
   });
@@ -79,6 +87,6 @@ test.describe('⭐ el dato externo va en <Cita> y el traductor no lo toca', () =
     await page.goto('/parada/744?fingir=caido', { waitUntil: 'networkidle' });
     const enNombre = await page.locator('[data-papel="nombre-parada"] [data-cita]').count();
     expect(enNombre, 'el nombre de la parada no es cita').toBeGreaterThan(0);
-    await citasCongeladasYChromeNo(page);
+    await protegidosCongeladosYChromeNo(page);
   });
 });

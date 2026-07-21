@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { rumboDe, destinoDeSentido, type SentidoParaRumbo } from '@/engine/rumbo';
+import { rumboDe, destinoDeSentido, corregirDestino, dosDestinos, type SentidoParaRumbo } from '@/engine/rumbo';
 import { lineas, idLinea, esBuho, sentidosParaRumbo } from '@/engine/topologia';
 
 const CTX_DIURNA = { esBuho: false, nombreLargo: 'x' };
@@ -128,6 +128,49 @@ describe('rumboDe · contra los datos REALES del feed', () => {
     const l = por('N1');
     const r = rumboReal('N1');
     expect(r).toEqual({ tipo: 'nombre', texto: l.longName });
+  });
+
+  // ── CORRECCIÓN ORTOGRÁFICA DE LOS DESTINOS (el ucwords del GTFS) ────────────
+  describe('corregirDestino · el ucwords roto del GTFS se arregla EN LA FUENTE', () => {
+    it('arregla los rotos conocidos; deja igual lo que ya está bien', () => {
+      expect(corregirDestino('Siglo Xxi')).toBe('Siglo XXI'); // el peor: el numeral romano
+      expect(corregirDestino('San Jose')).toBe('San José');
+      expect(corregirDestino('Aljaferia')).toBe('Aljafería');
+      expect(corregirDestino('Camino Las Torres')).toBe('Camino de Las Torres'); // + preposición
+      expect(corregirDestino('Actur - Rey Fernando')).toBe('Actur-Rey Fernando'); // unifica
+      // preposición/artículo capitalizados por el ucwords (forma buena en el longName)
+      expect(corregirDestino('Puerta Del Carmen')).toBe('Puerta del Carmen');
+      expect(corregirDestino('Pinares De Venecia')).toBe('Pinares de Venecia');
+      expect(corregirDestino('Miralbueno')).toBe('Miralbueno'); // no es un roto: intacto
+    });
+
+    it('se aplica DENTRO de destinoDeSentido → la botonera y el h1 ya dan "Siglo XXI"', () => {
+      const l = lineas().find((x) => x.shortName === '23')!;
+      const sents = sentidosParaRumbo(idLinea(String(l.id)));
+      const etiquetas = sents.map((s) => destinoDeSentido(s, sents));
+      expect(etiquetas).toContain('Siglo XXI');
+      expect(etiquetas).not.toContain('Siglo Xxi'); // el roto NO se cuela en pantalla
+    });
+  });
+
+  // ── LOS DOS DESTINOS DE LA HOME ────────────────────────────────────────────
+  describe('dosDestinos · las diurnas de doble sentido dan dos destinos ordenados', () => {
+    const dd = (sn: string) => {
+      const l = lineas().find((x) => x.shortName === sn)!;
+      return dosDestinos(sentidosParaRumbo(idLinea(String(l.id))), l.longName);
+    };
+    it('la 21: dos destinos, en el orden del nombre ("Barrio Jesús - … - Miralbueno")', () => {
+      expect(dd('21')).toEqual(['Barrio Jesús', 'Miralbueno']);
+    });
+    it('la 23: el destino CORREGIDO ("Siglo XXI") sale en su renglón', () => {
+      expect(dd('23')).toEqual(['Parque Venecia', 'Siglo XXI']);
+    });
+    it('una circular de bucle (Ci3) → null: no tiene dos extremos', () => {
+      expect(dd('Ci3')).toBeNull();
+    });
+    it('una diurna de SENTIDO ÚNICO (30) → null: solo un destino', () => {
+      expect(dd('30')).toBeNull();
+    });
   });
 
   // ── INVARIANTE · NINGUNA línea, en NINGÚN sentido, pinta una flecha "X → X" ──
