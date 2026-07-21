@@ -6,6 +6,7 @@ import { Toponimo } from '@/components/Toponimo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { GRUPOS, giroDe, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
 import { dosDestinos } from '@/engine/rumbo';
+import { ALIAS_LINEA } from '@/engine/busqueda';
 
 /**
  * LA PORTADA. Buscador arriba, y las 44 líneas debajo.
@@ -26,6 +27,8 @@ export default function Home() {
       clave: l.shortName.toLowerCase(),
       titulo: l.longName,
       sub: `línea ${l.shortName}`,
+      // Alias de búsqueda (romanos: "quinto"→Carlos V, "21"→Siglo XXI). No se muestra.
+      alias: ALIAS_LINEA[l.shortName],
       color: l.color,
       colorTexto: l.textColor,
       href: `/linea/${encodeURIComponent(l.shortName)}`,

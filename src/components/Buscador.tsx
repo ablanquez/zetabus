@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { AcuseDeToque } from './AcuseDeToque';
 import { Cita } from './Cita';
+import { buscar, indexar, type Entrada } from '@/engine/busqueda';
+
+export type { Entrada };
 
 /**
  * EL BUSCADOR. Conocimiento pagado por la referencia, y se reutiliza.
@@ -27,63 +30,13 @@ import { Cita } from './Cita';
  * queda anotado como el primer cabo de la Tanda 5.
  */
 
-export interface Entrada {
-  tipo: 'parada' | 'linea';
-  clave: string;
-  titulo: string;
-  sub: string;
-  color?: string;
-  colorTexto?: string;
-  href: string;
-}
-
-const ABREVIATURAS: [RegExp, string][] = [
-  [/\bav(da?)?\.?\b/g, 'avenida'],
-  [/\bc\/|\bcl\.?\b/g, 'calle'],
-  [/\bpza?\.?\b|\bpl\.?\b/g, 'plaza'],
-  [/\bp(º|so|seo)\.?\b/g, 'paseo'],
-  [/\bctra\.?\b/g, 'carretera'],
-  [/\bcno\.?\b|\bcmno\.?\b/g, 'camino'],
-];
-
-const normalizar = (s: string) => {
-  let t = s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  for (const [re, con] of ABREVIATURAS) t = t.replace(re, con);
-  return t.replace(/\s+/g, ' ').trim();
-};
-
-const MAX = 8;
-
 export function Buscador({ entradas }: { entradas: Entrada[] }) {
   const [q, setQ] = useState('');
 
-  const indice = useMemo(
-    () => entradas.map((e) => ({ e, n: normalizar(`${e.titulo} ${e.sub} ${e.clave}`) })),
-    [entradas],
-  );
-
-  const resultados = useMemo(() => {
-    const nq = normalizar(q);
-    // Un solo carácter vale si es un dígito: "5" es un poste o una línea.
-    if (nq.length < 2 && !/^\d$/.test(nq)) return [];
-
-    return indice
-      .map(({ e, n }) => {
-        // ⭐ EL NÚMERO DE POSTE MANDA. Es lo que la persona tiene delante,
-        //    impreso en la marquesina. Si teclea "744", quiere el poste 744.
-        let puntos = 99;
-        if (e.clave === nq) puntos = 0;
-        else if (e.clave.startsWith(nq)) puntos = 1;
-        else if (n.startsWith(nq)) puntos = 3;
-        else if (n.includes(nq)) puntos = 4;
-        else if (nq.split(' ').every((t) => n.includes(t))) puntos = 6;
-        return { e, puntos };
-      })
-      .filter((r) => r.puntos < 99)
-      .sort((a, b) => a.puntos - b.puntos || a.e.titulo.length - b.e.titulo.length)
-      .slice(0, MAX)
-      .map((r) => r.e);
-  }, [q, indice]);
+  // ⭐ El índice y la búsqueda viven en `engine/busqueda` (puro, con tests). Aquí
+  //    solo queda la caja y el pintado. Ver ahí el porqué de los alias y el orden.
+  const indice = useMemo(() => indexar(entradas), [entradas]);
+  const resultados = useMemo(() => buscar(indice, q), [q, indice]);
 
   const buscando = q.trim().length > 0;
 
