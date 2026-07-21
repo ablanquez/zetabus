@@ -9,16 +9,23 @@
 
 import { describe, it, expect } from 'vitest';
 import { normalizar, indexar, buscar, ALIAS_LINEA, type Entrada } from '@/engine/busqueda';
-import { lineas, paradas, posteDe, idParada } from '@/engine/topologia';
+import { lineas, paradas, posteDe, idParada, idLinea, sentidosParaRumbo } from '@/engine/topologia';
+import { destinoDeSentido } from '@/engine/rumbo';
 
-/** Las entradas como las arma la home. `conAlias=false` para la contraprueba. */
-function entradasReales(conAlias = true): Entrada[] {
+const destinosDe = (id: string) => {
+  const s = sentidosParaRumbo(idLinea(id));
+  return [...new Set(s.map((x) => destinoDeSentido(x, s)))].join(' ');
+};
+
+/** Las entradas como las arma la home. Flags para las contrapruebas. */
+function entradasReales(conAlias = true, conDestinos = true): Entrada[] {
   const deLineas = lineas().map<Entrada>((l) => ({
     tipo: 'linea',
     clave: l.shortName.toLowerCase(),
     titulo: l.longName,
     sub: `línea ${l.shortName}`,
     alias: conAlias ? ALIAS_LINEA[l.shortName] : undefined,
+    destinos: conDestinos ? destinosDe(String(l.id)) : undefined,
     href: '',
   }));
   const deParadas = paradas().flatMap<Entrada>((p) => {
@@ -102,6 +109,31 @@ describe('⭐ lo que la gente teclea, encontrado', () => {
   });
 });
 
+describe('⭐ los DESTINOS también se indexan (el hueco de las circulares)', () => {
+  it('🔴→🟢 "paseo de la ribera" NO hallaba la Ci4; ahora sí', () => {
+    // Rojo: sin indexar destinos, la Ci4 se llama "Circular 4" y no dice a dónde va.
+    const sinDestinos = indexar(entradasReales(true, false));
+    expect(buscar(sinDestinos, 'paseo de la ribera').some((e) => e.clave === 'ci4')).toBe(false);
+    // Verde: con los destinos indexados.
+    expect(buscarR('paseo de la ribera').some((e) => e.clave === 'ci4')).toBe(true);
+  });
+  it('las circulares aparecen por su destino real', () => {
+    expect(claves('estación delicias')).toContain('ci1/linea'); // y ci2
+    expect(claves('estación delicias')).toContain('ci2/linea');
+    expect(claves('las fuentes')).toContain('ci3/linea');
+  });
+  it('el destino de campo/lanzadera ya iba por el longName, y sigue: "complejo funerario" → C1', () => {
+    expect(buscarR('complejo funerario').some((e) => e.clave === 'c1')).toBe(true);
+  });
+  it('⚠️ SIN RUIDO: "miralbueno" no se infla (ya iba por el nombre; no hay parada así)', () => {
+    // Antes y después: las mismas líneas, ninguna parada llamada exactamente Miralbueno.
+    const conD = buscarR('miralbueno');
+    const sinD = buscar(indexar(entradasReales(true, false)), 'miralbueno');
+    expect(conD.length).toBe(sinD.length);
+    expect(conD.every((e) => e.tipo === 'linea')).toBe(true);
+  });
+});
+
 describe('⚠️ FALSOS POSITIVOS · no encontrar de más', () => {
   it('"v" a secas no arrastra media red (Beethoven, Broto…): 0 resultados', () => {
     expect(buscarR('v')).toEqual([]);
@@ -122,5 +154,9 @@ describe('la presentación NO cambia · el alias no se muestra', () => {
     const l53 = lineas().find((l) => l.shortName === '53')!;
     expect(l53.longName).toBe('Plaza Emperador Carlos V - Miralbueno');
     expect(l53.longName).not.toMatch(/quinto/i);
+  });
+  it('la Ci4 se sigue mostrando "Circular 4" aunque se encuentre por su destino', () => {
+    const ci4 = lineas().find((l) => l.shortName === 'Ci4')!;
+    expect(ci4.longName).toBe('Circular 4'); // el destino "Paseo de la Ribera" NO se muestra
   });
 });

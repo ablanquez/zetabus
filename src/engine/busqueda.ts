@@ -27,6 +27,13 @@ export interface Entrada {
   sub: string;
   /** Palabras que se INDEXAN pero no se muestran (p. ej. "quinto" para "Carlos V"). */
   alias?: string;
+  /**
+   * Los DESTINOS de la línea, para indexar (no se muestran). La mayoría ya están en
+   * el `titulo` (el longName los nombra), pero las CIRCULARES se llaman "Circular N"
+   * y no dicen a dónde van: sin esto, teclear "Paseo de la Ribera" no encontraba la
+   * Ci4. Salen del mismo `destinoDeSentido` que la home y la botonera. Ver `page.tsx`.
+   */
+  destinos?: string;
   color?: string;
   colorTexto?: string;
   href: string;
@@ -66,9 +73,12 @@ export interface Indexado {
   readonly n: string;
 }
 
-/** El índice: cada entrada con su texto normalizado (título + sub + clave + ALIAS). */
+/** El índice: cada entrada con su texto normalizado (título + sub + clave + ALIAS + DESTINOS). */
 export function indexar(entradas: readonly Entrada[]): Indexado[] {
-  return entradas.map((e) => ({ e, n: normalizar(`${e.titulo} ${e.sub} ${e.clave} ${e.alias ?? ''}`) }));
+  return entradas.map((e) => ({
+    e,
+    n: normalizar(`${e.titulo} ${e.sub} ${e.clave} ${e.alias ?? ''} ${e.destinos ?? ''}`),
+  }));
 }
 
 export const MAX_RESULTADOS = 8;

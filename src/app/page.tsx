@@ -5,8 +5,19 @@ import { Cita } from '@/components/Cita';
 import { Toponimo } from '@/components/Toponimo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { GRUPOS, giroDe, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
-import { dosDestinos } from '@/engine/rumbo';
+import { destinoDeSentido, dosDestinos } from '@/engine/rumbo';
 import { ALIAS_LINEA } from '@/engine/busqueda';
+
+/**
+ * Los destinos de una línea, en una cadena, para INDEXARLOS en el buscador (no se
+ * muestran). Salen del mismo `destinoDeSentido` que la home y la botonera —un solo
+ * sitio—. La mayoría ya viven en el longName; esto cierra el hueco de las circulares
+ * ("Circular N" no dice a dónde va): sin esto, "Paseo de la Ribera" no hallaba la Ci4.
+ */
+function destinosParaBuscar(id: string): string {
+  const sents = sentidosParaRumbo(idLinea(id));
+  return [...new Set(sents.map((s) => destinoDeSentido(s, sents)))].join(' ');
+}
 
 /**
  * LA PORTADA. Buscador arriba, y las 44 líneas debajo.
@@ -29,6 +40,8 @@ export default function Home() {
       sub: `línea ${l.shortName}`,
       // Alias de búsqueda (romanos: "quinto"→Carlos V, "21"→Siglo XXI). No se muestra.
       alias: ALIAS_LINEA[l.shortName],
+      // Destinos indexados (cierra el hueco de las circulares). Tampoco se muestran.
+      destinos: destinosParaBuscar(String(l.id)),
       color: l.color,
       colorTexto: l.textColor,
       href: `/linea/${encodeURIComponent(l.shortName)}`,
