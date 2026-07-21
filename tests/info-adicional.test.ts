@@ -34,6 +34,21 @@ describe('InfoAdicional', () => {
     expect(html).toContain('rounded-caja');
   });
 
+  it('⭐ el título es un <h2> (subtítulo de región), no un <p> mudo a la navegación', () => {
+    // Bajo el <h1> de la vista (el rumbo) y sin h2 previo, el nivel que no salta es 2.
+    // Como <p> era invisible a quien navega por encabezados con un lector de pantalla.
+    const html = pinta('Línea sin costo para los pasajeros.');
+    expect(html).toMatch(/<h2[^>]*>\s*Información adicional\s*<\/h2>/);
+  });
+
+  it('⭐⭐ la CITA de Avanza va con translate="no"; el título NUESTRO, con translate="yes"', () => {
+    // El traductor del navegador reescribiría la cita literal en silencio —deshaciendo
+    // desde FUERA el "se cita, no se razona"—. El bloque se congela; el título, no.
+    const html = pinta('Amplía su recorrido los días de feria.');
+    expect(html).toMatch(/data-papel="info-adicional"[^>]*translate="no"/);
+    expect(html).toMatch(/<h2[^>]*translate="yes"/);
+  });
+
   it('⭐ el texto se CITA TAL CUAL, sin cambiar palabras', () => {
     const info = 'Amplía su recorrido hasta la entrada del parque de atracciones los días de feria.';
     expect(pinta(info)).toContain(info);

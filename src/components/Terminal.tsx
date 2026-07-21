@@ -40,8 +40,11 @@ function cifra(n: number) {
 
 function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
   let cuerpo: ReactNode;
+  // ` ` (nbsp) entre la cifra y "min": la unidad no puede quedar viuda en un
+  // salto de línea, separada de su número. Solo pega el número a su unidad; el resto
+  // rompe normal.
   if (f.uniforme && f.laborables !== null) {
-    cuerpo = <>Cada {cifra(f.laborables)} min de media</>;
+    cuerpo = <>Cada {cifra(f.laborables)}{' '}min de media</>;
   } else {
     const dias: ReactNode[] = [];
     if (f.laborables !== null) dias.push(<>laborables {cifra(f.laborables)}</>);
@@ -49,7 +52,9 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
     if (f.festivos !== null) dias.push(<>domingos y festivos {cifra(f.festivos)}</>);
     cuerpo =
       dias.length === 0 ? (
-        f.literal // plan B: la cita cruda, si el formato no se dejó parsear
+        // plan B: la cita cruda de Avanza, si el formato no se dejó parsear →
+        // translate="no", es una cita literal.
+        <span translate="no">{f.literal}</span>
       ) : (
         <>
           De media:{' '}
@@ -58,8 +63,8 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
               {i > 0 && ' · '}
               {d}
             </span>
-          ))}{' '}
-          min
+          ))}
+          {' '}min
         </>
       );
   }
@@ -81,7 +86,15 @@ function FranjaFrecuencia({ f }: { f: FrecuenciaModelo }) {
  */
 function Flujo({ salidas, notaPorMarca }: { salidas: readonly SalidaMarcada[]; notaPorMarca: Map<string, string> }) {
   return (
-    <p className="text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar" data-papel="flujo-salidas">
+    // ⚠️ translate="no": las horas son CITA de Avanza. El traductor del navegador
+    //    reescribiría una tabla de horarios en silencio, y ningún test lo caza
+    //    (el ataque viene de FUERA del código). Aquí solo hay horas y puntuación:
+    //    congelar el <p> entero no pierde chrome traducible.
+    <p
+      className="text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar"
+      data-papel="flujo-salidas"
+      translate="no"
+    >
       {salidas.map((x, i) => (
         <span key={i} aria-label={x.marca ? `${x.hora}, ${notaPorMarca.get(x.marca) ?? ''}` : undefined}>
           {i > 0 && (
@@ -129,11 +142,14 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
           <div className="overflow-hidden rounded-panel border-2 border-[var(--color-tinta)] bg-[var(--color-papel)]">
             {/* Cabecera: el par mayoritario. HACIA {destino} manda; desde {origen} lo acompaña. */}
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-[var(--color-borde)] px-4 py-2.5">
+              {/* ⚠️ El nombre de terminal es CITA de Avanza → translate="no" (que el
+                  navegador no lo reescriba al traducir). "Hacia"/"desde" son NUESTROS:
+                  se traducen con normalidad. */}
               <p className="text-menor font-black uppercase tracking-wide sin-recortar" data-papel="cabecera-hacia">
-                Hacia {modelo.cabecera.destino}
+                Hacia <span translate="no">{modelo.cabecera.destino}</span>
               </p>
               <p className="text-nota text-[var(--color-tinta-tenue)] sin-recortar" data-papel="cabecera-desde">
-                desde {modelo.cabecera.origen}
+                desde <span translate="no">{modelo.cabecera.origen}</span>
               </p>
             </div>
 
@@ -156,7 +172,11 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
               <Flujo salidas={modelo.ultimas} notaPorMarca={notaPorMarca} />
             </div>
 
-            {/* Al pie, una línea por marca: en qué se aparta del par de cabecera. */}
+            {/* Al pie, una línea por marca: en qué se aparta del par de cabecera.
+                ⚠️ El texto de la nota INCRUSTA nombres de terminal citados ("termina en
+                {'{X}'}, no en {'{Y}'}") → translate="no" en el texto. Se congela junto con
+                sus dos o tres conectores nuestros ("termina en", "no en"): coste ínfimo
+                frente a dejar un nombre propio a merced del traductor. */}
             {modelo.notas.length > 0 && (
               <ul className="border-t border-[var(--color-borde)] px-4 py-2.5" data-papel="notas-salidas">
                 {modelo.notas.map((n) => (
@@ -167,7 +187,7 @@ export function Terminal({ horario }: { horario: HorarioWeb | null }) {
                     <span className="font-black text-[var(--color-tinta)]" data-marca={n.marca}>
                       {n.marca}
                     </span>{' '}
-                    {n.texto}
+                    <span translate="no">{n.texto}</span>
                   </li>
                 ))}
               </ul>

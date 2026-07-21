@@ -61,14 +61,22 @@ export function InfoAdicional({ info }: { info: string | null }) {
     //    y los limas quedaban por debajo del mínimo no-textual—. El neutro además NO
     //    choca con el borde ámbar del cuadro de suprimidas de al lado (decisión de
     //    Antonio: neutro para todas).
+    // ⚠️ translate="no" en el BLOQUE: el cuerpo es una CITA LITERAL de Avanza, y el
+    //    traductor del navegador la reescribiría en silencio —deshaciendo desde FUERA
+    //    el principio "se cita, no se razona", sin que ningún test lo cace—. El título,
+    //    que es NUESTRO, se vuelve a habilitar con translate="yes": ese sí se traduce.
     <div
       className="mb-3 rounded-caja border-2 border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-3"
       data-papel="info-adicional"
+      translate="no"
     >
-      {/* Título A SECAS, sin "· según Avanza" (la procedencia vive en /sobre-los-datos). */}
-      <p className="text-menor font-black leading-snug text-[var(--color-tinta)] sin-recortar">
+      {/* Título A SECAS, sin "· según Avanza" (la procedencia vive en /sobre-los-datos).
+          ⭐ <h2>: es el subtítulo de una región; bajo el <h1> de la vista (el rumbo) y
+          sin h2 previo, el nivel que no salta es el 2. Antes era <p>: invisible a la
+          navegación por encabezados de un lector de pantalla. */}
+      <h2 className="text-menor font-black leading-snug text-[var(--color-tinta)] sin-recortar" translate="yes">
         Información adicional
-      </p>
+      </h2>
       {parrafos.map((p, i) => (
         <Parrafo key={i} texto={p} />
       ))}

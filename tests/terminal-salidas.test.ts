@@ -33,7 +33,9 @@ describe('Terminal (bloque de salidas)', () => {
       info: null,
       frecuencia: 'Frecuencia media: laborables: 9, sábados: 16, domingos y festivos: 16 min.',
     });
-    expect(html).toContain('Hacia SEMINARIO');
+    // El nombre de terminal es CITA de Avanza → va envuelto en translate="no"
+    // (que el traductor del navegador no reescriba el dato). "Hacia" es nuestro.
+    expect(html).toContain('Hacia <span translate="no">SEMINARIO</span>');
     expect(html).not.toContain('data-papel="notas-salidas"');
     expect(html).toContain('De media:'); // los tres tipos de día
   });
@@ -96,6 +98,30 @@ describe('Terminal (bloque de salidas)', () => {
     expect(html.match(/data-papel="frecuencia-cifra"/g) ?? []).toHaveLength(3);
     // ⛔ La procedencia se fue a /sobre-los-datos: la franja NO la lleva.
     expect(html).not.toContain('según Avanza');
+  });
+
+  it('⭐⭐ las CITAS de Avanza van con translate="no" (el traductor no reescribe el dato)', () => {
+    // El principio "se cita, no se razona" lo puede deshacer el usuario dándole a
+    // "traducir esta página": el navegador reescribiría nombres y horas en silencio,
+    // y ningún test del código lo caza porque el ataque viene de FUERA. La defensa es
+    // marcar cada cita como no-traducible.
+    const html = pinta({
+      primeras: [s('06:00', 'ROSALES DEL CANAL', 'PUERTA DEL CARMEN')],
+      ultimas: [
+        s('22:22', 'ROSALES DEL CANAL', 'PUERTA DEL CARMEN'),
+        s('22:55', 'ROSALES DEL CANAL', 'H. CORTES, 9'),
+      ],
+      info: null,
+      frecuencia: 'cada 12 min aprox.', // formato que NO parsea → cae a la cita literal
+    });
+    // nombres de terminal (cabecera)
+    expect(html).toContain('<span translate="no">PUERTA DEL CARMEN</span>');
+    // las horas (el flujo entero, que solo lleva horas + puntuación)
+    expect(html).toMatch(/data-papel="flujo-salidas"[^>]*translate="no"/);
+    // la nota del pie, que incrusta nombres citados
+    expect(html).toContain('<span translate="no">termina en H. CORTES, 9, no en PUERTA DEL CARMEN</span>');
+    // la frecuencia en su plan B (cita cruda) también se congela
+    expect(html).toContain('<span translate="no">cada 12 min aprox.</span>');
   });
 
   it('⚠️ el orden de la web se respeta: la salida de después de medianoche va al final', () => {
