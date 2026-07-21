@@ -5,7 +5,6 @@ import { ChipLinea } from './ChipLinea';
 import { Cita } from './Cita';
 import { AcuseDeToque } from './AcuseDeToque';
 import { InfoAdicional } from './InfoAdicional';
-import type { ParadaDelDiff } from '@/engine/desvios';
 
 /**
  * ⭐ EL ITINERARIO VERTICAL. Clonado de la referencia — y medido, no mirado.
@@ -110,7 +109,6 @@ export function Itinerario({
   linea,
   paradas,
   fingir,
-  fuera,
   info,
   nombreAccesible,
 }: {
@@ -119,9 +117,7 @@ export function Itinerario({
   /** ⚠️ LA RUTA QUE SE PINTA. Si hay desvío, es LA REAL. Nunca la teórica. */
   paradas: readonly ParadaDelItinerario[];
   fingir: string | null;
-  /** Paradas del GTFS por las que HOY el autobús NO pasa. Se tachan, con motivo. */
-  fuera?: readonly ParadaDelDiff[];
-  /** "Información adicional" de Avanza. Va DENTRO de la tarjeta, sobre las suprimidas. */
+  /** "Información adicional" de Avanza. Va DENTRO de la tarjeta, al final del recorrido. */
   info?: string | null;
   /**
    * ⚠️ EL NOMBRE DE LA REGIÓN PARA QUIEN NO LA VE. Existía como un <h2> visible
@@ -233,93 +229,21 @@ export function Itinerario({
         );
       })}
 
-      {/* ⭐⭐ A1 · LAS PARADAS QUE CAEN POR EL DESVÍO. TACHADAS, Y CON EL MOTIVO.
-          Van al final, y NO en su sitio de la secuencia — porque su sitio ya no
-          existe. Dejarlas en medio insinuaría que el autobús pasa por ahí, que es
-          justo la mentira que venimos a matar.
-
-          ⚠️ Y es DERIVADO: sale de comparar el GTFS con la ruta que Avanza publica
-          para hoy. El día que restauren la calle, el diff sale vacío y esto
-          DESAPARECE SOLO. Nada que mantener, nada de lo que acordarse. Un aviso
-          que hay que acordarse de quitar acaba mintiendo, siempre.
-
-          El `mb-3` iguala el aire de abajo con el `pb-3` que deja la última parada
-          cuando este bloque no está: la tarjeta cierra igual en los dos casos.
-
-          ⚠️ AQUÍ HABÍA UN RAYADO DIAGONAL, Y SE COMÍA EL TEXTO. Usaba `es-rancio`,
-          que además era MENTIRA SEMÁNTICA: "rancio" es un dato VIEJO —el estado de
-          las llegadas cuando dejan de refrescarse—, y esto no es viejo, es la ruta
-          de HOY. Se tomó prestado un estado por su aspecto y se heredó su trama.
-          `.es-rancio` NO se toca: sigue significando lo que significa en
-          `LlegadasVivas`, que es quien la necesita.
-
-          ⚠️ ÁMBAR Y NO ROJO, Y ES SEMÁNTICA: el rojo es ALERTA y exige acción (el
-          "YA LLEGA"). Una parada que hoy no se sirve CUESTA, pero no rompe: es
-          AVISO. Gastar rojo aquí le quitaría fuerza al que sí la necesita.
-
-          ⭐ EL BORDE VA CON `--color-aviso`, NO CON `--color-aviso-borde`, y lo
-          decidió el medidor: sobre el papel blanco de la tarjeta, #fcd34d da
-          **1,44:1** —invisible, no llega ni al 3,0 de elemento no textual— y
-          #92400e da **7,09:1**. `--color-aviso-borde` funciona sobre el ámbar
-          claro, no sobre blanco. Es además el mismo borde que ya lleva el aviso de
-          desvío de arriba, así que los dos avisos de la pantalla hablan igual.
-
-          El TACHADO se queda: es forma, no color, y sobrevive al gris. */}
-      {/* ⭐ "Información adicional" (cómo funciona la línea) DENTRO de la tarjeta,
-          pegada encima del cuadro de suprimidas: los dos cuadros, al final del
-          recorrido. Hermanos de forma (borde 2 px), distintos de color: el neutro de
-          la info frente al ámbar del aviso. */}
+      {/* ⭐ "Información adicional" (cómo funciona la línea) DENTRO de la tarjeta, al
+          final del recorrido. (El cuadro de paradas suprimidas que vivía aquí debajo
+          se mudó al acordeón de desvío, arriba — ver `AvisoDesvio.tsx`. Las decisiones
+          de aquel cuadro —ámbar y no rojo, borde de 2 px con `--color-aviso`, el
+          tachado que sobrevive al gris— se fueron con él.) */}
       {info && (
         <li>
           <InfoAdicional info={info} />
         </li>
       )}
 
-      {fuera && fuera.length > 0 && (
-        <li className="mb-3" data-papel="paradas-fuera">
-          <div className="rounded-caja border-2 border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-3 py-3">
-            <p className="text-menor font-black leading-snug text-[var(--color-aviso)] sin-recortar">
-              ⚠ Hoy el autobús NO pasa por{' '}
-              {fuera.length === 1 ? 'esta parada' : `estas ${fuera.length} paradas`}
-            </p>
-            <p className="mt-0.5 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
-              Están en el recorrido oficial, pero el recorrido que Avanza publica{' '}
-              <strong>para hoy</strong> no las incluye. No lo decimos nosotros: lo dice su ruta.
-            </p>
-            <ul className="mt-2 flex flex-col gap-1">
-              {fuera.map((x) => (
-                <li key={x.poste} className="text-menor leading-snug not-italic sin-recortar">
-                  <span className="line-through decoration-2" data-papel="parada-tachada">
-                    {x.nombre}
-                  </span>{' '}
-                  <span className="text-nota text-[var(--color-tinta-tenue)]">poste {x.poste}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* ⭐⭐ LA ADVERTENCIA, AQUÍ DENTRO Y EN UNA LÍNEA. Antes flotaba SOLA
-                debajo de la tarjeta, sobre el lienzo: hablaba de este cuadro y no
-                pertenecía a nada. Su sitio es este, que es donde el usuario acaba de
-                leer una lista de paradas caídas y está pensando «¿y me puedo fiar?».
-
-                ⚠️ Y SE QUEDA EN DOS IDEAS. La versión larga explicaba POR QUÉ no se
-                   detectan (la ruta no cambia, ninguna fuente lo publica) y de paso
-                   contaba las peticiones y la caché. Eso es FONTANERÍA: al que está
-                   en la marquesina no le sirve de nada, y la asimetría entera —que es
-                   la que gobierna el proyecto— ya está contada en /sobre-los-datos,
-                   en «Lo que NO detectamos», enlazado desde el pie.
-
-                Lo que queda es lo único accionable: que puede haber más, y qué hacer. */}
-            <p
-              className="mt-2.5 border-t border-[var(--color-aviso-borde)] pt-2 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar"
-              data-papel="no-detectamos-supresiones"
-            >
-              ⚠ Puede haber <strong>otras paradas suprimidas que no detectamos</strong>. Si ves un
-              cartel en el poste, hazle caso a él.
-            </p>
-          </div>
-        </li>
-      )}
+      {/* ⭐⭐ EL CUADRO DE PARADAS SUPRIMIDAS SE MUDÓ. Ya no vive aquí, al final del
+          recorrido —a 30 paradas del aviso que lo anunciaba—: ahora es el CONTENIDO
+          del acordeón de desvío, arriba, pegado a su chip. Ver `AvisoDesvio.tsx` y la
+          vista de línea. Aquí las paradas afectadas siguen marcándose PROVISIONAL. */}
     </ol>
   );
 }

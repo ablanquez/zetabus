@@ -326,6 +326,37 @@ body {
   text-transform: uppercase;
 }
 
+/**
+ * ⭐ EL ACORDEÓN (el aviso de desvío). `<details>` nativo, sin JS. Ver `AvisoDesvio`.
+ *   · Sin el triángulo por defecto del navegador: ponemos nuestro chevrón.
+ *   · Abierto/cerrado en PALABRA (Mostrar más/menos) + FORMA (chevrón girado), nunca
+ *     solo en tono. Sobrevive al gris.
+ */
+.acordeon > summary {
+  list-style: none;
+}
+.acordeon > summary::-webkit-details-marker {
+  display: none;
+}
+.acordeon[open] .acordeon-cerrado {
+  display: none;
+}
+.acordeon:not([open]) .acordeon-abierto {
+  display: none;
+}
+.acordeon-chevron {
+  display: inline-block;
+  transition: transform 150ms ease;
+}
+.acordeon[open] .acordeon-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .acordeon-chevron {
+    transition: none;
+  }
+}
+
 /* ⭐ C3 · FEEDBACK TÁCTIL. En un móvil no hay hover: si al tocar no cambia nada, no
    sabes si has acertado. Al pulsar la ZONA DE LA PARADA (no un chip) el bloque se
    tiñe. `:has(...:active)` distingue el toque en el bloque del toque en un chip —

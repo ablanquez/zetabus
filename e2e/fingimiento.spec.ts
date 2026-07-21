@@ -71,7 +71,7 @@ test.describe('⭐ con ?fingir= · la marca aparece, y dice QUÉ se finge', () =
       await expect(marca(page), `${c.donde} finge y no lo dice`).toBeVisible();
       await expect(marca(page)).toHaveAttribute('data-fingimiento', c.que);
       // ⭐ LO QUE SE FINGE, POR SU NOMBRE. Un "puede ser mentira" genérico no avisa
-      //    de nada: solo hace ruido. Este dice cuál de los nueve fingimientos es.
+      //    de nada: solo hace ruido. Este dice cuál de los fingimientos es.
       await expect(marca(page)).toContainText(c.que);
       await expect(marca(page)).toContainText(/inventados/);
     });

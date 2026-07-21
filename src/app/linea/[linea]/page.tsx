@@ -7,6 +7,7 @@ import { motor, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
+import { AvisoDesvio } from '@/components/AvisoDesvio';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Cita } from '@/components/Cita';
 import { Toponimo } from '@/components/Toponimo';
@@ -252,15 +253,11 @@ function Recorrido({
              inventar. La frase "el recorrido es el de hoy, no el oficial" no se pierde: es
              comportamiento normal de la app (el itinerario SIEMPRE es el de hoy), y vive en
              /sobre-los-datos. */}
-      {desviada && (
-        <p
-          className="mb-3 rounded-tarjeta border-2 border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)] px-3 py-2 text-cuerpo font-black leading-snug text-[var(--color-aviso)] sin-recortar"
-          data-papel="hay-desvio"
-          role="status"
-        >
-          ⚠ Esta línea está DESVIADA hoy
-        </p>
-      )}
+      {/* ⭐⭐ EL AVISO DE DESVÍO ES UN ACORDEÓN: el chip que avisa, y que al abrirse
+          despliega DEBAJO las paradas caídas —el cuadro de abajo se mudó aquí dentro—.
+          Antes el aviso estaba arriba y su respuesta 30 paradas más abajo. Ver
+          `components/AvisoDesvio.tsx`. */}
+      {desviada && <AvisoDesvio fuera={veredicto.fuera} />}
 
       {/* ⚠️ NO SE PUDO LEER LA RUTA DE HOY. Y "no lo sé" NO ES "no hay desvío".
           Se pinta la oficial —es lo único que tenemos— pero se DICE que puede
@@ -330,7 +327,6 @@ function Recorrido({
         linea={linea}
         paradas={aPintar}
         fingir={fingir}
-        fuera={hayReal ? veredicto.fuera : undefined}
         info={info}
       />
 

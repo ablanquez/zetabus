@@ -23,6 +23,8 @@
 
 import type { Transporte } from '@/sources/avanza/transporte';
 import { transporteReal } from '@/sources/avanza/transporte';
+import { URL_AJAX } from '@/sources/avanza/recorrido';
+import { idLinea, idParada, lineaDeEtiqueta, parada, posteDe, sentidosDe } from '@/engine/topologia';
 
 export type Fingimiento =
   /** Avanza no responde. La pantalla tiene que DECIRLO, no callar. */
@@ -58,7 +60,18 @@ export type Fingimiento =
    * de OTRA LÍNEA (otro color de marcador), uno SIN GPS (no se pinta, y se dice) y
    * uno LEJOS (cae fuera del encuadre, y se dice). Ninguno se podía ver antes.
    */
-  | 'mapa';
+  | 'mapa'
+  /**
+   * ⭐ UNA LÍNEA DESVIADA. Sin esto, el aviso de desvío y su acordeón de paradas
+   * caídas NO SE PODÍAN VER en demo: el desvío sale de comparar el GTFS con la ruta
+   * que Avanza publica hoy (`get_stops_list`), y el transporte fingido devolvía a
+   * esa petición un cuerpo de poste que no se parseaba → veredicto `indeterminado`,
+   * nunca `comparado`. Aquí el fingido responde a `get_stops_list` con la ruta OFICIAL
+   * de la línea MENOS unas paradas del medio (las «caídas») y MÁS una provisional, de
+   * modo que sale un desvío de verdad: paradas tachadas en el acordeón y una parada
+   * PROVISIONAL en el itinerario. Vale para cualquier `/linea/<n>?fingir=desviada`.
+   */
+  | 'desviada';
 
 // ⚠️ SE HA IDO `barrido-lento`. Existía SOLO para ver moverse la barra de progreso
 //    del barrido de línea, que está aparcado (`docs/BARRIDO_APARCADO.md`). Un
@@ -71,7 +84,7 @@ export type Fingimiento =
 //    De Los ángeles" — 53 caracteres, y es real. Fingir un caso que ya existe en
 //    los datos sería probar mi invención en lugar de la realidad.
 export const FINGIMIENTOS: readonly Fingimiento[] = [
-  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'solo-oficiales', 'dos-lineas', 'mapa',
+  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'solo-oficiales', 'dos-lineas', 'mapa', 'desviada',
 ];
 
 export const demoEncendido = (): boolean => process.env.ZETABUS_DEMO === '1';
@@ -251,8 +264,48 @@ const DOS_LINEAS = respuesta([
   { coche: '4131', linea: '029', destino: 'SAN GREGORIO', eta: 12 },
 ]);
 
+/**
+ * La respuesta fingida de `get_stops_list` para `?fingir=desviada`: la ruta OFICIAL
+ * de la línea pedida (sacada de nuestra topología, la misma que compara el motor de
+ * desvíos) MENOS unas paradas del medio, y con UNA provisional metida. Así el diff da
+ * paradas caídas (tachadas en el acordeón) y una añadida (PROVISIONAL en el itinerario).
+ *
+ * Se lee `selectLinea`/`selectSentido` del cuerpo; el sentido de Avanza (-1/-2) mapea
+ * a nuestro `directionId` (0/1), igual que en `engine/desvios`.
+ */
+function rutaFingidaConDesvio(cuerpo: string): string {
+  const p = new URLSearchParams(cuerpo);
+  const l = lineaDeEtiqueta(p.get('selectLinea') ?? '');
+  if (!l) return '';
+  const directionId = p.get('selectSentido') === '-2' ? 1 : 0;
+  const s = sentidosDe(idLinea(String(l.id))).find((x) => x.directionId === directionId);
+  if (!s) return '';
+
+  const oficial = s.official.stops
+    .map((sid) => ({ poste: posteDe(idParada(sid)), nombre: parada(idParada(sid))?.name }))
+    .filter((x): x is { poste: number; nombre: string } => x.poste !== null && !!x.nombre);
+  if (oficial.length < 6) return oficial.map((x) => opcion(x.poste, x.nombre)).join('');
+
+  // Caen tres del medio (nunca las cabeceras): son las suprimidas de hoy.
+  const caen = new Set([3, 6, 9].filter((i) => i > 0 && i < oficial.length - 1));
+  const servidas = oficial.filter((_, i) => !caen.has(i)).map((x) => opcion(x.poste, x.nombre));
+  // Y una PROVISIONAL: un poste que NO está en la ruta oficial (obras). El itinerario
+  // la marca provisional porque no la conoce; su nombre viene "de Avanza", como el resto.
+  servidas.splice(2, 0, opcion(999_001, 'Parada provisional por obras'));
+  return servidas.join('');
+}
+const opcion = (poste: number, nombre: string) => `<option value="${poste}">${poste} - ${nombre}</option>`;
+
 export function transporteFingido(f: Fingimiento): Transporte {
   switch (f) {
+    case 'desviada':
+      // A `get_stops_list` (la ruta de hoy) se le da la ruta con caídas; a lo demás
+      // —el horario, etc.— un cuerpo neutro que no finge autobuses de más.
+      return async (_url, { cuerpo }) => {
+        const c = cuerpo ?? '';
+        if (c.includes('get_stops_list')) return { status: 200, texto: rutaFingidaConDesvio(c) };
+        return { status: 200, texto: OFICIAL };
+      };
     case 'dos-lineas':
       return async () => ({ status: 200, texto: DOS_LINEAS });
     case 'sin-verificar':
