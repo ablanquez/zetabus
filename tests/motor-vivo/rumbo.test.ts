@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { rumboDe, destinoDeSentido, corregirDestino, dosDestinos, type SentidoParaRumbo } from '@/engine/rumbo';
-import { lineas, idLinea, esBuho, sentidosParaRumbo } from '@/engine/topologia';
+import { rumboDe, destinoDeSentido, corregirDestino, destinoDeCampo, dosDestinos, type SentidoParaRumbo } from '@/engine/rumbo';
+import { lineas, idLinea, esBuho, giroDe, grupoDe, sentidosParaRumbo } from '@/engine/topologia';
 
 const CTX_DIURNA = { esBuho: false, nombreLargo: 'x' };
 const CTX_BUHO = { esBuho: true, nombreLargo: 'Ronda de barrios' };
@@ -134,6 +134,8 @@ describe('rumboDe · contra los datos REALES del feed', () => {
   describe('corregirDestino · el ucwords roto del GTFS se arregla EN LA FUENTE', () => {
     it('arregla los rotos conocidos; deja igual lo que ya está bien', () => {
       expect(corregirDestino('Siglo Xxi')).toBe('Siglo XXI'); // el peor: el numeral romano
+      // otro numeral, deletreado en el headsign; la parada final ya dice "Carlos V"
+      expect(corregirDestino('Plaza Emperador Carlos Quinto')).toBe('Plaza Emperador Carlos V');
       expect(corregirDestino('San Jose')).toBe('San José');
       expect(corregirDestino('Aljaferia')).toBe('Aljafería');
       expect(corregirDestino('Camino Las Torres')).toBe('Camino de Las Torres'); // + preposición
@@ -153,17 +155,51 @@ describe('rumboDe · contra los datos REALES del feed', () => {
     });
   });
 
+  // ── EL DESTINO DE CAMPO (Antonio manda sobre el GTFS) ──────────────────────
+  describe('destinoDeCampo · conocimiento de campo por (línea, headsign)', () => {
+    it('la barra nombra una ZONA: la 21 "Miralbueno" → "Oliver / Miralbueno"', () => {
+      expect(destinoDeCampo('21', 'Miralbueno')).toBe('Oliver / Miralbueno');
+      expect(destinoDeCampo('28', 'Peñaflor')).toBe('Montañana / Peñaflor');
+    });
+    it('las lanzaderas C1/C4 traen el par mal: se pone a mano', () => {
+      expect(destinoDeCampo('C1', 'Complejo')).toBe('Complejo Funerario');
+      expect(destinoDeCampo('C1', 'Plaza Canteras')).toBe('Plaza de las Canteras');
+      expect(destinoDeCampo('C4', 'Plaza De Las Canteras')).toBe('Plaza de las Canteras');
+    });
+    it('no toca "Miralbueno" de OTRA línea (52, 53): está indexado por línea', () => {
+      expect(destinoDeCampo('52', 'Miralbueno')).toBeUndefined();
+      expect(destinoDeCampo('53', 'Miralbueno')).toBeUndefined();
+    });
+    it('viaja hasta destinoDeSentido a través de la topología (la 21 real)', () => {
+      const l = lineas().find((x) => x.shortName === '21')!;
+      const sents = sentidosParaRumbo(idLinea(String(l.id)));
+      const etiquetas = sents.map((s) => destinoDeSentido(s, sents));
+      expect(etiquetas).toContain('Oliver / Miralbueno');
+      expect(etiquetas).not.toContain('Miralbueno'); // el crudo NO se cuela
+    });
+  });
+
   // ── LOS DOS DESTINOS DE LA HOME ────────────────────────────────────────────
   describe('dosDestinos · las diurnas de doble sentido dan dos destinos ordenados', () => {
     const dd = (sn: string) => {
       const l = lineas().find((x) => x.shortName === sn)!;
       return dosDestinos(sentidosParaRumbo(idLinea(String(l.id))), l.longName);
     };
-    it('la 21: dos destinos, en el orden del nombre ("Barrio Jesús - … - Miralbueno")', () => {
-      expect(dd('21')).toEqual(['Barrio Jesús', 'Miralbueno']);
+    it('la 21: la zona con barra NO se parte ("Barrio Jesús" / "Oliver / Miralbueno")', () => {
+      expect(dd('21')).toEqual(['Barrio Jesús', 'Oliver / Miralbueno']);
+    });
+    it('la 28: "Coso" / "Montañana / Peñaflor", la barra intacta', () => {
+      expect(dd('28')).toEqual(['Coso', 'Montañana / Peñaflor']);
     });
     it('la 23: el destino CORREGIDO ("Siglo XXI") sale en su renglón', () => {
       expect(dd('23')).toEqual(['Parque Venecia', 'Siglo XXI']);
+    });
+    it('la 34: el orden aguanta el acento (longName "Estacion", destino "Estación")', () => {
+      expect(dd('34')).toEqual(['Estación Delicias', 'Cementerio']);
+    });
+    it('las lanzaderas C1/C4 también van a dos renglones, con el par de Antonio', () => {
+      expect(dd('C1')).toEqual(['Plaza de las Canteras', 'Complejo Funerario']);
+      expect(dd('C4')).toEqual(['Plaza de las Canteras', 'Puerto Venecia']);
     });
     it('una circular de bucle (Ci3) → null: no tiene dos extremos', () => {
       expect(dd('Ci3')).toBeNull();
@@ -171,6 +207,45 @@ describe('rumboDe · contra los datos REALES del feed', () => {
     it('una diurna de SENTIDO ÚNICO (30) → null: solo un destino', () => {
       expect(dd('30')).toBeNull();
     });
+  });
+
+  // ── EL SENTIDO DE GIRO (Antonio) ───────────────────────────────────────────
+  describe('giroDe · el icono ↻/↺ de las circulares, dato de campo', () => {
+    const por = (sn: string) => lineas().find((l) => l.shortName === sn)!;
+    it('las circulares al tranvía y Ci1/Ci3 giran en horario', () => {
+      for (const sn of ['30', '54', '55', '56', '57', '58', '59', 'Ci1', 'Ci3']) {
+        expect(giroDe(por(sn)), `${sn} debería ser horario`).toBe('horario');
+      }
+    });
+    it('Ci2 y Ci4 giran al revés (antihorario)', () => {
+      expect(giroDe(por('Ci2'))).toBe('antihorario');
+      expect(giroDe(por('Ci4'))).toBe('antihorario');
+    });
+    it('una línea de ida y vuelta NO gira (null): la 21, la 35', () => {
+      expect(giroDe(por('21'))).toBeNull();
+      expect(giroDe(por('35'))).toBeNull();
+    });
+  });
+
+  // ── ⭐⭐ COHERENCIA · LAS TRES PANTALLAS DICEN EL MISMO TEXTO ────────────────
+  // La home (dosDestinos), el <h1> y la botonera ("Hacia X") salen TODAS de
+  // `destinoDeSentido`. Se afirma que, para cada línea de dos renglones, el par de
+  // la home es EXACTAMENTE el conjunto de etiquetas de sus sentidos. Si un día
+  // alguien bifurca el cálculo, esto se pone rojo — es "la ley de las 26 copias".
+  it('⭐ el par de la home == el conjunto de destinos de los sentidos (botonera/h1)', () => {
+    const discrepan: string[] = [];
+    for (const l of lineas()) {
+      const g = grupoDe(l);
+      if (g !== 'diurna' && g !== 'lanzadera') continue;
+      const sents = sentidosParaRumbo(idLinea(String(l.id)));
+      const par = dosDestinos(sents, l.longName);
+      if (!par) continue;
+      const botonera = sents.map((s) => destinoDeSentido(s, sents)).sort();
+      if ([...par].sort().join('|') !== botonera.join('|')) {
+        discrepan.push(`${l.shortName}: home=[${par}] botonera=[${botonera}]`);
+      }
+    }
+    expect(discrepan, `desajuste home↔botonera: ${discrepan.join(' ; ')}`).toEqual([]);
   });
 
   // ── INVARIANTE · NINGUNA línea, en NINGÚN sentido, pinta una flecha "X → X" ──

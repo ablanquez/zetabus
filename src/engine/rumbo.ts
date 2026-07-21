@@ -45,6 +45,13 @@ export interface SentidoParaRumbo {
   readonly ultimaParada: string;
   /** ¿La primera parada ES la última? Entonces es un bucle: no hay flecha. */
   readonly esBucle: boolean;
+  /**
+   * ⭐ DESTINO DE CAMPO (Antonio), si lo hay. Cuando el GTFS no basta —la cabecera
+   * es una ZONA con barra que él conoce (21, 28), o el par de sentidos viene mal
+   * (C1, C4)—, aquí llega ya resuelto el destino que MANDA sobre el `headsign`. Lo
+   * pone la topología (que sabe la línea) vía `destinoDeCampo`. Ver más abajo.
+   */
+  readonly destino?: string;
 }
 
 /** El contexto de la LÍNEA (no del sentido) que hace falta para los bucles. */
@@ -101,6 +108,9 @@ const limpio = (s: string): string => s.trim();
  */
 const CORRECCIONES: Readonly<Record<string, string>> = {
   'Siglo Xxi': 'Siglo XXI', // el peor: el numeral romano, roto por el ucwords
+  // Otro numeral, esta vez DELETREADO en el headsign ("Quinto"). La forma buena no
+  // es opinión: la propia parada final se llama "Plaza Emperador Carlos V / Intercambiador".
+  'Plaza Emperador Carlos Quinto': 'Plaza Emperador Carlos V',
   Aljaferia: 'Aljafería',
   'Estacion Delicias': 'Estación Delicias',
   'Plaza Aragon': 'Plaza Aragón',
@@ -122,6 +132,53 @@ export function corregirDestino(bruto: string): string {
 }
 
 /**
+ * ⭐⭐ EL DESTINO DE CAMPO. Y ESTO CRUZA OTRA LÍNEA MÁS QUE `CORRECCIONES`:
+ * arriba se arreglaba la ORTOGRAFÍA de lo que dice el GTFS; aquí el GTFS dice algo
+ * DISTINTO de lo que es, y manda el CONOCIMIENTO DE ANTONIO. Es una decisión suya,
+ * apuntada como tal, no una limpieza.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Dos motivos, los dos de campo:
+ *
+ *  1) LA BARRA NO SEPARA DESTINOS: nombra UNA zona. La cabecera de la 21 es la zona
+ *     «Oliver / Miralbueno» (el GTFS solo pone «Miralbueno»); la de la 28 es
+ *     «Montañana / Peñaflor» (el GTFS solo pone «Peñaflor»). No son dos destinos:
+ *     son uno con dos barrios. ⛔ NUNCA se parte por la barra.
+ *
+ *  2) EL PAR DE SENTIDOS VIENE MAL (las lanzaderas C1 y C4). El `trip_headsign`
+ *     llega truncado («Complejo») o mal capitalizado («Plaza Canteras», «Plaza De
+ *     Las Canteras»), y el emparejamiento de sentidos del GTFS no es de fiar aquí.
+ *     Antonio da el par bueno y ese manda.
+ *
+ *  ⚠️ SE INDEXA POR (línea, headsign BRUTO), NO por directionId. El `directionId`
+ *     del GTFS puede intercambiarse entre exports —es justo el «a veces intercambia
+ *     nombres» que teme Antonio—; el texto del headsign es estable. Así, aunque el
+ *     feed gire los sentidos, «Miralbueno» de la 21 sigue resolviendo a la zona.
+ *
+ *  ⚠️ Como en `CORRECCIONES`, el resultado ya NO es una cita literal: en pantalla
+ *     va en <Toponimo> (protege del traductor) y no en <Cita>.
+ *
+ *  ⛔ Antonio recordaba que «la C1 solo tenía sentido -1»: el GTFS de hoy trae los
+ *     DOS. No pasa nada —igualmente pisamos ambos con su par—, pero queda anotado
+ *     que la fuente cambió desde que lo miró.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+const DESTINO_DE_CAMPO: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  '21': { Miralbueno: 'Oliver / Miralbueno' }, // la cabecera es la zona, no solo Miralbueno
+  '28': { Peñaflor: 'Montañana / Peñaflor' },
+  C1: { Complejo: 'Complejo Funerario', 'Plaza Canteras': 'Plaza de las Canteras' },
+  C4: { 'Plaza De Las Canteras': 'Plaza de las Canteras' }, // el otro sentido («Puerto Venecia») ya está bien
+};
+
+/**
+ * El destino de campo para (línea, headsign bruto), o `undefined` si no hay. Lo
+ * llama la topología al armar cada sentido, porque es allí donde se sabe la línea.
+ */
+export function destinoDeCampo(shortName: string, headsignBruto: string): string | undefined {
+  return DESTINO_DE_CAMPO[shortName]?.[limpio(headsignBruto)];
+}
+
+/**
  * El DESTINO de un sentido, como etiqueta limpia y CORREGIDA. Es lo que va en el
  * botón ("Hacia {destino}"), en el lado derecho de la flecha del título, y en la
  * home (los dos destinos de la tarjeta). Un solo sitio lo produce: así "Siglo XXI"
@@ -135,6 +192,8 @@ export function destinoDeSentido(
   s: SentidoParaRumbo,
   sentidos: readonly SentidoParaRumbo[],
 ): string {
+  // ⭐ El destino de campo (Antonio) manda sobre todo: es una decisión, no el GTFS.
+  if (s.destino !== undefined) return s.destino;
   const h = limpio(s.headsign);
   const loComparte = sentidos.some(
     (o) => o.directionId !== s.directionId && limpio(o.headsign) === h,
@@ -193,8 +252,13 @@ export function dosDestinos(
   const a = destinoDeSentido(sentidos[0], sentidos);
   const b = destinoDeSentido(sentidos[1], sentidos);
   if (a === b) return null; // sin dos destinos distintos (no debería pasar en diurnas)
+  // El orden lo da el nombre, pero SIN acentos: el `longName` a veces conserva la
+  // forma rota ("Estacion Delicias") mientras el destino ya va corregido ("Estación
+  // Delicias"). Comparar a pelo no casaría y mandaría el 1º al fondo por un acento.
+  const plano = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const long = plano(longName);
   const idx = (d: string) => {
-    const i = longName.toLowerCase().indexOf(d.toLowerCase());
+    const i = long.indexOf(plano(d));
     return i < 0 ? Number.MAX_SAFE_INTEGER : i;
   };
   return idx(a) <= idx(b) ? [a, b] : [b, a];

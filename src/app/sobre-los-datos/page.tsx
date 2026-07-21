@@ -157,10 +157,12 @@ export default function SobreLosDatos() {
             <p>
               El destino que ves arriba de una línea (<strong>«Hacia Siglo XXI»</strong>) y en la
               home sale del mismo GTFS, con el mismo <code>ucwords()</code>: «Siglo XXI» llegaba como
-              «Siglo Xxi», «Aljafería» como «Aljaferia», «San José» como «San Jose». Aquí{' '}
-              <strong>sí se corrigen a mano</strong>, y es la diferencia con las paradas: son{' '}
-              <strong>un puñado</strong> de topónimos conocidos de Zaragoza —no cientos— y no hay una
-              fuente limpia que pedir. La forma correcta es un hecho del callejero, no una adivinanza.
+              «Siglo Xxi», «Aljafería» como «Aljaferia», «San José» como «San Jose», y hasta un
+              numeral deletreado —«Plaza Emperador Carlos V» venía como{' '}
+              <strong>«Carlos Quinto»</strong>—. Aquí <strong>sí se corrigen a mano</strong>, y es la
+              diferencia con las paradas: son <strong>un puñado</strong> de topónimos conocidos de
+              Zaragoza —no cientos— y no hay una fuente limpia que pedir. La forma correcta es un
+              hecho del callejero, no una adivinanza.
             </p>
             <Nota>
               Por eso el destino corregido <strong>ya no es una cita</strong> literal —lo hemos
@@ -169,6 +171,15 @@ export default function SobreLosDatos() {
               Fernando» y la web de Avanza «Valle de Broto». Son dos fuentes que no coinciden y no
               sabemos cuál es la de hoy: se muestra la del GTFS, sin inventar.
             </Nota>
+            <p>
+              Y hay un paso más, que ya no es ortografía: a veces el GTFS dice algo{' '}
+              <strong>distinto</strong> de lo que la línea es, y manda el conocimiento de campo. La{' '}
+              <strong>barra no separa dos destinos</strong>: nombra una zona. La cabecera de la{' '}
+              <strong>21</strong> es «Oliver / Miralbueno» (el GTFS solo pone «Miralbueno») y la de la{' '}
+              <strong>28</strong> es «Montañana / Peñaflor». No se parte por la barra. Y las
+              lanzaderas <strong>C1 y C4</strong> vienen con los sentidos mal emparejados: su par de
+              destinos se pone a mano. Son decisiones apuntadas como tales, no limpiezas.
+            </p>
           </Fuente>
         </div>
       </Familia>

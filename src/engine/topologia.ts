@@ -40,7 +40,7 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
-import type { SentidoParaRumbo } from '@/engine/rumbo';
+import { destinoDeCampo, type SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
 
 interface Artefacto {
@@ -174,6 +174,9 @@ export const parada = (id: StopId): Stop | null => paradaPorId.get(String(id)) ?
  */
 export function sentidosParaRumbo(id: LineId): SentidoParaRumbo[] {
   const nombre = (sid: string): string => paradaPorId.get(sid)?.name ?? sid;
+  // La línea SÍ se sabe aquí (no dentro de `rumbo.ts`): por eso el destino de campo
+  // —que necesita el `shortName`— se resuelve en este punto y viaja ya en el sentido.
+  const sn = lineaPorId.get(String(id))?.shortName ?? '';
   return sentidosDe(id).map((d) => {
     const st = d.official.stops;
     return {
@@ -182,6 +185,7 @@ export function sentidosParaRumbo(id: LineId): SentidoParaRumbo[] {
       primeraParada: st.length > 0 ? nombre(st[0]) : '',
       ultimaParada: st.length > 0 ? nombre(st[st.length - 1]) : '',
       esBucle: st.length > 0 && st[0] === st[st.length - 1],
+      destino: destinoDeCampo(sn, d.headsign),
     };
   });
 }
@@ -309,6 +313,28 @@ export function grupoDe(l: Line): GrupoLinea {
  * en otra. Ése es exactamente el fallo del "0C1", con otro traje.
  */
 export const esBuho = (l: Line): boolean => grupoDe(l) === 'buho';
+
+/**
+ * ⭐ EL SENTIDO DE GIRO de una línea circular. `null` = no es circular (no gira).
+ *
+ * ⚠️ ESTE DATO LO DA ANTONIO, no una fuente. El GTFS dice si una línea CIERRA el
+ * bucle (geometría), pero NO hacia qué lado gira, y ni siquiera acierta a marcar
+ * cuáles son circulares: la Ci1 y la Ci2 vienen con dos sentidos de ida y vuelta
+ * en el feed, y aun así son circulares. Por eso esto es una CONSTANTE EXPLÍCITA
+ * con su procedencia —conocimiento de campo—, y no se deriva de la topología.
+ *
+ * Se pinta como un icono ↻/↺ DESPUÉS del nombre en la tarjeta de la home (delante
+ * empujaría el texto y rompería la columna alineada de los chips). Ver `page.tsx`.
+ */
+export type Giro = 'horario' | 'antihorario';
+const SENTIDO_GIRO: Readonly<Record<string, Giro>> = {
+  // Horario (↻): las circulares al tranvía y las dos primeras Ci.
+  '30': 'horario', '54': 'horario', '55': 'horario', '56': 'horario',
+  '57': 'horario', '58': 'horario', '59': 'horario', Ci1: 'horario', Ci3: 'horario',
+  // Antihorario (↺):
+  Ci2: 'antihorario', Ci4: 'antihorario',
+};
+export const giroDe = (l: Line): Giro | null => SENTIDO_GIRO[l.shortName] ?? null;
 
 // ⭐ El "funcionamiento de terminal" (primeras/últimas salidas) YA NO sale del
 //    GTFS: se trae de la tabla web de Avanza en tiempo de vista. Ver
