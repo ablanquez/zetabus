@@ -21,7 +21,8 @@
     "visual:instrumento": "playwright test e2e/instrumento.spec.ts",
     "auditoria": "playwright test e2e/auditoria --project=360px --grep-invert=NUNCA",
     "flota:build": "tsx scripts/build-flota.ts",
-    "nombres:build": "tsx scripts/build-nombres.ts"
+    "nombres:build": "tsx scripts/build-nombres.ts",
+    "skill:setup": "node scripts/setup-skill.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
