@@ -4,7 +4,7 @@ import { ChipLinea } from '@/components/ChipLinea';
 import { Cita } from '@/components/Cita';
 import { Toponimo } from '@/components/Toponimo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
-import { GRUPOS, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
+import { GRUPOS, giroDe, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
 import { dosDestinos } from '@/engine/rumbo';
 
 /**
@@ -56,23 +56,31 @@ export default function Home() {
         if (delGrupo.length === 0) return null;
         return (
           <section key={g.clave} className="mt-7" data-papel="grupo-lineas" data-grupo={g.clave}>
-            <h2 className="mb-0.5 text-menor font-black uppercase tracking-wide">
+            {/* ⭐ FUERA EL SUBTÍTULO DEL GRUPO ("las de todos los días", "de madrugada"…).
+                La gente sabe leer: "Diurnas", "Circulares", "Lanzaderas" y "Búhos" se
+                explican solos —mismo criterio que quitar "EL RECORRIDO · 32 PARADAS"—, y
+                el de las circulares además lo dice mejor el icono ↻. (El texto sobrevive
+                como referencia en el guía vivo /interno/sistema-visual, que sí lo usa.) */}
+            <h2 className="mb-2 text-menor font-black uppercase tracking-wide">
               {g.titulo}{' '}
               <span className="font-bold text-[var(--color-tinta-tenue)]">({delGrupo.length})</span>
             </h2>
-            <p className="mb-2 text-nota text-[var(--color-tinta-tenue)] sin-recortar">{g.nota}</p>
 
             <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {delGrupo.map((l) => {
-                // ⭐ Las DIURNAS DE DOBLE SENTIDO enseñan sus DOS destinos, uno por
-                //    renglón (corregidos, del GTFS), en vez del nombre largo que se
-                //    parte donde cae. El resto —circulares, sentido único, lanzaderas,
-                //    búhos— se quedan con su nombre. `dosDestinos` devuelve null si no
-                //    hay dos extremos distintos; `grupoDe` filtra la taxonomía.
+                // ⭐ DOS DESTINOS, uno por renglón (corregidos), en vez del nombre largo
+                //    que se parte donde cae. Aplica a las DIURNAS DE DOBLE SENTIDO y a las
+                //    LANZADERAS (C1/C4, con el par que da Antonio). El resto —circulares,
+                //    sentido único, búhos— se quedan con su nombre. `dosDestinos` devuelve
+                //    null si no hay dos extremos distintos (bucle, sentido único), así que
+                //    las circulares numeradas (30, 54-59) caen solas al nombre + icono.
+                const g = grupoDe(l);
                 const destinos =
-                  grupoDe(l) === 'diurna'
+                  g === 'diurna' || g === 'lanzadera'
                     ? dosDestinos(sentidosParaRumbo(idLinea(String(l.id))), l.longName)
                     : null;
+                // ↻/↺ para las circulares. Lo da Antonio (ver `giroDe`), no la geometría.
+                const giro = giroDe(l);
                 return (
                 <li key={String(l.id)}>
                   <Link
@@ -114,6 +122,22 @@ export default function Home() {
                     ) : (
                       <span className="ml-3 text-menor font-semibold leading-snug sin-recortar">
                         <Cita>{l.longName}</Cita>
+                      </span>
+                    )}
+                    {/* ⭐ EL ICONO DE GIRO va al FINAL (ml-auto lo empuja al borde
+                        derecho): así la columna de chips y nombres NO se mueve. Es
+                        accesible —`role="img"` + `aria-label`, no un glifo mudo—, de modo
+                        que quien no ve la forma oye "Circular, sentido horario". Cae en la
+                        misma línea del nombre: no cambia la altura de la tarjeta. */}
+                    {giro && (
+                      <span
+                        role="img"
+                        aria-label={`Circular, sentido ${giro}`}
+                        data-papel="giro"
+                        data-giro={giro}
+                        className="ml-auto pl-2 text-cuerpo leading-none text-[var(--color-tinta-tenue)]"
+                      >
+                        {giro === 'horario' ? '↻' : '↺'}
                       </span>
                     )}
                   </Link>
