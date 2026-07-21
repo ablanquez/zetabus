@@ -127,6 +127,7 @@ const CORRECCIONES: Readonly<Record<string, string>> = {
   //    cumplen: su headsign ES el barrio). La forma buena sale del `longName`:
   'Fuente Junquera': 'Fuente de La Junquera', // 58 · le falta "de La"; el longName y la parada lo tienen
   'Tranvia-Arcosur': 'Arcosur', // 59 · el barrio (1er tramo del longName "Arcosur - Tranvía"), no "Tranvia-Arcosur"
+  'Paseo De La Ribera': 'Paseo de la Ribera', // Ci4 · preposición+artículo capitalizados; la parada dice "Paseo de la Ribera / Azud del Ebro"
 };
 
 /** Aplica la corrección si el destino es un roto conocido; si no, lo deja igual. */

@@ -143,6 +143,7 @@ describe('rumboDe · contra los datos REALES del feed', () => {
       // preposición/artículo capitalizados por el ucwords (forma buena en el longName)
       expect(corregirDestino('Puerta Del Carmen')).toBe('Puerta del Carmen');
       expect(corregirDestino('Pinares De Venecia')).toBe('Pinares de Venecia');
+      expect(corregirDestino('Paseo De La Ribera')).toBe('Paseo de la Ribera'); // Ci4
       expect(corregirDestino('Miralbueno')).toBe('Miralbueno'); // no es un roto: intacto
     });
 
@@ -154,11 +155,12 @@ describe('rumboDe · contra los datos REALES del feed', () => {
       expect(etiquetas).not.toContain('Siglo Xxi'); // el roto NO se cuela en pantalla
     });
 
-    // ── DESTINOS DE CIRCULAR que no seguían el patrón "el barrio" (58, 59) ──────
-    it('la 58 y la 59: el "Circular por X" ya sale con el barrio bien escrito', () => {
-      // 58: el headsign era "Fuente Junquera" (sin "de La"); 59: "Tranvia-Arcosur".
+    // ── DESTINOS DE CIRCULAR rotos por el ucwords (58, 59, Ci4) ────────────────
+    it('el "Circular por X" sale con el barrio bien escrito (58, 59, Ci4)', () => {
+      // 58: "Fuente Junquera" (sin "de La"); 59: "Tranvia-Arcosur"; Ci4: "Paseo De La Ribera".
       expect(rumboReal('58')).toEqual({ tipo: 'circular', por: 'Fuente de La Junquera' });
       expect(rumboReal('59')).toEqual({ tipo: 'circular', por: 'Arcosur' });
+      expect(rumboReal('Ci4')).toEqual({ tipo: 'circular', por: 'Paseo de la Ribera' });
     });
   });
 
