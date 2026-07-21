@@ -45,6 +45,10 @@ const PERMITIDOS: Record<string, readonly string[]> = {
   //    línea sin calcular contraste (la línea 33 amarilla sale ilegible). Está
   //    fuera del alcance de esta tanda; queda marcado aquí para no olvidarlo.
   'src/components/LlegadasVivas.tsx': ['#fff'],
+  // El favicon: un asset de imagen NO puede leer `var(--color-marca)`, así que
+  // repite el hex de la marca a pelo. Que no se separe del token lo vigila
+  // `marca-z-unica.test.ts` (compara este hex con `--color-marca` del CSS).
+  'src/app/icon.tsx': ['#7048e8'],
 };
 
 /**
