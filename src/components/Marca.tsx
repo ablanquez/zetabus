@@ -37,8 +37,14 @@ export function Marca() {
       //    volver a la home es acción principal, no un enlace suelto en una frase, así
       //    que merece el objetivo cómodo (WCAG 2.5.5), no el mínimo (2.5.8). El tamaño
       //    de letra lo pone `text-seccion`; la ZONA pulsable la garantiza el min-h.
-      //    Medido en 360 px: la caja pasa de 89×24 a 89×44. Lo vigila `navegacion.spec`.
-      className="inline-flex min-h-[var(--control)] items-center gap-1.5 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
+      //    Medido en 360 px: con `text-titulo` la caja es 110×44 (el min-h eleva el alto natural
+      //    de ~28 a 44). Lo vigila `navegacion.spec`.
+      //
+      // ⭐ TAMAÑO `text-titulo` (20 px), no `text-seccion` (16): la marca es el rótulo de la
+      //    cabecera y flotaba —20 px de marca en una banda de 60—. Sube un peldaño de la escala.
+      //    El símbolo va en `1.15em`, así que crece SOLO —del mismo em— y con la misma relación
+      //    símbolo/texto: es un escalado, no un redibujo (el path sigue siendo `Z_PATH`).
+      className="inline-flex min-h-[var(--control)] items-center gap-1.5 text-titulo font-black tracking-tight text-[var(--color-tinta)]"
       data-papel="marca"
     >
       <svg

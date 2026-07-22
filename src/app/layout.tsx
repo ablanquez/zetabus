@@ -82,8 +82,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             izquierda—; centrar es un acto aparte, y este es. Medido: el centro de la
             marca coincide con el de la cabecera (`justify-center` reparte el hueco a
             los dos lados). Sigue siendo enlace a `/` y ≥44 px de zona táctil. */}
+        {/* ⚠️ `py-1` (4 px), no `py-2`: la banda se ceñía poco al contenido —61 px con una marca
+            de 20—. Baja a ~53 px y el espacio ganado va al contenido (en móvil se agradece). NO
+            puede bajar más sin comerse la zona táctil de 44 px de la marca (WCAG 2.5.5), que es el
+            suelo real del alto: los 44 mandan sobre la banda. Medido en navegador, ver Marca.tsx. */}
         <header className="border-b border-[var(--color-borde)] bg-[var(--color-papel)]">
-          <div className="mx-auto flex max-w-2xl items-center justify-center px-4 py-2">
+          <div className="mx-auto flex max-w-2xl items-center justify-center px-4 py-1">
             <Marca />
           </div>
         </header>
