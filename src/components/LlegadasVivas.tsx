@@ -542,11 +542,13 @@ function Cuerpo({
         ))}
       </ol>
 
-      {/* ⚠️ EL CONTRATO DE DATOS. Ni una pantalla sin esto. */}
-      <p className="mt-2 text-nota leading-snug text-[var(--color-tinta-tenue)] sin-recortar" data-papel="contrato">
-        Son los autobuses <strong>DETECTADOS</strong>, no todos. Avanza anuncia como mucho los dos
-        siguientes de cada línea y sentido: puede haber un tercero circulando que no salga aquí.
-      </p>
+      {/* ⛔ AQUÍ IBA "Son los autobuses DETECTADOS, no todos... puede haber un tercero
+          circulando que no salga aquí". Se retiró: es VERDADERA (la regla de los dos es
+          un tope por poste, así que un tercero de tu línea tampoco sale aquí) PERO INÚTIL
+          en esta pantalla —para "¿cuándo pasa mi bus?" los dos primeros bastan, y el
+          tercero va detrás del segundo—. Una frase inútil en una marquesina resta. La
+          misma limitación, donde SÍ importa (contar la flota de una línea), se explica en
+          /sobre-los-datos, que existe para eso. Ver ZETABUS-ESTADO.md · L25. */}
 
       {avisos.length > 0 && (
         <ul className="mt-2 flex flex-col gap-1" data-papel="avisos">

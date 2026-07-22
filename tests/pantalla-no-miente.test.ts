@@ -226,21 +226,14 @@ describe('⚠️ EL MODO DEMO NO PUEDE COLARSE EN PRODUCCIÓN', () => {
 });
 
 describe('⚠️ EL CONTRATO DE DATOS SE DICE EN LA PANTALLA', () => {
-  it('la lista de llegadas dice "DETECTADOS", no "todos"', () => {
-    const c = readFileSync('src/components/LlegadasVivas.tsx', 'utf8');
-    expect(c).toMatch(/DETECTADOS/);
-    expect(c).toMatch(/no todos/);
-  });
-
-  // ⚠️ AQUÍ HABÍA UN TEST SOBRE EL TITULAR DEL BARRIDO ("Hemos encontrado N", nunca
-  //    "hay N"). Se ha ido con el barrido a `parked/barrido-de-linea/`, y su regla
-  //    está escrita en `docs/BARRIDO_APARCADO.md` §2: si tres autobuses caben entre
-  //    dos postes seguidos, el tercero no lo publica NINGÚN poste, así que "hay N"
-  //    era insostenible incluso barriendo la línea entera.
-  //
-  //    Lo que NO se ha ido es la misma regla aplicada a la PARADA —"DETECTADOS, no
-  //    todos"—, que es el test de arriba. Sigue mandando, porque la limitación de la
-  //    fuente es la misma: dos siguientes por línea y sentido.
+  // ⛔ AQUÍ EXIGÍA QUE LA PARADA DIJERA "DETECTADOS, no todos". Se retiró CON la frase:
+  //    el guardián no cazaba un bug, blindaba una DECISIÓN DE PRODUCTO (poner ese caveat
+  //    en la parada) que dejamos de compartir —la frase es verdadera pero inútil ahí—. Un
+  //    guardián de honestidad que exige un TEXTO concreto convierte una decisión revisable
+  //    en una invariante: cuando el criterio cambia, hay que retirar el test CON el texto,
+  //    no dejarlo poniéndose rojo para exigir la decisión de ayer. Es L25. (El titular del
+  //    barrido, "Hemos encontrado N" y no "hay N", se fue con el barrido a
+  //    `parked/barrido-de-linea/`; su regla vive en `docs/BARRIDO_APARCADO.md` §2.)
 
   it('⭐ un autobús SIN FICHA sigue diciendo "sin datos", nunca un defecto', () => {
     // La ficha cambió de forma (ahora son chips, como los suyos) pero la REGLA es

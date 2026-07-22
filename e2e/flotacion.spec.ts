@@ -44,7 +44,6 @@ test('⭐ EL PRIMER TIEMPO DE LLEGADA CABE EN LA PANTALLA', async ({ page }, inf
     ['⭐ la EDAD del dato', '[data-papel="edad"]'],
     ['⭐ EL PRIMER TIEMPO', '[data-papel="minutos"]'],
     ['la ficha del vehículo', '[data-confianza]'],
-    ['el contrato "DETECTADOS"', '[data-papel="contrato"]'],
   ];
 
   console.log(`\n  ══ ${v} · viewport de ${alto} px de alto ══\n`);

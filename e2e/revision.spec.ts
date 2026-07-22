@@ -199,7 +199,6 @@ test('la pantalla de parada aguanta a este tamaño', async ({ page }, info) => {
     '[data-papel="edad-texto"]',
     '[data-papel="destino"]',
     '[data-papel="minutos"]',
-    '[data-papel="contrato"]',
   ]) {
     const c = await contrasteReal(page, sel);
     console.log(`  ${sel.padEnd(34)} ${String(c.ratio).padStart(6)}:1  (mín ${c.minimo})  ${c.textoPintado} sobre ${c.fondoPintado}  ${c.pasa ? '✅' : '⛔'}`);
