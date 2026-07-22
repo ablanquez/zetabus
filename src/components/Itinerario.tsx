@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Line, LineId, StopId } from '@/core';
-import { esBuho, transbordosDe } from '@/engine/topologia';
+import { esBuho } from '@/engine/topologia';
+import { otrasLineasEnPoste } from '@/engine/correspondencias';
 import { ChipLinea } from './ChipLinea';
 import { Cita } from './Cita';
 import { AcuseDeToque } from './AcuseDeToque';
@@ -136,7 +137,12 @@ export function Itinerario({
       {paradas.map((p, i) => {
         const primero = i === 0;
         const ultimo = i === paradas.length - 1;
-        const transbordos = p.sid ? transbordosDe(p.sid, lineaId) : [];
+        // ⭐ Los transbordos salen ahora del ÍNDICE DIARIO (engine/correspondencias):
+        //    las líneas que HOY coinciden en este poste, provisionales incluidas. Se le
+        //    pasa el `poste` (número), así que funciona aun cuando `sid` es null —una
+        //    parada provisional del desvío—, donde la función vieja devolvía [] por no
+        //    tener stopId. En modo degradado (sin índice) cae a la ruta oficial por `sid`.
+        const transbordos = otrasLineasEnPoste(p.poste, p.sid, lineaId);
 
         return (
           <li key={`${p.poste}-${i}`} className="flex gap-3" data-papel="nodo" data-poste={p.poste}>

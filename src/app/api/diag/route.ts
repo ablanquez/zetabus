@@ -23,6 +23,7 @@
 
 import { motor, contador } from '@/engine/motor';
 import { generadoEn, validez, lineas, paradas } from '@/engine/topologia';
+import { estadoIndice } from '@/engine/correspondencias';
 import { feedStatus, feedWarning } from '@/core';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,12 @@ export async function GET() {
       },
 
       cache: cache.instantanea(),
+
+      // ⭐ EL ÍNDICE DE CORRESPONDENCIAS. AQUÍ es donde se nota si va en modo degradado
+      //    (sin fichero → normales del GTFS, sin provisionales) y cuántos días lleva el
+      //    barrido — la edad NO va a la pantalla del usuario, va aquí y al panel. Y aquí
+      //    salen los postes solo-barrido SIN coordenada, para resolverlos a mano.
+      correspondencias: estadoIndice(),
 
       datos: {
         generadoEn,

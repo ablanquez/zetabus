@@ -302,6 +302,25 @@ export default function SobreLosDatos() {
               un aviso que hay que acordarse de apagar acaba mintiendo. Si el cruce sale absurdo,
               decimos <strong>«no lo sabemos»</strong> en vez de tachar media línea.
             </p>
+            <p className="mt-2">
+              Eso es la <strong>vista de línea</strong>, que se comprueba <strong>al abrirla</strong>.
+              Pero en una <strong>parada</strong>, la lista de «líneas que pasan por aquí» —y las que
+              hoy pasan por un desvío— sale de un <strong>índice que se rehace cada noche</strong>, no
+              en caliente. Así que puede ir <strong>hasta un día por detrás</strong>, y en las{' '}
+              <strong>dos direcciones</strong>: un desvío que empieza hoy puede no aparecer hasta esta
+              noche, y uno que terminó de madrugada puede seguir listado hasta la siguiente
+              reconstrucción. La <strong>edad exacta</strong> de ese índice no la ponemos en la
+              pantalla de la parada —sería ruido para quien espera el autobús—; vive en{' '}
+              <a
+                className="font-semibold underline underline-offset-2"
+                href="/api/diag"
+                target="_blank"
+                rel="noreferrer"
+              >
+                /api/diag
+              </a>{' '}
+              y en el panel, con los postes provisionales que aún no tienen coordenada.
+            </p>
           </Bloque>
 
           {/* ⚠️ INTACTO. Ni una coma. */}

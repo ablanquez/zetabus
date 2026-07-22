@@ -40,7 +40,7 @@ import {
   type Stop,
   type StopId,
 } from '@/core';
-import { corregirNombreLargo, destinoDeCampo, rumboDe, type SentidoParaRumbo } from '@/engine/rumbo';
+import { corregirNombreLargo, destinoDeCampo, type SentidoParaRumbo } from '@/engine/rumbo';
 import artefacto from '@/generated';
 
 interface Artefacto {
@@ -260,52 +260,18 @@ export const idLinea = haceLineId;
 export const idParada = haceStopId;
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ⭐ LOS TRANSBORDOS. Clonado de la referencia, y es ORO PURO.
+//  ⭐ LOS PARES (LÍNEA, SENTIDO) OFICIALES DE UNA PARADA. El dato CRUDO de la ruta
+//  oficial del GTFS, y nada más.
 //
-//  En su itinerario, cada parada lleva los chips de LAS OTRAS LÍNEAS que pasan
-//  por ahí. Lo medí jugando con ella: la línea 21 tiene 34 paradas y **61 chips
-//  de transbordo**. Te dice dónde cambiar de línea SIN SALIR DEL ITINERARIO.
+//  ⛔ AQUÍ VIVÍAN `transbordosDe` y `lineasQuePasanPor`. Se RETIRARON las dos: quien
+//     arma "las líneas que pasan por aquí" (con su sentido, separando normales de
+//     provisionales) y los transbordos del itinerario es ahora `engine/
+//     correspondencias.ts`, que manda con el ÍNDICE DIARIO —de hoy, no "habitualmente"—
+//     y cae a ESTO solo en modo degradado (sin índice). Retirar una y dejar la otra
+//     calculando no habría sido "una fuente": por eso se van las dos.
 //
-//  ⚠️ Y no lo vi leyendo su código. Solo se ve pulsando. Es la L7 otra vez: leí
-//     una capa (el CSS), medí otra (la geometría), y nunca usé la tercera (la
-//     interacción). Lo mejor de su pantalla vivía justo ahí.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const lineasPorParada = new Map<string, Set<string>>();
-for (const d of A.directions) {
-  for (const sid of d.official.stops) {
-    let s = lineasPorParada.get(sid);
-    if (!s) { s = new Set(); lineasPorParada.set(sid, s); }
-    s.add(d.lineId);
-  }
-}
-
-/** Las OTRAS líneas que pasan por esta parada. Sin la actual. Ordenadas. */
-export function transbordosDe(paradaId: StopId, exceptoLinea: LineId): readonly Line[] {
-  const ids = lineasPorParada.get(String(paradaId));
-  if (!ids) return [];
-  return [...ids]
-    .filter((id) => id !== String(exceptoLinea))
-    .map((id) => lineaPorId.get(id))
-    .filter((l): l is Line => l !== undefined)
-    .sort((a, b) => a.shortName.localeCompare(b.shortName, 'es', { numeric: true }));
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  ⭐ LAS LÍNEAS QUE PASAN POR UNA PARADA, CON SU SENTIDO. El camino de vuelta de
-//  la pantalla de parada (la marca solo va al home).
-//
-//  ⚠️ NO es `transbordosDe`. Aquél colapsa los sentidos a la línea con un `Set` —y
-//     ahí es LO CORRECTO: un transbordo es "aquí cambias al 21", no dos "21"—. Aquí
-//     cada SENTIDO es una entrada, porque "¿a dónde va?" tiene DOS respuestas
-//     cuando la línea pasa en los dos sentidos. Por eso se guardan pares (línea,
-//     directionId), no un `Set` de líneas.
-//
-//  Ruta OFICIAL (`official.stops`): "pasa por aquí" es estructural. Nota honesta:
-//  en una línea desviada HOY, este listado nominal puede nombrarla aunque hoy no
-//  pase — por eso quien lo pinta matiza el rótulo ("habitualmente"), no afirma
-//  "pasa por aquí" a secas. El estado de desvío no está en esta pantalla sin una
-//  petición nueva por línea, y eso no se paga aquí.
+//  Aquí queda solo la fuente cruda: los pares oficiales. El rumbo (destino por
+//  sentido) y el reparto normal/provisional se deciden en UN SOLO SITIO, allí.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const paresPorParada = new Map<string, { lineId: string; directionId: 0 | 1 }[]>();
@@ -321,51 +287,14 @@ for (const d of A.directions) {
 }
 
 /**
- * El rumbo de una entrada del listado. Paralelo a `Rumbo` de `rumbo.ts`, pero el
- * caso de ida-y-vuelta lleva el `directionId` (para enlazar a `?sentido=`), que un
- * título de línea no necesita pero un enlace de vuelta sí.
+ * Los pares (lineId, directionId) de la ruta OFICIAL que pasan por esta parada. Es la
+ * fuente cruda del MODO DEGRADADO de `engine/correspondencias.ts` (cuando no hay
+ * índice). `[]` = no consta en el GTFS; el vacío lo dice quien pinta, no un cero.
  */
-export type RumboQuePasa =
-  | { readonly tipo: 'sentido'; readonly directionId: 0 | 1; readonly destino: string }
-  | { readonly tipo: 'circular'; readonly por: string }
-  | { readonly tipo: 'nombre'; readonly texto: string };
-
-export interface LineaQuePasa {
-  readonly linea: Line;
-  readonly rumbo: RumboQuePasa;
-}
-
-/**
- * Las líneas que pasan por esta parada (ruta oficial), UNA ENTRADA POR SENTIDO con
- * su destino. Bucle/circular/búho → una entrada pelada por línea, sin inventar
- * sentido. Vacío `[]` = no tenemos el dato: lo dice quien pinta, no un cero.
- */
-export function lineasQuePasanPor(paradaId: StopId): readonly LineaQuePasa[] {
-  const pares = paresPorParada.get(String(paradaId)) ?? [];
-  const salida: LineaQuePasa[] = [];
-  const peladaHecha = new Set<string>(); // una sola entrada pelada por línea
-  for (const { lineId, directionId } of pares) {
-    const l = lineaPorId.get(lineId);
-    if (!l) continue;
-    const sents = sentidosParaRumbo(haceLineId(lineId));
-    const activo = sents.find((s) => s.directionId === directionId);
-    if (!activo) continue;
-    const r = rumboDe(activo, sents, { esBuho: esBuho(l), nombreLargo: l.longName });
-    if (r.tipo === 'trayecto') {
-      salida.push({ linea: l, rumbo: { tipo: 'sentido', directionId, destino: r.destino } });
-    } else {
-      if (peladaHecha.has(lineId)) continue;
-      peladaHecha.add(lineId);
-      salida.push({ linea: l, rumbo: r }); // 'circular' | 'nombre', tal cual
-    }
-  }
-  const clave = (e: LineaQuePasa) =>
-    e.rumbo.tipo === 'sentido' ? e.rumbo.destino : e.rumbo.tipo === 'circular' ? e.rumbo.por : e.rumbo.texto;
-  return salida.sort(
-    (a, b) =>
-      a.linea.shortName.localeCompare(b.linea.shortName, 'es', { numeric: true }) ||
-      clave(a).localeCompare(clave(b), 'es'),
-  );
+export function paresOficialesDe(
+  paradaId: StopId,
+): readonly { readonly lineId: string; readonly directionId: 0 | 1 }[] {
+  return paresPorParada.get(String(paradaId)) ?? [];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
