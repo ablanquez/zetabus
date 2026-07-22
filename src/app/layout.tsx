@@ -56,12 +56,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             ⇒ La marca se ha movido a donde SÍ se sabe: cada página pinta
               <Fingiendo/> con su fingimiento concreto, y solo si lo hay.
               Ver `components/Fingiendo.tsx`. */}
+        {/* ⛔ AQUÍ HABÍA UNA COLETILLA — "el autobús de Zaragoza, ahora" — Y COMPETÍA
+            CON EL BUSCADOR. Es un eslogan, y en la cabecera lo único que importa es
+            encontrar tu línea o tu parada. Con la marca sola la cabecera deja de
+            pelearse consigo misma. El eslogan NO se pierde: sigue en el <title> de
+            metadata (`title` arriba), que es su sitio —pestaña del navegador y
+            resultado de búsqueda—, no la barra de la app. */}
         <header className="border-b border-[var(--color-borde)] bg-[var(--color-papel)]">
-          <div className="mx-auto flex max-w-2xl items-baseline gap-2 px-4 py-2">
+          <div className="mx-auto flex max-w-2xl items-center px-4 py-2">
             <Marca />
-            <span className="text-nota text-[var(--color-tinta-tenue)] sin-recortar">
-              el autobús de Zaragoza, ahora
-            </span>
           </div>
         </header>
 

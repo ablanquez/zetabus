@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { motor } from '@/engine/motor';
-import { lineaDeEtiqueta, parada, paradaDelPoste, posteDe } from '@/engine/topologia';
+import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
@@ -60,63 +59,36 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   const fingir = fingimientoDe(sp);
   const inicial = await llegadasDePoste(numero, motor(transporteDe(fingir), fingir));
 
-  // ⭐ LA FLECHA DE VOLVER, SEGÚN DE DÓNDE VIENES. A una parada se llega por varios
-  //    caminos: desde el ITINERARIO de una línea (que pasa `?desde=<línea>`) o desde
-  //    el BUSCADOR / un enlace directo / un marcador (sin parámetro). Con parámetro y
-  //    línea que EXISTE, se vuelve a esa línea; si no —sin parámetro, o `?desde=999`,
-  //    o `?desde=abc`—, se vuelve a la home. Nunca se enseña una línea que no existe.
-  const desdeCrudo = Array.isArray(sp.desde) ? sp.desde[0] : sp.desde;
-  const lineaDesde = desdeCrudo ? lineaDeEtiqueta(desdeCrudo) : null;
-  const volver = lineaDesde
-    ? {
-        href: `/linea/${encodeURIComponent(lineaDesde.shortName)}${fingir ? `?fingir=${fingir}` : ''}`,
-        etiqueta: `Volver a la línea ${lineaDesde.shortName}`,
-      }
-    : { href: '/', etiqueta: 'Volver a buscar otra parada o línea' };
-
   return (
     <div>
       {/* Cabecera COMPACTA a propósito: cada píxel que gasta aquí es un píxel
           que le quita al primer tiempo de llegada. */}
-      {/* ⭐ B13 · LA FLECHA DE VOLVER, ARRIBA, COMO LA REFERENCIA ("← Plaza San
-          Miguel"). Y por eso DESAPARECE el "← buscar otra parada o línea" del pie:
-          era la MISMA función dos veces, y una app que se usa con prisa no repite el
-          mismo enlace arriba y abajo. Flecha a la izquierda, columna (nombre + poste
-          + aviso) a la derecha, alineada junta. La flecha comparte fila con el nombre
-          para no gastar altura que le quita al primer tiempo de llegada (la obsesión
-          de esta pantalla — ver el test de flotación). Objetivo táctil ≥ 24 px. */}
-      <div className="mb-3 flex gap-1.5">
-        {/* ⭐ Objetivo táctil 44 px (`--control`). La `aria-label` dice A DÓNDE va, no
-            solo "volver": a la línea de la que vienes, o al inicio. `items-start` +
-            `pt` para que el glifo quede a la altura del nombre, no del centro. */}
-        <Link
-          href={volver.href}
-          data-papel="volver"
-          aria-label={volver.etiqueta}
-          className="-ml-1.5 inline-flex h-[var(--control)] w-[var(--control)] shrink-0 items-start justify-center pt-1 text-dato leading-none text-[var(--color-tinta-suave)]"
+      {/* ⛔ AQUÍ HABÍA UNA FLECHA "←" DE VOLVER. Se retira: la marca "ZetaBus" de la
+          cabecera —en TODA pantalla— ya enlaza a `/`, así que hay salida visible aun
+          llegando por enlace directo o marcador. Era una salida redundante y un icono
+          más que interpretar. Sin la flecha, la columna (nombre + poste + aviso) ya no
+          necesita ir en una fila de dos: es el único bloque. Verificado en navegador
+          que el logo enlaza aquí y es táctil. */}
+      <div className="mb-3 min-w-0">
+        <h1
+          className="text-titulo font-black leading-tight sin-recortar"
+          data-papel="nombre-parada"
+          data-nombre-fuente={p.nombreProc.fuente}
         >
-          <span aria-hidden="true">←</span>
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1
-            className="text-titulo font-black leading-tight sin-recortar"
-            data-papel="nombre-parada"
-            data-nombre-fuente={p.nombreProc.fuente}
-          >
-            {/* ⭐ EL ICONO DE POSTE, junto al nombre. Monocromo (hereda el tono), va en
-                `tinta-suave` para no pesar como el nombre, y es decorativo (aria-hidden):
-                el nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
-            <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
-            {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
-                "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo.
-                <Cita>: nombre del GTFS/Avanza; el traductor del navegador no lo reescribe. */}
-            <Cita>{p.name}</Cita>
-          </h1>
-          <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
-          {/* ⭐ Solo si de verdad se está fingiendo, y diciendo QUÉ. Antes esto era
-              un «· FINGIENDO «x»» diminuto al lado del poste, y encima competía con
-              una banda roja del layout que salía SIEMPRE. Ver `Fingiendo.tsx`. */}
-          <Fingiendo que={fingir} />
+          {/* ⭐ EL ICONO DE POSTE, junto al nombre. Monocromo (hereda el tono), va en
+              `tinta-suave` para no pesar como el nombre, y es decorativo (aria-hidden):
+              el nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
+          <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
+          {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
+              "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo.
+              <Cita>: nombre del GTFS/Avanza; el traductor del navegador no lo reescribe. */}
+          <Cita>{p.name}</Cita>
+        </h1>
+        <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
+        {/* ⭐ Solo si de verdad se está fingiendo, y diciendo QUÉ. Antes esto era
+            un «· FINGIENDO «x»» diminuto al lado del poste, y encima competía con
+            una banda roja del layout que salía SIEMPRE. Ver `Fingiendo.tsx`. */}
+        <Fingiendo que={fingir} />
 
         {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA.
             Avanza no da el nombre de las paradas suprimidas por un desvío (los 4 de
@@ -140,18 +112,16 @@ export default async function ParadaPage({ params, searchParams }: Props) {
             </span>
           </p>
         )}
-        </div>
       </div>
 
       {/* ⭐ AQUÍ. LO PRIMERO. */}
       <LlegadasVivas inicial={inicial} poste={numero} fingir={fingir} />
 
-      {/* ⭐ B13 · AQUÍ ESTABA "← buscar otra parada o línea", Y SE HA IDO ARRIBA.
-          Era la misma función que la flecha de la cabecera: volver a la búsqueda. Dos
-          enlaces al mismo sitio, uno arriba y otro abajo, en una pantalla que se mira
-          con prisa, es ruido. La flecha de la referencia gana; el enlace del pie se
-          retira. (No se pierde nada: el logo "ZetaBus" de la cabecera también va a la
-          portada, y ahora además está la flecha.) */}
+      {/* ⛔ AQUÍ ABAJO NO HAY ENLACE DE VUELTA, Y ES A PROPÓSITO. Hubo un "← buscar
+          otra parada o línea" en el pie; se retiró por repetir la salida. La salida
+          única y visible es la marca "ZetaBus" de la cabecera, que enlaza a `/` en
+          toda pantalla. Un enlace de vuelta al pie, con la llegada del autobús arriba,
+          sería ruido en una pantalla que se mira con prisa. */}
     </div>
   );
 }

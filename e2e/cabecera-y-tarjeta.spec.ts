@@ -3,7 +3,8 @@
  *
  * Gran parte de este bloque se clonó en tandas anteriores (los chips de la ficha, el
  * "fuera Dato oficial", el filtro, el pie con MITRAMS). Aquí se VERIFICA con medidas
- * —no se da por hecho— y se prueba lo NUEVO de esta tanda: B13, la flecha de volver.
+ * —no se da por hecho—. La salida de la pantalla se prueba en `navegacion.spec.ts`
+ * (es la marca de la cabecera; la flecha de volver se retiró).
  *
  * ⚠️ Todo con `?fingir=` para NO pedir nada a Avanza: el nombre y la ficha salen del
  *    artefacto y de los datos fingidos; a la fuente real no se le pregunta para probar.
@@ -14,33 +15,16 @@ import { test, expect, type Page } from '@playwright/test';
 const filas = (p: Page) => p.locator('[data-papel="llegada"]');
 
 // ─────────────────────────────────────────────────────────────────────────────
-test.describe('⭐ B13 · LA FLECHA DE VOLVER ARRIBA, Y FUERA EL ENLACE DE ABAJO', () => {
-  test('hay flecha arriba, lleva a la portada, y el "buscar otra parada" del pie NO está', async ({ page }) => {
+test.describe('⭐ B13 · SIN FLECHA ARRIBA NI ENLACE DE VUELTA ABAJO (la salida es la marca)', () => {
+  test('no hay flecha de volver arriba, ni "buscar otra parada" en el pie', async ({ page }) => {
     await page.goto('/parada/744?fingir=sin-buses', { waitUntil: 'domcontentloaded' });
 
-    const flecha = page.locator('[data-papel="volver"]');
-    await expect(flecha, 'falta la flecha de volver arriba').toHaveCount(1);
+    // La flecha "←" se retiró: la marca de la cabecera es la única salida (ver
+    // `navegacion.spec.ts`). Aquí solo se ata que NO ha vuelto por ningún lado.
+    await expect(page.locator('[data-papel="volver"]'), 'volvió una flecha de volver').toHaveCount(0);
 
-    // ⚠️ Objetivo táctil: WCAG 2.5.8 pide 24×24 mínimo. Se mide, no se supone.
-    const caja = (await flecha.boundingBox())!;
-    expect(caja.width).toBeGreaterThanOrEqual(24);
-    expect(caja.height).toBeGreaterThanOrEqual(24);
-
-    // El enlace de abajo era la MISMA función. Ya no está.
+    // El enlace del pie era la MISMA función que la flecha. Tampoco está.
     await expect(page.getByText('buscar otra parada', { exact: false })).toHaveCount(0);
-
-    // Y la flecha lleva a la portada (la búsqueda).
-    await flecha.click();
-    await page.waitForURL(/\/$|\/\?/);
-    expect(new URL(page.url()).pathname).toBe('/');
-  });
-
-  test('⭐ CONTRAPRUEBA · la flecha NO es un adorno: sin href no llevaría a ningún sitio', async ({ page }) => {
-    await page.goto('/parada/744?fingir=sin-buses', { waitUntil: 'domcontentloaded' });
-    // Si alguien convirtiera la flecha en un <span> decorativo, este href desaparecería
-    // y el test caería. Es lo que ata que la flecha SIRVE, no solo que se ve.
-    const href = await page.locator('[data-papel="volver"]').getAttribute('href');
-    expect(href, 'la flecha no tiene destino: es un adorno').toBe('/');
   });
 
   test('⭐ B14 · el pie corto ENLAZA a /sobre-los-datos, con la atribución MITRAMS', async ({ page }) => {

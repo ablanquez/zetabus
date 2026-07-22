@@ -31,10 +31,13 @@ export function Marca() {
   return (
     <Link
       href="/"
-      // ⚠️ min-h-[var(--control-min)]: es un ENLACE, y `text-seccion` deja la caja
-      //    en ~20 px, por debajo del mínimo táctil de WCAG 2.5.8. El tamaño de letra
-      //    lo pone el token; la ZONA pulsable la garantiza el min-h.
-      className="inline-flex min-h-[var(--control-min)] items-center gap-1.5 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
+      // ⚠️ min-h-[var(--control)] = 44 px, NO el mínimo de 24. La marca es la ÚNICA
+      //    salida visible de las pantallas de detalle (se retiraron las flechas "←"):
+      //    volver a la home es acción principal, no un enlace suelto en una frase, así
+      //    que merece el objetivo cómodo (WCAG 2.5.5), no el mínimo (2.5.8). El tamaño
+      //    de letra lo pone `text-seccion`; la ZONA pulsable la garantiza el min-h.
+      //    Medido en 360 px: la caja pasa de 89×24 a 89×44. Lo vigila `navegacion.spec`.
+      className="inline-flex min-h-[var(--control)] items-center gap-1.5 text-seccion font-black tracking-tight text-[var(--color-tinta)]"
       data-papel="marca"
     >
       <svg
