@@ -1,4 +1,4 @@
-import { STROKE_FAVICON, VISTA_FAVICON, Z_PATH } from '@/components/marca-fuente';
+import { STROKE_FAVICON, VISTA, Z_PATH } from '@/components/marca-fuente';
 
 /**
  * ⭐ EL FAVICON. Opción A: la MISMA Z de la marca (`Z_PATH`), sin poste ni
@@ -19,7 +19,7 @@ import { STROKE_FAVICON, VISTA_FAVICON, Z_PATH } from '@/components/marca-fuente
 export const contentType = 'image/svg+xml';
 
 export default function Icon() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VISTA_FAVICON}"><path d="${Z_PATH}" fill="none" stroke="#7048E8" stroke-width="${STROKE_FAVICON}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${VISTA}"><path d="${Z_PATH}" fill="none" stroke="#7048E8" stroke-width="${STROKE_FAVICON}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   return new Response(svg, {
     headers: {
       'Content-Type': 'image/svg+xml',

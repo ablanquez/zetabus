@@ -3,7 +3,7 @@ import {
   BANDERA,
   POSTE,
   STROKE_MARCA,
-  VISTA_MARCA,
+  VISTA,
   Z_PATH,
 } from '@/components/marca-fuente';
 
@@ -38,7 +38,7 @@ export function Marca() {
       data-papel="marca"
     >
       <svg
-        viewBox={VISTA_MARCA}
+        viewBox={VISTA}
         className="h-[1.15em] w-[1.15em] shrink-0"
         aria-hidden="true"
         focusable="false"
