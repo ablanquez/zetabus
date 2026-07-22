@@ -22,6 +22,7 @@
     "auditoria": "playwright test e2e/auditoria --project=360px --grep-invert=NUNCA",
     "flota:build": "tsx scripts/build-flota.ts",
     "nombres:build": "tsx scripts/build-nombres.ts",
+    "correspondencias:build": "tsx scripts/build-correspondencias.ts",
     "skill:setup": "node scripts/setup-skill.mjs"
   },
   "dependencies": {

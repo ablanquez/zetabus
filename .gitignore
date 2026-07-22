@@ -77,6 +77,12 @@
 #    `git blame` de este fichero: por eso va versionado, y por eso va solo.
 !/data/flota-observada.json
 
+#    ⭐ COORDENADAS A MANO de los postes provisionales que solo salen en el
+#    barrido y que el GTFS no conoce (Avanza no da lat/lon). Es observacion_propia,
+#    igual que la flota observada: alguien las resuelve mirando la calle. Por eso
+#    va versionado y sobrevive al borrado diario del índice (que sí es raspado).
+!/data/postes-solo-barrido-coordenadas.json
+
 #    Fichero heredado. NO es producto: es material de auditoría.
 #    Se conserva porque tapa 53 vehículos que el registro oficial no
 #    tiene, y porque fue comparando contra él como supimos que 62

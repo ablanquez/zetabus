@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "que": "Coordenadas (lat/lon) de los postes que SOLO aparecen en el barrido de recorridos de Avanza (get_stops_list) y que NO están en nuestro GTFS. Son postes provisionales de un desvío: existen hoy, pero el GTFS no los conoce y por tanto no tiene su posición.",
+    "por_que_hace_falta": "get_stops_list NO da lat/lon: solo devuelve poste + nombre (medido, ver sources/avanza/recorrido.ts). Sin coordenada, un poste provisional no se puede pintar en un mapa. El GTFS cubre los 934 postes normales; estos no.",
+    "por_que_va_versionado": "Es observacion_propia (ver core/provenance.ts): una PERSONA resuelve la coordenada a mano —mirando el rótulo de la calle, el callejero, o sobre el mapa— y la apunta. NO es dato raspado de Avanza, así que entra al repo, igual que data/flota-observada.json, y su cadena de custodia es el git blame de este fichero. Por eso SOBREVIVE al borrado diario del índice (data/generated/correspondencias.json, que sí es raspado y no se versiona): el build lo funde cada noche.",
+    "confidence": "observacion_propia",
+    "como_se_rellena": "El panel (/api/diag) avisa de cuántos postes van 'sinCoordenadas'. Se resuelve UNA VEZ cada uno y se apunta aquí. En la siguiente regeneración, build-correspondencias lo funde en el índice y el poste deja de estar 'sinCoordenadas'.",
+    "formato": "poste (string) -> { lat: number, lon: number, quien: string, fecha: 'YYYY-MM-DD', comoLoSupe: string }"
+  },
+  "postes": {}
+}
