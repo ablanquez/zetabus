@@ -125,12 +125,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             enlace táctil de 44 px (WCAG 2.5.5) metido EN el texto revienta el interlineado
             de las líneas que lo rodean —medido: el pie quedaba grumoso, con huecos enormes—.
             Separados, la prosa se lee tersa y cada enlace es cómodo de pulsar. */}
+        {/* ⚠️ CENTRADO, las dos partes (`text-center` + `justify-center`). La CAJA del pie ya
+            estaba centrada (`mx-auto max-w-2xl`), pero su contenido iba a la IZQUIERDA. Con la
+            columna estrecha eso no cantaba —el texto del pie coincidía con el contenido, también
+            a la izquierda—. Al ensanchar la rejilla de la home (centrada y amplia), el texto del
+            pie se quedó varado: ni al borde de la rejilla ni al centro. Centrarlo lo alinea con el
+            centro del viewport, que es el centro de la columna de contenido en TODAS las páginas
+            (el pie es el mismo componente en las cuatro), así que queda consistente en todas. */}
         <footer className="mx-auto max-w-2xl px-4 pb-8" data-papel="pie">
           {/* ⚠️ LA FUENTE, NOMBRADA: el GTFS lo publica Avanza en el Punto de Acceso
               Nacional, y lo procesamos (las tres cosas que la licencia obliga a decir).
               Antes decía "GTFS del Powered by MITRAMS" —`del` pedía un nombre y había una
               FÓRMULA, no castellano—. El detalle largo vive en /sobre-los-datos. */}
-          <p className="text-nota leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar">
+          <p className="text-nota leading-relaxed text-center text-[var(--color-tinta-tenue)] sin-recortar">
             Recorridos: GTFS de Avanza Zaragoza (Punto de Acceso Nacional), procesados. Tiempo real:
             Avanza Zaragoza.
           </p>
@@ -138,7 +145,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               de zona táctil cada uno. El de MITRAMS es INTOCABLE: fórmula «Powered by
               MITRAMS» LITERAL + enlace a transportes.gob.es, que exige la licencia del MITMS
               (THIRD-PARTY-NOTICES.md §1) — no es estilo. */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-5 text-nota text-[var(--color-tinta-tenue)]">
+          <div className="mt-1 flex flex-wrap items-center justify-center gap-x-5 text-nota text-[var(--color-tinta-tenue)]">
             <a
               href="https://www.transportes.gob.es/"
               className="inline-flex min-h-[var(--control)] items-center font-semibold underline underline-offset-2"
