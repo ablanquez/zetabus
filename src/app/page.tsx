@@ -71,18 +71,36 @@ export default function Home() {
         const delGrupo = lineas().filter((l) => grupoDe(l) === g.clave);
         if (delGrupo.length === 0) return null;
         return (
-          <section key={g.clave} className="mt-7" data-papel="grupo-lineas" data-grupo={g.clave}>
-            {/* ⭐ FUERA EL SUBTÍTULO DEL GRUPO ("las de todos los días", "de madrugada"…).
-                La gente sabe leer: "Diurnas", "Circulares", "Lanzaderas" y "Búhos" se
-                explican solos —mismo criterio que quitar "EL RECORRIDO · 32 PARADAS"—, y
-                el de las circulares además lo dice mejor el icono ↻. (El texto sobrevive
-                como referencia en el guía vivo /interno/sistema-visual, que sí lo usa.) */}
-            <h2 className="mb-2 text-menor font-black uppercase tracking-wide">
-              {g.titulo}{' '}
-              <span className="font-bold text-[var(--color-tinta-tenue)]">({delGrupo.length})</span>
-            </h2>
+          <details
+            key={g.clave}
+            open
+            className="group mt-7"
+            data-papel="grupo-lineas"
+            data-grupo={g.clave}
+          >
+            {/* ⭐ SECCIÓN PLEGABLE NATIVA (`<details>/<summary>`): pliega y despliega
+                SIN JS y es accesible de fábrica —el summary ya es un botón con estado
+                expandido/plegado que el lector de pantalla anuncia—. Nada de div+onClick.
+                ABIERTA por defecto: no se esconde contenido al cargar (y así el buscador
+                de arriba sigue viendo todo, y los tests miden las tarjetas).
 
-            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                ⭐ FUERA EL CONTADOR "(31)": saber cuántas líneas hay no ayuda a quien
+                busca la suya. Nadie lo leía (ni test ni aria-label ni la búsqueda). Y
+                antes ya se fue el subtítulo ("las de todos los días"…): los cuatro
+                rótulos —Diurnas, Circulares, Lanzaderas, Búhos— se explican solos. */}
+            <summary className="flex min-h-[var(--control)] cursor-pointer list-none items-center justify-between gap-3 border-b border-[var(--color-borde)] pb-2 [&::-webkit-details-marker]:hidden">
+              <h2 className="text-menor font-black uppercase tracking-wide">{g.titulo}</h2>
+              {/* El triángulo va a la DERECHA y gira 90° al abrir. Decorativo: el estado
+                  ya lo anuncia el <summary>; el triángulo es la pista visual. */}
+              <span
+                aria-hidden="true"
+                className="shrink-0 text-[var(--color-tinta-tenue)] transition-transform duration-150 group-[[open]]:rotate-90"
+              >
+                ▸
+              </span>
+            </summary>
+
+            <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {delGrupo.map((l) => {
                 // ⭐ DOS DESTINOS, uno por renglón (corregidos), en vez del nombre largo
                 //    que se parte donde cae. Aplica a las DIURNAS DE DOBLE SENTIDO y a las
@@ -161,7 +179,7 @@ export default function Home() {
                 );
               })}
             </ul>
-          </section>
+          </details>
         );
       })}
     </div>
