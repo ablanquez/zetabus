@@ -4,6 +4,7 @@ import { MARCAS } from '@/components/FichaVehiculo';
 import artefacto from '@/generated';
 import type { Confidence } from '@/core';
 import type { BusProfile } from '@/modes/bus/profile';
+import { NOMBRE_MARCA } from '@/components/marca-fuente';
 
 /**
  * ⭐ A5 · LA PROCEDENCIA SE MUEVE AQUÍ. NO SE PIERDE.
@@ -39,7 +40,9 @@ import type { BusProfile } from '@/modes/bus/profile';
 export const metadata = {
   // Solo la parte; la plantilla del layout la envuelve → "ZetaBus | Sobre los datos".
   title: 'Sobre los datos',
-  description: 'De dónde sale cada dato de ZetaBus, y qué NO sabemos.',
+  // ⚠️ FRASE construida con el nombre → se LEE de la fuente única (no se teclea). Va en
+  //    genitivo ("cada dato de X"), así que la oración aguanta cualquier marca sin quedar coja.
+  description: `De dónde sale cada dato de ${NOMBRE_MARCA}, y qué NO sabemos.`,
 };
 
 interface Artefacto {

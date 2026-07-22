@@ -57,6 +57,9 @@ export default function GlobalError({
           >
             Algo se ha roto
           </p>
+          {/* ⚠️ "ZetaBus" a mano, NO leído de `marca-fuente`: la MISMA excepción declarada
+              que el <title> de arriba (ver el comentario allí). No es una copia a mano que
+              limpiar: esta página no puede importar NADA por si el módulo que reventó es ése. */}
           <h1 style={{ margin: '4px 0 0', fontSize: 24, lineHeight: 1.2 }}>
             ZetaBus no ha podido arrancar
           </h1>
