@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run data:build && next build",
+    "build": "npm run data:build && npm run correspondencias:ensure && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -23,6 +23,7 @@
     "flota:build": "tsx scripts/build-flota.ts",
     "nombres:build": "tsx scripts/build-nombres.ts",
     "correspondencias:build": "tsx scripts/build-correspondencias.ts",
+    "correspondencias:ensure": "tsx scripts/ensure-correspondencias.ts",
     "skill:setup": "node scripts/setup-skill.mjs"
   },
   "dependencies": {

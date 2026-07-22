@@ -110,6 +110,29 @@ Instrucciones y el porqué: [`data/gtfs/README.md`](data/gtfs/README.md).
 **El build fallará ruidosamente si el GTFS no está.** No arrancará con datos vacíos: un mapa
 sin paradas que no se queja es peor que un error.
 
+### El índice de correspondencias por poste
+
+Para cada poste, qué líneas pasan hoy — separando las de siempre (`normales`) de las que hoy
+pasan por un **desvío** (`provisionales`). Vive en `data/generated/correspondencias.json`.
+
+- **No está en el repositorio.** Es dato raspado de Avanza (barrido de `get_stops_list`, los 74
+  sentidos), igual que el GTFS: se consume, no se redistribuye. Está gitignorado.
+- **`npm run build` lo genera SI FALTA**, y solo si falta (paso `correspondencias:ensure`, entre
+  `data:build` y `next build`). Quien clona y compila lo tiene sin enterarse; quien ya lo tiene no
+  vuelve a pagar el barrido.
+- **Si Avanza está caída durante el build, el build NO se muere** — un fallo de una API externa no
+  puede impedir compilar. La app **arranca en modo degradado**: «Líneas que pasan por aquí» sale de
+  la ruta oficial del GTFS y no se marca ninguna provisional. El build lo dice con un recuadro
+  imposible de leer como decoración, y el comando para arreglarlo cuando Avanza responda es:
+
+  ```bash
+  npm run correspondencias:build     # regenera el índice a mano (~2 min)
+  ```
+
+- **No se genera desde la app.** Pedir 74 peticiones a Avanza porque alguien entró en una página
+  sería abusar de un servicio ajeno sin que nadie mire. El estado del índice (edad, si va degradado,
+  postes provisionales sin coordenada) se ve en `/api/diag` → `correspondencias`.
+
 ---
 
 ## Documentación
