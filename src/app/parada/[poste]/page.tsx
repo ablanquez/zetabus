@@ -5,6 +5,7 @@ import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
+import { LineasQuePasan } from '@/components/LineasQuePasan';
 import { Cita } from '@/components/Cita';
 import { IconoParada } from '@/components/IconoParada';
 
@@ -116,6 +117,11 @@ export default async function ParadaPage({ params, searchParams }: Props) {
 
       {/* ⭐ AQUÍ. LO PRIMERO. */}
       <LlegadasVivas inicial={inicial} poste={numero} fingir={fingir} />
+
+      {/* ⭐ DEBAJO: qué líneas pasan por aquí y a dónde van — el camino de vuelta a
+          CUALQUIER línea (la marca solo va al home). Nunca por encima del primer
+          minuto de llegada. Ver `LineasQuePasan.tsx`. */}
+      <LineasQuePasan paradaId={paradaId} fingir={fingir} />
 
       {/* ⛔ AQUÍ ABAJO NO HAY ENLACE DE VUELTA, Y ES A PROPÓSITO. Hubo un "← buscar
           otra parada o línea" en el pie; se retiró por repetir la salida. La salida
