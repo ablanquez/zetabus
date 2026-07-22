@@ -25,6 +25,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { POSTE, Z_PATH } from '@/components/marca-fuente';
 
 const sinComentarios = (s: string): string =>
   s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -137,6 +138,21 @@ describe('⛔⛔ UNA SOLA Z EN TODO EL PROYECTO', () => {
     expect(zetasEn(`<path d="M14 35C14 35 25 22.2 25 14A11 11 0 1 0 3 14c0 8.2 11 21 11 21Z" />`)).toHaveLength(0);
     // Una Z dentro de un comentario → NO cuenta (es documentación):
     expect(zetasEn(`// la Z es d="M 16 14 L 38 14 L 16 50 L 52 50"\nconst x = 1;`)).toHaveLength(0);
+  });
+});
+
+describe('⛔ EL POSTE SE PLANTA EN LA BASE DE LA Z (deuda declarada)', () => {
+  it('POSTE.yBase coincide con la Y de la base de Z_PATH', () => {
+    // POSTE.yBase = 50 es una COPIA A MANO CONSCIENTE de la base de la Z. No se
+    // extrae del `d=` porque eso convertiría un path legible en una plantilla
+    // (peor de leer, más fácil de romper) y rompería la ley del `d=` único. Se
+    // paga la deuda a sabiendas, pero se vigila aquí: si alguien mueve la base de
+    // la Z, el poste se queda flotando y esto se pone rojo antes de que nadie mire
+    // el logo. Se reutiliza el mismo parser de vértices, no se escribe otro.
+    const v = verticesDePath(Z_PATH);
+    expect(v, 'Z_PATH debe parsear a vértices (sin curvas)').toBeTruthy();
+    const baseY = v![v!.length - 1].y; // último vértice = final de la base inferior
+    expect(POSTE.yBase, 'el poste debe plantarse en la base de la Z').toBe(baseY);
   });
 });
 

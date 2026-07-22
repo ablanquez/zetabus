@@ -38,6 +38,13 @@ export const VISTA = '10 8 48 48';
 export const STROKE_MARCA = 6;
 export const STROKE_FAVICON = 8;
 
-/** El poste (mástil) y su señal en bandera. Solo la marca completa los dibuja. */
+/**
+ * El poste (mástil) y su señal en bandera. Solo la marca completa los dibuja.
+ * ⚠️ `yBase: 50` está ACOPLADO A PROPÓSITO a la base de la Z (el último vértice de
+ *    `Z_PATH`, y=50): el poste se planta en la acera, no flota. Es una copia a mano
+ *    consciente —no se extrae del `d=` para no romper la ley del path único legible—,
+ *    y por eso la vigila `tests/marca-z-unica.test.ts`: si la base de la Z se mueve y
+ *    el 50 no la sigue, el test se pone rojo.
+ */
 export const POSTE = { x: 46, yBase: 50, yAlto: 28, grosor: 4 } as const;
 export const BANDERA = { x: 48, y: 24.5, ancho: 9, alto: 7, radio: 1.6 } as const;
