@@ -58,12 +58,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               Ver `components/Fingiendo.tsx`. */}
         {/* ⛔ AQUÍ HABÍA UNA COLETILLA — "el autobús de Zaragoza, ahora" — Y COMPETÍA
             CON EL BUSCADOR. Es un eslogan, y en la cabecera lo único que importa es
-            encontrar tu línea o tu parada. Con la marca sola la cabecera deja de
-            pelearse consigo misma. El eslogan NO se pierde: sigue en el <title> de
-            metadata (`title` arriba), que es su sitio —pestaña del navegador y
-            resultado de búsqueda—, no la barra de la app. */}
+            encontrar tu línea o tu parada. El eslogan NO se pierde: sigue en el
+            <title> de metadata (`title` arriba), que es su sitio —pestaña del
+            navegador y resultado de búsqueda—, no la barra de la app.
+
+            ⚠️ `justify-center`: la marca va CENTRADA en la cabecera. Quitar la
+            coletilla NO la centró —solo dejó el hueco a su derecha, alineada a la
+            izquierda—; centrar es un acto aparte, y este es. Medido: el centro de la
+            marca coincide con el de la cabecera (`justify-center` reparte el hueco a
+            los dos lados). Sigue siendo enlace a `/` y ≥44 px de zona táctil. */}
         <header className="border-b border-[var(--color-borde)] bg-[var(--color-papel)]">
-          <div className="mx-auto flex max-w-2xl items-center px-4 py-2">
+          <div className="mx-auto flex max-w-2xl items-center justify-center px-4 py-2">
             <Marca />
           </div>
         </header>
