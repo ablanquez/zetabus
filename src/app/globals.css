@@ -1,4 +1,14 @@
-@import "tailwindcss";
+/* ⛔ LISTA BLANCA DE FUENTES — IMPEDIR, NO VIGILAR.
+   Sin `source(none)`, Tailwind auto-detecta fuentes y en DEV (Turbopack) ingiere
+   `.next/server/app/*.html`, el HTML prerenderizado. Ese HTML lleva el payload RSC
+   troceado en `push([1,"…"])</script><script>push([1,"…"])`; cuando un corte cae en
+   medio de una clase `[…]`, Tailwind genera una utilidad rota y TUMBA la hoja entera
+   (dev responde 500). Es la misma escalada que <Cita>: lo NO listado no existe, frente
+   a lo listado-que-no-debe-estar. Aquí solo se escanea `src`; `.next` queda IMPOSIBLE
+   de ingerir, diga lo que diga la carpeta. NO es una restricción gratuita: quitarla
+   revive el 500 en dev. Lo prueba `tests/tailwind-solo-src.test.ts`. */
+@import "tailwindcss" source(none);
+@source "..";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
