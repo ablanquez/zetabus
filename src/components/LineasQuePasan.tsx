@@ -80,12 +80,22 @@ export function LineasQuePasan({
         </p>
       ) : (
         <>
+          {/* ⭐ LAS NORMALES, EN SU PROPIA CAJA. Antes iban sueltas sobre el lienzo y las
+              provisionales en caja: parecían dos jerarquías cuando son dos CATEGORÍAS del
+              mismo nivel. Ahora son DOS BLOQUES HERMANOS. La forma los distingue —borde
+              SÓLIDO (lo estable) frente al PUNTEADO de abajo (lo provisional)—, y el de
+              abajo lleva la palabra; el de arriba no la necesita: por contraste se lee. */}
           {normales.length > 0 && (
-            <ul className="mt-1" data-papel="lista-lineas-pasan">
-              {normales.map((e, i) => (
-                <FilaLinea key={`${e.linea.shortName}-${clave(e)}`} e={e} href={href} conRaya={i > 0} />
-              ))}
-            </ul>
+            <div
+              className="mt-2 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
+              data-papel="normales-que-pasan"
+            >
+              <ul data-papel="lista-lineas-pasan">
+                {normales.map((e, i) => (
+                  <FilaLinea key={`${e.linea.shortName}-${clave(e)}`} e={e} href={href} conRaya={i > 0} />
+                ))}
+              </ul>
+            </div>
           )}
 
           {/* ⭐ EL RECUADRO PUNTEADO ENVUELVE AL GRUPO DE PROVISIONALES. La forma

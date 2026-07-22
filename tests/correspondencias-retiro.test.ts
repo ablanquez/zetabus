@@ -22,10 +22,12 @@ describe('⭐ transbordosDe y lineasQuePasanPor están RETIRADAS', () => {
   });
 
   it('ningún componente vuelve a importar las funciones retiradas', () => {
+    // ⚠️ Límite de palabra: el nombre NUEVO `transbordosDePoste` contiene la subcadena
+    //    `transbordosDe`. Se busca el retirado como palabra entera, no la subcadena.
     for (const f of ['src/components/Itinerario.tsx', 'src/components/LineasQuePasan.tsx']) {
       const src = readFileSync(f, 'utf8');
-      expect(src, `${f} sigue nombrando transbordosDe`).not.toMatch(/transbordosDe/);
-      expect(src, `${f} sigue nombrando lineasQuePasanPor`).not.toMatch(/lineasQuePasanPor/);
+      expect(src, `${f} sigue nombrando transbordosDe`).not.toMatch(/\btransbordosDe\b/);
+      expect(src, `${f} sigue nombrando lineasQuePasanPor`).not.toMatch(/\blineasQuePasanPor\b/);
     }
   });
 

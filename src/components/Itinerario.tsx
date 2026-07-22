@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Line, LineId, StopId } from '@/core';
 import { esBuho } from '@/engine/topologia';
-import { otrasLineasEnPoste } from '@/engine/correspondencias';
+import { transbordosDePoste } from '@/engine/correspondencias';
 import { ChipLinea } from './ChipLinea';
 import { Cita } from './Cita';
 import { AcuseDeToque } from './AcuseDeToque';
@@ -137,12 +137,13 @@ export function Itinerario({
       {paradas.map((p, i) => {
         const primero = i === 0;
         const ultimo = i === paradas.length - 1;
-        // ⭐ Los transbordos salen ahora del ÍNDICE DIARIO (engine/correspondencias):
-        //    las líneas que HOY coinciden en este poste, provisionales incluidas. Se le
-        //    pasa el `poste` (número), así que funciona aun cuando `sid` es null —una
-        //    parada provisional del desvío—, donde la función vieja devolvía [] por no
-        //    tener stopId. En modo degradado (sin índice) cae a la ruta oficial por `sid`.
-        const transbordos = otrasLineasEnPoste(p.poste, p.sid, lineaId);
+        // ⭐ Los transbordos salen ahora del ÍNDICE DIARIO (engine/correspondencias),
+        //    REPARTIDOS en normales y provisionales —el mismo criterio que en la parada—.
+        //    Las que HOY solo pasan por un desvío van en su recuadro punteado; las de
+        //    siempre, fuera y primero. Funciona aun cuando `sid` es null (poste
+        //    provisional); en degradado (sin índice) todo es normal, del GTFS por `sid`.
+        const transbordos = transbordosDePoste(p.poste, p.sid, lineaId);
+        const hayTransbordos = transbordos.normales.length + transbordos.provisionales.length > 0;
 
         return (
           <li key={`${p.poste}-${i}`} className="flex gap-3" data-papel="nodo" data-poste={p.poste}>
@@ -159,7 +160,7 @@ export function Itinerario({
                 color={linea.color}
                 primero={primero}
                 ultimo={ultimo}
-                conTransbordo={transbordos.length > 0}
+                conTransbordo={hayTransbordos}
               />
               <span
                 className="w-[3px] flex-1"
@@ -220,10 +221,10 @@ export function Itinerario({
                     provisional
                   </span>
                 )}
-                {transbordos.length > 0 && (
+                {/* NORMALES: fuera y primero. Los búhos, AL FINAL (D1/C6): otra categoría. */}
+                {transbordos.normales.length > 0 && (
                   <ul className="flex flex-none flex-wrap items-center gap-1.5" data-papel="transbordos">
-                    {[...transbordos]
-                      // ⭐ D1/C6: los búhos, AL FINAL. Como ellos. Otra categoría, detrás.
+                    {[...transbordos.normales]
                       .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
                       .map((t) => (
                         <li key={String(t.id)}>
@@ -231,6 +232,27 @@ export function Itinerario({
                         </li>
                       ))}
                   </ul>
+                )}
+                {/* PROVISIONALES: en recuadro punteado, con su palabra (forma + texto, como
+                    en la parada). Las que HOY solo pasan por aquí por un desvío. */}
+                {transbordos.provisionales.length > 0 && (
+                  <span
+                    className="inline-flex flex-none flex-wrap items-center gap-1.5 rounded-tarjeta border border-dashed border-[var(--color-borde)] px-2 py-1"
+                    data-papel="transbordos-provisionales"
+                  >
+                    <span className="text-micro font-bold uppercase tracking-wide text-[var(--color-tinta-tenue)] sin-recortar">
+                      por desvío
+                    </span>
+                    <ul className="flex flex-wrap items-center gap-1.5">
+                      {[...transbordos.provisionales]
+                        .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
+                        .map((t) => (
+                          <li key={String(t.id)}>
+                            <ChipLinea linea={t} papel="chip-transbordo" enlace />
+                          </li>
+                        ))}
+                    </ul>
+                  </span>
                 )}
               </div>
             </div>

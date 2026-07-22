@@ -192,38 +192,60 @@ export function correspondenciasDeParadaDesde(
   return { normales: normalesDelGtfs(paradaId), provisionales: [], degradado: true };
 }
 
-/** Las OTRAS líneas que coinciden en un poste (transbordos del itinerario). Colapsa a
- *  la línea (un transbordo es "aquí cambias al 21", no dos "21") y quita la actual.
- *  Del índice si lo hay (incluye provisionales → transbordo real de hoy); del GTFS por
- *  `sid` en degradado. Funciona aunque `sid` sea null (poste provisional): mejora sobre
- *  la vieja `transbordosDe`, que ahí devolvía []. */
-export function otrasLineasEnPosteDesde(
+/** Dedup por id + orden natural por número de línea. */
+function ordenarLineas(lineas: readonly Line[]): readonly Line[] {
+  const porId = new Map(lineas.map((l) => [String(l.id), l]));
+  return [...porId.values()].sort((a, b) => a.shortName.localeCompare(b.shortName, 'es', { numeric: true }));
+}
+
+/** Los transbordos de un poste del itinerario, SEPARADOS en normales y provisionales. */
+export interface TransbordosDePoste {
+  readonly normales: readonly Line[];
+  readonly provisionales: readonly Line[];
+}
+
+/**
+ * Las OTRAS líneas que coinciden en un poste (transbordos del itinerario), colapsadas a
+ * la línea (un transbordo es "aquí cambias al 21", no dos "21") y sin la actual, y
+ * REPARTIDAS en normales / provisionales —el mismo reparto que en la parada—.
+ *
+ * ⚠️ UNA LÍNEA NORMAL EN CUALQUIER SENTIDO ES NORMAL. Al colapsar a la línea, si el 40
+ *    pasa aquí normal en un sentido y provisional en el otro, cuenta como NORMAL: aquí
+ *    puedes cambiarte al 40 con fiabilidad. Solo va al recuadro la que HOY solo pasa por
+ *    desvío.
+ *
+ * Del índice si lo hay (de hoy); del GTFS por `sid` en degradado —y ahí todas son
+ * normales, sin provisionales—. Funciona aunque `sid` sea null (poste provisional),
+ * donde la función vieja de transbordos devolvía [].
+ */
+export function transbordosDePosteDesde(
   indice: ArtefactoIndice | null,
   poste: number,
   sid: StopId | null,
   exceptoLinea: LineId,
-): readonly Line[] {
-  const shortnames = new Set<string>();
+): TransbordosDePoste {
+  const except = String(exceptoLinea);
+  const aLinea = (sn: string): Line | null => {
+    const l = lineaDeEtiqueta(sn);
+    return l && String(l.id) !== except ? l : null;
+  };
+
   if (indice) {
     const e = indice.postes[String(poste)];
-    if (e) for (const par of [...e.normales, ...e.provisionales]) shortnames.add(par.linea);
-    // índice sin este poste → hoy no coincide nadie: [] (no se cae al GTFS: es de hoy).
-  } else if (sid) {
-    for (const { lineId } of paresOficialesDe(sid)) {
-      const l = lineaPorId(idLinea(lineId));
-      if (l) shortnames.add(l.shortName);
-    }
+    if (!e) return { normales: [], provisionales: [] }; // hoy no coincide nadie
+    const enNormal = new Set(e.normales.map((p) => p.linea));
+    const soloProvisional = new Set(e.provisionales.map((p) => p.linea).filter((sn) => !enNormal.has(sn)));
+    const normales = [...enNormal].map(aLinea).filter((l): l is Line => l !== null);
+    const provisionales = [...soloProvisional].map(aLinea).filter((l): l is Line => l !== null);
+    return { normales: ordenarLineas(normales), provisionales: ordenarLineas(provisionales) };
   }
 
-  const except = String(exceptoLinea);
-  const lineas = [...shortnames]
-    .map((sn) => lineaDeEtiqueta(sn))
+  // Degradado: del GTFS por sid, todas normales (el GTFS no conoce provisionales).
+  if (!sid) return { normales: [], provisionales: [] };
+  const lineas = paresOficialesDe(sid)
+    .map(({ lineId }) => lineaPorId(idLinea(lineId)))
     .filter((l): l is Line => l !== null && String(l.id) !== except);
-  // Dedup por id (dos shortnames no colapsan, pero por si acaso) y orden natural.
-  const porId = new Map(lineas.map((l) => [String(l.id), l]));
-  return [...porId.values()].sort((a, b) =>
-    a.shortName.localeCompare(b.shortName, 'es', { numeric: true }),
-  );
+  return { normales: ordenarLineas(lineas), provisionales: [] };
 }
 
 export interface EstadoIndice {
@@ -253,10 +275,10 @@ export function estadoIndiceDesde(indice: ArtefactoIndice | null, ahoraMs: numbe
 export const correspondenciasDeParada = (paradaId: StopId): CorrespondenciasDeParada =>
   correspondenciasDeParadaDesde(leerIndice(), paradaId);
 
-export const otrasLineasEnPoste = (
+export const transbordosDePoste = (
   poste: number,
   sid: StopId | null,
   exceptoLinea: LineId,
-): readonly Line[] => otrasLineasEnPosteDesde(leerIndice(), poste, sid, exceptoLinea);
+): TransbordosDePoste => transbordosDePosteDesde(leerIndice(), poste, sid, exceptoLinea);
 
 export const estadoIndice = (): EstadoIndice => estadoIndiceDesde(leerIndice(), Date.now());
