@@ -37,7 +37,9 @@ import type { Confidence } from '@/core';
  *    trabajo del sistema visual, no una página para el usuario.
  */
 export const metadata: Metadata = {
-  title: 'Sistema visual · ZetaBus (interno)',
+  // Solo la parte; la plantilla del layout la envuelve → "ZetaBus | Sistema visual".
+  // Sigue `noindex` (interna, no enlazada), pero eso NO va en el título visible.
+  title: 'Sistema visual',
   robots: { index: false, follow: false },
 };
 

@@ -37,7 +37,8 @@ import type { BusProfile } from '@/modes/bus/profile';
  */
 
 export const metadata = {
-  title: 'Sobre los datos · ZetaBus',
+  // Solo la parte; la plantilla del layout la envuelve → "ZetaBus | Sobre los datos".
+  title: 'Sobre los datos',
   description: 'De dónde sale cada dato de ZetaBus, y qué NO sabemos.',
 };
 

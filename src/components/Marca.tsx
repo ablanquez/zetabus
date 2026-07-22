@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   BANDERA,
+  NOMBRE_MARCA,
   POSTE,
   STROKE_MARCA,
   VISTA,
@@ -77,7 +78,7 @@ export function Marca() {
         />
       </svg>
       <span data-papel="marca-wordmark" translate="no">
-        ZetaBus
+        {NOMBRE_MARCA}
       </span>
     </Link>
   );

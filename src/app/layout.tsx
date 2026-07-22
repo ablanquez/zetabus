@@ -4,6 +4,7 @@ import Link from 'next/link';
 import './globals.css';
 import { AvisoFeed } from '@/components/AvisoFeed';
 import { Marca } from '@/components/Marca';
+import { NOMBRE_MARCA } from '@/components/marca-fuente';
 
 /**
  * ⭐ INTER, SELF-HOSTED. `next/font/google` descarga la fuente EN EL BUILD y la
@@ -17,8 +18,22 @@ import { Marca } from '@/components/Marca';
  */
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
+/**
+ * ⭐ EL TÍTULO ES UNA PLANTILLA, no un texto por página. El layout declara el molde
+ * (`ZetaBus | %s`) y cada página aporta SOLO su parte (`Sobre los datos` →
+ * `ZetaBus | Sobre los datos`). El nombre de la marca vive en UN sitio
+ * (`marca-fuente.ts`), el mismo que pinta el wordmark: no se teclea "ZetaBus" en cada
+ * página. `default` (obligatorio con `template`) cubre las rutas sin título propio.
+ *
+ * ⛔ FUERA LA COLETILLA "el autobús de Zaragoza, ahora" que vivía aquí: con la
+ *    plantilla, el título dice lo que ES CADA PÁGINA (mejor que un eslogan repetido en
+ *    todas). El eslogan, si hace falta, es cosa de la home, no del molde.
+ */
 export const metadata: Metadata = {
-  title: 'ZetaBus · el autobús de Zaragoza, ahora',
+  title: {
+    template: `${NOMBRE_MARCA} | %s`,
+    default: NOMBRE_MARCA,
+  },
   description:
     'Los autobuses que hay AHORA MISMO en la calle, con la edad del dato a la vista. Sin inventar lo que no se sabe.',
 };
@@ -101,27 +116,41 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           El resto —licencias, qué se redistribuye y qué no, y por qué— vive
           entero en `/sobre-los-datos`, a un toque.
         */}
-        <footer
-          className="mx-auto max-w-2xl px-4 pb-8 text-nota leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar"
-          data-papel="pie"
-        >
-          Recorridos: GTFS del{' '}
-          <a
-            href="https://www.transportes.gob.es/"
-            className="underline underline-offset-2"
-            target="_blank"
-            rel="noreferrer"
-            data-papel="atribucion-mitrams"
-          >
-            <strong>Powered by MITRAMS</strong>
-          </a>{' '}
-          — <strong>datos procesados</strong>. Tiempo real: Avanza Zaragoza.{' '}
-          <Link
-            href="/sobre-los-datos"
-            className="inline-flex min-h-[var(--control-min)] items-center font-semibold underline underline-offset-2"
-          >
-            Sobre los datos
-          </Link>
+        {/* ⚠️ DOS PARTES, Y A PROPÓSITO. La PROSA (la atribución) va con interlineado
+            normal; los ENLACES van en su propia fila. ¿Por qué no todo en un párrafo? Un
+            enlace táctil de 44 px (WCAG 2.5.5) metido EN el texto revienta el interlineado
+            de las líneas que lo rodean —medido: el pie quedaba grumoso, con huecos enormes—.
+            Separados, la prosa se lee tersa y cada enlace es cómodo de pulsar. */}
+        <footer className="mx-auto max-w-2xl px-4 pb-8" data-papel="pie">
+          {/* ⚠️ LA FUENTE, NOMBRADA: el GTFS lo publica Avanza en el Punto de Acceso
+              Nacional, y lo procesamos (las tres cosas que la licencia obliga a decir).
+              Antes decía "GTFS del Powered by MITRAMS" —`del` pedía un nombre y había una
+              FÓRMULA, no castellano—. El detalle largo vive en /sobre-los-datos. */}
+          <p className="text-nota leading-relaxed text-[var(--color-tinta-tenue)] sin-recortar">
+            Recorridos: GTFS de Avanza Zaragoza (Punto de Acceso Nacional), procesados. Tiempo real:
+            Avanza Zaragoza.
+          </p>
+          {/* Los dos enlaces, en su fila. MISMO tratamiento exacto (mismas clases) y ≥44 px
+              de zona táctil cada uno. El de MITRAMS es INTOCABLE: fórmula «Powered by
+              MITRAMS» LITERAL + enlace a transportes.gob.es, que exige la licencia del MITMS
+              (THIRD-PARTY-NOTICES.md §1) — no es estilo. */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-5 text-nota text-[var(--color-tinta-tenue)]">
+            <a
+              href="https://www.transportes.gob.es/"
+              className="inline-flex min-h-[var(--control)] items-center font-semibold underline underline-offset-2"
+              target="_blank"
+              rel="noreferrer"
+              data-papel="atribucion-mitrams"
+            >
+              Powered by MITRAMS
+            </a>
+            <Link
+              href="/sobre-los-datos"
+              className="inline-flex min-h-[var(--control)] items-center font-semibold underline underline-offset-2"
+            >
+              Sobre los datos
+            </Link>
+          </div>
         </footer>
       </body>
     </html>

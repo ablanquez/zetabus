@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { motor } from '@/engine/motor';
@@ -42,6 +43,23 @@ export const dynamic = 'force-dynamic';
 interface Props {
   params: Promise<{ poste: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+/**
+ * ⭐ EL TÍTULO DE LA PESTAÑA usa el MISMO nombre que la pantalla (`p.name`): el de
+ * Avanza si lo hay, el del GTFS marcado si no. NUNCA el nombre crudo del GTFS por su
+ * cuenta: si en la parada sale "Av. de Cataluña", en la pestaña también. La plantilla
+ * del layout antepone "ZetaBus | ".
+ */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { poste: crudo } = await params;
+  const paradaId = paradaDelPoste(crudo);
+  // ⚠️ Poste inválido → el componente hará notFound(). El título de una ruta dinámica que
+  //    llama a notFound() lo pone SU generateMetadata (no `not-found.tsx`), así que se pone
+  //    aquí para que la pestaña diga "ZetaBus | Página no encontrada", no el default pelado.
+  if (paradaId === null) return { title: 'Página no encontrada' };
+  const p = parada(paradaId);
+  return p ? { title: p.name } : { title: 'Página no encontrada' };
 }
 
 export default async function ParadaPage({ params, searchParams }: Props) {

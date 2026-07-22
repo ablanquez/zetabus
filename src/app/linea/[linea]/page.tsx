@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo } from '@/engine/topologia';
@@ -59,6 +60,28 @@ export const dynamic = 'force-dynamic';
 interface Props {
   params: Promise<{ linea: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+/**
+ * ⭐ EL TÍTULO DE LA PESTAÑA: "Línea 35 | Sentido Parque Goya" — y el sentido CAMBIA con
+ * `?sentido=`, igual que la pantalla. Pero SOLO se nombra si de verdad hay más de un
+ * sentido: en una circular o un búho de bucle hay uno solo, el título no cambiaría, y
+ * poner un "Sentido X" fijo sería afirmar algo que no varía. Ahí se queda "Línea XX".
+ * La plantilla del layout antepone "ZetaBus | ".
+ */
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const { linea: etiqueta } = await params;
+  const sp = await searchParams;
+  const l = lineas().find((x) => x.shortName.toLowerCase() === decodeURIComponent(etiqueta).toLowerCase());
+  // ⚠️ Línea inválida → notFound() en el componente. Como en la parada, el título de la ruta
+  //    dinámica lo pone SU generateMetadata → "ZetaBus | Página no encontrada".
+  if (!l) return { title: 'Página no encontrada' };
+  const sents = sentidosParaRumbo(idLinea(String(l.id)));
+  const pedido = Array.isArray(sp.sentido) ? sp.sentido[0] : sp.sentido;
+  const activo = sents.find((s) => String(s.directionId) === pedido) ?? sents[0];
+  return sents.length > 1 && activo
+    ? { title: `Línea ${l.shortName} | Sentido ${destinoDeSentido(activo, sents)}` }
+    : { title: `Línea ${l.shortName}` };
 }
 
 export default async function LineaPage({ params, searchParams }: Props) {

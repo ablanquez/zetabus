@@ -7,6 +7,12 @@ import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { GRUPOS, giroDe, grupoDe, idLinea, idParada, lineas, paradas, posteDe, sentidosParaRumbo } from '@/engine/topologia';
 import { destinoDeSentido, dosDestinos } from '@/engine/rumbo';
 import { ALIAS_LINEA } from '@/engine/busqueda';
+import { NOMBRE_MARCA } from '@/components/marca-fuente';
+
+// ⚠️ La home es el segmento RAÍZ, el mismo que declara la plantilla → la plantilla NO se
+//    le aplica (Next: `template` solo envuelve a los HIJOS). Por eso el título se escribe
+//    entero aquí, pero el nombre se LEE de la fuente única (no se teclea "ZetaBus").
+export const metadata = { title: `${NOMBRE_MARCA} | Listado de líneas de transporte de Zaragoza` };
 
 /**
  * Los destinos de una línea, en una cadena, para INDEXARLOS en el buscador (no se

@@ -518,7 +518,11 @@ export function MapaParada({
            */
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            // ⚠️ ATRIBUCIÓN OBLIGATORIA (ODbL). La fórmula EXACTA es «© colaboradores de
+            //    OpenStreetMap», no «© OpenStreetMap» a secas: la exige la licencia y la cita
+            //    THIRD-PARTY-NOTICES.md · §5. Es el ÚNICO mapa de la app (un solo TileLayer),
+            //    así que esta es la única copia del texto: no hay divergencia posible.
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />

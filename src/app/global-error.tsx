@@ -39,6 +39,11 @@ export default function GlobalError({
           color: '#111111',
         }}
       >
+        {/* ⚠️ El <title> a mano, y React 19 lo iza a <head>. NO se lee de `marca-fuente`
+            A PROPÓSITO: ésta es la página de emergencia —sustituye al layout raíz cuando
+            ha reventado—, y no depende de NINGÚN módulo por si el que ha fallado es justo
+            ése. Es la MISMA excepción declarada que el "ZetaBus" del <h1> de abajo. */}
+        <title>ZetaBus | Algo se ha roto</title>
         <main style={{ maxWidth: 480, margin: '0 auto' }} data-papel="global-error">
           <p
             style={{

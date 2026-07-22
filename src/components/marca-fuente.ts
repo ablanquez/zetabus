@@ -17,6 +17,15 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
+/**
+ * ⭐ EL NOMBRE DE LA MARCA, EN UN SOLO SITIO. Lo pinta el wordmark de `Marca.tsx` y lo
+ * usa la plantilla de título del `layout` (`ZetaBus | %s`). Una fuente para el nombre:
+ * si algún día cambia, cambia aquí y en ningún otro lado. (Excepción declarada:
+ * `app/global-error.tsx` lo escribe a mano a propósito —es la página de emergencia,
+ * que no depende de NINGÚN módulo por si el que ha reventado es justo éste—.)
+ */
+export const NOMBRE_MARCA = 'ZetaBus';
+
 /** El recorrido en Z: barra sup → diagonal → barra inf PROLONGADA. Geometría V4. */
 export const Z_PATH = 'M 16 14 L 38 14 L 16 50 L 52 50';
 

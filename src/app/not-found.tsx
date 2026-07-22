@@ -1,5 +1,8 @@
 import Link from 'next/link';
 
+// La plantilla del layout la envuelve → "ZetaBus | Página no encontrada".
+export const metadata = { title: 'Página no encontrada' };
+
 /**
  * ⭐ A4 · EL 404. Y NO ES DECORACIÓN.
  *

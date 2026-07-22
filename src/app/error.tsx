@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { NOMBRE_MARCA } from '@/components/marca-fuente';
 
 /**
  * ⭐ A4 · EL 500. CUANDO ALGO SE ROMPE DE VERDAD.
@@ -38,6 +39,10 @@ export default function Error({
     // El detalle va a la consola del SERVIDOR/navegador, no a la pantalla.
     // `digest` es el identificador que Next deja para poder cruzarlo con el log.
     console.error('[zetabus] fallo de render', error.digest ?? '(sin digest)');
+    // ⚠️ El título lo pone `document.title`, no `metadata`: una error boundary es un
+    //    client component y NO puede exportar `metadata`. Sin esto, la pestaña se
+    //    quedaría con el título de la página que reventó. La marca, de su fuente única.
+    document.title = `${NOMBRE_MARCA} | Algo se ha roto`;
   }, [error]);
 
   return (
