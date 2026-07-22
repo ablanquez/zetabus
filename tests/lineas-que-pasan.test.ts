@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   correspondenciasDeParadaDesde,
-  transbordosDePosteDesde,
+  otrasLineasEnPosteDesde,
   estadoIndiceDesde,
   type ArtefactoIndice,
 } from '@/engine/correspondencias';
@@ -98,34 +98,28 @@ describe('⭐ lector de correspondencias · CON ÍNDICE', () => {
   });
 });
 
-describe('⭐ transbordosDePoste (los del itinerario, separados)', () => {
-  it('separa normales/provisionales, colapsa a línea, y quita la actual', () => {
+describe('⭐ otrasLineasEnPoste (transbordos del itinerario, todos seguidos)', () => {
+  it('del índice: colapsa a la línea, incluye provisionales, y quita la actual', () => {
     const id = paradaDelPoste(15)!;
     const indice = indiceCon({
       '15': {
-        // 36 en dos sentidos (normal), 35 la actual (normal), 40 normal EN UN SENTIDO...
-        normales: [{ linea: '36', sentido: 0 }, { linea: '36', sentido: 1 }, { linea: '35', sentido: 0 }, { linea: '40', sentido: 0 }],
-        // ...y provisional en el otro; 21 solo provisional.
-        provisionales: [{ linea: '21', sentido: 1 }, { linea: '40', sentido: 1 }],
+        normales: [{ linea: '36', sentido: 0 }, { linea: '36', sentido: 1 }, { linea: '35', sentido: 0 }],
+        provisionales: [{ linea: '21', sentido: 1 }],
       },
     });
-    const except = lineaDeEtiqueta('35')!.id; // la actual
-    const { normales, provisionales } = transbordosDePosteDesde(indice, 15, id, except);
-    const nn = normales.map((l) => l.shortName);
-    const pp = provisionales.map((l) => l.shortName);
-    expect(nn).not.toContain('35'); // la actual, fuera
-    expect(nn).toContain('36');
-    expect(nn.filter((n) => n === '36')).toHaveLength(1); // dos sentidos → una
-    expect(nn).toContain('40'); // normal en un sentido → NORMAL, no al recuadro
-    expect(pp).not.toContain('40');
-    expect(pp).toEqual(['21']); // solo-provisional → recuadro
+    // Se excluye la línea 35 (la "actual"): no debe salir como transbordo de sí misma.
+    const except = lineaDeEtiqueta('35')!.id;
+    const nombres = otrasLineasEnPosteDesde(indice, 15, id, except).map((l) => l.shortName).sort();
+    expect(nombres).not.toContain('35'); // la actual, fuera
+    expect(nombres).toContain('21'); // provisional incluida (van todas seguidas)
+    expect(nombres).toContain('36');
+    expect(nombres.filter((n) => n === '36')).toHaveLength(1); // los dos sentidos colapsan a una
   });
 
-  it('degradado (sin índice): todo normal del GTFS por sid, provisionales vacío', () => {
+  it('degradado (sin índice): sale de la ruta oficial del GTFS por sid', () => {
     const id = paradaDelPoste(744)!;
-    const { normales, provisionales } = transbordosDePosteDesde(null, 744, id, idLinea('0'));
-    expect(normales.length).toBeGreaterThan(0);
-    expect(provisionales).toEqual([]);
+    const otras = otrasLineasEnPosteDesde(null, 744, id, idLinea('0'));
+    expect(otras.length).toBeGreaterThan(0);
   });
 });
 

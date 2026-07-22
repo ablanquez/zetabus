@@ -61,14 +61,7 @@ export function LineasQuePasan({
   const vacio = normales.length === 0 && provisionales.length === 0;
 
   return (
-    <section className="mt-6" data-papel="lineas-que-pasan" aria-labelledby="lineas-que-pasan-titulo">
-      <h2
-        id="lineas-que-pasan-titulo"
-        className="text-menor font-bold text-[var(--color-tinta-tenue)] sin-recortar"
-      >
-        Líneas que pasan por aquí
-      </h2>
-
+    <section className="mt-6" data-papel="lineas-que-pasan" aria-label="Líneas que pasan por aquí">
       {vacio ? (
         // ⚠️ No es "no pasa ninguna": es que hoy no consta en NUESTRO dato.
         <p
@@ -83,14 +76,18 @@ export function LineasQuePasan({
           {/* ⭐ LAS NORMALES, EN SU PROPIA CAJA. Antes iban sueltas sobre el lienzo y las
               provisionales en caja: parecían dos jerarquías cuando son dos CATEGORÍAS del
               mismo nivel. Ahora son DOS BLOQUES HERMANOS. La forma los distingue —borde
-              SÓLIDO (lo estable) frente al PUNTEADO de abajo (lo provisional)—, y el de
-              abajo lleva la palabra; el de arriba no la necesita: por contraste se lee. */}
+              SÓLIDO (lo estable) frente al PUNTEADO de abajo (lo provisional)—, y CADA uno
+              lleva su rótulo DENTRO, arriba a la izquierda: "Líneas que pasan por aquí" y
+              "Hoy, por un desvío", el mismo tratamiento para los dos. */}
           {normales.length > 0 && (
             <div
               className="mt-2 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2"
               data-papel="normales-que-pasan"
             >
-              <ul data-papel="lista-lineas-pasan">
+              <h2 className="text-nota font-bold leading-snug text-[var(--color-tinta-suave)] sin-recortar" data-papel="normales-rotulo">
+                Líneas que pasan por aquí
+              </h2>
+              <ul className="mt-0.5" data-papel="lista-lineas-pasan">
                 {normales.map((e, i) => (
                   <FilaLinea key={`${e.linea.shortName}-${clave(e)}`} e={e} href={href} conRaya={i > 0} />
                 ))}
