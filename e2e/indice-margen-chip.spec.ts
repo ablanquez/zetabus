@@ -24,6 +24,7 @@ interface Fila {
   abajo: number;
   izq: number;
   chipX: number;
+  cardTop: number;
 }
 
 async function filasPorGrupo(page: Page): Promise<{ clave: string; filas: Fila[] }[]> {
@@ -41,6 +42,7 @@ async function filasPorGrupo(page: Page): Promise<{ clave: string; filas: Fila[]
           abajo: +(ra.bottom - rc.bottom).toFixed(1),
           izq: +(rc.left - ra.left).toFixed(1),
           chipX: +rc.left.toFixed(1),
+          cardTop: +ra.top.toFixed(1),
         };
       }),
     }));
@@ -69,10 +71,16 @@ test.describe('⭐ el chip del índice tiene margen uniforme y arranca alineado'
     const grupos = await filasPorGrupo(page);
 
     for (const g of grupos) {
-      // Una o dos columnas según el viewport (Tailwind `sm:grid-cols-2`). Sea cual
-      // sea, el número de x distintas = número de columnas, y cada columna una sola x.
+      // 1, 2, 3 o 4 columnas según el viewport (la rejilla es `auto-fill minmax(280px,1fr)`,
+      // ya no un `sm:grid-cols-2` fijo). Las COLUMNAS REALES = las tarjetas de la fila de más
+      // arriba, que comparten `top`. La invariante que se vigila NO es "hay 2 columnas", es que
+      // cada columna arranca en UNA sola x: el nº de x distintas ha de ser EXACTAMENTE el nº de
+      // columnas. Un chip desalineado mete una x de más y lo caza. Y nunca más de 4 (el tope).
+      const topMin = Math.min(...g.filas.map((f) => f.cardTop));
+      const columnas = g.filas.filter((f) => Math.abs(f.cardTop - topMin) < 2).length;
       const xs = [...new Set(g.filas.map((f) => Math.round(f.chipX)))];
-      expect(xs.length, `${g.clave}: los chips no arrancan alineados (${xs.join(', ')})`).toBeLessThanOrEqual(2);
+      expect(xs.length, `${g.clave}: los chips no arrancan alineados (${xs.join(', ')})`).toBe(columnas);
+      expect(columnas, `${g.clave}: más de 4 columnas`).toBeLessThanOrEqual(4);
     }
   });
 

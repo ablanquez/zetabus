@@ -73,7 +73,20 @@ export default function Home() {
           LANZADERAS / BÚHOS. Cuarenta y cuatro tarjetas sueltas no se leen; cuatro
           grupos de once, sí. Y cada grupo dice QUÉ ES, porque "Ci3" no se explica
           solo y "N5" tampoco. */}
-      {GRUPOS.map((g) => {
+      {/* ⭐ LA REJILLA SE ENSANCHA, EL BUSCADOR NO. El buscador (arriba) se queda en la columna
+          estrecha de `main` —una línea de texto larga se lee mal, el ojo pierde el sitio—; la
+          rejilla ROMPE a un ancho amplio, porque aquí el ancho es beneficio puro: más líneas de
+          un vistazo, menos scroll. La jerarquía es la buscada: el buscador es UNA ENTRADA, la
+          rejilla es EL CONTENIDO.
+
+          Cómo rompe sin tocar `main` ni las demás páginas: `ml-[50%]` lleva el borde izquierdo al
+          centro del contenedor (que ya está centrado en el viewport), y `-translate-x-1/2` la
+          recentra por su propio ancho → queda centrada en la ventana a cualquier anchura. El ancho
+          `min(72rem, 100vw-2rem)`: el tope de 72rem la deja en 4 columnas COMO MÁXIMO; el
+          `100vw-2rem` deja 16 px de aire a los lados y NUNCA desborda (los cortes por columna van
+          en la `<ul>`). */}
+      <div className="ml-[50%] w-[min(72rem,calc(100vw_-_2rem))] -translate-x-1/2">
+        {GRUPOS.map((g) => {
         const delGrupo = lineas().filter((l) => grupoDe(l) === g.clave);
         if (delGrupo.length === 0) return null;
         return (
@@ -106,7 +119,14 @@ export default function Home() {
               </span>
             </summary>
 
-            <ul className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {/* ⭐ LOS CORTES NO SON REDONDOS: salen del ancho MÍNIMO en que la tarjeta del PEOR
+                nombre (un búho de 60 car., p.ej. la N2 "Pza. Aragón - La Almozara - …") sigue en
+                2 líneas → 280 px, MEDIDO en navegador. `auto-fill minmax(280, 1fr)`: el navegador
+                mete tantas columnas de ≥280 como quepan y las estira a partes iguales. Traducido a
+                ancho de VENTANA: 2 columnas a 600 px, 3 a 888, 4 a 1176 (y ahí topa, ver el div de
+                arriba). El `min(17.5rem, 100%)` evita que en un móvil de <312 px una columna de 280
+                desborde: baja el suelo al 100% del hueco. Antes era `grid-cols-1 sm:grid-cols-2`. */}
+            <ul className="mt-3 grid grid-cols-[repeat(auto-fill,minmax(min(17.5rem,100%),1fr))] gap-2">
               {delGrupo.map((l) => {
                 // ⭐ DOS DESTINOS, uno por renglón (corregidos), en vez del nombre largo
                 //    que se parte donde cae. Aplica a las DIURNAS DE DOBLE SENTIDO y a las
@@ -186,8 +206,9 @@ export default function Home() {
               })}
             </ul>
           </details>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
