@@ -76,9 +76,10 @@ export default async function ParadaPage({ params, searchParams }: Props) {
           data-papel="nombre-parada"
           data-nombre-fuente={p.nombreProc.fuente}
         >
-          {/* ⭐ EL ICONO DE POSTE, junto al nombre. Monocromo (hereda el tono), va en
-              `tinta-suave` para no pesar como el nombre, y es decorativo (aria-hidden):
-              el nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
+          {/* ⭐ EL ICONO DE PARADA (un nodo en el recorrido), junto al nombre. Monocromo
+              (hereda el tono), va en `tinta-suave` para no pesar como el nombre, y es
+              decorativo (aria-hidden): el nombre y el "poste N" ya lo dicen todo. El
+              porqué del nodo —y el descarte del reloj y la onda— en `IconoParada.tsx`. */}
           <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
           {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
               "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo.
