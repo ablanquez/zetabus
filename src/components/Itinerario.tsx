@@ -243,8 +243,13 @@ export function Itinerario({
           se mudó al acordeón de desvío, arriba — ver `AvisoDesvio.tsx`. Las decisiones
           de aquel cuadro —ámbar y no rojo, borde de 2 px con `--color-aviso`, el
           tachado que sobrevive al gris— se fueron con él.) */}
+      {/* ⭐ "Información adicional" · LA COPIA DE MÓVIL. Vive DENTRO del <ol> (dentro de
+          la tarjeta), como siempre, con su borde gris. Arriba del corte se OCULTA con
+          `display:none` (`solo-movil-info` en globals.css) —que la saca también del árbol
+          de accesibilidad— y en su lugar sale la copia de ESCRITORIO, en la columna
+          derecha (ver `linea/[linea]/page.tsx`). Misma fuente `info`: no es copia a mano. */}
       {info && (
-        <li>
+        <li className="solo-movil-info">
           <InfoAdicional info={info} />
         </li>
       )}

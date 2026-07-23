@@ -8,6 +8,7 @@ import { motor, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
+import { InfoAdicional } from '@/components/InfoAdicional';
 import { AvisoDesvio } from '@/components/AvisoDesvio';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Cita } from '@/components/Cita';
@@ -15,7 +16,7 @@ import { Toponimo } from '@/components/Toponimo';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
-import { RestauraScrollRecorrido } from '@/components/RestauraScrollRecorrido';
+import { RecorridoVivo } from '@/components/RecorridoVivo';
 import type { Line, LineId, StopId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
@@ -251,6 +252,17 @@ export default async function LineaPage({ params, searchParams }: Props) {
       {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. Columna
           derecha abajo (grid-area horarios). */}
       <Terminal horario={horario} />
+
+      {/* ⭐ "Información adicional" · LA COPIA DE ESCRITORIO (≥880): columna derecha, DEBAJO
+          del horario (grid-area info), con BORDE NEGRO. La de móvil vive dentro del <ol>
+          (oculta ≥880). MISMA fuente `horario.info` que aquélla —no es copia a mano—; cada
+          una se oculta en su ancho con `display:none`, que la saca del árbol de
+          accesibilidad, así el lector anuncia UNA sola. Solo se pinta si hay info. */}
+      {horario?.info && (
+        <div className="zona-info-linea">
+          <InfoAdicional info={horario.info} />
+        </div>
+      )}
     </div>
   );
 }
@@ -361,9 +373,9 @@ function Recorrido({
       )}
 
       <div className="zona-recorrido-linea">
-      {/* ⭐ Isla mínima: devuelve el sitio en el recorrido al volver de una parada (≥880).
-          Renderiza null; ver `RestauraScrollRecorrido.tsx`. */}
-      <RestauraScrollRecorrido clave={claveScroll} />
+      {/* ⭐ Isla mínima (≥880): dimensiona el recorrido por el scroll y devuelve el sitio
+          al volver de una parada. Renderiza null; ver `RecorridoVivo.tsx`. */}
+      <RecorridoVivo clave={claveScroll} />
       {/* ⭐ C5 · FUERA LA LEYENDA DE LOS CUADRADITOS. Decía: "Los cuadraditos de
           colores son los transbordos... Los oscuros son las nocturnas." Si un sistema
           visual necesita un rótulo que lo explique, el sistema visual no funciona: la

@@ -720,15 +720,21 @@ summary,
 /* ─────────────────────────────────────────────────────────────────────────
    ⭐ /linea · LA REJILLA DE DOS COLUMNAS (solo por encima del corte).
    ───────────────────────────────────────────────────────────────────────────
-   MISMO patrón que /parada y MISMO corte (880): un solo árbol, áreas CSS, sin medir
-   ancho con JS ni duplicar DOM. Por DEBAJO del corte NO es rejilla —es un bloque en
-   la columna de hoy, en el mismo orden (título · destinos · desvíos · recorrido ·
-   horarios) y con los mismos huecos, que los ponen los `mt-*` de cada pieza—; así
-   móvil queda EXACTAMENTE como estaba. Por ENCIMA: recorrido a la izquierda (1fr) y
-   desvíos+horarios a la derecha, en su ancho fijo de 380 (el suelo medido: lo manda
-   la franja de frecuencia del horario, 375). El recorrido ocupa las DOS filas de la
-   derecha, de modo que su alto lo fija la columna derecha con las cajas abiertas.
+   MISMO patrón que /parada y MISMO corte (880): áreas CSS, sin medir ancho con JS. Por
+   DEBAJO del corte NO es rejilla —es un bloque en la columna de hoy, en el mismo orden
+   (título · destinos · desvíos · recorrido · horarios·info) y con los mismos huecos, que
+   los ponen los `mt-*` de cada pieza—; así móvil queda EXACTAMENTE como estaba. Por
+   ENCIMA: recorrido a la izquierda (1fr) y desvíos+horarios+info a la derecha, en su ancho
+   fijo de 380 (el suelo medido: lo manda la franja de frecuencia del horario, 375). El
+   recorrido ocupa las filas de la derecha; su alto lo manda el scroll (la isla
+   `RecorridoVivo`, no un mínimo). ⚠️ Un solo árbol SALVO "Información adicional", que se
+   duplica a propósito (móvil dentro del <ol>, escritorio en la derecha): las áreas de
+   rejilla solo colocan hijos directos, y es la única salida sin tocar móvil (decisión de
+   Antonio). Cada copia se oculta en su ancho con `display:none` → el lector anuncia una.
    ───────────────────────────────────────────────────────────────────────── */
+/* Móvil: la copia de escritorio de "Información adicional" no existe (vive dentro del <ol>). */
+.zona-info-linea { display: none; }
+
 @media (min-width: 880px) {
   .rejilla-linea {
     /* Rompe el cajón estrecho de `main`, igual que /parada (recentra en el viewport;
@@ -740,11 +746,16 @@ summary,
     column-gap: 1.25rem;
     row-gap: 1rem;
     grid-template-columns: 1fr minmax(0, 380px);
+    /* Los ítems NO se estiran a lo alto de su fila: cada caja se queda a su alto (el
+       recorrido lo fija la isla; las de la derecha, su contenido). Si una columna es más
+       alta, la otra no la persigue. */
+    align-items: start;
     grid-template-areas:
       'titulo    titulo'
       'destinos  destinos'
       'recorrido desvios'
-      'recorrido horarios';
+      'recorrido horarios'
+      'recorrido info';
   }
   /* ⭐ SIN DESVÍO (la MAYORÍA de líneas un día normal): no hay caja de desvíos, así que
      el HORARIO sube a la fila de ARRIBA de la derecha y el hueco cae debajo. Si no, la
@@ -755,6 +766,7 @@ summary,
       'titulo    titulo'
       'destinos  destinos'
       'recorrido horarios'
+      'recorrido info'
       'recorrido .';
   }
   /* La rejilla manda el `gap`: se anulan los `mt-*` que dan el ritmo en móvil, y se
@@ -775,24 +787,43 @@ summary,
   .zona-desvios-linea { grid-area: desvios; }
   .rejilla-linea > [data-papel='terminal'] { grid-area: horarios; }
 
-  /* ⭐ R5/R6 · EL RECORRIDO SE IGUALA AL ALTO DE LA DERECHA Y HACE SCROLL INTERNO.
-     El bloque (position:relative) ocupa las dos filas de la derecha, así que su alto
-     sale de ellas. El <ol> se ABSOLUTIZA dentro (inset:0): su contenido —decenas de
-     paradas— NO estira la fila (la fija la derecha), y el itinerario scrollea dentro.
-     El scroll lo anuncia la barra nativa, como en /parada (un scroll que no se ve es
-     contenido escondido). Y un SUELO de 460 px (~6 paradas): sin él, una línea con la
-     derecha corta —un búho sin horario ni desvío: 69 px— dejaría el recorrido en una
-     rendija con decenas de paradas dentro. */
+  /* ⭐ "Información adicional" · EN ESCRITORIO baja a la columna derecha, debajo del
+     horario, con BORDE NEGRO. La copia de móvil (dentro del <ol>) se oculta aquí; ambas
+     con `display:none`, que las saca del árbol de accesibilidad → el lector anuncia UNA.
+     Misma fuente `info`, renderizada dos veces (áreas de rejilla solo colocan hijos
+     directos, y en móvil vive anidada en el <ol>): la única salida sin tocar móvil. */
+  .solo-movil-info { display: none; }
+  .zona-info-linea {
+    display: block;
+    grid-area: info;
+  }
+  .zona-info-linea [data-papel='info-adicional'] {
+    margin-bottom: 0;
+    border-color: var(--color-tinta);
+  }
+
+  /* ⭐ EL ALTO DEL RECORRIDO LO MANDA EL SCROLL (no un mínimo). Lo dimensiona la isla
+     `RecorridoVivo` poniendo un `max-height` al <ol> (ventana − top − 10): si cabe, el
+     <ol> se queda a su alto natural y NO crece —una línea de 4 paradas no deja un cajón
+     vacío—; si no, se corta ahí y scrollea (barra nativa, anunciada, como /parada).
+     `align-self:start` para que, si la columna derecha es más alta, el recorrido se
+     quede a su alto y no se estire.
+     ⭐ P4 · EL MARCO (borde de 2 px + redondeo) VA EN LA CAJA, no en el <ol>, y la caja
+     lleva `overflow:hidden`: así recorta el <ol> —y su barra de scroll— a las esquinas
+     redondeadas, y los tiradores de la barra dejan de comerse el redondeo. El <ol> pierde
+     aquí su borde y su redondeo para no doblar el marco (en móvil los conserva). */
   .zona-recorrido-linea {
     grid-area: recorrido;
-    position: relative;
-    min-height: 460px;
+    align-self: start;
     overflow: hidden;
+    border: 2px solid var(--color-tinta);
+    border-radius: var(--radius-panel);
+    background: var(--color-papel);
   }
   .zona-recorrido-linea [data-papel='itinerario'] {
-    position: absolute;
-    inset: 0;
     margin-top: 0;
     overflow-y: auto;
+    border: 0;
+    border-radius: 0;
   }
 }
