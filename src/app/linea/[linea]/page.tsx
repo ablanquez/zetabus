@@ -15,6 +15,7 @@ import { Toponimo } from '@/components/Toponimo';
 import { Terminal } from '@/components/Terminal';
 import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
+import { RestauraScrollRecorrido } from '@/components/RestauraScrollRecorrido';
 import type { Line, LineId, StopId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 
@@ -116,67 +117,90 @@ export default async function LineaPage({ params, searchParams }: Props) {
       ? (desvios.datos.find((d) => d.directionId === activo.directionId)?.veredicto ?? null)
       : null;
 
+  // ⭐ ¿HAY CAJA DE DESVÍOS? (un desvío de hoy, un "no lo sé", o una línea sin trazado).
+  //    Un día normal la MAYORÍA de líneas NO la tienen. Se calcula aquí para dos cosas:
+  //    marcar la rejilla (`data-tiene-desvio`) —sin caja, la columna derecha es solo el
+  //    horario, y tiene que ir ARRIBA, no flotando en el centro (globals.css)— y pasárselo
+  //    a `Recorrido`, que decide si pinta la caja. Misma verdad en un solo sitio.
+  const hayCajaDesvios =
+    (veredicto?.tipo === 'comparado' && veredicto.hayDesvio) ||
+    veredicto?.tipo === 'indeterminado' ||
+    activo.official.geometry.length === 0;
+
   // ⭐ LA TABLA DE HORARIOS DE HOY, de la web de Avanza. Una petición más, pero
   //    cacheada UN DÍA (el horario no es el vivo). La clave lleva la fecha para
   //    renovarse al cambiar de día. Ver `engine/horario.ts`.
   const hoy = new Date().toISOString().slice(0, 10);
   const horario = await horarioDeLinea(l.shortName, activo.directionId, hoy, motorHorario(transporteDe(fingir), fingir));
 
+  // ⭐ LA VISTA DE LÍNEA es una REJILLA, como /parada: UN SOLO ÁRBOL, sin medir ancho con
+  //    JS ni duplicar DOM. Por DEBAJO del corte (880, el mismo de /parada) es un bloque en
+  //    la misma columna y el mismo orden de hoy —título · destinos · desvíos · recorrido ·
+  //    horarios—; por ENCIMA, las áreas CSS lo reparten en dos columnas: el recorrido a la
+  //    izquierda (1fr, con scroll interno) y desvíos+horarios a la derecha (ancho fijo 380,
+  //    su suelo medido). Las piezas entran APLANADAS como hijas directas de la rejilla:
+  //    `Recorrido` devuelve un fragmento (desvíos + recorrido) y `Terminal` es la de al lado.
   return (
-    <div>
-      {/* ⛔ AQUÍ HABÍA UNA FLECHA "←" DE VUELTA A LA HOME. Se retira: la marca
-          "ZetaBus" de la cabecera —presente en TODA pantalla— ya enlaza a `/`, así que
-          hay salida visible aun llegando por enlace compartido o marcador. Una flecha
-          desnuda al lado del chip era una salida redundante y un icono más que
-          interpretar. Verificado en navegador que el logo enlaza aquí y es táctil. */}
-      <div className="mb-3 flex items-center gap-3">
-        <ChipLinea linea={l} papel="chip-cabecera" grande />
-        {/* ⭐ EL TÍTULO DICE EL RUMBO, no un rango. Una FLECHA para ida y vuelta
-            ("Seminario → Parque Goya"); "Circular por ..." para un bucle; y su
-            nombre para un búho que da la vuelta. Cambia con el sentido activo. */}
-        <h1
-          className="text-titulo font-black leading-tight sin-recortar"
-          data-papel="titulo-linea"
-          aria-label={
-            rumbo.tipo === 'trayecto'
-              ? `${rumbo.origen} hacia ${rumbo.destino}`
-              : rumbo.tipo === 'circular'
-                ? `Circular por ${rumbo.por}`
-                : rumbo.texto
-          }
-        >
-          {/* Origen/destino son DESTINOS corregidos (ucwords del GTFS arreglado) →
-              <Toponimo> (protege del traductor sin decir "verbatim"). La flecha es
-              nuestra. El "por" del circular y el nombre largo SÍ son verbatim → <Cita>. */}
-          {rumbo.tipo === 'trayecto' ? (
-            <>
-              <Toponimo>{rumbo.origen}</Toponimo>{' '}
-              <span
-                aria-hidden
-                className="font-normal text-[var(--color-tinta-tenue)]"
-                data-papel="flecha-rumbo"
-              >
-                →
-              </span>{' '}
-              <Toponimo>{rumbo.destino}</Toponimo>
-            </>
-          ) : rumbo.tipo === 'circular' ? (
-            <>Circular por <Cita>{rumbo.por}</Cita></>
-          ) : (
-            <Cita>{rumbo.texto}</Cita>
-          )}
-        </h1>
+    <div className="rejilla-linea" data-tiene-desvio={hayCajaDesvios ? 'si' : 'no'}>
+      {/* R1 · LA LÍNEA (chip + nombre). Arriba del corte va centrada (globals.css). */}
+      <div className="zona-titulo-linea">
+        {/* ⛔ AQUÍ HABÍA UNA FLECHA "←" DE VUELTA A LA HOME. Se retira: la marca
+            "ZetaBus" de la cabecera —presente en TODA pantalla— ya enlaza a `/`, así que
+            hay salida visible aun llegando por enlace compartido o marcador. Una flecha
+            desnuda al lado del chip era una salida redundante y un icono más que
+            interpretar. Verificado en navegador que el logo enlaza aquí y es táctil. */}
+        <div className="zona-titulo-fila mb-3 flex items-center gap-3">
+          <ChipLinea linea={l} papel="chip-cabecera" grande />
+          {/* ⭐ EL TÍTULO DICE EL RUMBO, no un rango. Una FLECHA para ida y vuelta
+              ("Seminario → Parque Goya"); "Circular por ..." para un bucle; y su
+              nombre para un búho que da la vuelta. Cambia con el sentido activo. */}
+          <h1
+            className="text-titulo font-black leading-tight sin-recortar"
+            data-papel="titulo-linea"
+            aria-label={
+              rumbo.tipo === 'trayecto'
+                ? `${rumbo.origen} hacia ${rumbo.destino}`
+                : rumbo.tipo === 'circular'
+                  ? `Circular por ${rumbo.por}`
+                  : rumbo.texto
+            }
+          >
+            {/* Origen/destino son DESTINOS corregidos (ucwords del GTFS arreglado) →
+                <Toponimo> (protege del traductor sin decir "verbatim"). La flecha es
+                nuestra. El "por" del circular y el nombre largo SÍ son verbatim → <Cita>. */}
+            {rumbo.tipo === 'trayecto' ? (
+              <>
+                <Toponimo>{rumbo.origen}</Toponimo>{' '}
+                <span
+                  aria-hidden
+                  className="font-normal text-[var(--color-tinta-tenue)]"
+                  data-papel="flecha-rumbo"
+                >
+                  →
+                </span>{' '}
+                <Toponimo>{rumbo.destino}</Toponimo>
+              </>
+            ) : rumbo.tipo === 'circular' ? (
+              <>Circular por <Cita>{rumbo.por}</Cita></>
+            ) : (
+              <Cita>{rumbo.texto}</Cita>
+            )}
+          </h1>
+        </div>
+
+        {/* ⚠️ /linea ACEPTA `?fingir=` Y NO LO DECÍA. Mientras existió la banda roja
+            del layout el agujero quedaba tapado por accidente —la banda salía en todas
+            las páginas—, pero tapado por algo que además mentía. Al quitarla, esta
+            pantalla se habría quedado fingiendo EN SILENCIO, que es peor que el
+            problema original. Va en el mismo commit, no en el siguiente. */}
+        <Fingiendo que={fingir} />
       </div>
 
-      {/* ⚠️ /linea ACEPTA `?fingir=` Y NO LO DECÍA. Mientras existió la banda roja
-          del layout el agujero quedaba tapado por accidente —la banda salía en todas
-          las páginas—, pero tapado por algo que además mentía. Al quitarla, esta
-          pantalla se habría quedado fingiendo EN SILENCIO, que es peor que el
-          problema original. Va en el mismo commit, no en el siguiente. */}
-      <Fingiendo que={fingir} />
-
+      {/* R2 · LOS DESTINOS (los dos sentidos), a todo el ancho arriba del corte. Solo si
+          hay más de un sentido: una circular o un búho de bucle tienen uno solo, y no hay
+          botonera que centrar (no queda banda vacía: el título se apoya en las columnas). */}
       {sentidos.length > 1 && (
-        <nav className="mt-4 flex gap-2" aria-label="Sentido">
+        <nav className="zona-destinos-linea mt-4 flex gap-2" aria-label="Sentido">
           {sentidos.map((s) => {
             const esActivo = s.directionId === activo.directionId;
             return (
@@ -211,6 +235,8 @@ export default async function LineaPage({ params, searchParams }: Props) {
         </nav>
       )}
 
+      {/* Devuelve DOS hijos planos de la rejilla: la caja de DESVÍOS (columna derecha
+          arriba, y solo si hay algo que decir) y el RECORRIDO (columna izquierda). */}
       <Recorrido
         sentido={activo}
         linea={l}
@@ -218,9 +244,12 @@ export default async function LineaPage({ params, searchParams }: Props) {
         fingir={fingir}
         veredicto={veredicto}
         info={horario?.info ?? null}
+        hayCajaDesvios={hayCajaDesvios}
+        claveScroll={`${l.shortName}:${activo.directionId}`}
       />
 
-      {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. */}
+      {/* ⭐ C5 · CUÁNDO ABRE Y CUÁNDO CIERRA LA LÍNEA. Del GTFS, horneado. Columna
+          derecha abajo (grid-area horarios). */}
       <Terminal horario={horario} />
     </div>
   );
@@ -229,7 +258,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Recorrido({
-  sentido, linea, lineaId, fingir, veredicto, info,
+  sentido, linea, lineaId, fingir, veredicto, info, hayCajaDesvios, claveScroll,
 }: {
   sentido: ReturnType<typeof sentidosDe>[number];
   linea: Line;
@@ -237,6 +266,10 @@ function Recorrido({
   fingir: Fingimiento | null;
   veredicto: Veredicto | null;
   info: string | null;
+  /** Si hay caja de desvíos (lo calcula la página; aquí se usa para no pintarla vacía). */
+  hayCajaDesvios: boolean;
+  /** Clave (línea:sentido) para restaurar el scroll del recorrido al volver. */
+  claveScroll: string;
 }) {
   // ── LA RUTA OFICIAL (GTFS). Es el plan B, y se dice cuando se usa. ─────────
   const oficial: ParadaDelItinerario[] = [];
@@ -269,56 +302,68 @@ function Recorrido({
 
   const sinGeometria = sentido.official.geometry.length === 0;
 
-  return (
-    <div className="mt-4">
-      {/* ⭐⭐ EL AVISO DE DESVÍO, ENCOGIDO A UN CHIP. Y es DERIVADO: se auto-apaga.
-          ⛔ FUERA EL PÁRRAFO que explicaba el cruce y contaba las caídas/provisionales:
-             REDUNDABA con lo que ya está a la vista —el cuadro de suprimidas lista las
-             caídas una a una, y las provisionales salen marcadas en el propio itinerario—,
-             y encima lo contaba ANTES de que se vieran.
-          ⚠️ SOLO EL TÍTULO, y sin causa: ZetaBus NO sabe POR QUÉ (obras, cabalgata, un
-             corte…), solo que la ruta de hoy difiere de la oficial. Afirmar la causa sería
-             inventar. La frase "el recorrido es el de hoy, no el oficial" no se pierde: es
-             comportamiento normal de la app (el itinerario SIEMPRE es el de hoy), y vive en
-             /sobre-los-datos. */}
-      {/* ⭐⭐ EL AVISO DE DESVÍO ES UN ACORDEÓN: el chip que avisa, y que al abrirse
-          despliega DEBAJO las paradas caídas —el cuadro de abajo se mudó aquí dentro—.
-          Antes el aviso estaba arriba y su respuesta 30 paradas más abajo. Ver
-          `components/AvisoDesvio.tsx`. */}
-      {desviada && <AvisoDesvio fuera={veredicto.fuera} />}
+  // ⭐ SE DEVUELVEN DOS HIJOS PLANOS DE LA REJILLA, en un fragmento:
+  //    · la caja de DESVÍOS (columna derecha arriba), solo si hay algo que decir —un desvío,
+  //      un "no lo sé", o una línea sin trazado—; si no hay nada, NO se pinta caja vacía (el
+  //      vacío se dice callándolo: "sin desvío" es el estado normal de la app);
+  //    · el RECORRIDO (columna izquierda), que arriba del corte se iguala al alto de la
+  //      derecha y hace scroll interno (globals.css · `.zona-recorrido-linea`).
+  //    Debajo del corte los dos son bloques en la misma columna, en el orden de hoy: los
+  //    avisos ANTES del itinerario. El `mt-4` de la caja reproduce el hueco de hoy (16 px);
+  //    el del itinerario lo pone el `mt-6` del propio <ol>. Arriba del corte, la rejilla
+  //    anula esos márgenes y manda el `gap`.
+  //    ⚠️ `hayCajaDesvios` VIENE DE LA PÁGINA (misma verdad que `data-tiene-desvio`): aquí
+  //       solo decide si se pinta la caja; allí, dónde va el horario si no la hay.
 
-      {/* ⚠️ NO SE PUDO LEER LA RUTA DE HOY. Y "no lo sé" NO ES "no hay desvío".
-          Se pinta la oficial —es lo único que tenemos— pero se DICE que puede
-          estar desactualizada. Callarlo sería exactamente el fallo que venimos
-          a matar, solo que con una excusa. */}
-      {veredicto?.tipo === 'indeterminado' && (
-        <div
-          className="mb-3 es-sin-verificar px-3 py-2.5"
-          data-papel="desvio-indeterminado"
-          role="status"
-        >
-          <p className="text-menor font-bold leading-snug not-italic sin-recortar">
-            No hemos podido comprobar si esta línea está desviada
-          </p>
-          <p className="mt-1 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
-            Abajo va <strong>el recorrido oficial</strong>. Si hoy hay un desvío,{' '}
-            <strong>no lo sabemos</strong> — y eso no es lo mismo que decir que no lo hay.
-            ({veredicto.motivo})
-          </p>
+  return (
+    <>
+      {hayCajaDesvios && (
+        <div className="zona-desvios-linea mt-4">
+          {/* ⭐⭐ EL AVISO DE DESVÍO, ENCOGIDO A UN CHIP. Y es DERIVADO: se auto-apaga.
+              ⚠️ SOLO EL TÍTULO, y sin causa: ZetaBus NO sabe POR QUÉ (obras, cabalgata, un
+                 corte…), solo que la ruta de hoy difiere de la oficial. Afirmar la causa
+                 sería inventar. Es un ACORDEÓN: el chip que avisa, y que al abrirse despliega
+                 DEBAJO las paradas caídas. Ver `components/AvisoDesvio.tsx`. */}
+          {desviada && <AvisoDesvio fuera={veredicto.fuera} />}
+
+          {/* ⚠️ NO SE PUDO LEER LA RUTA DE HOY. Y "no lo sé" NO ES "no hay desvío".
+              Se pinta la oficial —es lo único que tenemos— pero se DICE que puede
+              estar desactualizada. Callarlo sería exactamente el fallo que venimos
+              a matar, solo que con una excusa. */}
+          {veredicto?.tipo === 'indeterminado' && (
+            <div
+              className="mb-3 es-sin-verificar px-3 py-2.5"
+              data-papel="desvio-indeterminado"
+              role="status"
+            >
+              <p className="text-menor font-bold leading-snug not-italic sin-recortar">
+                No hemos podido comprobar si esta línea está desviada
+              </p>
+              <p className="mt-1 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
+                Abajo va <strong>el recorrido oficial</strong>. Si hoy hay un desvío,{' '}
+                <strong>no lo sabemos</strong> — y eso no es lo mismo que decir que no lo hay.
+                ({veredicto.motivo})
+              </p>
+            </div>
+          )}
+
+          {/* ⚠️ Ci3 y Ci4 NO tienen trazado publicado. Se ETIQUETA, no se finge. */}
+          {sinGeometria && (
+            <p
+              className="mb-3 rounded-tarjeta border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+              data-papel="sin-geometria"
+            >
+              ⚠ Esta línea NO tiene trazado publicado en el GTFS oficial. Podemos decirte sus paradas y
+              sus autobuses, pero no dibujar por dónde va. No nos lo inventamos.
+            </p>
+          )}
         </div>
       )}
 
-      {/* ⚠️ Ci3 y Ci4 NO tienen trazado publicado. Se ETIQUETA, no se finge. */}
-      {sinGeometria && (
-        <p
-          className="mb-3 rounded-tarjeta border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
-          data-papel="sin-geometria"
-        >
-          ⚠ Esta línea NO tiene trazado publicado en el GTFS oficial. Podemos decirte sus paradas y
-          sus autobuses, pero no dibujar por dónde va. No nos lo inventamos.
-        </p>
-      )}
-
+      <div className="zona-recorrido-linea">
+      {/* ⭐ Isla mínima: devuelve el sitio en el recorrido al volver de una parada (≥880).
+          Renderiza null; ver `RestauraScrollRecorrido.tsx`. */}
+      <RestauraScrollRecorrido clave={claveScroll} />
       {/* ⭐ C5 · FUERA LA LEYENDA DE LOS CUADRADITOS. Decía: "Los cuadraditos de
           colores son los transbordos... Los oscuros son las nocturnas." Si un sistema
           visual necesita un rótulo que lo explique, el sistema visual no funciona: la
@@ -372,6 +417,7 @@ function Recorrido({
              cuánto las guardamos, y eso ya está contado en /sobre-los-datos. El coste
              real se sigue vigilando donde importa —`e2e/linea-sin-barrido.spec.ts` lo
              lee de `/api/diag`, no de la pantalla—, así que no se pierde control. */}
-    </div>
+      </div>
+    </>
   );
 }

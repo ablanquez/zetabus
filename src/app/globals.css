@@ -716,3 +716,83 @@ summary,
     background-color: color-mix(in srgb, var(--color-papel) 96%, #000);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⭐ /linea · LA REJILLA DE DOS COLUMNAS (solo por encima del corte).
+   ───────────────────────────────────────────────────────────────────────────
+   MISMO patrón que /parada y MISMO corte (880): un solo árbol, áreas CSS, sin medir
+   ancho con JS ni duplicar DOM. Por DEBAJO del corte NO es rejilla —es un bloque en
+   la columna de hoy, en el mismo orden (título · destinos · desvíos · recorrido ·
+   horarios) y con los mismos huecos, que los ponen los `mt-*` de cada pieza—; así
+   móvil queda EXACTAMENTE como estaba. Por ENCIMA: recorrido a la izquierda (1fr) y
+   desvíos+horarios a la derecha, en su ancho fijo de 380 (el suelo medido: lo manda
+   la franja de frecuencia del horario, 375). El recorrido ocupa las DOS filas de la
+   derecha, de modo que su alto lo fija la columna derecha con las cajas abiertas.
+   ───────────────────────────────────────────────────────────────────────── */
+@media (min-width: 880px) {
+  .rejilla-linea {
+    /* Rompe el cajón estrecho de `main`, igual que /parada (recentra en el viewport;
+       el ancho nunca desborda). Gated a ≥880 → por debajo NO rompe, se queda como hoy. */
+    width: min(72rem, calc(100vw - 2rem));
+    margin-left: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    column-gap: 1.25rem;
+    row-gap: 1rem;
+    grid-template-columns: 1fr minmax(0, 380px);
+    grid-template-areas:
+      'titulo    titulo'
+      'destinos  destinos'
+      'recorrido desvios'
+      'recorrido horarios';
+  }
+  /* ⭐ SIN DESVÍO (la MAYORÍA de líneas un día normal): no hay caja de desvíos, así que
+     el HORARIO sube a la fila de ARRIBA de la derecha y el hueco cae debajo. Si no, la
+     fila de desvíos vacía se inflaba al repartir el suelo de 460 del recorrido y empujaba
+     el horario al centro —flotando, feo—. Ahora el horario va donde toca: arriba. */
+  .rejilla-linea[data-tiene-desvio='no'] {
+    grid-template-areas:
+      'titulo    titulo'
+      'destinos  destinos'
+      'recorrido horarios'
+      'recorrido .';
+  }
+  /* La rejilla manda el `gap`: se anulan los `mt-*` que dan el ritmo en móvil, y se
+     ata cada hijo a su pista (`min-width:0`) para que un nombre largo baje de línea en
+     vez de sacar barra horizontal —el mismo cuidado que en /parada—. */
+  .rejilla-linea > * {
+    margin-top: 0;
+    min-width: 0;
+  }
+
+  .zona-titulo-linea { grid-area: titulo; }
+  /* R1 · el título, CENTRADO arriba del corte (en móvil va a la izquierda, como hoy). */
+  .rejilla-linea .zona-titulo-fila {
+    justify-content: center;
+    margin-bottom: 0;
+  }
+  .zona-destinos-linea { grid-area: destinos; }
+  .zona-desvios-linea { grid-area: desvios; }
+  .rejilla-linea > [data-papel='terminal'] { grid-area: horarios; }
+
+  /* ⭐ R5/R6 · EL RECORRIDO SE IGUALA AL ALTO DE LA DERECHA Y HACE SCROLL INTERNO.
+     El bloque (position:relative) ocupa las dos filas de la derecha, así que su alto
+     sale de ellas. El <ol> se ABSOLUTIZA dentro (inset:0): su contenido —decenas de
+     paradas— NO estira la fila (la fija la derecha), y el itinerario scrollea dentro.
+     El scroll lo anuncia la barra nativa, como en /parada (un scroll que no se ve es
+     contenido escondido). Y un SUELO de 460 px (~6 paradas): sin él, una línea con la
+     derecha corta —un búho sin horario ni desvío: 69 px— dejaría el recorrido en una
+     rendija con decenas de paradas dentro. */
+  .zona-recorrido-linea {
+    grid-area: recorrido;
+    position: relative;
+    min-height: 460px;
+    overflow: hidden;
+  }
+  .zona-recorrido-linea [data-papel='itinerario'] {
+    position: absolute;
+    inset: 0;
+    margin-top: 0;
+    overflow-y: auto;
+  }
+}

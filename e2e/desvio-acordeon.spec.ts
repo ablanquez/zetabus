@@ -60,7 +60,21 @@ test.describe('⭐ el aviso de desvío es un acordeón', () => {
 
   test('⭐ EL ESPACIO GANADO: cerrado mide bastante menos que abierto', async ({ page }, info) => {
     await page.goto(CON_DESVIO, { waitUntil: 'networkidle' });
-    const alto = () => page.evaluate(() => document.body.scrollHeight);
+
+    // ⭐ QUÉ SE MIDE, Y POR QUÉ CAMBIA A CADA LADO DEL CORTE (880).
+    //    Lo que importa es que el acordeón PLIEGA: cerrado ocupa bastante menos que abierto.
+    //    · DEBAJO del corte /linea es UNA columna y el acordeón está en ella, así que su
+    //      plegado se lee en el alto del BODY —el proxy de siempre—.
+    //    · ARRIBA del corte el acordeón vive en la columna DERECHA, y el alto del body lo fija
+    //      el RECORRIDO (con su suelo de 460), no el acordeón: el proxy deja de valer —fue lo
+    //      que puso este test en rojo al pasar a dos columnas, y tenía razón—. Se mide entonces
+    //      el alto del PROPIO acordeón, que es LA COSA, no un proxy de ella.
+    //    (Misma lección que los tests del hover: medían un proxy que valía por accidente.)
+    const ancho = page.viewportSize()!.width;
+    const alto =
+      ancho < 880
+        ? () => page.evaluate(() => document.body.scrollHeight)
+        : () => acordeon(page).evaluate((e) => Math.round(e.getBoundingClientRect().height));
 
     const cerrado = await alto();
     await summary(page).click();
@@ -68,7 +82,9 @@ test.describe('⭐ el aviso de desvío es un acordeón', () => {
     const abierto = await alto();
 
     const gana = abierto - cerrado;
-    console.log(`\n  [${info.project.name}] alto cerrado ${cerrado}px · abierto ${abierto}px · se pliegan ${gana}px`);
+    console.log(
+      `\n  [${info.project.name}] ${ancho < 880 ? 'body' : 'acordeón'}: cerrado ${cerrado}px · abierto ${abierto}px · se pliegan ${gana}px`,
+    );
     // Cerrado tiene que ahorrar espacio de verdad: el cuadro entero se pliega.
     expect(gana, 'el acordeón cerrado no está ahorrando espacio').toBeGreaterThan(60);
   });
