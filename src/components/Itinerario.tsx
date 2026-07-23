@@ -275,8 +275,12 @@ export function Itinerario({
  * "blanco" y "el color de atrás" coincidían en apariencia. Al entrar el recorrido
  * en una tarjeta blanca, papel sobre papel habría dejado el hueco sin relleno
  * propio. `--color-fondo` es lo que siempre debió ser: HUECO = el color de atrás.
+ *
+ * ⭐ EXPORTADO para que la guía de estilo (`/interno/sistema-visual`) pinte las 4
+ *    formas leyendo EL COMPONENTE REAL, como hace con `<Marca>` —una sola fuente,
+ *    cero copias del SVG—. Solo se añadió `export`: su comportamiento no cambia.
  */
-function Nodo({
+export function Nodo({
   color, primero, ultimo, conTransbordo,
 }: {
   color: string;

@@ -3,6 +3,7 @@ import { GRUPOS, grupoDe, lineas } from '@/engine/topologia';
 import { ChipLinea, NOCHE } from '@/components/ChipLinea';
 import { MARCAS } from '@/components/FichaVehiculo';
 import { Marca } from '@/components/Marca';
+import { Nodo } from '@/components/Itinerario';
 import { STROKE_FAVICON, STROKE_MARCA, VISTA, Z_PATH } from '@/components/marca-fuente';
 import {
   PaletaViva,
@@ -251,6 +252,30 @@ export default function SistemaVisualPage() {
           — es el mismo <code className="rounded bg-[var(--color-fondo)] px-1">--color-marca</code>, y un
           guardián comprueba que no se separen.
         </p>
+      </Seccion>
+
+      {/* ── ICONOS ──────────────────────────────────────────────────────────── */}
+      <Seccion
+        titulo="Iconos · el nodo del recorrido"
+        nota="Cuatro formas para cuatro cosas, NUNCA un tono: el color es la IDENTIDAD de la línea (del GTFS) y ya está ocupado. Se distinguen por FORMA — en gris se siguen leyendo. Del componente <Nodo> de producción, importado (no una copia del SVG)."
+      >
+        <div className="flex flex-wrap gap-8 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] p-4">
+          {[
+            { etq: 'cabecera', primero: true, ultimo: false, conTransbordo: false },
+            { etq: 'final', primero: false, ultimo: true, conTransbordo: false },
+            { etq: 'con correspondencias', primero: false, ultimo: false, conTransbordo: true },
+            { etq: 'sin correspondencias', primero: false, ultimo: false, conTransbordo: false },
+          ].map((f) => (
+            <div key={f.etq} className="flex flex-col items-center gap-2" data-papel="icono-nodo" data-forma={f.etq}>
+              {/* Alto fijo para alinear las 4 por su centro (cada forma mide distinto). El
+                  color es una muestra: en la app lo pone la línea. La FORMA es el mensaje. */}
+              <div className="flex h-[18px] items-center">
+                <Nodo color="var(--color-marca)" primero={f.primero} ultimo={f.ultimo} conTransbordo={f.conTransbordo} />
+              </div>
+              <span className="text-nota text-[var(--color-tinta-tenue)] sin-recortar">{f.etq}</span>
+            </div>
+          ))}
+        </div>
       </Seccion>
 
       {/* ── REGLAS Y EXCEPCIONES ────────────────────────────────────────────── */}
