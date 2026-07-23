@@ -538,14 +538,28 @@ body {
     column-gap: 1.25rem;
     /* Mapa `1fr` (se lleva el resto y queda más ancho, R5) · derecha fija 380 (su suelo). */
     grid-template-columns: 1fr minmax(0, 380px);
+    /* ⭐ ORDEN DE LA COLUMNA DERECHA (Antonio): filtro → llegadas → líneas → desvío.
+       El filtro arriba (se abre para elegir); las llegadas justo debajo (el dato);
+       las líneas y el desvío al fondo (contexto). Los datos de Avanza, a todo el
+       ancho abajo. El mapa se lleva las cuatro filas de la derecha (R1). */
     grid-template-areas:
       'nombre  nombre'
-      'mapa    lineas'
       'mapa    filtro'
       'mapa    llegadas'
+      'mapa    lineas'
       'mapa    desvio'
       'datos   datos';
   }
+}
+
+/* ⭐ NINGÚN HIJO DE LA REJILLA DESBORDA. Por defecto un ítem de grid tiene
+   `min-width:auto`, así que un contenido que no rompe línea (un nombre largo con
+   `nowrap`, un número ancho) ESTIRA la celda y saca barra horizontal en vez de
+   ceñirse a su pista. `min-width:0` lo ata a la pista: el nombre baja de línea (o,
+   si se forzara `truncate`, se recorta de verdad — que es lo que su contraprueba
+   comprueba) en lugar de reventar la rejilla. */
+.rejilla-parada > * {
+  min-width: 0;
 }
 
 .zona-nombre {
