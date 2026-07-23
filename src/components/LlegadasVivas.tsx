@@ -330,11 +330,43 @@ function FiltroDeLineas({
   onTodas: () => void;
   onNinguna: () => void;
 }) {
+  const ocultas = apagadas.size;
   return (
-    <div className="mb-4" data-papel="filtro-lineas">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-seccion font-bold leading-snug sin-recortar">Líneas en esta parada</h2>
-        <div className="flex gap-2">
+    // ⭐ EL FILTRO, PLEGADO por defecto (como las cajas de líneas): un accesorio no puede
+    //    comer más que el contenido. Plegado ocupa un rótulo (44 px); abierto, los chips.
+    <details
+      className={`group rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 ${
+        ocultas > 0 ? 'border-dashed' : ''
+      }`}
+      data-papel="filtro-lineas"
+      data-ocultas={ocultas}
+    >
+      <summary className="flex min-h-[var(--control)] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+        {/* ⚠️ EL SILENCIO FALSO, TAPADO. Si hay líneas ocultas el rótulo lo dice —con
+            FORMA (punteado) + palabra, no solo color—, aunque el filtro esté plegado. La
+            segunda red ("Hay N autobuses ocultos por el filtro") sigue pegada a la lista. */}
+        {ocultas > 0 ? (
+          <span
+            className="text-nota font-bold leading-snug text-[var(--color-aviso)] sin-recortar"
+            data-papel="filtro-estado"
+          >
+            ⚠ {ocultas} {ocultas === 1 ? 'línea oculta' : 'líneas ocultas'}
+          </span>
+        ) : (
+          <span className="text-nota font-bold leading-snug text-[var(--color-tinta-suave)] sin-recortar">
+            Filtrar líneas
+          </span>
+        )}
+        <span
+          aria-hidden="true"
+          className="shrink-0 text-[var(--color-tinta-tenue)] transition-transform duration-150 group-[[open]]:rotate-90"
+        >
+          ▸
+        </span>
+      </summary>
+
+      <div className="pb-3 pt-1">
+        <div className="mb-3 flex justify-end gap-2">
           <button
             type="button"
             onClick={onTodas}
@@ -352,9 +384,8 @@ function FiltroDeLineas({
             Ninguna
           </button>
         </div>
-      </div>
 
-      <div className="flex flex-wrap justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
         {lineas.map(({ etiqueta, color }) => {
           const off = apagadas.has(etiqueta);
           return (
@@ -396,8 +427,9 @@ function FiltroDeLineas({
             </button>
           );
         })}
+        </div>
       </div>
-    </div>
+    </details>
   );
 }
 

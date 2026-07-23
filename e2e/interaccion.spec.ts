@@ -23,9 +23,20 @@ const URL = `/parada/${POSTE}?fingir=dos-lineas`;
 const filas = (p: import('@playwright/test').Page) => p.locator('[data-papel="llegada"]');
 const chips = (p: import('@playwright/test').Page) => p.locator('[data-papel="chip-filtro"]');
 
+/**
+ * ⚠️ EL FILTRO ARRANCA PLEGADO (un accesorio no come más que el contenido): sus chips
+ * viven dentro de un `<details>` cerrado. Para EJERCITARLO hay que abrirlo primero —el
+ * usuario haría lo mismo—. La página lo mide en `secciones-plegables`/`revision`.
+ */
+const abrirFiltro = async (p: import('@playwright/test').Page) => {
+  const sum = p.locator('[data-papel="filtro-lineas"] summary');
+  if (await sum.count()) await sum.click();
+};
+
 test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
   test('apagar una línea la quita de la lista', async ({ page }, info) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
+    await abrirFiltro(page);
 
     const n0 = await filas(page).count();
     const nChips = await chips(page).count();
@@ -60,6 +71,7 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
 
   test('volver a pulsarla la enciende (vuelve al estado exacto)', async ({ page }) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
+    await abrirFiltro(page);
     const n0 = await filas(page).count();
     const chip = chips(page).first();
     await chip.click();
@@ -72,6 +84,7 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
 
   test('"Ninguna" apaga TODO — y NO dice "no hay autobuses"', async ({ page }, info) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
+    await abrirFiltro(page);
     await page.locator('[data-papel="filtro-ninguna"]').click();
     await page.waitForTimeout(200);
 
@@ -90,6 +103,7 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
 
   test('"Todas" vuelve al estado inicial exacto', async ({ page }) => {
     await page.goto(URL, { waitUntil: 'networkidle' });
+    await abrirFiltro(page);
     const n0 = await filas(page).count();
     await page.locator('[data-papel="filtro-ninguna"]').click();
     await page.waitForTimeout(150);
@@ -104,6 +118,7 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
     // reaparecer sola quince segundos después. Nadie reportaría eso: pensaría
     // que se ha equivocado al pulsar.
     await page.goto(URL, { waitUntil: 'networkidle' });
+    await abrirFiltro(page);
     const n0 = await filas(page).count();
 
     await chips(page).first().click();
