@@ -159,6 +159,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ⭐ CURSOR DE MANO en lo pulsable. Los `<button>` del navegador salen con FLECHA por
+   defecto, y en el CSS no había nada que lo cambiara: la mano solo aparecía en `<a>` y
+   `<summary>` (que la traen de fábrica). El elemento YA es correcto —son `<button>` de
+   verdad, con teclado incluido—, así que aquí el cursor es el arreglo bueno, no una
+   tapadera. `:not(:disabled)`: un botón deshabilitado NO lleva mano, sería un aviso
+   falso de que se puede pulsar. Global, para toda la app. */
+button:not(:disabled),
+summary,
+[role='button'] {
+  cursor: pointer;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    ⭐⭐ D1 (REGLA DE MARCA) · EL CONTORNO QUE HACE LEGIBLE EL NÚMERO BLANCO.
    ═══════════════════════════════════════════════════════════════════════════
