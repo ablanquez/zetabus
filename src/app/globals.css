@@ -627,3 +627,26 @@ body {
     background-attachment: local, local, scroll, scroll;
   }
 }
+
+/* ⭐ EL FILTRO ARRIBA DEL CORTE (Antonio): mismo bloque que en móvil, con dos matices.
+   · El rótulo dice "Filtrar líneas" (el móvil conserva "Líneas en esta parada": no se
+     toca). Mismo formato que "Próximas llegadas". El intercambio es por CSS: se pinta
+     el texto de cada ancho y se oculta el otro. */
+.rotulo-sobre-corte {
+  display: none;
+}
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] .zona-filtro .rotulo-bajo-corte {
+    display: none;
+  }
+  .rejilla-parada[data-modo='auto'] .zona-filtro .rotulo-sobre-corte {
+    display: inline;
+  }
+  /* · Los chips bajan de 56 a 44 px (el suelo táctil, ni uno menos) para ganar alto:
+       con el filtro arriba, cada píxel que ahorra aquí es una llegada más sobre el
+       pliegue. En móvil se quedan en 56, intactos. */
+  .rejilla-parada[data-modo='auto'] .zona-filtro [data-papel='chip-filtro'] {
+    height: 2.75rem;
+    width: 2.75rem;
+  }
+}
