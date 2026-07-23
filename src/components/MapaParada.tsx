@@ -266,7 +266,9 @@ function iconoBus(
 const ICONO_PARADA = L.divIcon({
   className: 'zb-parada',
   html:
-    '<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true" style="display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45))">' +
+    // `role="img" aria-label`: el pin no es focusable (keyboard:false) pero SÍ tiene
+    //  nombre para un lector de pantalla — "Tu parada", no un glifo mudo. Se ve igual.
+    '<svg width="28" height="36" viewBox="0 0 28 36" role="img" aria-label="Tu parada" style="display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.45))">' +
     // ⭐ El pin lee `--color-tinta`, NO un `#0F172A` congelado: si la tinta de marca
     //    cambia, el pin se entera. La var cae por herencia dentro del SVG del divIcon.
     '<path d="M14 35C14 35 25 22.2 25 14A11 11 0 1 0 3 14c0 8.2 11 21 11 21Z" fill="var(--color-tinta)" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
@@ -600,6 +602,12 @@ export function MapaParada({
                * de ventaja son ~119 km a zoom 16. La parada no vuelve a quedar debajo.
                */
               zIndexOffset={100000}
+              /* ⭐ FUERA DEL TABULADOR. El pin es una SEÑAL visual, no un control: no hace
+                 nada al pulsarlo. Pero Leaflet lo hace focusable por defecto, así que el Tab
+                 se paraba en él, no ocurría nada y no tenía nombre — un foco muerto.
+                 `keyboard={false}` lo saca del recorrido; el nombre para quien lo lea va en
+                 el SVG del icono (`role="img" aria-label`, ver ICONO_PARADA). Se ve IGUAL. */
+              keyboard={false}
               alt="Tu parada"
             />
           )}
