@@ -611,6 +611,18 @@ summary,
   height: 100% !important;
   width: 100% !important;
 }
+
+/* ⭐ LOS CONTROLES +/− DEL MAPA A ≥44 px (el suelo táctil de todo el proyecto). Leaflet
+   los pone a 30×30. Van arriba-izquierda, así que agrandarlos NO toca la atribución de
+   OSM (abajo-derecha, obligatoria y visible) ni tapa el mapa más de lo justo.
+   `!important`: la hoja de Leaflet (`.leaflet-touch .leaflet-bar a`) empata en
+   especificidad y carga después; es el mismo motivo por el que `.leaflet-container` de
+   arriba también lo usa. Es para ganarle a un tercero, no una ñapa. */
+.marco-mapa .leaflet-control-zoom a {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
 @media (min-width: 880px) {
   .rejilla-parada[data-modo='auto'] .zona-mapa {
     display: flex;
