@@ -578,32 +578,28 @@ summary,
   grid-area: nombre;
 }
 
-/* ⭐ CABECERA DE /parada · SOLO ESCRITORIO: el poste como CHIP GRIS en la línea del
-   nombre (icono · chip · nombre). Mantiene el gris que YA tiene el chip del poste
-   (fondo + tinta-tenue, igual que `chip-meta--poste`), y va al MISMO tamaño de fuente
-   que el nombre —hereda el `text-titulo` del h1—, solo con menos peso para que se lea
-   como chip y no como parte del nombre. En móvil el chip está oculto y el poste sigue
-   en su línea de debajo, EXACTAMENTE como hoy. */
+/* ⭐ CABECERA DE /parada · EL POSTE COMO CHIP, IGUAL EN LOS DOS ANCHOS:
+   [icono] [chip: número] [nombre]. El chip lleva SOLO el número (la palabra "poste" se
+   va: el CONTORNO ya dice que es una etiqueta y el usuario está EN la parada) y va
+   CONTORNEADO —borde visible— con el gris que YA tenía (fondo + tinta-tenue, igual que
+   `chip-meta--poste`). Al MISMO tamaño de fuente que el nombre (hereda el `text-titulo`
+   del h1), solo con menos peso para leerse como chip. NO se esconde ni se encoge en
+   móvil: decisión de Antonio —con nombres largos, el nombre baja de línea, y da igual—.
+   `white-space:nowrap` mantiene el número entero; el `<span>` va inline en el h1, así que
+   el salto de línea del nombre cae DESPUÉS del chip (icono·chip quedan juntos). */
 .chip-poste-cabecera {
-  display: none;
-}
-@media (min-width: 880px) {
-  .rejilla-parada[data-modo='auto'] .chip-poste-cabecera {
-    display: inline-flex;
-    align-items: center;
-    margin-right: 0.5rem;
-    padding: 0.06em 0.4em;
-    border-radius: var(--radius-chip);
-    background: var(--color-fondo);
-    color: var(--color-tinta-tenue);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    vertical-align: baseline;
-  }
-  .rejilla-parada[data-modo='auto'] .poste-linea-cabecera {
-    display: none;
-  }
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  padding: 0.06em 0.4em;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radius-chip);
+  background: var(--color-fondo);
+  color: var(--color-tinta-tenue);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  vertical-align: baseline;
 }
 
 .zona-mapa {
