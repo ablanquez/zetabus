@@ -582,10 +582,11 @@ summary,
    [icono] [chip: número] [nombre]. El chip lleva SOLO el número (la palabra "poste" se
    va: el CONTORNO ya dice que es una etiqueta y el usuario está EN la parada) y va
    CONTORNEADO —borde visible— con el gris que YA tenía (fondo + tinta-tenue, igual que
-   `chip-meta--poste`). MÁS PEQUEÑO que el nombre (16 px contra los 20 del `text-titulo`):
-   el nombre es lo principal y el número es el dato de apoyo; su peso visual lo dice. El
-   borde va en `--color-tinta` porque a `--color-borde` casi no se veía —y el contorno es
-   justo lo que dice que esto es una etiqueta y no texto suelto—. NO se esconde ni se
+   `chip-meta--poste`). MÁS PEQUEÑO que el nombre (13 px contra los 20 del `text-titulo`):
+   el nombre es lo principal y el número es el dato de apoyo; su peso visual tiene que
+   decirlo —a 16 px no se distinguía—. El borde va NEGRO y a 2 px: a `--color-tinta` y 1 px
+   el contorno casi no se veía, y el contorno es justo lo que dice que esto es una etiqueta
+   y no texto suelto (a 2 px sigue leyéndose como chip, no como botón). NO se esconde ni se
    encoge en móvil: decisión de Antonio —con nombres largos, el nombre baja de línea, y da
    igual—. `white-space:nowrap` mantiene el número entero; el `<span>` va inline en el h1,
    así que el salto de línea del nombre cae DESPUÉS del chip (icono·chip quedan juntos). */
@@ -594,11 +595,11 @@ summary,
   align-items: center;
   margin-right: 0.5rem;
   padding: 0.06em 0.4em;
-  border: 1px solid var(--color-tinta);
+  border: 2px solid #000;
   border-radius: var(--radius-chip);
   background: var(--color-fondo);
   color: var(--color-tinta-tenue);
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
