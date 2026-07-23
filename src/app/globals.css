@@ -660,3 +660,15 @@ summary,
 /* ⭐ EL FILTRO es el MISMO bloque en los dos anchos: mismo rótulo ("Filtrar líneas") y
    mismos chips de 44 px (el suelo táctil, ni uno menos; ver `h-11 w-11` en el chip). Ya
    no hay override de tamaño aquí: los 44 px valen para móvil y escritorio. */
+
+/* ⭐ HOVER en "Todas" / "Ninguna" del filtro, SOLO ESCRITORIO — el mismo lavado neutro
+   (blanco oscurecido un 4 %) que las filas de llegada. Solo cambia el fondo, así que no
+   desplaza nada; y estos botones no tienen estado "seleccionado", así que no hay con qué
+   confundirlo. `color-mix`: el botón es blanco (`--color-papel`) y el lavado lo oscurece
+   un 4 % con negro — el mismo resultado que `bg-black/4` sobre el blanco de las filas. */
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] .zona-filtro [data-papel='filtro-todas']:hover,
+  .rejilla-parada[data-modo='auto'] .zona-filtro [data-papel='filtro-ninguna']:hover {
+    background-color: color-mix(in srgb, var(--color-papel) 96%, #000);
+  }
+}
