@@ -314,12 +314,13 @@ export function LlegadasVivas({
  * ⭐ B4 · LOS FILTROS, CLONADOS. Antes eran dos pastillas sueltas y no se
  * entendía qué hacían. Medido en la referencia a 360 px:
  *
- *     título "Líneas en esta parada"  h2 · 16 px · bold
+ *     título                          h2 · 16 px · bold
  *     "Todas" / "Ninguna"             botones redondos, A LA DERECHA (66×34, 81×34)
  *     los chips de línea              56×56, rounded-panel, 17 px, centrados
  *
  * El título es lo que convierte dos botones en un FILTRO: sin él, nadie sabe
- * qué está tocando.
+ * qué está tocando. El nuestro dice "Filtrar líneas" (igual en los dos anchos:
+ * es la misma cosa, se llama igual); arriba del corte los chips bajan a 44 px.
  */
 function FiltroDeLineas({
   lineas, apagadas, onAlternar, onTodas, onNinguna,
@@ -331,17 +332,14 @@ function FiltroDeLineas({
   onNinguna: () => void;
 }) {
   return (
-    // ⭐ EL FILTRO VA SIEMPRE VISIBLE (en los dos anchos). En móvil es EXACTAMENTE el de
-    //    hoy —nadie pidió plegarlo—. Arriba del corte cambian dos cosas por CSS: el rótulo
-    //    dice "Filtrar líneas" y los chips bajan a 44 px (globals.css · zona-filtro).
+    // ⭐ EL FILTRO VA SIEMPRE VISIBLE (en los dos anchos): nadie pidió plegarlo. El rótulo
+    //    es "Filtrar líneas" en las dos pantallas —es la misma cosa, se llama igual— con el
+    //    MISMO formato que "Próximas llegadas". Arriba del corte, los chips bajan a 44 px
+    //    para ganar alto (globals.css · zona-filtro).
     <div className="mb-4" data-papel="filtro-lineas">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        {/* ⚠️ EL RÓTULO. Móvil conserva "Líneas en esta parada" (no se toca); arriba del
-            corte dice "Filtrar líneas", con el MISMO formato que "Próximas llegadas". Los
-            dos textos viven en el DOM; el CSS enseña el del ancho y oculta el otro. */}
         <h2 className="text-seccion font-bold leading-snug sin-recortar" data-papel="filtro-rotulo">
-          <span className="rotulo-bajo-corte">Líneas en esta parada</span>
-          <span className="rotulo-sobre-corte">Filtrar líneas</span>
+          Filtrar líneas
         </h2>
         <div className="flex gap-2">
           <button
