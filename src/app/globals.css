@@ -633,14 +633,6 @@ body {
   }
 }
 
-/* ⭐ EL FILTRO ARRIBA DEL CORTE (Antonio): mismo bloque que en móvil. El rótulo
-   ("Filtrar líneas") es el mismo en los dos anchos; aquí solo cambian los chips, que
-   bajan de 56 a 44 px (el suelo táctil, ni uno menos) para ganar alto: con el filtro
-   arriba, cada píxel que se ahorra aquí es una llegada más sobre el pliegue. En móvil
-   se quedan en 56, intactos. */
-@media (min-width: 880px) {
-  .rejilla-parada[data-modo='auto'] .zona-filtro [data-papel='chip-filtro'] {
-    height: 2.75rem;
-    width: 2.75rem;
-  }
-}
+/* ⭐ EL FILTRO es el MISMO bloque en los dos anchos: mismo rótulo ("Filtrar líneas") y
+   mismos chips de 44 px (el suelo táctil, ni uno menos; ver `h-11 w-11` en el chip). Ya
+   no hay override de tamaño aquí: los 44 px valen para móvil y escritorio. */

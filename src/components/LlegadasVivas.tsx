@@ -374,7 +374,7 @@ function FiltroDeLineas({
               data-papel="chip-filtro"
               data-linea={etiqueta}
               data-apagada={off ? 'si' : 'no'}
-              className={`flex h-14 w-14 items-center justify-center rounded-panel text-seccion font-bold${
+              className={`flex h-11 w-11 items-center justify-center rounded-panel text-seccion font-bold${
                 !off && color ? ' zb-num-contorno' : ''
               }`}
               style={
