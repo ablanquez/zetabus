@@ -3,6 +3,7 @@ import { GRUPOS, grupoDe, lineas } from '@/engine/topologia';
 import { ChipLinea, NOCHE } from '@/components/ChipLinea';
 import { MARCAS } from '@/components/FichaVehiculo';
 import { Marca } from '@/components/Marca';
+import { STROKE_FAVICON, STROKE_MARCA, VISTA, Z_PATH } from '@/components/marca-fuente';
 import {
   PaletaViva,
   EscalaViva,
@@ -210,14 +211,46 @@ export default function SistemaVisualPage() {
         </PruebaGris>
       </Seccion>
 
-      {/* ── MARCA ───────────────────────────────────────────────────────────── */}
+      {/* ── MARCA Y FAVICON ─────────────────────────────────────────────────── */}
       <Seccion
-        titulo="Marca"
-        nota="Hoy un wordmark de texto con su token de color. El hueco del logo (Fase 5) está reservado en el componente <Marca>: se cambia una pieza."
+        titulo="Marca y favicon"
+        nota="Una geometría, dos salidas. La marca: la Z-recorrido (stroke 6) + el poste de parada + la bandera, con el wordmark. El favicon: la MISMA Z (stroke 8, sin poste ni bandera), que aguanta 16 px. El único cambio entre las dos es el grosor del trazo — por eso NO hay dos Z que mantener."
       >
-        <div className="rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] p-4">
-          <Marca />
+        <div className="flex flex-wrap items-end gap-6 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] p-4">
+          {/* La marca, el componente de producción (símbolo V4 + wordmark). */}
+          <div className="flex flex-col items-start gap-1.5">
+            <Marca />
+            <span className="text-nota text-[var(--color-tinta-tenue)] sin-recortar">
+              marca · Z stroke {STROKE_MARCA} + poste + bandera
+            </span>
+          </div>
+          {/* El favicon: el MISMO Z_PATH, aquí con stroke 8 y sin poste ni bandera. Se
+              interpola la constante (no hay un segundo d=): igual que `app/icon.tsx`. */}
+          <div className="flex flex-col items-center gap-1.5" data-papel="favicon-guia">
+            <svg viewBox={VISTA} className="h-12 w-12" role="img" aria-label="Favicon: la Z sola, trazo grueso">
+              <path
+                d={Z_PATH}
+                fill="none"
+                stroke="var(--color-marca)"
+                strokeWidth={STROKE_FAVICON}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="text-nota text-[var(--color-tinta-tenue)] sin-recortar">
+              favicon · Z stroke {STROKE_FAVICON}, sin poste
+            </span>
+          </div>
         </div>
+        <p className="mt-2 text-nota text-[var(--color-tinta-suave)] sin-recortar">
+          Las dos leen el mismo <code className="rounded bg-[var(--color-fondo)] px-1">Z_PATH</code> de{' '}
+          <code className="rounded bg-[var(--color-fondo)] px-1">marca-fuente.ts</code>: el{' '}
+          <code className="rounded bg-[var(--color-fondo)] px-1">d=</code> vive una sola vez. El favicon
+          servido (<code className="rounded bg-[var(--color-fondo)] px-1">/icon</code>) declara ese color
+          en hex porque un asset de imagen no puede leer <code className="rounded bg-[var(--color-fondo)] px-1">var()</code>{' '}
+          — es el mismo <code className="rounded bg-[var(--color-fondo)] px-1">--color-marca</code>, y un
+          guardián comprueba que no se separen.
+        </p>
       </Seccion>
 
       {/* ── REGLAS Y EXCEPCIONES ────────────────────────────────────────────── */}
