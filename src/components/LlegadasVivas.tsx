@@ -660,10 +660,16 @@ function Llegada({
       //    también una BARRA a la izquierda —forma, no tono— y `pl-3 + border-l-4`
       //    suma exactamente los 16 px del `px-4` de antes: la fila NO DA UN SALTO al
       //    seleccionarse, que es el defecto clásico de los bordes de selección.
+      // ⭐ AFORDANCIA: la fila entera es pulsable (aísla el bus en el mapa) pero parecía
+      //    un ítem de lista estático. El hover es un LAVADO NEUTRO (negro al 4 %), y va
+      //    SOLO en las NO seleccionadas: no lleva la barra oscura ni el tinte SLATE del
+      //    seleccionado, así que un ratón por encima NO se confunde con "seleccionado"
+      //    —el estado sigue siendo la barra + el slate—. Solo cambia el fondo: ni un
+      //    píxel de layout se mueve (la barra ya ocupa sus 4 px siempre).
       className={`flex w-full flex-col gap-2 border-l-4 py-3.5 pl-3 pr-4 text-left ${
         seleccionado
           ? 'border-[var(--color-tinta)] bg-[var(--color-fondo)]'
-          : 'border-transparent'
+          : 'border-transparent hover:bg-black/[0.04]'
       }`}
       data-papel="llegada"
       data-inminente={inminente ? 'si' : 'no'}
