@@ -577,6 +577,35 @@ summary,
 .zona-nombre {
   grid-area: nombre;
 }
+
+/* ⭐ CABECERA DE /parada · SOLO ESCRITORIO: el poste como CHIP GRIS en la línea del
+   nombre (icono · chip · nombre). Mantiene el gris que YA tiene el chip del poste
+   (fondo + tinta-tenue, igual que `chip-meta--poste`), y va al MISMO tamaño de fuente
+   que el nombre —hereda el `text-titulo` del h1—, solo con menos peso para que se lea
+   como chip y no como parte del nombre. En móvil el chip está oculto y el poste sigue
+   en su línea de debajo, EXACTAMENTE como hoy. */
+.chip-poste-cabecera {
+  display: none;
+}
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] .chip-poste-cabecera {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 0.5rem;
+    padding: 0.06em 0.4em;
+    border-radius: var(--radius-chip);
+    background: var(--color-fondo);
+    color: var(--color-tinta-tenue);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    vertical-align: baseline;
+  }
+  .rejilla-parada[data-modo='auto'] .poste-linea-cabecera {
+    display: none;
+  }
+}
+
 .zona-mapa {
   grid-area: mapa;
   min-width: 0;

@@ -93,11 +93,17 @@ export default async function ParadaPage({ params, searchParams }: Props) {
         {/* ⭐ EL ICONO DE PARADA (un nodo en el recorrido), decorativo (aria-hidden): el
             nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
         <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
+        {/* ⭐ SOLO ESCRITORIO: el poste entra como CHIP GRIS en la misma línea que el
+            nombre (icono · chip · nombre). En móvil está oculto y el poste sigue debajo,
+            EXACTAMENTE como hoy. El gris y el tamaño (= el del nombre) van en globals.css. */}
+        <span className="chip-poste-cabecera" data-papel="chip-poste-cabecera">
+          poste {numero}
+        </span>
         {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA. <Cita>: nombre del
             GTFS/Avanza; el traductor del navegador no lo reescribe. */}
         <Cita>{p.name}</Cita>
       </h1>
-      <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
+      <p className="poste-linea-cabecera text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
       {/* Solo si de verdad se está fingiendo, y diciendo QUÉ. Ver `Fingiendo.tsx`. */}
       <Fingiendo que={fingir} />
 
