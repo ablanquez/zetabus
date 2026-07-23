@@ -67,8 +67,11 @@ test('⭐ EL PRIMER TIEMPO DE LLEGADA CABE EN LA PANTALLA', async ({ page }, inf
   expect(tiempoDentro, 'el primer tiempo de llegada TIENE que verse sin scroll').toBe(true);
 });
 
-test('la EDAD va ANTES que las llegadas, y también se ve sin scroll', async ({ page }) => {
+test('la EDAD del dato: en móvil ANTES de las llegadas; arriba del corte, la banda del fondo', async ({
+  page,
+}) => {
   await page.goto(`/parada/${POSTE}?fingir=sin-verificar`, { waitUntil: 'networkidle' });
+  const ancho = page.viewportSize()!.width;
   const alto = page.viewportSize()!.height;
 
   const edad = await page.locator('[data-papel="edad"]').first().boundingBox();
@@ -76,7 +79,21 @@ test('la EDAD va ANTES que las llegadas, y también se ve sin scroll', async ({ 
   expect(edad, 'la barra de edad tiene que existir').not.toBeNull();
   expect(minutos, 'el tiempo tiene que existir').not.toBeNull();
 
-  // Si el dato es viejo, hay que saberlo ANTES de creerse el "3 min".
-  expect(edad!.y).toBeLessThan(minutos!.y);
-  expect(edad!.y + edad!.height).toBeLessThanOrEqual(alto);
+  // ⭐ EL CORTE (880) es el mismo de la rejilla de /parada (globals.css). Por debajo,
+  //    una columna; por encima, dos con los datos de Avanza A TODO EL ANCHO abajo (R6).
+  if (ancho < 880) {
+    // Móvil, EXACTAMENTE como hoy: en una sola columna la edad va ANTES del tiempo y
+    // se ve sin scroll — si el dato es viejo, hay que saberlo ANTES de creerse el "3 min".
+    expect(edad!.y, 'en móvil la edad va antes que el tiempo').toBeLessThan(minutos!.y);
+    expect(edad!.y + edad!.height, 'y se ve sin scroll').toBeLessThanOrEqual(alto);
+  } else {
+    // Arriba del corte, los datos de Avanza son la BANDA A TODO EL ANCHO del fondo
+    // (decisión de Antonio): van DESPUÉS de las llegadas. La frescura NO queda escondida
+    // porque la propia lista se marca `es-rancio` cuando el dato envejece. Se comprueba
+    // que la banda es la del fondo (más abajo y más ancha que una llegada suelta).
+    expect(edad!.y, 'arriba del corte la banda de datos va al fondo').toBeGreaterThan(minutos!.y);
+    expect(edad!.width, 'la banda de datos ocupa todo el ancho, no una columna').toBeGreaterThan(
+      minutos!.width,
+    );
+  }
 });
