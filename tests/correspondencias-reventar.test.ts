@@ -21,6 +21,7 @@ import {
   fundirCorrespondencias,
   type OficialParaFusion,
 } from '@/sources/avanza/correspondencias';
+import { alcanzaElSuelo, RATIO_SUELO } from '@/sources/avanza/correspondencias';
 import { estadoIndiceDesde, type ArtefactoIndice } from '@/engine/correspondencias';
 import type { RespuestaDeSentido } from '@/sources/avanza/nombres';
 import type { SentidoAvanza } from '@/sources/avanza/recorrido';
@@ -182,6 +183,38 @@ describe('⭐ LA COHERENCIA GLOBAL (L1) · el índice NO depende del orden de ll
       fallo('35', -2),
     ]);
     expect(conUnPosteMenos).not.toBe(huella(lote));
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+describe('⭐⭐ EL SUELO · "NUNCA un fichero parcial" · lo que decide si el barrido publica', () => {
+  // Ésta es la garantía cabecera del BLOQUE 1: un barrido a medias (Avanza respondiendo
+  // 40 de 74) NO debe sobrescribir el índice bueno. La decisión la toma `alcanzaElSuelo`,
+  // que es la MISMA función en la que delega `build-correspondencias.ts` (no una copia).
+
+  it('el suelo es el 80% (si esto cambia, el barrido publicaría con menos)', () => {
+    expect(RATIO_SUELO).toBe(0.8);
+  });
+
+  it('el borde EXACTO, por sus dos lados: 8 de 10 (0,80) publica; 7 de 10 (0,70) NO', () => {
+    expect(alcanzaElSuelo({ esperadas: 10, respondidas: 8 })).toBe(true);
+    expect(alcanzaElSuelo({ esperadas: 10, respondidas: 7 })).toBe(false);
+  });
+
+  it('justo por debajo: 79 de 100 (0,79) NO alcanza', () => {
+    expect(alcanzaElSuelo({ esperadas: 100, respondidas: 79 })).toBe(false);
+    expect(alcanzaElSuelo({ esperadas: 100, respondidas: 80 })).toBe(true);
+  });
+
+  it('⭐ el caso del enunciado: Avanza responde 40 de 74 → NO se publica (0,54 < 0,80)', () => {
+    // Un fichero con 40 sentidos parece completo y no lo es. El suelo lo para.
+    expect(alcanzaElSuelo({ esperadas: 74, respondidas: 40 })).toBe(false);
+    // 74 de 74 sí, claro.
+    expect(alcanzaElSuelo({ esperadas: 74, respondidas: 74 })).toBe(true);
+  });
+
+  it('esperadas = 0 NO alcanza (no se cuela un 0/0 como si fuera "todo respondió")', () => {
+    expect(alcanzaElSuelo({ esperadas: 0, respondidas: 0 })).toBe(false);
   });
 });
 

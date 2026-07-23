@@ -36,7 +36,9 @@ import { pedirNombres, type PeticionDeSentido } from '@/sources/avanza/nombres';
 import { transporteReal } from '@/sources/avanza/transporte';
 import type { SentidoAvanza } from '@/sources/avanza/recorrido';
 import {
+  alcanzaElSuelo,
   fundirCorrespondencias,
+  RATIO_SUELO,
   type OficialParaFusion,
   type ParQuePasa,
 } from '@/sources/avanza/correspondencias';
@@ -50,8 +52,8 @@ const COORDS = 'data/postes-solo-barrido-coordenadas.json';
 /** El sentido de Avanza por `direction_id` del GTFS. Igual que en `desvios.ts`. */
 const SENTIDO_AVANZA: Record<0 | 1, SentidoAvanza> = { 0: -1, 1: -2 };
 
-/** El suelo. Por debajo NO es "hay desvíos": es "Avanza no responde". Igual que nombres. */
-const MIN_RESPONDIDAS = 0.8;
+// El suelo (`RATIO_SUELO`) y la decisión (`alcanzaElSuelo`) viven en
+// `@/sources/avanza/correspondencias`: una fuente, con test propio. Aquí se DELEGA.
 
 /** La coordenada a mano de un poste solo-barrido (observacion_propia). */
 interface CoordObservada {
@@ -152,9 +154,9 @@ async function main(): Promise<void> {
 
   // ── EL SUELO. Por debajo, NO se sobrescribe el índice bueno ──────────────────
   const ratio = c.esperadas === 0 ? 0 : c.respondidas / c.esperadas;
-  if (ratio < MIN_RESPONDIDAS) {
+  if (!alcanzaElSuelo(c)) {
     console.error(
-      `\n⛔ SOLO RESPONDIÓ EL ${Math.round(ratio * 100)}% DE AVANZA (mínimo ${MIN_RESPONDIDAS * 100}%).\n` +
+      `\n⛔ SOLO RESPONDIÓ EL ${Math.round(ratio * 100)}% DE AVANZA (mínimo ${RATIO_SUELO * 100}%).\n` +
         '   Esto no es un índice parcial por desvíos: es que Avanza no está respondiendo.\n' +
         (existsSync(OUT)
           ? `   NO se toca el índice bueno que ya hay en ${OUT}. Se mantiene el de ayer. Reintenta más tarde.\n`

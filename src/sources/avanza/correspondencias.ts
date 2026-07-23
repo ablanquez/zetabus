@@ -242,3 +242,22 @@ export function fundirCorrespondencias(
     },
   };
 }
+
+/**
+ * ⭐ EL SUELO. Por debajo, `build-correspondencias.ts` NO sobrescribe el índice bueno:
+ * "menos del 80% respondió" NO es "hoy hay muchos desvíos", es "Avanza no está" — y un
+ * fichero con 40 de 74 sentidos parece completo y no lo es (un silencio falso en disco).
+ *
+ * ⚠️ Vive AQUÍ, con la fusión que produce los contadores que juzga, y NO inline en el
+ *    script, por un motivo de método: la garantía "NUNCA un fichero parcial" tiene que
+ *    poder PROBARSE. Si la lógica estuviera copiada en el script, el test probaría una
+ *    copia —una afirmación duplicada, no el código que corre (L42/L43)—. El script
+ *    DELEGA en esta función; el test la prueba a ella; es la misma que decide de verdad.
+ *
+ * `esperadas === 0` → no alcanza (no hay nada que publicar, no un 0/0 que colar).
+ */
+export const RATIO_SUELO = 0.8;
+
+export function alcanzaElSuelo(c: Pick<ContadoresCorrespondencias, 'esperadas' | 'respondidas'>): boolean {
+  return c.esperadas > 0 && c.respondidas / c.esperadas >= RATIO_SUELO;
+}
