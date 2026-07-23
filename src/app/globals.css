@@ -605,26 +605,17 @@ body {
 }
 
 /* ⭐ R4 · LAS LLEGADAS HACEN SCROLL DENTRO DE SU BLOQUE (solo arriba del corte).
-   Y EL SCROLL SE ANUNCIA: sombras de scroll en CSS puro (técnica de Lea Verou).
-   Las capas `local` (tapa color papel) se mueven con el contenido; las `scroll`
-   (sombra) se quedan en el borde → la sombra SOLO se ve si hay contenido oculto.
-   En móvil NO se recorta: la página entera hace scroll, como hoy. */
+   El bloque SOLO aporta el scroll (alto máximo + `overflow`), NO un fondo: la lista
+   sigue siendo la MISMA tarjeta blanca (`bg-papel`) que en móvil, con sus filas
+   blancas sobre el lienzo. Antes había aquí una sombra de scroll (técnica de Lea
+   Verou) cuyo `background` en atajo borraba el blanco y dejaba asomar el lienzo
+   azulado → el azul del autobús seleccionado perdía fuerza. Fuera: el azul manda, y
+   el scroll lo anuncia la barra nativa. En móvil NO se recorta: la página entera
+   hace scroll, como hoy. */
 @media (min-width: 880px) {
   .rejilla-parada[data-modo='auto'] .lista-llegadas-scroll {
     max-height: 60vh;
     overflow-y: auto;
-    background:
-      linear-gradient(var(--color-papel) 30%, rgba(255, 255, 255, 0)) center top,
-      linear-gradient(rgba(255, 255, 255, 0), var(--color-papel) 70%) center bottom,
-      radial-gradient(farthest-side at 50% 0, rgba(15, 23, 42, 0.14), rgba(15, 23, 42, 0)) center top,
-      radial-gradient(farthest-side at 50% 100%, rgba(15, 23, 42, 0.14), rgba(15, 23, 42, 0)) center bottom;
-    background-repeat: no-repeat;
-    background-size:
-      100% 28px,
-      100% 28px,
-      100% 12px,
-      100% 12px;
-    background-attachment: local, local, scroll, scroll;
   }
 }
 
