@@ -72,10 +72,20 @@ export function LlegadasVivas({
   inicial,
   poste,
   fingir,
+  nombre,
+  lineas,
+  desvio,
 }: {
   inicial: Observacion<LlegadasDeParada>;
   poste: number;
   fingir?: string | null;
+  /** ⭐ Slots servidor renderizados en la página y colocados en la rejilla: el nombre
+   *  (a todo el ancho) y las dos cajas de líneas (`<CajaLineas>` y `<CajaProvisionales>`).
+   *  Este componente es CLIENTE (tiene el estado mapa↔lista↔filtro) y POSEE la rejilla;
+   *  las piezas de servidor entran como children. Ver `parada/[poste]/page.tsx`. */
+  nombre: React.ReactNode;
+  lineas: React.ReactNode;
+  desvio: React.ReactNode;
 }) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'ok', obs: inicial });
 
@@ -231,10 +241,18 @@ export function LlegadasVivas({
   }, [visibles, seleccionado, seleccionar]);
 
   return (
-    <section aria-label="Próximas llegadas">
-      {/* ⭐ EL MAPA, ARRIBA. Decisión de Antonio, que es el que coge el bus. */}
+    // ⭐ LA REJILLA. Un solo árbol; las áreas la recolocan por ancho (globals.css).
+    //    `data-modo`: `auto` = una columna abajo del corte, dos arriba. En ERROR (sin
+    //    datos → sin mapa) SIEMPRE una columna: una rejilla con media columna vacía es
+    //    peor que no tener rejilla (decisión c). El orden del DOM = el orden de LECTURA
+    //    en móvil (nombre·mapa·datos·filtro·llegadas·líneas·desvío); la rejilla lo
+    //    recoloca visualmente arriba del corte.
+    <div className="rejilla-parada" data-modo={hayDatos ? 'auto' : 'error'} data-papel="parada-rejilla">
+      <div className="zona-nombre">{nombre}</div>
+
+      {/* ⭐ EL MAPA. Arriba del corte iguala el alto de la derecha y crece al desplegar. */}
       {hayDatos && (
-        <div ref={cajaMapa}>
+        <div className="zona-mapa" ref={cajaMapa}>
           <MapaParada
             parada={obs.datos.posicionParada}
             llegadas={visibles}
@@ -244,37 +262,49 @@ export function LlegadasVivas({
         </div>
       )}
 
-      <BarraDeEdad
-        edad={edad}
-        rancio={rancio}
-        comprobando={estado.tipo === 'comprobando'}
-        fallando={fallando}
-        motivo={fallando ? estado.motivo : null}
-        origen={'origen' in obs ? obs.origen : null}
-        onRefrescar={() => void refrescar()}
-      />
+      {/* ⭐ DATOS DE AVANZA: al fondo a todo el ancho arriba del corte; tras el mapa en móvil. */}
+      <div className="zona-datos">
+        <BarraDeEdad
+          edad={edad}
+          rancio={rancio}
+          comprobando={estado.tipo === 'comprobando'}
+          fallando={fallando}
+          motivo={fallando ? estado.motivo : null}
+          origen={'origen' in obs ? obs.origen : null}
+          onRefrescar={() => void refrescar()}
+        />
+      </div>
 
       {lineasDelPoste.length > 1 && (
-        <FiltroDeLineas
-          lineas={lineasDelPoste}
-          apagadas={apagadas}
-          onAlternar={alternar}
-          onTodas={() => setApagadas(new Set())}
-          onNinguna={() => setApagadas(new Set(lineasDelPoste.map((l) => l.etiqueta)))}
-        />
+        <div className="zona-filtro">
+          <FiltroDeLineas
+            lineas={lineasDelPoste}
+            apagadas={apagadas}
+            onAlternar={alternar}
+            onTodas={() => setApagadas(new Set())}
+            onNinguna={() => setApagadas(new Set(lineasDelPoste.map((l) => l.etiqueta)))}
+          />
+        </div>
       )}
 
-      <Cuerpo
-        obs={obs}
-        rancio={rancio}
-        visibles={visibles}
-        apagadasTodas={todasApagadas}
-        seleccionado={seleccionado}
-        // ⭐ Solo se arrastra la fila a la vista si el gesto vino DEL MAPA.
-        traerAlaVista={origen === 'mapa'}
-        onSeleccionar={(c) => seleccionar(c, 'lista')}
-      />
-    </section>
+      <section aria-label="Próximas llegadas" className="zona-llegadas">
+        <Cuerpo
+          obs={obs}
+          rancio={rancio}
+          visibles={visibles}
+          apagadasTodas={todasApagadas}
+          seleccionado={seleccionado}
+          // ⭐ Solo se arrastra la fila a la vista si el gesto vino DEL MAPA.
+          traerAlaVista={origen === 'mapa'}
+          onSeleccionar={(c) => seleccionar(c, 'lista')}
+        />
+      </section>
+
+      {/* Las dos cajas de líneas (slots de servidor). Arriba del corte: "Líneas" en lo
+          alto de la derecha, "Desvío" al fondo, con las llegadas en medio. */}
+      <div className="zona-lineas">{lineas}</div>
+      <div className="zona-desvio">{desvio}</div>
+    </div>
   );
 }
 
@@ -387,7 +417,7 @@ function BarraDeEdad({
 
   return (
     <div
-      className={`mb-4 rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
+      className={`rounded-tarjeta border border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 ${rancio || fallando ? 'es-rancio' : ''}`}
       data-papel="edad"
       data-rancio={rancio || fallando ? 'si' : 'no'}
       data-edad={edad}
@@ -523,8 +553,10 @@ function Cuerpo({
           Medido a 360 px: su fila mide 102 px y la nuestra medía 160. Caben 8
           llegadas donde nosotros metíamos 4 — y el que espera el bus quiere ver
           la siguiente, no admirar el margen. */}
+      {/* `lista-llegadas-scroll`: arriba del corte, la lista hace scroll dentro de su
+          bloque (R4) y el scroll SE ANUNCIA con sombras CSS. En móvil no se recorta. */}
       <ol
-        className={`overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] ${rancio ? 'es-rancio' : ''}`}
+        className={`lista-llegadas-scroll overflow-hidden rounded-panel border border-[var(--color-borde)] bg-[var(--color-papel)] ${rancio ? 'es-rancio' : ''}`}
         data-papel="lista-llegadas"
       >
         {visibles.map((l, i) => (

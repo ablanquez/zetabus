@@ -6,7 +6,7 @@ import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
-import { LineasQuePasan } from '@/components/LineasQuePasan';
+import { CajaLineas, CajaProvisionales } from '@/components/LineasQuePasan';
 import { Cita } from '@/components/Cita';
 import { IconoParada } from '@/components/IconoParada';
 
@@ -78,75 +78,60 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   const fingir = fingimientoDe(sp);
   const inicial = await llegadasDePoste(numero, motor(transporteDe(fingir), fingir));
 
-  return (
-    <div>
-      {/* Cabecera COMPACTA a propósito: cada píxel que gasta aquí es un píxel
-          que le quita al primer tiempo de llegada. */}
-      {/* ⛔ AQUÍ HABÍA UNA FLECHA "←" DE VOLVER. Se retira: la marca "ZetaBus" de la
-          cabecera —en TODA pantalla— ya enlaza a `/`, así que hay salida visible aun
-          llegando por enlace directo o marcador. Era una salida redundante y un icono
-          más que interpretar. Sin la flecha, la columna (nombre + poste + aviso) ya no
-          necesita ir en una fila de dos: es el único bloque. Verificado en navegador
-          que el logo enlaza aquí y es táctil. */}
-      <div className="mb-3 min-w-0">
-        <h1
-          className="text-titulo font-black leading-tight sin-recortar"
-          data-papel="nombre-parada"
-          data-nombre-fuente={p.nombreProc.fuente}
+  // ⭐ EL NOMBRE (a todo el ancho). Es un SLOT: se pinta en el servidor y la rejilla
+  //    cliente lo coloca en su área. Cabecera compacta a propósito: cada píxel de aquí
+  //    es un píxel que le quita al primer minuto de llegada.
+  // ⛔ NO hay flecha "←" de volver: la marca de la cabecera ya enlaza a `/` en toda
+  //    pantalla. Tampoco hay enlace de vuelta al fondo — sería ruido con la llegada arriba.
+  const nombre = (
+    <div className="min-w-0">
+      <h1
+        className="text-titulo font-black leading-tight sin-recortar"
+        data-papel="nombre-parada"
+        data-nombre-fuente={p.nombreProc.fuente}
+      >
+        {/* ⭐ EL ICONO DE PARADA (un nodo en el recorrido), decorativo (aria-hidden): el
+            nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
+        <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
+        {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA. <Cita>: nombre del
+            GTFS/Avanza; el traductor del navegador no lo reescribe. */}
+        <Cita>{p.name}</Cita>
+      </h1>
+      <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
+      {/* Solo si de verdad se está fingiendo, y diciendo QUÉ. Ver `Fingiendo.tsx`. */}
+      <Fingiendo que={fingir} />
+
+      {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA. Avanza no da el nombre de
+          las paradas suprimidas por un desvío; se quedan con el del GTFS, que puede venir
+          roto. La señal NO va solo en el tono: borde punteado (forma) + palabra + icono. */}
+      {p.nombreProc.fuente === 'gtfs-marcado' && (
+        <p
+          className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+          data-papel="nombre-sin-confirmar"
+          role="note"
         >
-          {/* ⭐ EL ICONO DE PARADA (un nodo en el recorrido), junto al nombre. Monocromo
-              (hereda el tono), va en `tinta-suave` para no pesar como el nombre, y es
-              decorativo (aria-hidden): el nombre y el "poste N" ya lo dicen todo. El
-              porqué del nodo —y el descarte del reloj y la onda— en `IconoParada.tsx`. */}
-          <IconoParada className="mr-1.5 inline-block h-[0.78em] w-[0.78em] shrink-0 align-[-0.04em] text-[var(--color-tinta-suave)]" />
-          {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA.
-              "Av. de Ranillas / Centro de Historias…" no es un dato: es un acertijo.
-              <Cita>: nombre del GTFS/Avanza; el traductor del navegador no lo reescribe. */}
-          <Cita>{p.name}</Cita>
-        </h1>
-        <p className="text-nota text-[var(--color-tinta-tenue)]">poste {numero}</p>
-        {/* ⭐ Solo si de verdad se está fingiendo, y diciendo QUÉ. Antes esto era
-            un «· FINGIENDO «x»» diminuto al lado del poste, y encima competía con
-            una banda roja del layout que salía SIEMPRE. Ver `Fingiendo.tsx`. */}
-        <Fingiendo que={fingir} />
-
-        {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA.
-            Avanza no da el nombre de las paradas suprimidas por un desvío (los 4 de
-            Avenida de Valencia, por ejemplo). Esas se quedan con el del GTFS, que
-            puede venir roto por el exportador ("Av. De Valencia"), y el usuario tiene
-            derecho a saber que ese nombre NO está confirmado por el operador.
-
-            ⚠️ La señal NO va solo en el tono: borde punteado (forma) + la palabra
-               (texto) + el icono. En gris se sigue leyendo. La procedencia por campo
-               que montamos para la flota, aplicada al nombre de la parada. */}
-        {p.nombreProc.fuente === 'gtfs-marcado' && (
-          <p
-            className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
-            data-papel="nombre-sin-confirmar"
-            role="note"
-          >
-            <span className="font-bold not-italic">⚠ nombre sin confirmar.</span>
-            <span className="not-italic">
-              Avanza no lo da (parada en desvío o fuera de toda ruta). El que ves viene del GTFS y
-              puede estar mal escrito. Solo se comprueba mirando el rótulo de la calle.
-            </span>
-          </p>
-        )}
-      </div>
-
-      {/* ⭐ AQUÍ. LO PRIMERO. */}
-      <LlegadasVivas inicial={inicial} poste={numero} fingir={fingir} />
-
-      {/* ⭐ DEBAJO: qué líneas pasan por aquí y a dónde van — el camino de vuelta a
-          CUALQUIER línea (la marca solo va al home). Nunca por encima del primer
-          minuto de llegada. Ver `LineasQuePasan.tsx`. */}
-      <LineasQuePasan paradaId={paradaId} fingir={fingir} />
-
-      {/* ⛔ AQUÍ ABAJO NO HAY ENLACE DE VUELTA, Y ES A PROPÓSITO. Hubo un "← buscar
-          otra parada o línea" en el pie; se retiró por repetir la salida. La salida
-          única y visible es la marca "ZetaBus" de la cabecera, que enlaza a `/` en
-          toda pantalla. Un enlace de vuelta al pie, con la llegada del autobús arriba,
-          sería ruido en una pantalla que se mira con prisa. */}
+          <span className="font-bold not-italic">⚠ nombre sin confirmar.</span>
+          <span className="not-italic">
+            Avanza no lo da (parada en desvío o fuera de toda ruta). El que ves viene del GTFS y
+            puede estar mal escrito. Solo se comprueba mirando el rótulo de la calle.
+          </span>
+        </p>
+      )}
     </div>
+  );
+
+  // ⭐ LA VISTA DE PARADA es una REJILLA de la que `LlegadasVivas` (cliente, con el estado
+  //    mapa↔lista↔filtro) es dueña. Aplana 7 piezas como hijas directas para que las áreas
+  //    CSS las recoloquen por ancho —una columna abajo del corte (como hoy), dos arriba—.
+  //    El nombre y las dos cajas de líneas entran como SLOTS de servidor. Ver globals.css.
+  return (
+    <LlegadasVivas
+      inicial={inicial}
+      poste={numero}
+      fingir={fingir}
+      nombre={nombre}
+      lineas={<CajaLineas paradaId={paradaId} fingir={fingir} />}
+      desvio={<CajaProvisionales paradaId={paradaId} fingir={fingir} />}
+    />
   );
 }

@@ -284,6 +284,27 @@ type Encuadrable = 'parada' | 'foco' | 'todos';
  *    cuando cambia la PARADA, cuando cambia el FOCO, o cuando el usuario LO PIDE.
  *    Nunca porque el GPS se haya movido tres metros.
  */
+/**
+ * ⭐ R3 · CUANDO EL MAPA CRECE, LEAFLET TIENE QUE ENTERARSE.
+ *
+ * Arriba del corte el marco del mapa iguala la columna derecha (grid + flex), y al
+ * desplegar un `<details>` de la derecha esa columna crece → el marco crece con ella.
+ * Pero Leaflet mide su tamaño AL MONTAR y no se entera de un cambio de alto por CSS:
+ * dejaría teselas grises en la zona nueva. `invalidateSize` lo obliga a recalcular.
+ * Un `ResizeObserver` sobre su contenedor lo dispara en TODOS los casos —desplegar,
+ * cruzar el corte al redimensionar la ventana— sin medir anchos a mano ni suponer.
+ */
+function AjustaAlCambiarTamano() {
+  const map = useMap();
+  useEffect(() => {
+    const cont = map.getContainer();
+    const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+    ro.observe(cont);
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
 function Encuadre({
   parada,
   foco,
@@ -497,13 +518,15 @@ export function MapaParada({
     seleccionado !== null && !enfocado && llegadas.some((l) => String(l.coche) === seleccionado);
 
   return (
-    <div className="mb-4" data-papel="mapa" data-aislado={enfocado ? 'si' : 'no'}>
-      <div className="relative overflow-hidden rounded-panel border border-[var(--color-borde)] shadow-sm">
+    <div data-papel="mapa" data-aislado={enfocado ? 'si' : 'no'}>
+      {/* `marco-mapa`: alto fijo (18rem) en móvil; arriba del corte lo estira la rejilla
+          (flex:1) para igualar la columna derecha. Ver globals.css · R1/R3. */}
+      <div className="marco-mapa relative overflow-hidden rounded-panel border border-[var(--color-borde)] shadow-sm">
         <MapContainer
           center={centro}
           zoom={ZOOM_TECHO}
           scrollWheelZoom={false}
-          className="h-72 w-full"
+          className="h-full w-full"
           /**
            * ⛔ AQUÍ HABÍA UN `data-papel="lienzo-mapa"`. **NO LLEGABA AL DOM.**
            *
@@ -528,6 +551,7 @@ export function MapaParada({
           />
           <Encuadre parada={parada} foco={enfocado?.posicion ?? null} puntos={puntos} orden={orden} />
           <ContarFuera posiciones={posicionesBus} parada={parada} onContar={setFuera} />
+          <AjustaAlCambiarTamano />
 
           {/* ⭐ LA PARADA, SIEMPRE ENCIMA. Es la referencia del usuario: si un autobús
               la tapa, el mapa deja de contestar «¿dónde está respecto A MÍ?». */}

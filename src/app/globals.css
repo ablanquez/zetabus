@@ -499,3 +499,131 @@ body {
   word-break: normal;
   hyphens: none;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ⭐ /parada · LA REJILLA DE DOS COLUMNAS (solo por encima del corte).
+   ───────────────────────────────────────────────────────────────────────────
+   UN SOLO ÁRBOL. Las áreas recolocan las 7 piezas —nombre, mapa, líneas, filtro,
+   llegadas, desvío, datos— sin medir el ancho con JS y sin duplicar DOM. Por
+   debajo del corte (~880 px) es EXACTAMENTE la columna de hoy, en el mismo orden.
+
+   El corte NO es redondo: sale del suelo medido de la columna derecha (380 px, el
+   ancho en que la peor fila de llegada cabe en 2 líneas) + un mapa más ancho (R5).
+
+   `data-modo="auto"`  → una columna abajo, dos arriba del corte.
+   `data-modo` ≠ auto  → SIEMPRE una columna (estados de error: no hay mapa, R c).
+   ───────────────────────────────────────────────────────────────────────── */
+.rejilla-parada {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'nombre'
+    'mapa'
+    'datos'
+    'filtro'
+    'llegadas'
+    'lineas'
+    'desvio';
+}
+
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] {
+    /* ⭐ ROMPE el cajón estrecho de `main` (672) SOLO aquí: misma técnica que la
+       rejilla de la home (ml-50% + translate recentra en el viewport; el ancho
+       nunca desborda). Gated a ≥880 → por debajo NO rompe, se queda como hoy. */
+    width: min(72rem, calc(100vw - 2rem));
+    margin-left: 50%;
+    transform: translateX(-50%);
+    column-gap: 1.25rem;
+    /* Mapa `1fr` (se lleva el resto y queda más ancho, R5) · derecha fija 380 (su suelo). */
+    grid-template-columns: 1fr minmax(0, 380px);
+    grid-template-areas:
+      'nombre  nombre'
+      'mapa    lineas'
+      'mapa    filtro'
+      'mapa    llegadas'
+      'mapa    desvio'
+      'datos   datos';
+  }
+}
+
+.zona-nombre {
+  grid-area: nombre;
+}
+.zona-mapa {
+  grid-area: mapa;
+  min-width: 0;
+}
+.zona-lineas {
+  grid-area: lineas;
+}
+.zona-filtro {
+  grid-area: filtro;
+}
+.zona-llegadas {
+  grid-area: llegadas;
+  min-width: 0;
+}
+.zona-desvio {
+  grid-area: desvio;
+}
+.zona-datos {
+  grid-area: datos;
+}
+
+/* ⭐ R1/R3 · EL MAPA IGUALA EL ALTO DE LA DERECHA Y CRECE AL DESPLEGAR.
+   Gratis con grid: la celda `mapa` abarca las cuatro filas de la derecha, así que
+   `stretch` la estira a su altura. En móvil (una columna) el marco es fijo (18rem,
+   = el `h-72` de hoy); arriba del corte, `flex:1` lo hace llenar la celda. Leaflet
+   necesita altura resuelta al montar y `invalidateSize` al crecer → lo segundo lo
+   hace un ResizeObserver en el propio mapa. */
+.marco-mapa {
+  height: 18rem;
+}
+.marco-mapa .leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] .zona-mapa {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .rejilla-parada[data-modo='auto'] .zona-mapa [data-papel='mapa'] {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .rejilla-parada[data-modo='auto'] .zona-mapa .marco-mapa {
+    height: auto;
+    min-height: 18rem;
+    flex: 1;
+  }
+}
+
+/* ⭐ R4 · LAS LLEGADAS HACEN SCROLL DENTRO DE SU BLOQUE (solo arriba del corte).
+   Y EL SCROLL SE ANUNCIA: sombras de scroll en CSS puro (técnica de Lea Verou).
+   Las capas `local` (tapa color papel) se mueven con el contenido; las `scroll`
+   (sombra) se quedan en el borde → la sombra SOLO se ve si hay contenido oculto.
+   En móvil NO se recorta: la página entera hace scroll, como hoy. */
+@media (min-width: 880px) {
+  .rejilla-parada[data-modo='auto'] .lista-llegadas-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    background:
+      linear-gradient(var(--color-papel) 30%, rgba(255, 255, 255, 0)) center top,
+      linear-gradient(rgba(255, 255, 255, 0), var(--color-papel) 70%) center bottom,
+      radial-gradient(farthest-side at 50% 0, rgba(15, 23, 42, 0.14), rgba(15, 23, 42, 0)) center top,
+      radial-gradient(farthest-side at 50% 100%, rgba(15, 23, 42, 0.14), rgba(15, 23, 42, 0)) center bottom;
+    background-repeat: no-repeat;
+    background-size:
+      100% 28px,
+      100% 28px,
+      100% 12px,
+      100% 12px;
+    background-attachment: local, local, scroll, scroll;
+  }
+}
