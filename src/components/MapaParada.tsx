@@ -117,6 +117,21 @@ const ZOOM_SUELO = 13;
 const ZOOM_TECHO = 16;
 
 /**
+ * ⭐ EL VECINDARIO, EN METROS — NO EN ZOOM (dirección 1). A `ZOOM_SUELO`, el contenedor de
+ * referencia que se midió en el SPIKE (326×288 px) enseña 4,66 km × 4,11 km alrededor de la
+ * parada: ESE es "el barrio" que el suelo dibuja. Lo fijamos como un LADO en metros —y no
+ * como un zoom— para que "dentro del encuadre" NO dependa del tamaño del mapa.
+ *
+ * ⚠️ POR QUÉ EL CAMBIO: el suelo de zoom se pensó para un mapa de tamaño FIJO. Al meter el
+ *    mapa en una rejilla que lo estira arriba del corte, `getBoundsZoom` (que depende del
+ *    contenedor) dejaba que un mapa ancho cupiera un autobús a 7,5 km SIN bajar del suelo —y
+ *    revivía el "media provincia" que B3 mató—. Con el vecindario en metros, un contenedor
+ *    más grande hace ZOOM sobre el mismo barrio (más nítido), nunca abre más área: B3 se
+ *    comporta IGUAL a cualquier ancho. Ver docs/SPIKE_SUELO_DE_ZOOM.md.
+ */
+const LADO_VECINDARIO_M = 4100;
+
+/**
  * ⭐ «A 7,5 KM», NO «A 7.523 M». La cifra está para DECIDIR, no para presumir.
  *
  * La pregunta que se contesta es *"¿me merece la pena pulsar «Encuadrarlos»?"*, y
@@ -375,9 +390,24 @@ function Encuadre({
         return;
       }
 
-      // Reposo: la parada CON los autobuses que quepan sin bajar del suelo.
-      if (puntos.length > 0) encuadrarCon(puntos, 40, ZOOM_TECHO);
-      else if (parada) map.setView([parada.lat, parada.lon], ZOOM_TECHO);
+      // ⭐ REPOSO · EL VECINDARIO ES FIJO EN METROS (dirección 1). La parada + los
+      //    autobuses que caen DENTRO del vecindario; los de más allá NO estiran el
+      //    encuadre —los cuenta el aviso—. Como el vecindario se mide en metros y no en
+      //    zoom, un mapa más grande ACERCA (mismo barrio), no enseña más provincia.
+      if (parada) {
+        const caja = L.latLng(parada.lat, parada.lon).toBounds(LADO_VECINDARIO_M);
+        const cerca = puntos.filter((p) => caja.contains([p.lat, p.lon]));
+        // Con vecinos, se ajusta a ellos (puede ACERCAR por debajo del techo); sin
+        // vecinos, el barrio entero. Nunca se aleja MÁS que el vecindario: `cerca` ⊆ caja.
+        const objetivo =
+          cerca.length > 1
+            ? L.latLngBounds(cerca.map((p) => [p.lat, p.lon] as [number, number]))
+            : caja;
+        map.fitBounds(objetivo, { padding: [40, 40], maxZoom: ZOOM_TECHO });
+      } else if (puntos.length > 0) {
+        // Sin posición de parada (raro): se cae al encuadre de antes, con su suelo.
+        encuadrarCon(puntos, 40, ZOOM_TECHO);
+      }
     },
     [map, parada, foco, puntos, encuadrarCon],
   );
@@ -559,7 +589,17 @@ export function MapaParada({
             <Marker
               position={[parada.lat, parada.lon]}
               icon={ICONO_PARADA}
-              zIndexOffset={1000}
+              /**
+               * ⭐ SIEMPRE ENCIMA, A CUALQUIER ZOOM. Leaflet apila los marcadores por su
+               * `y` en píxeles (los del sur, encima); `zIndexOffset` se SUMA a esa `y`.
+               * El `1000` de antes bastaba a zoom 13 —donde un bus lejano estaba a ~500
+               * px— pero se quedaba corto en cuanto el encuadre acercaba: a zoom 16 ese
+               * mismo bus está a miles de px y adelantaba a la parada. Con el suelo en
+               * metros el mapa ahora acerca más, así que el desnivel tiene que ser tan
+               * grande que NINGÚN autobús de la red (máx. ~14 km) lo remonte: 100000 px
+               * de ventaja son ~119 km a zoom 16. La parada no vuelve a quedar debajo.
+               */
+              zIndexOffset={100000}
               alt="Tu parada"
             />
           )}
