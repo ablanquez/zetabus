@@ -405,6 +405,21 @@ summary,
   transform: scale(0.92);
 }
 
+/* ⭐ /linea · REALCE DE HOVER EN LAS PARADAS DEL RECORRIDO (SOLO ESCRITORIO).
+   Las paradas SIEMPRE fueron pulsables (el `<a>` del nombre estira su ::after a todo
+   el bloque, y por eso el cursor YA es de mano —medido—), pero al ratón no respondían.
+   Se les pone el MISMO lavado neutro que a las filas de llegada de /parada (`2ae1b4d`):
+   un negro al 4 % sobre papel. Es MÁS CLARO que el acuse táctil (`--color-fondo`,
+   #e2e8f0), así que "puedo pulsar" (hover) y "te he oído" (:active/pendiente) NO se
+   confunden —y el acuse gana por especificidad—; y la parada PROVISIONAL se marca en
+   CHIP, no en fondo, así que tampoco choca con ella. Solo cambia el fondo: no desplaza
+   nada. Gated a ≥880 (el mismo corte de /parada): en móvil nunca hubo hover, no se añade. */
+@media (min-width: 880px) {
+  .bloque-parada:hover {
+    background: color-mix(in srgb, var(--color-papel) 96%, #000);
+  }
+}
+
 /**
  * ⭐⭐ EL ACUSE QUE NO SE APAGA AL SOLTAR. Ver `components/AcuseDeToque.tsx`.
  * ═══════════════════════════════════════════════════════════════════════════

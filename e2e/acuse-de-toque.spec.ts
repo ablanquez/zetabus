@@ -86,6 +86,14 @@ test.describe('⭐ el acuse PERSISTE después de soltar', () => {
     await page.mouse.up();
     await page.waitForTimeout(400);
 
+    // ⚠️ EL RATÓN, FUERA ANTES DE MEDIR. Y no es un detalle: este test equiparaba
+    //    "fondo transparente = sin acuse", y eso SOLO era cierto porque no había
+    //    hover. Al ponerle a las paradas del recorrido el mismo lavado de hover que
+    //    a las filas de /parada (≥880), el fondo del bloque también se tiñe con el
+    //    ratón encima —y el ratón se queda justo donde soltó—. Lo que este test
+    //    quiere medir es el ACUSE, no el hover: se aparta el ratón para aislarlo.
+    //    (Tapar el hover para que el test pasara sería la ñapa; esto es medir lo suyo.)
+    await page.mouse.move(0, 0);
     expect(await fondoDe(page), 'sin el marcador TIENE que apagarse al soltar').toBe('rgba(0, 0, 0, 0)');
   });
 
@@ -98,6 +106,12 @@ test.describe('⭐ el acuse PERSISTE después de soltar', () => {
     await page.goBack();
     await bloque(page).waitFor();
 
+    // ⚠️ EL RATÓN, FUERA ANTES DE MEDIR (misma razón que la contraprueba de arriba):
+    //    el `.click()` dejó el ratón sobre el bloque, y en ≥880 el hover lo tiñe. Se
+    //    aparta para medir el ACUSE (que tras volver atrás debe estar en reposo), no
+    //    el lavado de hover. Lo que se comprueba es que no quedó marca, no que no haya
+    //    ratón encima.
+    await page.mouse.move(0, 0);
     // Al volver, la pantalla se monta de nuevo: no puede quedar ni rastro.
     expect(await fondoDe(page), 'quedó un bloque marcado tras volver atrás').toBe('rgba(0, 0, 0, 0)');
     await expect(
