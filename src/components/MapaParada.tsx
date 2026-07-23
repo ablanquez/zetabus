@@ -619,7 +619,22 @@ export function MapaParada({
                 })}
                 zIndexOffset={activo ? 500 : 0}
                 // ⭐ LA SINCRONÍA MAPA → LISTA. Es el MISMO estado, no dos copias.
-                eventHandlers={{ click: () => onSeleccionar(activo ? null : coche) }}
+                //    Y TECLADO, AL MODO DE LEAFLET: el marcador es focusable (role=button)
+                //    pero por sí solo no se activa con teclado. Leaflet reenvía el `keydown`
+                //    del icono ENFOCADO como evento de capa; se escucha y se hace lo MISMO
+                //    que el clic. Enter y Espacio; en Espacio, `preventDefault` para que la
+                //    página no haga scroll bajo el dedo. (Antes: Tab llegaba, Enter no hacía
+                //    nada — el marcador mentía sobre ser operable.)
+                eventHandlers={{
+                  click: () => onSeleccionar(activo ? null : coche),
+                  keydown: (e) => {
+                    const k = (e.originalEvent as KeyboardEvent).key;
+                    if (k === 'Enter' || k === ' ' || k === 'Spacebar') {
+                      e.originalEvent.preventDefault();
+                      onSeleccionar(activo ? null : coche);
+                    }
+                  },
+                }}
                 alt={`Línea ${etiqueta}, coche ${coche}, a ${l.etaMinutos} min`}
               />
             );
