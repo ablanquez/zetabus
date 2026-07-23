@@ -756,6 +756,18 @@ summary,
       'recorrido desvios'
       'recorrido horarios'
       'recorrido info';
+    /* ⭐ P3 · LA COLUMNA DERECHA, COMPACTA — sin huecos entre desvío, horario e info.
+       El recorrido (izquierda) ABARCA las tres filas de la derecha. Cuando es más alto
+       que la suma de esas tres cajas (casi siempre: lo estira la isla hasta la ventana),
+       el algoritmo de rejilla reparte el sobrante ENTRE las tres filas `auto`, y con
+       `align-items:start` cada caja se queda arriba de su fila inflada → un hueco debajo
+       de cada una. Medido en /linea/38 @1280: 64 px entre desvío y horario, y entre
+       horario e info. Se ataja fijando las filas: las de las cajas a `min-content` (no
+       absorben sobrante, se quedan a su alto) y la ÚLTIMA a `1fr` (se traga TODO el
+       sobrante). Así el hueco cae al FONDO de la columna —donde acompaña al pie del
+       recorrido— y las cajas van seguidas. En `no` (sin desvío) la última fila es la
+       vacía `.`, que hace de fuelle igual. No toca móvil: las filas solo existen ≥880. */
+    grid-template-rows: auto auto min-content min-content 1fr;
   }
   /* ⭐ SIN DESVÍO (la MAYORÍA de líneas un día normal): no hay caja de desvíos, así que
      el HORARIO sube a la fila de ARRIBA de la derecha y el hueco cae debajo. Si no, la
