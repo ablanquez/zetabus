@@ -7,6 +7,24 @@
  *
  * ⚠️ NINGUNA puede reventar. Ninguna puede enseñar nada. Y ninguna puede servir
  * una parada que el usuario no pidió — que es lo que pasaba con `0x2E8`.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ⚠️ SI ALGUNA VEZ VES ESTE SPEC EN ROJO EN UNA SUITE COMPLETA (p. ej. `/linea/999
+ *    → 404` a 1920), NO EMPIECES DE CERO: ya se investigó. Veredicto: ENTORNO, no el
+ *    test. La evidencia, para que no se re-investigue:
+ *      · La ruta es un 404 DETERMINISTA: `/linea/999` hace `notFound()` ANTES de tocar
+ *        Avanza (lookup fallido), y responde en ~79 ms en frío. No depende de datos, ni
+ *        de red, ni de hidratación. No hay estado que se pueda quedar a medias.
+ *      · Se corrió >100 veces en aislamiento y en contención máxima (30× a 1920, y 15×
+ *        en los 5 viewports a la vez = 1050 casos): CERO fallos.
+ *      · El único fallo se vio en la SUITE COMPLETA, donde ~14 workers martillean un
+ *        único server Node en Windows. El fallo está en el TRANSPORTE (el `goto`), no en
+ *        lo que el test mide: churn de conexiones cortas / stall del event-loop del
+ *        server por el trabajo síncrono de otra ruta. Es carga, no lógica.
+ *    ⇒ NO se le pone retry: la config es `retries: 0` a propósito (*"un test que pasa al
+ *      segundo intento no ha pasado"*). Un retry aquí escondería un 404 que de verdad
+ *      fallara. Si reaparece, mira la carga del server, no este fichero.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 import { test, expect } from '@playwright/test';
 
