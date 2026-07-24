@@ -6,6 +6,32 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
+# ⛔ Reglas permanentes
+
+## `ZETABUS-ESTADO.md` NO SE MODIFICA. NUNCA.
+
+**Ni una línea. Ni para corregir una errata, ni para añadir una lección, ni para marcar un cabo
+como cerrado.** Tampoco se arrastra en un `git add` amplio: si aparece en `git status`, es del
+usuario y se deja como está.
+
+**Qué es.** La memoria del proyecto: el estado, las tandas, los cabos, las lecciones de método y
+las equivocaciones de los dos lados. **Es el argumento de ZetaBus, no su cuaderno de notas** — y
+por eso está versionado a propósito, con su excepción explícita en el `.gitignore`.
+
+**Por qué no lo tocas.** Se mantiene **desde la conversación de estrategia**, que es la única que
+ve el proyecto entero, y **se sustituye ENTERO** cada vez que se actualiza. Un cambio hecho desde
+aquí no sobreviviría a la siguiente sustitución: se perdería sin que nadie lo note, o peor,
+convertiría el documento en dos versiones que se pisan. **Lo que haya que registrar va en el
+informe de la tanda**, que es de donde la conversación de estrategia lo recoge.
+
+⚠️ **Y esta regla existe porque se rompió.** El commit `050a70a` se llevó 1.401 líneas del WIP del
+usuario dentro de un commit de refactor, y se informó de lo contrario: `git status` daba limpio
+**precisamente por el fallo** —el fichero ya no salía como modificado porque ya estaba dentro del
+commit—. Comprobar con `git status` que no se ha tocado **no vale**: lo que vale es
+`git show --stat <commit>` y mirar la lista de ficheros antes de empujar.
+
+---
+
 # Cierre de tanda
 
 Tareas fijas al cerrar una tanda, igual que el push o la bitácora.
@@ -40,7 +66,8 @@ queda apagado y el README sigue mintiendo. El vigía dice **cuándo** mirar; mir
 salvo que el patrón haya dejado de encontrar la frase, que es su propio mensaje de error y pide
 re-anclarlo.
 
-## `ZETABUS-ESTADO.md` no se toca
+## Antes de empujar, mirar qué lleva cada commit
 
-Norma permanente. Ese documento se mantiene desde la conversación de estrategia. Lo que haya que
-registrar va al informe de la tanda.
+`git show --stat` de lo que se va a empujar, y leer **la lista de ficheros**. Un `git add` de más
+no se ve en `git status` después de haber committeado — se ve ahí. Ver arriba, *Reglas
+permanentes*.
