@@ -54,7 +54,8 @@ Las tres primeras que **no miran los datos, sino el proyecto**: se hicieron ante
 
 ## Lecciones
 
-[**LECCIONES.md**](LECCIONES.md) — Tres, con la cicatriz que las produjo. Valen más allá de ZetaBus:
+[**LECCIONES.md**](LECCIONES.md) — Nueve, cada una con la cicatriz que la produjo. Valen más allá
+de ZetaBus. Las tres primeras dan el tono:
 
 1. **Todo extractor necesita un contador de control independiente.** Un parser perdió un vehículo
    en silencio por un carácter invisible en un PDF: devolvió 349 de 350 sin quejarse.
@@ -62,6 +63,9 @@ Las tres primeras que **no miran los datos, sino el proyecto**: se hicieron ante
    necesita permiso; declarar sí.*
 3. **Un dato heredado sin procedencia no se corrige: se sustituye.** Y si sus errores apuntan
    todos al mismo lado, **no los corrijas uno a uno: busca la causa.**
+
+De la L4 a la L9 están en el documento, y salen todas del mismo sitio: de haberse equivocado
+midiendo. Esta lista decía «Tres» cuando ya eran nueve — la cazó el guardián de este README.
 
 ---
 

@@ -160,9 +160,13 @@ incluidos **los tres en que hubo que retractarse de un informe propio**.
 | **GTFS del Punto de Acceso Nacional** | Topología: paradas, líneas, trazados, calendario | Miente con las obras. No tiene tiempo real |
 | **Web del operador** (recorrido) | El recorrido **vigente hoy**, por sentido, con el desvío aplicado | No dice que sea un desvío: hay que **derivarlo** |
 | **Sistema de tiempo real del operador** | Posición GPS y minutos de llegada | Anuncia autobuses en paradas suprimidas |
-| **Pliego municipal de contratación** | El registro oficial de la flota (403 vehículos) | Se aprobó en 2025: no trae los posteriores |
+| **Pliego municipal de contratación** | El registro oficial de la flota: **350 vehículos** | Se aprobó en 2025: no trae los posteriores |
 | **busesmadrid.es** | Los **43 vehículos** que circulan y no están en el pliego | No es oficial → salen **marcados con asterisco** |
 | **OpenStreetMap** | La cartografía | — |
+
+Sumadas dan los **403 vehículos** que ZetaBus reconoce, y cada ficha dice **de qué fuente sale cada
+uno de sus campos** — no el vehículo entero: el campo. Un coche del pliego con una longitud
+observada a mano no se blanquea por el resto.
 
 > Y una que salió por sorpresa: gracias al pliego municipal descubrimos que el fichero de flota
 > heredado **mentía en el 20 % de las longitudes** —decía «12 metros» donde había un articulado de
