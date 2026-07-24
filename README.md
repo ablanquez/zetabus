@@ -285,8 +285,10 @@ Tres cosas que no se ven en las capturas y explican el resto:
 informes en [`docs/auditoria/`](docs/auditoria/), **antes** de escribir la aplicación. Tres de
 ellos son retractaciones de un informe anterior propio.
 
-**2 · Las pruebas miran la pantalla, no el código.** 451 pruebas de motor (Vitest) y 806 de
-navegador (Playwright), y las visuales **miden el píxel pintado**, no la clase de CSS. El motivo
+**2 · Las pruebas miran la pantalla, no el código.** Más de **470** pruebas de motor (Vitest) y más
+de **800** de navegador (Playwright) —dicho como suelo, y a propósito: contarlas exactas exige
+correr las dos suites, así que ningún guardián puede vigilar esa cifra y un número redondo se
+quedaría rancio en silencio—. Las visuales **miden el píxel pintado**, no la clase de CSS. El motivo
 está escrito en [`e2e/lib/medir.ts`](e2e/lib/medir.ts): *«verificar el JSON con `curl` NO ES haber
 mirado la pantalla»*.
 

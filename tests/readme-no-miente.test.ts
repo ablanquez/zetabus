@@ -4,7 +4,7 @@
  *
  * ═══════════════════════════════════════════════════════════════════════════
  *  POR QUÉ. El README llevaba 91 commits de `src/` diciendo que la aplicación no
- *  existía, y pasaba las 1.257 pruebas del proyecto: ninguna mira la prosa. Y el
+ *  existía, y pasaba las más de mil pruebas del proyecto: ninguna mira la prosa. Y el
  *  índice de `docs/` indexaba 7 informes cuando ya había 13. Las cifras de un
  *  documento **caducan solas y en silencio** — nadie las rompe, dejan de ser
  *  ciertas mientras el fichero no se toca.
@@ -351,10 +351,11 @@ describe('⛔ LO QUE ESTE REGISTRO **NO** PUEDE VERIFICAR (y por tanto sigue sie
   // enseña a no mirar, que es peor que no tenerlo.
   it('la lista está escrita, y cada exclusión trae su motivo', () => {
     const NO_CONSTA = {
-      'cuántas pruebas hay (451 de motor, 806 de navegador)':
-        'contarlas exige EJECUTAR las dos suites. El conteo estático de `it(` da 398, no 451 ' +
-        '(hay tests generados en bucle): sería un número distinto disfrazado del mismo, ' +
-        'y se quedaría verde estando mal.',
+      'cuántas pruebas hay (motor y navegador)':
+        'contarlas exige EJECUTAR las dos suites. El conteo estático de `it(` daba 398 cuando ' +
+        'la suite corría 451 (hay tests generados en bucle): sería un número distinto ' +
+        'disfrazado del mismo, y se quedaría verde estando mal. Por eso el README las dice ' +
+        'como SUELO («más de 470»): un suelo aguanta que se añadan pruebas, que es lo que pasa.',
       '22 de las 44 líneas caen en la franja rojo/ámbar/verde':
         'no hay en el repositorio ninguna definición de «franja rojo/ámbar/verde». ' +
         'Calcularla aquí sería INVENTAR el criterio, no verificarlo.',
