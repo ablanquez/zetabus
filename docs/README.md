@@ -43,6 +43,61 @@ Las tres primeras que **no miran los datos, sino el proyecto**: se hicieron ante
 
 ---
 
+## El cuaderno de campo
+
+Las preguntas sueltas que hubo que resolver **mientras se construía**: una duda, una medición, un
+dato crudo. No son las siete fases —esas están arriba—: son el rastro de trabajo, y **están aquí
+porque se eligieron, no porque sobraran**. Cada uno dice su fecha, cuántas peticiones costó y si
+tocó código.
+
+> ⚠️ **Léelos con la fecha delante.** Son notas de trabajo, no documentación mantenida: algunas
+> describen un estado del proyecto que ya se pasó. **Donde hay retractación, se marca 🛑**, igual
+> que en las siete fases.
+
+### Preguntas sobre la fuente
+
+| Documento | Qué respondió |
+|---|---|
+| [Los nombres de parada](AUDITORIA_NOMBRES_DE_PARADA.md) | El Title Case roto **no es nuestro**: viene en `stops.txt`, 751 de 934 nombres tocados. Y el nombre bueno **no se normaliza: se PIDE** al operador. |
+| [Los nombres largos de línea](AUDITORIA_NOMBRES_LARGOS.md) | Los 8 `longName` rotos (acentos comidos, «Carlos Quinto», guiones perdidos) y **de dónde sale** la forma propuesta de cada uno. Propuestas, no aplicadas. |
+| [La flota completa](AUDITORIA_FLOTA_COMPLETA.md) | El recuento por procedencia hasta dejar los `sin_verificar` en **3 de 403**. |
+| [Líneas no operativas](AUDITORIA_LINEAS_OPERATIVAS.md) | EM1/EM2/EM3/V1/V4 ya están fuera, y **por el criterio correcto** (viajes en el feed, no lista negra). |
+| [Líneas estacionales](AUDITORIA_LINEAS_ESTACIONALES.md) | ⛔ **Ninguna fuente dice si una lanzadera toca hoy.** El criterio actual acierta, pero tiene un fallo que llegará solo el día que cambie el feed. |
+| [Servicios prolongados (34, 44)](AUDITORIA_SERVICIOS_PROLONGADOS.md) | Un recorrido que ciertos días se alarga **no es un desvío de obras**, aunque se le parezca. |
+| [Cabeceras múltiples](AUDITORIA_CABECERAS_MULTIPLES.md) | Cuántas líneas tienen de verdad dos cabeceras válidas: **una**, la 23. |
+| [Terminales en obras](AUDITORIA_TERMINALES_EN_OBRAS.md) | Los extremos de las salidas parciales usan el punto **teórico** del GTFS: apuntan a sitios por los que hoy no se pasa. |
+| [Q1 · ¿de qué fuente sale el horario?](AUDITORIA_Q1_FUENTE_DE_HORARIO.md) | 🛑 **Su veredicto fue refutado el mismo día** por el informe siguiente: sí hay tabla de horario raspable. Se conserva porque es donde se ve el error. |
+| [La tabla de horarios de la web](AUDITORIA_HORARIO_WEB_AVANZA.md) | ⭐ **Rectifica al anterior.** Existe una tabla server-rendered, *day-aware* y con el alcance real del día. Es la que ZetaBus usa hoy. |
+| [El sistema visual](AUDITORIA_SISTEMA_VISUAL.md) | Dónde había más de una fuente de verdad para el mismo valor. Su tabla de contraste **se quedó vieja**: hoy la fórmula WCAG vive una sola vez, en `src/core/contraste.ts`. |
+
+### Dato crudo, sin conclusiones
+
+| Documento | Qué contiene |
+|---|---|
+| [Salidas de toda la red](DATOS_CRUDOS_SALIDAS_RED_COMPLETA.md) | Primeras y últimas de las 44 líneas. 88 peticiones, 20/07/2026. |
+| [Líneas 25, 35, 38 y 41](DATOS_CRUDOS_LINEAS_25_35_38_41.md) | Las tablas de la web, literales. |
+| [Línea 21](DATOS_CRUDOS_LINEA_21.md) | Ídem, en el caso que destapó la trampa del guion. |
+
+### Mediciones
+
+| Documento | Qué midió |
+|---|---|
+| [Cadencia y corte](PRUEBA_CADENCIA_Y_CORTE.md) | Sí hay cadencia estable en el medio — y ⛔ **la hipótesis del corte no se sostenía** tal como estaba formulada. |
+| [El hueco central](MEDICION_HUECO_CENTRAL.md) | Con el criterio **declarado antes de mirar los datos**, que es la mitad del método. |
+| [El suelo de zoom del mapa](SPIKE_SUELO_DE_ZOOM.md) | 90 paradas contra el `getBoundsZoom` **del Leaflet de verdad**, no una reimplementación. |
+| [El color de la marca](LOGO_ANALISIS_COLOR.md) | Por qué `#7048E8` y no un azul: la rueda está llena y el azul cercano se leería como el operador. |
+
+### Especificaciones y decisiones
+
+| Documento | Qué decide |
+|---|---|
+| [Motor de horarios](MOTOR-HORARIOS.md) | ⏸️ Especificación de v2, aparcada entera. *(Su cabecera dice que ninguna pieza está construida; la recogida del horario web sí lo está.)* |
+| [El bloque de salidas](MODELO-BLOQUE-SALIDAS.md) | Un solo modelo para los 65 sentidos con tabla. Sin modos ni casos especiales. |
+| [El barrido de línea, aparcado](BARRIDO_APARCADO.md) | ⭐ **Por qué NO se hace**: 67 peticiones y 17 s para responder algo que nadie pregunta esperando el bus. El motivo no está en git; está aquí. |
+| [Web Interface Guidelines (congeladas)](web-interface-guidelines.SNAPSHOT.md) | Cita fija de una fuente ajena y móvil, con su SHA. Auditar contra `main` de otro no es auditar. |
+
+---
+
 ## Diseño
 
 | Documento | |
