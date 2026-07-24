@@ -46,6 +46,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { lineas, paradas } from '@/engine/topologia';
@@ -245,6 +246,18 @@ function enlacesDe(doc: string, texto: string): string[] {
 
 const enlacesRotos = (doc: string): string[] => enlacesDe(doc, leer(doc));
 
+/**
+ * Los `.md` de `docs/` **que están en el repositorio**, preguntándoselo a git y no
+ * al disco: lo que se publica es lo versionado, y un borrador local sin seguir no
+ * debe poner rojo a nadie. Si git no contesta, se rompe en voz alta — un `catch`
+ * que devolviera lista vacía dejaría el guardián en verde sin mirar nada.
+ */
+const documentosDeDocs = (): string[] =>
+  execFileSync('git', ['ls-files', 'docs/'], { encoding: 'utf8' })
+    .split('\n')
+    .map((f) => f.trim())
+    .filter((f) => f.endsWith('.md'));
+
 interface Desajuste {
   readonly frase: string;
   readonly dice: number;
@@ -305,18 +318,38 @@ describe('⭐⭐ EL README NO MIENTE: las cifras escritas son las que dice el re
     ).toBe(informesDeAuditoria());
   });
 
-  it('⭐ todos los enlaces del índice apuntan a un fichero que existe', () => {
-    // Nivel 1, y aquí NO es decoración: el índice acaba de estrenar 24 documentos
-    // que antes no listaba. En cuanto se renombre uno, el índice miente igual que
-    // cuando decía «siete informes» habiendo trece — pero peor, porque un enlace
-    // roto parece un descuido y no una afirmación falsa.
-    const rotos = enlacesRotos('docs/README.md');
-    expect(rotos, `enlaces del índice que no llevan a ningún fichero:\n   ${rotos.join('\n   ')}`)
-      .toEqual([]);
+  it('⭐ ningún enlace roto en NINGÚN documento de docs/ — el índice Y su interior', () => {
+    // ⚠️ POR QUÉ TODOS Y NO SOLO EL ÍNDICE. La primera versión miraba solo
+    // `docs/README.md`, y al arreglar los 12 enlaces rotos del 24/07 quedó
+    // demostrado que NO CAZÓ NI UNO: los doce vivían DENTRO de los documentos
+    // (referencias cruzadas de las siete fases que no se actualizaron al
+    // renombrarlas). El índice estaba cubierto y el interior no.
+    const documentos = documentosDeDocs();
+    // Sanity ANTES de la comprobación: si la lista viniera vacía —git ausente,
+    // clon superficial, un `docs/` movido— el test pasaría en verde sin haber
+    // mirado nada, que es exactamente el fallo que este fichero persigue.
+    expect(documentos.length, 'la lista de documentos de docs/ no puede venir vacía')
+      .toBeGreaterThan(30);
+
+    const rotos = documentos.flatMap((d) => enlacesRotos(d).map((e) => `${d}  →  ${e}`));
+    expect(
+      rotos,
+      `enlaces que no llevan a ningún fichero (${documentos.length} documentos revisados):\n   ` +
+        rotos.join('\n   '),
+    ).toEqual([]);
   });
 
   it('⭐ CONTRAPRUEBA: el comprobador caza un enlace roto plantado', () => {
     // Sobre texto sintético, para no tocar el documento de verdad.
+    // ⚠️ Y resolviendo desde el directorio de CADA documento, no desde la raíz:
+    // el mismo destino relativo significa cosas distintas según dónde viva la
+    // frase, y ahí es donde un comprobador de enlaces se vuelve inútil en silencio.
+    expect(enlacesDe('docs/auditoria/03-fase5-desvios.md', '[x](01-fase3-cruce-gtfs.md)')).toEqual(
+      [],
+    );
+    expect(enlacesDe('docs/README.md', '[x](01-fase3-cruce-gtfs.md)')).toEqual([
+      '01-fase3-cruce-gtfs.md', // desde el índice ese destino NO existe: está en auditoria/
+    ]);
     expect(enlacesDe('docs/README.md', '[x](auditoria/01-fase3-cruce-gtfs.md)')).toEqual([]);
     expect(enlacesDe('docs/README.md', '[x](auditoria/99-no-existe.md)')).toEqual([
       'auditoria/99-no-existe.md',
