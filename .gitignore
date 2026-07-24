@@ -156,6 +156,13 @@ PCAP.zip
 /playwright-report/
 /blob-report/
 /.playwright/
+#    Y la salida del BARRIDO TOTAL (Capa 1 del cierre de la Tanda 7): los JSON de
+#    hallazgos, sus capturas y el log. Se regeneran corriendo el barrido; versionarlos
+#    sería congelar el resultado de UNA tarde como si fuera un hecho permanente.
+/e2e/.barrido/
+/e2e/.capturas/
+/e2e/.barrido-log.txt
+/e2e/.fino-log.txt
 
 # ── RUIDO ──────────────────────────────────────────────────────────
 node_modules/
