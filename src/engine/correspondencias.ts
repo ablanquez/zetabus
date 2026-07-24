@@ -53,6 +53,24 @@ import {
 import { rumboDe } from '@/engine/rumbo';
 
 // ── La forma del artefacto en disco (la escribe build-correspondencias.ts) ───────
+/**
+ * ⚠️⚠️ ESTA INTERFAZ ESTÁ ESCRITA **DOS VECES**, Y ES A PROPÓSITO. LA GEMELA VIVE EN
+ *    `src/sources/avanza/correspondencias.ts` (mismo nombre, mismos dos campos).
+ *
+ * ⇒ **SI TOCAS UNA, TIENES QUE TOCAR LA OTRA.** No hay nada que te obligue.
+ *
+ * POR QUÉ NO SE UNIFICAN, que es la pregunta razonable:
+ *
+ * La frontera `src/sources/` ↔ `src/engine/` es deliberada — **la fuente no depende
+ * del motor**. Unificarlas obliga a decidir quién es dueño del tipo, y eso es una
+ * decisión de arquitectura, no una limpieza: cualquiera de las dos direcciones
+ * mete una dependencia que hoy no existe, y este proyecto acaba de verificar la
+ * aplicación entera. *El coste de tocar lo que funciona.*
+ *
+ * ⇒ Se auditó (`docs/auditoria/11-codigo-y-arquitectura.md` · A-D1), se sopesó, y
+ *   **Antonio decidió dejar las dos y poner esta nota**. Cuesta cinco minutos y
+ *   resuelve el daño real, que no es la duplicación en sí: es **no enterarse**.
+ */
 export interface ParQuePasa {
   readonly linea: string; // shortName del GTFS
   readonly sentido: 0 | 1;

@@ -47,6 +47,20 @@ import { assertCount } from '@/core/control';
 const direccionDeSentido = (s: SentidoAvanza): 0 | 1 => (s === -1 ? 0 : 1);
 
 /** Una línea que pasa por un poste, con su sentido. `linea` = shortName del GTFS. */
+/**
+ * ⚠️⚠️ ESTA INTERFAZ ESTÁ ESCRITA **DOS VECES**, Y ES A PROPÓSITO. LA GEMELA VIVE EN
+ *    `src/engine/correspondencias.ts` (mismo nombre, mismos dos campos).
+ *
+ * ⇒ **SI TOCAS UNA, TIENES QUE TOCAR LA OTRA.** No hay nada que te obligue: no hay
+ *   test, ni tipo compartido, ni el compilador dirá nada. Si añades un tercer
+ *   campo aquí y te olvidas de allí, el índice y el motor dejarán de describir el
+ *   mismo dato **y todo seguirá compilando**.
+ *
+ * El porqué de no unificarlas está en la gemela y en
+ * `docs/auditoria/11-codigo-y-arquitectura.md` · A-D1: la frontera
+ * `sources/` ↔ `engine/` es deliberada y romperla es una decisión de
+ * arquitectura, no una limpieza. Se sopesó y se decidió dejarlas.
+ */
 export interface ParQuePasa {
   readonly linea: string;
   readonly sentido: 0 | 1;
