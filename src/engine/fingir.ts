@@ -71,7 +71,32 @@ export type Fingimiento =
    * modo que sale un desvío de verdad: paradas tachadas en el acordeón y una parada
    * PROVISIONAL en el itinerario. Vale para cualquier `/linea/<n>?fingir=desviada`.
    */
-  | 'desviada';
+  | 'desviada'
+  /**
+   * ⭐⭐ EL HORARIO DE LA WEB, CON SU "INFORMACIÓN ADICIONAL". Y NACE DE UN VERDE VACÍO.
+   *
+   * ═══════════════════════════════════════════════════════════════════════════
+   *  ⚠️ HASTA AQUÍ, **NINGUNA PRUEBA AUTOMÁTICA HABÍA EJERCITADO NUNCA ESTA PARTE DE LA
+   *  PANTALLA.** Ni ésta ni antes. El test de "una sola copia de Información adicional"
+   *  contaba **CERO** a todos los anchos y pasaba: un verde que no probaba nada.
+   *
+   *  El motivo estaba escrito y era una decisión tomada MIRANDO OTRA COSA. En
+   *  `desviada`: *"a lo demás —el horario, etc.— un cuerpo neutro que no finge autobuses
+   *  de más"*. «Neutro» lo era para los AUTOBUSES; para el horario ese cuerpo es
+   *  **ilegible**: `parsearHorarioWeb` lanza `HorarioIlegible`, la caché lo convierte en
+   *  `{tipo:'fallo'}` y `horarioDeLinea` devuelve `null` **sin un solo error**. La caja
+   *  del horario y la de "Información adicional" simplemente no se pintaban.
+   *
+   *  ⇒ Y es justo la pieza donde el informe dio verde y la pantalla de Antonio dijo que
+   *    no (el horario flotando a media altura, L36). El hueco de cobertura y el fallo
+   *    real vivían en el mismo sitio.
+   * ═══════════════════════════════════════════════════════════════════════════
+   *
+   * Da un recorrido SIN desvío (la ruta oficial tal cual) + la página de horario. Es el
+   * caso que hay que poder mirar: **el horario ARRIBA, pegado al techo, sin hueco.**
+   * Para el horario CON desvío, `desviada` sirve ahora también esta misma página.
+   */
+  | 'horario';
 
 // ⚠️ SE HA IDO `barrido-lento`. Existía SOLO para ver moverse la barra de progreso
 //    del barrido de línea, que está aparcado (`docs/BARRIDO_APARCADO.md`). Un
@@ -84,7 +109,7 @@ export type Fingimiento =
 //    De Los ángeles" — 53 caracteres, y es real. Fingir un caso que ya existe en
 //    los datos sería probar mi invención en lugar de la realidad.
 export const FINGIMIENTOS: readonly Fingimiento[] = [
-  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'solo-oficiales', 'dos-lineas', 'mapa', 'desviada',
+  'caido', 'lento', 'sin-buses', 'ilegible', 'sin-ficha', 'sin-verificar', 'solo-oficiales', 'dos-lineas', 'mapa', 'desviada', 'horario',
 ];
 
 export const demoEncendido = (): boolean => process.env.ZETABUS_DEMO === '1';
@@ -296,14 +321,101 @@ function rutaFingidaConDesvio(cuerpo: string): string {
 }
 const opcion = (poste: number, nombre: string) => `<option value="${poste}">${poste} - ${nombre}</option>`;
 
+/** La ruta oficial TAL CUAL: ni una parada caída, ni una provisional. Sin desvío. */
+function rutaFingidaSinDesvio(cuerpo: string): string {
+  const p = new URLSearchParams(cuerpo);
+  const l = lineaDeEtiqueta(p.get('selectLinea') ?? '');
+  if (!l) return '';
+  const directionId = p.get('selectSentido') === '-2' ? 1 : 0;
+  const s = sentidosDe(idLinea(String(l.id))).find((x) => x.directionId === directionId);
+  if (!s) return '';
+  return s.official.stops
+    .map((sid) => ({ poste: posteDe(idParada(sid)), nombre: parada(idParada(sid))?.name }))
+    .filter((x): x is { poste: number; nombre: string } => x.poste !== null && !!x.nombre)
+    .map((x) => opcion(x.poste, x.nombre))
+    .join('');
+}
+
+/**
+ * ⭐ LA PÁGINA DE HORARIO DE AVANZA, FINGIDA. Calcada de la estructura REAL, porque el
+ * parser la lee por sus marcas y no por su contenido:
+ *
+ *   · `#infoHorarios` con DOS `table.table-horarios`, distinguidas por su
+ *     `aria-describedby` (`...primeras-desc` / `...ultimas-desc`);
+ *   · cada fila, tres `<td>`: hora, desde, hasta. ⚠️ Avanza las manda ×4 y el parser
+ *     deduplica — **aquí también se repiten**, o estaríamos fingiendo una página MÁS
+ *     limpia que la real y la deduplicación no se ejercitaría nunca;
+ *   · `#infoCaracteristicas` con los párrafos de "Información adicional";
+ *   · y la "Frecuencia media" en un `<p>` **FUERA** de esa caja, que es donde va de
+ *     verdad (medido: en los 65 sentidos con tabla, y nunca dentro).
+ *
+ * Los terminales salen de la topología REAL de la línea pedida: el horario fingido dice
+ * lo que esa línea diría, no un texto de relleno.
+ */
+function paginaHorarioFingida(url: string): string {
+  const q = new URLSearchParams(url.split('?')[1] ?? '');
+  const l = lineaDeEtiqueta(q.get('selectLinea') ?? '');
+  const directionId = q.get('selectSentido') === '-2' ? 1 : 0;
+  const s = l ? sentidosDe(idLinea(String(l.id))).find((x) => x.directionId === directionId) : undefined;
+  const paradas = s?.official.stops ?? [];
+  const nombreDe = (i: number) => (paradas[i] ? parada(idParada(paradas[i]))?.name ?? 'Terminal' : 'Terminal');
+  const desde = nombreDe(0).toUpperCase();
+  const hasta = nombreDe(paradas.length - 1).toUpperCase();
+
+  // ⚠️ MUCHAS salidas a propósito: es el caso "horario largo" que hay que poder mirar.
+  const horas = ['05:45', '06:00', '06:15', '06:30', '06:45', '07:00', '07:12', '07:24'];
+  const ultimasHoras = ['22:15', '22:45', '23:15', '23:45'];
+  // ×2 para que la deduplicación del parser tenga algo que deduplicar (Avanza manda ×4).
+  const filas = (hs: string[]) =>
+    hs.concat(hs).map((h) => `<tr><td>${h}</td><td>${desde}</td><td>${hasta}</td></tr>`).join('');
+
+  const tabla = (desc: string, hs: string[]) =>
+    `<table class="table-horarios" aria-describedby="${desc}"><tbody>${filas(hs)}</tbody></table>`;
+
+  // "Información adicional": prosa + viñetas `*` (el formato real de la 23), para que se
+  // ejercite también el camino de la lista y no solo el del párrafo.
+  const info =
+    `<p>Esta línea modifica su recorrido los días de feria y en las cabalgatas.</p>` +
+    `<p>Realiza terminal en José Atarés en las siguientes franjas horarias: ` +
+    `* Laborables – de 6:42h a 22:58h. * Sábados – de 7:26h a 20:23h. ` +
+    `* Festivos y domingos – de 7:46h a 14:23h.</p>`;
+
+  return (
+    `<p>Frecuencia media: laborables: 9, sábados: 16, domingos y festivos: 16 min.</p>` +
+    `<div id="infoHorarios">` +
+    tabla('table-horarios-primeras-desc', horas) +
+    tabla('table-horarios-ultimas-desc', ultimasHoras) +
+    `</div>` +
+    `<div id="infoCaracteristicas">${info}</div>`
+  );
+}
+
+/** ¿Es la petición del horario de la web? (GET a `lineas-y-horarios`). */
+const esHorario = (url: string) => url.includes('lineas-y-horarios');
+
 export function transporteFingido(f: Fingimiento): Transporte {
   switch (f) {
     case 'desviada':
-      // A `get_stops_list` (la ruta de hoy) se le da la ruta con caídas; a lo demás
-      // —el horario, etc.— un cuerpo neutro que no finge autobuses de más.
-      return async (_url, { cuerpo }) => {
+      // A `get_stops_list` (la ruta de hoy) se le da la ruta con caídas; al HORARIO, su
+      // página; y a lo demás, un cuerpo que no finge autobuses de más.
+      //
+      // ⚠️ ANTES EL HORARIO CAÍA EN ESE «lo demás» Y RECIBÍA UN CUERPO DE POSTE. Era
+      //    «neutro» para los autobuses e ILEGIBLE para el horario: la caja no se pintaba
+      //    nunca, y el test que la vigilaba contaba cero y pasaba. Ver el comentario del
+      //    fingimiento `horario`.
+      return async (url, { cuerpo }) => {
         const c = cuerpo ?? '';
         if (c.includes('get_stops_list')) return { status: 200, texto: rutaFingidaConDesvio(c) };
+        if (esHorario(url)) return { status: 200, texto: paginaHorarioFingida(url) };
+        return { status: 200, texto: OFICIAL };
+      };
+    case 'horario':
+      // SIN desvío (ruta oficial tal cual) + la página de horario. El caso que hay que
+      // poder MIRAR: el horario arriba, pegado al techo, sin hueco.
+      return async (url, { cuerpo }) => {
+        const c = cuerpo ?? '';
+        if (c.includes('get_stops_list')) return { status: 200, texto: rutaFingidaSinDesvio(c) };
+        if (esHorario(url)) return { status: 200, texto: paginaHorarioFingida(url) };
         return { status: 200, texto: OFICIAL };
       };
     case 'dos-lineas':
