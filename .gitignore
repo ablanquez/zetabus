@@ -163,6 +163,7 @@ PCAP.zip
 /e2e/.capturas/
 /e2e/.barrido-log.txt
 /e2e/.fino-log.txt
+/e2e/.suite-log.txt
 
 # ── RUIDO ──────────────────────────────────────────────────────────
 node_modules/
