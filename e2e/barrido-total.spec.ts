@@ -161,6 +161,14 @@ async function revisarUna(page: Page, e: Entrada, ancho: string): Promise<{ hall
 }
 
 test.describe('⭐ CAPA 1 · barrido total', () => {
+  /**
+   * ⚠️ OPT-IN A PROPÓSITO, como `e2e/auditoria/`. Son 2.024 cargas y ~16 minutos: metido
+   *    en la suite normal, `npm run visual` pasaría de segundos a un cuarto de hora y lo
+   *    que acabaría pasando es que se deja de lanzar. Un barrido que estorba se apaga.
+   *
+   *      BARRIDO=1 npx playwright test e2e/barrido-total.spec.ts --project=360px --project=1280px
+   */
+  test.skip(process.env.BARRIDO !== '1', 'barrido total: opt-in con BARRIDO=1 (son ~16 min)');
   // ⚠️ Sin timeout de test: un trozo son ~130 páginas. El límite real es el del `goto`.
   test.setTimeout(30 * 60_000);
 
