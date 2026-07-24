@@ -58,6 +58,15 @@ import type { MetadataRoute } from 'next';
  *                       endoscopio —público a propósito, pero no algo que deba
  *                       salir en una búsqueda—.
  *
+ *                       ⚠️ Y aquí dentro cae también `/api/regenerar`, que lanza
+ *                       el barrido nocturno. **Que esté cerrado aquí NO es lo que
+ *                       lo protege** —ver abajo: esto es una petición, no una
+ *                       valla—. Lo protegen tres cosas que sí son vallas: que
+ *                       solo responde a POST (un rastreador hace GET), que exige
+ *                       un token en cabecera, y que sin token configurado no
+ *                       ejecuta nada. El `Disallow` solo le ahorra el viaje a
+ *                       quien se porta bien.
+ *
  *   `/interno/*`        La guía del sistema visual. Ya lleva `noindex` en su
  *                       metadata, pero eso el rastreador solo lo sabe DESPUÉS de
  *                       pedir la página. Decirlo aquí le ahorra la visita.

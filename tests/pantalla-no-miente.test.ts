@@ -335,14 +335,55 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
     expect(culpables, 'el código aparcado NO puede tener un import vivo').toEqual([]);
   });
 
-  it('⭐ no existe NINGUNA ruta de barrido bajo src/app', () => {
-    // Next enruta lo que hay bajo `src/app`. Un `route.ts` ahí es una URL pública.
-    // El barrido vive en `parked/`, que Next no mira: no es una ruta, es un fichero.
+  /**
+   * ═══════════════════════════════════════════════════════════════════════════
+   * ⚠️⚠️ ESTE TEST SE AFILÓ, Y QUEDA ESCRITO POR QUÉ (LA CICATRIZ).
+   *
+   * ANTES prohibía la PALABRA: `/barrerLinea|barrido/i` en cualquier ruta de
+   * `src/app`. Y funcionó —se puso rojo el día que apareció `/api/regenerar`—,
+   * pero por el motivo equivocado: se disparó contra un `console.log` que decía
+   * «barrido aceptado», no contra el peligro. Prohibir una palabra tiene dos
+   * fallos gemelos: un falso positivo (un `console.log` la contiene) y, mucho
+   * peor, un falso NEGATIVO (la próxima ruta que barra Avanza llamándose de otra
+   * forma pasa sin que nadie la vea). El guardián existe justo para cazar ESO.
+   *
+   * ⇒ AHORA no prohíbe cómo se LLAMA una ruta, sino que exige lo que la hace
+   *   ACEPTABLE. `/api/regenerar` lanza 74 peticiones a Avanza —más que las 18 del
+   *   Route Handler que se aparcó—, y es aceptable NO por su nombre, sino porque:
+   *     · exporta SOLO `POST` (un `GET` lo dispara un enlace o un rastreador),
+   *     · exige un token (`authorization` / `Bearer`), y
+   *     · sin token configurado responde `503` y no ejecuta nada (falla cerrado).
+   *
+   *   Una ruta que importe `@/engine/barrido` y no cumpla las tres se pone roja.
+   *   El barrido ya no está prohibido bajo `src/app`: está PERMITIDO BAJO FIANZA,
+   *   y la fianza se comprueba aquí. (Contraprueba en `tests/regeneracion-cerrada`:
+   *   se rompe cada propiedad por separado y las tres se ponen rojas — L51.)
+   * ═══════════════════════════════════════════════════════════════════════════
+   */
+  it('⭐ toda ruta que importe el barrido exporta SOLO POST, exige token y falla cerrado (503)', () => {
+    // El barrido aparcado sigue sin poder tener un endpoint propio con ese nombre.
     expect(existsSync('src/app/api/barrido'), 'no puede haber endpoint de barrido').toBe(false);
 
-    const rutas = ficheros('src/app', ['.ts', '.tsx']);
-    const queBarren = rutas.filter((f) => /barrerLinea|barrido/i.test(sinComentarios(readFileSync(f, 'utf8'))));
-    expect(queBarren, 'ninguna ruta puede mencionar el barrido siquiera').toEqual([]);
+    const rutas = ficheros('src/app', ['.ts', '.tsx']).filter((f) => f.endsWith('route.ts'));
+    const queImportanElBarrido = rutas.filter((f) =>
+      /from\s+['"]@\/engine\/barrido['"]/.test(sinComentarios(readFileSync(f, 'utf8'))),
+    );
+
+    // Que exista o no una ruta así es asunto del proyecto; lo que NO se negocia es
+    // que, si existe, cumpla la fianza. Si un día no hay ninguna, esto no falla.
+    for (const f of queImportanElBarrido) {
+      const c = sinComentarios(readFileSync(f, 'utf8'));
+
+      // 1 · SOLO POST. Ni GET, ni PUT, ni PATCH, ni DELETE exportados.
+      const verbos = [...c.matchAll(/export\s+(?:async\s+)?function\s+([A-Z]+)\b/g)].map((m) => m[1]);
+      expect(verbos, `${f}: una ruta que barre Avanza NO puede exportar más que POST`).toEqual(['POST']);
+
+      // 2 · EXIGE TOKEN. Lee la cabecera de autorización antes de trabajar.
+      expect(/authorization/i.test(c) && /bearer/i.test(c), `${f}: tiene que exigir un token en cabecera`).toBe(true);
+
+      // 3 · FALLA CERRADO. Sin la variable configurada, 503 y nada de barrido.
+      expect(/\b503\b/.test(c), `${f}: sin token configurado tiene que responder 503 (fallar cerrado)`).toBe(true);
+    }
   });
 
   /**

@@ -280,6 +280,11 @@ desvío**. Se genera solo con `npm run build`, y si el operador está caído dur
 npm run correspondencias:build   # regenerarlo a mano (~2 min)
 ```
 
+En un hosting **sin SSH** no se puede lanzar ese comando, así que el mismo barrido —el mismo
+código, no una copia— se dispara con `POST /api/regenerar`, protegido por un token en cabecera.
+Si el token no está configurado en el servidor, **el endpoint no ejecuta nada**: responde `503`.
+Ver [`.env.example`](.env.example).
+
 ### Ver cómo funciona sin tocar la red
 
 ```bash

@@ -123,7 +123,20 @@ export interface CorrespondenciasDeParada {
 //  (una vez al día, cuando el barrido lo reescribe). `null` = no existe/ilegible.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RUTA = join(process.cwd(), 'data', 'generated', 'correspondencias.json');
+/**
+ * ⭐ LA RUTA DEL ARTEFACTO, Y SE EXPORTA A PROPÓSITO.
+ *
+ * Quien lo ESCRIBE (`@/engine/barrido`) importa esta misma constante en vez de
+ * componer su propia cadena. No es comodidad: el escritor y el lector apuntando
+ * a dos rutas distintas es un fallo que **no se nota** —la regeneración diría
+ * «hecho», el lector seguiría sirviendo el de ayer, y nada se pondría rojo—.
+ * Una sola constante lo hace imposible.
+ *
+ * ⚠️ Es relativa a `process.cwd()`, que en producción NO es el directorio donde
+ *    se compiló: se midió `~/nodejs`. Ver el campo `cwd` de `/api/diag`.
+ */
+export const RUTA_INDICE = join(process.cwd(), 'data', 'generated', 'correspondencias.json');
+const RUTA = RUTA_INDICE;
 let cache: { readonly mtimeMs: number; readonly data: ArtefactoIndice } | null = null;
 
 export function leerIndice(): ArtefactoIndice | null {
