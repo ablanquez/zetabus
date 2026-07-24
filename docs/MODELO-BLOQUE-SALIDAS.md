@@ -1,5 +1,17 @@
 # Modelo estándar del bloque de primeras/últimas salidas
 
+> ## 🛑 RECTIFICACIÓN · 24/07/2026 — el «pendiente» del § 8 ya está decidido
+>
+> **Qué afirma este documento:** *«Los tres tipos de día (laborables / sábados / festivos) se
+> publican. Decidir si se enseñan los tres o solo el de hoy — **pendiente**.»*
+>
+> **Qué es verdad hoy:** **se enseñan los tres.** `src/components/Terminal.tsx` pinta
+> *«laborables N · sábados N · domingos y festivos N»* cuando difieren, y colapsa a *«Cada N min de
+> media»* cuando la frecuencia es uniforme. La decisión se tomó construyéndola, y **nadie volvió a
+> bajar a marcar el cabo**.
+>
+> El resto del documento no cambia: el modelo único para los 65 sentidos sigue en pie.
+
 > **Un solo modelo para los 65 sentidos con tabla.** Sin modos, sin casos especiales.
 > Verificado contra `docs/DATOS_CRUDOS_SALIDAS_RED_COMPLETA.md` (44 líneas, 88 peticiones, 20/07/2026).
 

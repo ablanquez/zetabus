@@ -1,5 +1,38 @@
 # Auditoría Q1 — ¿de qué fuente sale el horario (y el alcance) de hoy?
 
+> # 🛑 RECTIFICACIÓN · 24/07/2026
+>
+> **Este informe conserva un veredicto que se demostró FALSO el mismo día que se escribió.**
+> No se reescribe: se rectifica aquí arriba y **el cuerpo queda intacto debajo**, porque el par de
+> documentos leído junto vale más que uno limpio.
+>
+> **Qué afirma este informe (§ Veredicto):**
+> *«No existe un horario de día completo raspable en la web de Avanza: lo que Antonio vio son los
+> tiempos en vivo.»* De ahí salía la conclusión de que el GTFS servía para el **ritmo** pero no
+> para el **alcance**, y que el alcance del día no se podía tener por adelantado.
+>
+> **Qué es verdad hoy:** **sí existe**, y ZetaBus la usa. Es una tabla *server-rendered*,
+> *day-aware* y con el alcance real del día.
+>
+> **Quién lo refutó:** [`AUDITORIA_HORARIO_WEB_AVANZA.md`](AUDITORIA_HORARIO_WEB_AVANZA.md),
+> **el 16/07/2026**, el mismo día. Y dice por qué falló esto: *«el error fue mío y tonto: pedí
+> `/lineas-y-horarios/?linea=34` cuando el parámetro real es `?selectLinea=44&selectSentido=-1`.
+> Con el nombre equivocado, la página venía sin tabla y deduje "la rellena JS / es el vivo"»*.
+> ⭐ **La fuente no mintió: la pregunta estaba mal formulada, y la respuesta vacía se leyó como un
+> hecho sobre el mundo.**
+>
+> **Y desde cuándo el código dice lo contrario:** desde `0582c29` (16/07/2026), *«tabla pelada de
+> la web de Avanza»*. El parser vive en `src/sources/avanza/horario.ts` y lo pinta
+> `src/components/Terminal.tsx`.
+>
+> ⚠️ **Ocho días publicando lo contrario de lo que hace la aplicación, y nadie lo vio.** El motivo
+> está medido: este documento **no estaba en el índice de `docs/`**, y la regla de marcar las
+> retractaciones vive en el índice. *Estar fuera de la lista es lo que le dejó pudrirse.*
+>
+> **Lo que de este informe SIGUE SIENDO CIERTO** —y por eso se conserva entero—: que **el GTFS
+> miente sobre el alcance de hoy** (dice «44: 0 trips el 16 jul» con la 44 pasando por la calle).
+> Ese hallazgo no lo tumbó nadie: es el que obligó a buscar el alcance fuera del GTFS.
+
 **Fecha:** 2026-07-16, ~17:41 (hora real del servidor de Avanza, confirmada). **Peticiones a Avanza:**
 8 (1 página de línea ya cacheada + 1 JS + 4 `tiempos_de_llegada` + 2 `get_stops_list` previas).
 **Código tocado:** ninguno.

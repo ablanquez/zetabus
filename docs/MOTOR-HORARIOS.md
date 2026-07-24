@@ -8,8 +8,33 @@
 > piezas se construye ahora** (ni recogida de horario web, ni tramos de frecuencia, ni prolongación, ni
 > terminal dinámico, ni casado terminal→poste).
 
+> ## 🛑 RECTIFICACIÓN · 24/07/2026 — dos frases del recuadro de arriba ya no son ciertas
+>
+> **La decisión SIGUE EN PIE**: el motor de 5 piezas está aparcado y este documento es su
+> especificación. Lo que caducó es más estrecho, y se rectifica aquí sin tocar el cuerpo:
+>
+> **1 · «ni recogida de horario web».** **Sí la hay, y desde el mismo día.** El commit `0582c29`
+> (16/07/2026) —*«tabla pelada de la web de Avanza + "Información adicional" citada»*— trajo
+> `src/sources/avanza/horario.ts`, que raspa la tabla *server-rendered* del operador y alimenta
+> `src/components/Terminal.tsx`. Otro documento de este mismo directorio,
+> [`PRUEBA_CADENCIA_Y_CORTE.md`](PRUEBA_CADENCIA_Y_CORTE.md), lo llama **«el parser de
+> producción»**. ⚠️ El recuadro se contradice a sí mismo tres líneas antes: dice que la v1 se cerró
+> con *«tabla de terminal pelada»*, y esa tabla **sale de la web**.
+>
+> **2 · «Código de producción escrito: ninguno.»** Cierto el 16/07 al escribirlo, falso desde ese
+> mismo día por lo anterior.
+>
+> **Lo que NO se ha construido, y sigue siendo verdad del recuadro:** los tramos de frecuencia
+> (pieza 4), la prolongación de recorrido y la horaria (piezas 2 y 3) y la tabla de hoy completa
+> (pieza 5). La pieza 1 (desvíos) el propio documento ya la daba por existente.
+>
+> ⚠️ **Y dos rutas de este documento apuntan a ficheros que ya no existen**, borrados en
+> `050a70a`: `src/sources/gtfs-nap/terminal.ts` y `tests/motor-vivo/parciales-de-terminal.test.ts`.
+> Están marcados en su sitio. **No se les ha buscado un destino parecido**: un enlace que lleva a
+> algo que *se parece* miente, y el roto al menos se ve.
+
 **Estado:** especificación (Fase 0), **reescrita** tras encontrar la tabla web de Avanza. **APARCADO** (ver arriba).
-**Código de producción escrito:** ninguno. **Fecha:** 2026-07-16.
+**Código de producción escrito:** ninguno *(⚠️ ver la rectificación: dejó de ser cierto el mismo 16/07)*. **Fecha:** 2026-07-16.
 
 > Esta versión sustituye a la anterior (que daba el GTFS como fuente única de horario). Las auditorías
 > `AUDITORIA_Q1_FUENTE_DE_HORARIO.md` y `AUDITORIA_HORARIO_WEB_AVANZA.md` demostraron que **el GTFS
@@ -217,6 +242,11 @@ solo cubre 34/35 (deja caer 44 y 23). Cada caso se lee de la **web** el día que
 ## 5 · Qué se jubila y qué se conserva
 
 ### Jubilar — **borrar, no dejar muerto**
+
+> ⚠️ **24/07/2026 · dos de estos ficheros YA NO EXISTEN**, borrados en `050a70a`:
+> `src/sources/gtfs-nap/terminal.ts` y `tests/motor-vivo/parciales-de-terminal.test.ts`. Se dejan
+> escritos porque la tabla dice **qué había que jubilar**, y eso ocurrió. **No se les apunta a un
+> fichero parecido**: no lo hay.
 
 | Qué | Dónde |
 |---|---|

@@ -1,5 +1,33 @@
 # Auditoría del sistema visual de ZetaBus
 
+> # 🛑 RECTIFICACIÓN · 24/07/2026 — el veredicto sobre el contraste era el correcto por el motivo equivocado
+>
+> **Qué afirma este informe** (§0 y §«Cálculo de contraste (D1)»): que la fórmula WCAG está escrita
+> **dos veces** —en `ChipLinea.tsx` y en `e2e/lib/medir.ts`—, que eso es **ACEPTABLE** y que la
+> separación es **legítima a propósito**, porque *«el instrumento NO puede importar el modelo de la
+> app o dejaría de ser independiente»*.
+>
+> **Qué es verdad hoy:**
+> · **No eran dos copias: eran CUATRO.** Lo encontró
+>   [`auditoria/11-codigo-y-arquitectura.md`](auditoria/11-codigo-y-arquitectura.md) el 24/07/2026.
+> · **Y una de las cuatro no calculaba la WCAG**: se saltaba la linealización gamma sRGB, o sea que
+>   daba otro número. Dos copias «coherentes cada una consigo misma» es exactamente cómo una
+>   fórmula equivocada pasa años en verde.
+> · **Hoy hay UNA**, en `src/core/contraste.ts`, y **`e2e/lib/medir.ts` la importa de ahí**
+>   (`6aa5ae9`, 24/07/2026) — justo lo que este informe daba por prohibido.
+>
+> **Por qué el argumento no se sostenía.** Lo que tiene que ser independiente del modelo es **de
+> dónde saca el instrumento sus colores** —del píxel pintado, no del CSS declarado—, y eso no ha
+> cambiado. **La aritmética de la WCAG no es «el modelo de la app»: es una especificación externa a
+> los dos.** Duplicarla no daba independencia; daba dos veredictos posibles sobre la misma pantalla.
+>
+> ⚠️ **Las líneas que cita esta sección (`ChipLinea.tsx:53-113`, `medir.ts:84-99`) ya no
+> corresponden.** El cuerpo queda intacto debajo: es el registro de lo que se creía el 15/07.
+>
+> ⭐ **Lo que NO toca esta rectificación:** la sección *«Qué hay en el repo de referencia»* habla de
+> **otro proyecto** (`01 ZGZ RADAR REACT`). Sus rutas son correctas allí y **no se tocan** — es
+> donde mi propio comprobador de rutas dio dos falsos positivos al buscarlas en ZetaBus.
+
 **Fecha:** 2026-07-15 · **Alcance:** inventario, sin tocar código. Es el diagnóstico que
 decide cómo montamos la guía de estilo viva antes de cerrar la Tanda 7.
 
