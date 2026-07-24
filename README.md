@@ -73,7 +73,8 @@ haya que esconderlo: **lo justificamos.**
 - **Se pide con cortesía y con techo.** Caché compartida en servidor (10 usuarios en la misma
   parada = **1 petición**, no 10), límite duro de peticiones por segundo, tiempo de espera,
   cortacircuitos, y **cero peticiones cuando nadie está mirando**.
-- **Vamos identificados.** Cada petición lleva un `User-Agent` con un correo de contacto. Si
+- **Vamos identificados.** Cada petición lleva un `User-Agent` con el nombre del proyecto, su
+  versión y **la URL de este repositorio** — donde está explicado todo y quién lo firma. Si
   molestamos, queremos que puedan pedirnos que paremos **antes** de tener que bloquearnos.
 
 Y un dato que conviene conocer: el **pliego del nuevo contrato municipal obliga al

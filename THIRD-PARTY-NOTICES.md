@@ -91,7 +91,7 @@ Ver [`docs/auditoria/07-contrato-de-explotacion.md`](docs/auditoria/07-contrato-
 |---|---|
 | **Qué es** | `gps.avanzabus.com` (posiciones GPS y tiempos de llegada) y `zaragoza.avanzagrupo.com/wp-admin/admin-ajax.php` (recorrido real, alteraciones), más los ficheros KML de trazado. |
 | **Licencia** | **NINGUNA.** Sin documentar, sin términos de uso publicados, sin permiso. |
-| **¿Se consume?** | **Sí**, en tiempo de ejecución, con techo de peticiones, tiempo de espera, cortacircuitos y `User-Agent` identificable con correo de contacto. |
+| **¿Se consume?** | **Sí**, en tiempo de ejecución, con techo de peticiones, tiempo de espera, cortacircuitos y un `User-Agent` identificable: `ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)`. |
 | **¿Se redistribuye?** | ⛔ **NO. NI UN BYTE.** No hay respuestas cacheadas en este repositorio, ni de ejemplo, ni de prueba, ni como *fixture*. El `.gitignore` lo impide explícitamente. |
 
 **La distinción no es un tecnicismo:**
@@ -106,8 +106,15 @@ con fines de análisis y crítica técnica. Eso es **cita**, no redistribución,
 verificable la investigación.
 
 **Si Avanza o el Ayuntamiento de Zaragoza piden que se deje de consultar estos servicios, se
-deja. El correo de contacto va en cada petición precisamente para que puedan pedirlo antes de
-tener que bloquearnos.**
+deja.** La URL del repositorio va en cada petición precisamente para eso: desde ahí se llega al
+proyecto entero y a quien lo firma, y se puede pedir **antes** de tener que bloquearnos.
+
+> ⚠️ **Nota de rectificación (24/07/2026).** Hasta esta fecha, este documento afirmaba dos veces
+> que el `User-Agent` llevaba **un correo de contacto**. **No era cierto y nunca lo fue.** La
+> variable `ZETABUS_CONTACT_EMAIL` estaba declarada en `.env.example` y no la leía nadie. Se
+> retiró la promesa en vez de añadir el correo, y se dice aquí en lugar de borrarlo en silencio:
+> un documento de licencias que se corrige a sí mismo sin decirlo vale menos que uno que lo dice.
+> Ver [`docs/auditoria/11-codigo-y-arquitectura.md`](docs/auditoria/11-codigo-y-arquitectura.md) · A-F2.
 
 ---
 

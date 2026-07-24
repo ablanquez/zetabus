@@ -34,6 +34,24 @@ export type Transporte = (
   opciones: { readonly cuerpo?: string; readonly cabeceras?: Record<string, string>; readonly senal: AbortSignal },
 ) => Promise<{ status: number; texto: string; cabeceras?: Record<string, string> }>;
 
+/**
+ * ⚠️ LO QUE VA AQUÍ ES **EXACTAMENTE** LO QUE PUEDE PROMETERSE FUERA. NI UNA PALABRA MÁS.
+ *
+ * Durante meses el README y `THIRD-PARTY-NOTICES.md` afirmaron —dos veces— que cada
+ * petición llevaba «un `User-Agent` con un correo de contacto». **Nunca lo llevó.**
+ * Existía un `ZETABUS_CONTACT_EMAIL` en `.env.example` que NO LEÍA NADIE: la única
+ * aparición del nombre en todo el repositorio era la de su propia declaración.
+ *
+ * ⇒ La decisión NO fue añadir el correo: fue **retirar la promesa**. El canal de
+ *   contacto es el dominio (`zetabus.antonioblanquez.es` → `antonioblanquez.es`), y
+ *   esta cadena lleva la URL del repositorio, donde está explicado el proyecto entero
+ *   y quién lo firma. Eso identifica honestamente sin prometer un buzón que no hay.
+ *
+ * ⚠️ SI ALGÚN DÍA SE AÑADE UN CORREO AQUÍ, hay que actualizar `README.md` y
+ *    `THIRD-PARTY-NOTICES.md` § 4 EN EL MISMO COMMIT. La cicatriz es justo esa: la
+ *    prosa y el código se separaron y nadie se enteró, porque **ningún test mira la
+ *    prosa**. Ver docs/auditoria/11-codigo-y-arquitectura.md · A-F2.
+ */
 export const AGENTE = 'ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)';
 
 export const transporteReal: Transporte = async (url, { cuerpo, cabeceras, senal }) => {

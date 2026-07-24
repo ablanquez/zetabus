@@ -702,6 +702,13 @@ A las 13:00, la vista de la línea N1 no encuentra ningún bus. Decir *"0 buses 
 Mitigación (que es mitigación, no permiso):
 - Techo duro de 4 req/s, cortacircuitos, y **cero peticiones cuando nadie mira**.
 - `User-Agent` identificable con un correo de contacto. Si molestamos, que puedan pedirnos que paremos antes de bloquearnos.
+  > ⚠️ **Esto se propuso aquí y NO se implementó así.** El `User-Agent` que se manda de verdad es
+  > `ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)` — **sin correo**. Esta línea es el ORIGEN
+  > de una afirmación que luego se copió al README y a `THIRD-PARTY-NOTICES.md` como si fuera un
+  > hecho. El 24/07/2026 se retiró la promesa (el canal de contacto es el dominio) en vez de añadir
+  > el correo. Se deja escrito aquí, en el documento de diseño, porque **este documento es el
+  > registro de lo que se PENSÓ, y lo que se pensó fue esto**. Ver
+  > [`../auditoria/11-codigo-y-arquitectura.md`](../auditoria/11-codigo-y-arquitectura.md) · A-F2.
 - **Y una decisión que te corresponde a ti:** ¿escribes a Avanza (`<correo de contacto del feed — redactado>` está en el `feed_info.txt` del GTFS) antes o después de publicar? No hay respuesta técnica. La hay ética, y es tuya.
 
 ### 10.6 · Los que ya conocíamos y siguen abiertos
