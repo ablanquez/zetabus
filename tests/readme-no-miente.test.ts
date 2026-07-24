@@ -47,7 +47,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { lineas, paradas } from '@/engine/topologia';
 import { TTL_MS } from '@/cache/dos-pisos';
 
@@ -225,6 +225,26 @@ const REGISTRO: readonly Afirmacion[] = [
 //  EL MOTOR DE COMPROBACIÓN — el mismo que se prueba abajo con una mentira plantada
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Los destinos de enlace de un texto que NO existen como fichero, resueltos desde
+ * el directorio del documento. Se ignoran los enlaces externos y las anclas de la
+ * propia página; el `#fragmento` y el `:línea` de un destino local se recortan
+ * (`medir.ts#L84` sigue siendo `medir.ts`).
+ */
+function enlacesDe(doc: string, texto: string): string[] {
+  const base = dirname(doc);
+  const rotos: string[] = [];
+  for (const m of texto.matchAll(/\]\(([^)\s]+?)\)/g)) {
+    const destino = m[1];
+    if (/^(https?:|mailto:|#)/.test(destino)) continue;
+    const fichero = destino.split('#')[0].replace(/:\d+(-\d+)?$/, '');
+    if (fichero && !existsSync(join(base, fichero))) rotos.push(destino);
+  }
+  return [...new Set(rotos)];
+}
+
+const enlacesRotos = (doc: string): string[] => enlacesDe(doc, leer(doc));
+
 interface Desajuste {
   readonly frase: string;
   readonly dice: number;
@@ -283,6 +303,26 @@ describe('⭐⭐ EL README NO MIENTE: las cifras escritas son las que dice el re
       filas,
       `el índice de docs/README.md lista ${filas} informes y en docs/auditoria/ hay ${informesDeAuditoria()}`,
     ).toBe(informesDeAuditoria());
+  });
+
+  it('⭐ todos los enlaces del índice apuntan a un fichero que existe', () => {
+    // Nivel 1, y aquí NO es decoración: el índice acaba de estrenar 24 documentos
+    // que antes no listaba. En cuanto se renombre uno, el índice miente igual que
+    // cuando decía «siete informes» habiendo trece — pero peor, porque un enlace
+    // roto parece un descuido y no una afirmación falsa.
+    const rotos = enlacesRotos('docs/README.md');
+    expect(rotos, `enlaces del índice que no llevan a ningún fichero:\n   ${rotos.join('\n   ')}`)
+      .toEqual([]);
+  });
+
+  it('⭐ CONTRAPRUEBA: el comprobador caza un enlace roto plantado', () => {
+    // Sobre texto sintético, para no tocar el documento de verdad.
+    expect(enlacesDe('docs/README.md', '[x](auditoria/01-fase3-cruce-gtfs.md)')).toEqual([]);
+    expect(enlacesDe('docs/README.md', '[x](auditoria/99-no-existe.md)')).toEqual([
+      'auditoria/99-no-existe.md',
+    ]);
+    // Los enlaces externos y las anclas de la propia página NO se comprueban aquí:
+    expect(enlacesDe('docs/README.md', '[x](https://ejemplo.org/nada) [y](#una-ancla)')).toEqual([]);
   });
 
   // El zip del GTFS NO viaja en el repositorio (`data/gtfs/README.md` explica por qué),
