@@ -70,34 +70,24 @@ export async function pixel(page: Page, x: number, y: number): Promise<Rgb> {
 }
 
 /**
- * Muchos píxeles de una sola captura. Una captura por llamada, no N.
+ * ⚠️⚠️ AQUÍ VIVÍA `pixeles()` (plural), Y SE HA BORRADO POR MUERTA — pero **la
+ *    lección que traía dentro se queda**, porque es la que explica por qué
+ *    `pixel()` comprueba los límites ahí arriba:
  *
- * ⚠️⚠️ ESTA FUNCIÓN MENTÍA EN SILENCIO, Y ME MORDIÓ MIDIENDO LOS NODOS (C6).
+ *    `pixeles()` NO los comprobaba. Un punto por debajo de la línea de flotación
+ *    daba un índice más allá de `png.data`, y `png.data[i]` devolvía `undefined`.
+ *    Resultado: un `Rgb` con `{r: undefined, …}` **que parece un color y no lo
+ *    es**. `aHex` reventaba tres llamadas después, lejos de la causa, con un
+ *    «cannot read 'toString'» que no dice nada. Me mordió midiendo los nodos (C6).
  *
- * `pixel()` (singular) revienta si el punto cae FUERA del viewport. Ésta NO lo
- * hacía: un punto por debajo de la línea de flotación daba un índice más allá de
- * `png.data`, y `png.data[i]` devolvía `undefined`. Resultado: un `Rgb` con
- * `{r: undefined, ...}` que parece un color y no lo es. `aHex` reventaba tres
- * llamadas después, lejos de la causa, con un "cannot read 'toString'" que no
- * dice nada. El instrumento tiene que fallar DONDE está el fallo, no arrastrarlo.
+ *    ⇒ **Un instrumento tiene que fallar DONDE está el fallo, no arrastrarlo.**
+ *      Si de verdad quieres mirar un punto fuera de pantalla, primero haces
+ *      scroll — como haría un ojo.
  *
- * ⇒ Ahora comprueba los límites igual que `pixel()`. Si de verdad quieres mirar
- *   un punto que está fuera de pantalla, primero haces scroll —como haría un ojo.
+ *    (La función se retira porque no la llamaba nadie: la auditoría la verificó a
+ *    mano. Ver `docs/auditoria/11-codigo-y-arquitectura.md` · A-D2.)
  */
-export async function pixeles(page: Page, puntos: { x: number; y: number }[]): Promise<Rgb[]> {
-  const buf = await page.screenshot({ fullPage: false });
-  const png = PNG.sync.read(buf);
-  const escala = png.width / page.viewportSize()!.width;
-  return puntos.map(({ x, y }) => {
-    const px = Math.round(x * escala);
-    const py = Math.round(y * escala);
-    if (px < 0 || py < 0 || px >= png.width || py >= png.height) {
-      throw new Error(`El punto (${x}, ${y}) está FUERA DEL VIEWPORT. No hay píxel que mirar (¿falta un scroll?).`);
-    }
-    const i = (png.width * py + px) << 2;
-    return { r: png.data[i], g: png.data[i + 1], b: png.data[i + 2] };
-  });
-}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  CONTRASTE — WCAG 2.1, sobre el píxel REAL

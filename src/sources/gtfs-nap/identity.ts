@@ -1,5 +1,3 @@
-import { stopId, type StopId } from '@/core';
-
 /**
  * EL PUENTE DE IDENTIDAD — Y ES ESPECÍFICO DE AVANZA, NO DEL NÚCLEO.
  *
@@ -24,7 +22,3 @@ export function posteFromStopCode(stopCode: string | null): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** `StopId` estable del núcleo a partir del `stop_id` del GTFS. */
-export function stopIdFromGtfs(gtfsStopId: string): StopId {
-  return stopId(gtfsStopId);
-}

@@ -46,8 +46,6 @@ export interface VehicleProfileBase {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface VehicleProfileRegistry {}
 
-export type RegisteredMode = keyof VehicleProfileRegistry;
-
 /** Unión discriminada de los perfiles registrados. Vacío si no hay ninguno. */
 export type VehicleProfile =
   VehicleProfileRegistry[keyof VehicleProfileRegistry] extends never

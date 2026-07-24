@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { control, IngestError, vehicleId, type Confidence, type ControlReport, type ProcedenciaDeCampo, type VehicleId } from '@/core';
+import { control, IngestError, type Confidence, type ControlReport, type ProcedenciaDeCampo, type VehicleId } from '@/core';
 import {
   classFromLength,
   confianzaDeLaFicha,
@@ -248,4 +248,3 @@ export function loadFleet(path: string): Fleet {
   };
 }
 
-export const asVehicleId = (coche: string | number): VehicleId => vehicleId(String(coche));
