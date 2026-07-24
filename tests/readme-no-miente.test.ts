@@ -48,7 +48,7 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join, posix } from 'node:path';
 import { lineas, paradas } from '@/engine/topologia';
 import { TTL_MS } from '@/cache/dos-pisos';
 
@@ -227,19 +227,75 @@ const REGISTRO: readonly Afirmacion[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Los destinos de enlace de un texto que NO existen como fichero, resueltos desde
- * el directorio del documento. Se ignoran los enlaces externos y las anclas de la
- * propia página; el `#fragmento` y el `:línea` de un destino local se recortan
- * (`medir.ts#L84` sigue siendo `medir.ts`).
+ * ⭐⭐ EL REPOSITORIO — no el disco.
+ *
+ * Todo lo que git tiene seguido, y los directorios que lo contienen (para que un
+ * enlace a una carpeta, `](docs/auditoria/)`, también valga).
+ *
+ * ⚠️⚠️ ESTO ES LO QUE ARREGLA EL FALLO, Y NO SE REVIERTA POR COMODIDAD:
+ *
+ *    ⭐ Cuando un guardián valida algo que SE PUBLICA, su universo tiene que ser
+ *      LO PUBLICADO. El disco local es el sitio donde todas las respuestas salen
+ *      bien.
+ *
+ * La versión anterior preguntaba `existsSync`. En la máquina donde se desarrolla,
+ * «¿está en este disco?» y «¿está en el repositorio?» dan la misma respuesta casi
+ * siempre — y por eso el fallo solo aparece en el clon de otro, que es donde ya no
+ * se puede corregir a tiempo. Caso real: `docs/SPIKE_SUELO_DE_ZOOM.md` enlaza
+ * capturas de `/capturas/`, que el `.gitignore` deniega. Existían aquí; no existen
+ * para nadie más, y el guardián las daba por buenas.
+ *
+ * Si git no contesta, esto revienta en voz alta. Un `catch` que devolviera un
+ * conjunto vacío dejaría el guardián verde sin haber mirado nada.
+ */
+const REPOSITORIO = (() => {
+  const lista = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
+    .split('\n')
+    .map((f) => f.trim())
+    .filter(Boolean);
+  const ficheros = new Set(lista);
+  const directorios = new Set<string>();
+  for (const f of lista) {
+    for (let d = posix.dirname(f); d && d !== '.'; d = posix.dirname(d)) directorios.add(d);
+  }
+  return { ficheros, directorios };
+})();
+
+/**
+ * Los destinos que un documento enlaza, **en todas las formas que sabe leer GitHub**.
+ * Si el guardián solo conociera dos de las que se usan, seguiría sin cubrir lo que
+ * dice cubrir.
+ */
+function destinosDe(texto: string): string[] {
+  const d: string[] = [];
+  for (const m of texto.matchAll(/\]\(([^)\s]+?)\)/g)) d.push(m[1]); // [x](destino)
+  for (const m of texto.matchAll(/<img[^>]+\bsrc="([^"]+)"/g)) d.push(m[1]); // <img src="…">
+  for (const m of texto.matchAll(/<a[^>]+\bhref="([^"]+)"/g)) d.push(m[1]); // <a href="…">
+  for (const m of texto.matchAll(/^\[[^\]]+\]:\s*(\S+)/gm)) d.push(m[1]); // [ref]: destino
+  for (const m of texto.matchAll(/\bsrcset="([^"]+)"/g)) {
+    for (const trozo of m[1].split(',')) d.push(trozo.trim().split(/\s+/)[0]); // srcset
+  }
+  return d;
+}
+
+/**
+ * Los destinos de un texto que **no están en el repositorio**, resueltos desde el
+ * directorio del documento. Se ignoran los enlaces externos, las anclas de la
+ * propia página y los `data:`; el `#fragmento` y el `:línea` de un destino local se
+ * recortan (`medir.ts#L84` sigue siendo `medir.ts`).
  */
 function enlacesDe(doc: string, texto: string): string[] {
-  const base = dirname(doc);
+  const base = posix.dirname(doc.split('\\').join('/'));
   const rotos: string[] = [];
-  for (const m of texto.matchAll(/\]\(([^)\s]+?)\)/g)) {
-    const destino = m[1];
-    if (/^(https?:|mailto:|#)/.test(destino)) continue;
-    const fichero = destino.split('#')[0].replace(/:\d+(-\d+)?$/, '');
-    if (fichero && !existsSync(join(base, fichero))) rotos.push(destino);
+  for (const destino of destinosDe(texto)) {
+    if (/^(https?:|mailto:|data:|#)/.test(destino)) continue;
+    const limpio = destino
+      .split('#')[0]
+      .replace(/:\d+(-\d+)?$/, '')
+      .replace(/\/$/, '');
+    if (!limpio) continue;
+    const ruta = posix.normalize(posix.join(base, limpio));
+    if (!REPOSITORIO.ficheros.has(ruta) && !REPOSITORIO.directorios.has(ruta)) rotos.push(destino);
   }
   return [...new Set(rotos)];
 }
@@ -247,16 +303,41 @@ function enlacesDe(doc: string, texto: string): string[] {
 const enlacesRotos = (doc: string): string[] => enlacesDe(doc, leer(doc));
 
 /**
- * Los `.md` de `docs/` **que están en el repositorio**, preguntándoselo a git y no
- * al disco: lo que se publica es lo versionado, y un borrador local sin seguir no
- * debe poner rojo a nadie. Si git no contesta, se rompe en voz alta — un `catch`
- * que devolviera lista vacía dejaría el guardián en verde sin mirar nada.
+ * **Todos** los `.md` del repositorio, no solo los de `docs/`. El README vive en la
+ * raíz y es la página que más se mira del proyecto: dejarlo fuera era exactamente
+ * el fallo de alcance que este guardián ya cometió una vez.
+ *
+ * ⚠️ `ZETABUS-ESTADO.md` entra también, aunque sea el único fichero que estas
+ * reglas prohíben modificar (ver `AGENTS.md`). Está publicado, así que un enlace
+ * roto suyo es tan público como cualquier otro; y **dejar fuera de la lista el
+ * documento que más se edita y menos se revisa es justo cómo se pudrieron los 21
+ * del cuaderno de campo**. Si se pone rojo, el arreglo va al informe de la tanda,
+ * no a una edición desde aquí: el guardián avisa, no autoriza.
  */
-const documentosDeDocs = (): string[] =>
-  execFileSync('git', ['ls-files', 'docs/'], { encoding: 'utf8' })
-    .split('\n')
-    .map((f) => f.trim())
-    .filter((f) => f.endsWith('.md'));
+const documentosDelRepositorio = (): string[] =>
+  [...REPOSITORIO.ficheros].filter((f) => f.endsWith('.md')).sort();
+
+/**
+ * ⚠️ DEUDA DECLARADA · 25/07/2026 — los enlaces que hoy apuntan fuera del repositorio.
+ *
+ * Aparecieron al cambiar el universo del guardián de «el disco» a «lo publicado».
+ * Los dos enlazan capturas de `/capturas/`, que el `.gitignore` deniega a propósito
+ * («se regeneran con `npm run visual`»): existen en la máquina donde se escribió el
+ * spike y **no existen para nadie que clone**.
+ *
+ * ⛔ ESTO NO ES UNA LISTA DE PERDÓN, Y SE VIGILA A SÍ MISMA. La comprobación exige
+ * igualdad EXACTA con esta lista, así que:
+ *   · si aparece un enlace roto nuevo → ROJO (la lista no puede crecer en silencio),
+ *   · y si uno de estos se arregla → TAMBIÉN ROJO, pidiendo que se quite de aquí.
+ * Una excepción que no se retira sola acaba siendo permanente sin que nadie lo decida.
+ *
+ * ⚠️ Y no se arreglan desde aquí porque **no es un arreglo, es una decisión**: o se
+ * publican esas dos capturas, o se cambia el texto del spike. Antonio elige.
+ */
+const PENDIENTES: readonly string[] = [
+  'docs/SPIKE_SUELO_DE_ZOOM.md → ../capturas/zetabus/ZOOM-13-poste47.png',
+  'docs/SPIKE_SUELO_DE_ZOOM.md → ../capturas/zetabus/ZOOM-14-poste47.png',
+];
 
 interface Desajuste {
   readonly frase: string;
@@ -318,31 +399,49 @@ describe('⭐⭐ EL README NO MIENTE: las cifras escritas son las que dice el re
     ).toBe(informesDeAuditoria());
   });
 
-  it('⭐ ningún enlace roto en NINGÚN documento de docs/ — el índice Y su interior', () => {
-    // ⚠️ POR QUÉ TODOS Y NO SOLO EL ÍNDICE. La primera versión miraba solo
-    // `docs/README.md`, y al arreglar los 12 enlaces rotos del 24/07 quedó
-    // demostrado que NO CAZÓ NI UNO: los doce vivían DENTRO de los documentos
-    // (referencias cruzadas de las siete fases que no se actualizaron al
-    // renombrarlas). El índice estaba cubierto y el interior no.
-    const documentos = documentosDeDocs();
+  it('⭐ ningún enlace de NINGÚN .md apunta fuera del repositorio', () => {
+    // ⚠️ EL ALCANCE SE HA AMPLIADO DOS VECES, Y LAS DOS PORQUE SE MIDIÓ QUE NO
+    // LLEGABA. Primero miraba solo `docs/README.md`: no cazó ninguno de los 12
+    // enlaces rotos del 24/07, que vivían DENTRO de los documentos. Después
+    // miraba todo `docs/`: no cazaba ninguna de las 8 imágenes del README, que
+    // está en la raíz y encima las enlaza con `<img src>`.
+    const documentos = documentosDelRepositorio();
     // Sanity ANTES de la comprobación: si la lista viniera vacía —git ausente,
-    // clon superficial, un `docs/` movido— el test pasaría en verde sin haber
-    // mirado nada, que es exactamente el fallo que este fichero persigue.
-    expect(documentos.length, 'la lista de documentos de docs/ no puede venir vacía')
-      .toBeGreaterThan(30);
+    // clon superficial— el test pasaría en verde sin haber mirado nada, que es
+    // exactamente el fallo que este fichero persigue.
+    expect(documentos.length, 'la lista de documentos del repositorio no puede venir vacía')
+      .toBeGreaterThan(40);
 
-    const rotos = documentos.flatMap((d) => enlacesRotos(d).map((e) => `${d}  →  ${e}`));
+    const rotos = documentos.flatMap((d) => enlacesRotos(d).map((e) => `${d} → ${e}`)).sort();
     expect(
       rotos,
-      `enlaces que no llevan a ningún fichero (${documentos.length} documentos revisados):\n   ` +
-        rotos.join('\n   '),
-    ).toEqual([]);
+      `enlaces que apuntan a algo que NO está en el repositorio ` +
+        `(${documentos.length} documentos revisados):\n   ` +
+        rotos.join('\n   ') +
+        '\n   Si uno de estos ya está arreglado, QUITA su línea de PENDIENTES.',
+    ).toEqual(PENDIENTES);
   });
 
-  it('⭐ CONTRAPRUEBA: el comprobador caza un enlace roto plantado', () => {
-    // Sobre texto sintético, para no tocar el documento de verdad.
-    // ⚠️ Y resolviendo desde el directorio de CADA documento, no desde la raíz:
-    // el mismo destino relativo significa cosas distintas según dónde viva la
+  it('⭐ CONTRAPRUEBA: caza las cuatro formas de enlazar, no solo la de markdown', () => {
+    // Sobre texto sintético, para no tocar los documentos de verdad.
+    const d = 'README.md';
+    expect(enlacesDe(d, '<img src="docs/capturas/logo.png">')).toEqual([]);
+    expect(enlacesDe(d, '<img src="docs/capturas/no-existe.png">')).toEqual([
+      'docs/capturas/no-existe.png',
+    ]);
+    expect(enlacesDe(d, '<a href="docs/README.md">x</a>')).toEqual([]);
+    expect(enlacesDe(d, '<a href="docs/no-existe.md">x</a>')).toEqual(['docs/no-existe.md']);
+    expect(enlacesDe(d, '[ref]: docs/no-existe.md')).toEqual(['docs/no-existe.md']);
+    expect(enlacesDe(d, '<img srcset="docs/capturas/logo.png 1x, docs/nada.png 2x">')).toEqual([
+      'docs/nada.png',
+    ]);
+    // Los externos, las anclas y los `data:` no se comprueban:
+    expect(enlacesDe(d, '[x](https://ejemplo.org/nada) [y](#ancla) <img src="data:image/png;b">'))
+      .toEqual([]);
+  });
+
+  it('⭐ CONTRAPRUEBA: el destino se resuelve desde el directorio de CADA documento', () => {
+    // El mismo destino relativo significa cosas distintas según dónde viva la
     // frase, y ahí es donde un comprobador de enlaces se vuelve inútil en silencio.
     expect(enlacesDe('docs/auditoria/03-fase5-desvios.md', '[x](01-fase3-cruce-gtfs.md)')).toEqual(
       [],
@@ -351,11 +450,25 @@ describe('⭐⭐ EL README NO MIENTE: las cifras escritas son las que dice el re
       '01-fase3-cruce-gtfs.md', // desde el índice ese destino NO existe: está en auditoria/
     ]);
     expect(enlacesDe('docs/README.md', '[x](auditoria/01-fase3-cruce-gtfs.md)')).toEqual([]);
-    expect(enlacesDe('docs/README.md', '[x](auditoria/99-no-existe.md)')).toEqual([
-      'auditoria/99-no-existe.md',
-    ]);
-    // Los enlaces externos y las anclas de la propia página NO se comprueban aquí:
-    expect(enlacesDe('docs/README.md', '[x](https://ejemplo.org/nada) [y](#una-ancla)')).toEqual([]);
+    // Un enlace a un DIRECTORIO que contiene ficheros seguidos también vale:
+    expect(enlacesDe('docs/README.md', '[x](auditoria/)')).toEqual([]);
+  });
+
+  it('⭐⭐ CONTRAPRUEBA: lo que existe en el DISCO pero no en el repositorio es ROJO', () => {
+    // ⚠️ Esta es la que prueba el cambio de universo, y no vale con texto
+    // sintético: se busca un fichero REAL que esté en el disco y que el
+    // `.gitignore` deje fuera. Si no hubiera ninguno, la comprobación no
+    // probaría nada y hay que decirlo en vez de dar verde.
+    const ignorado = 'capturas/zetabus/ZOOM-14-poste47.png';
+    if (!existsSync(ignorado)) {
+      throw new Error(
+        `esta contraprueba necesita un fichero presente en el disco y fuera de git.\n` +
+          `   ${ignorado} no está: regenera las capturas (npm run visual) o cambia el ejemplo.`,
+      );
+    }
+    expect(REPOSITORIO.ficheros.has(ignorado), `${ignorado} NO debe estar seguido`).toBe(false);
+    // El comprobador viejo (existsSync) lo habría dado por bueno. El nuevo, no:
+    expect(enlacesDe('docs/x.md', `[x](../${ignorado})`)).toEqual([`../${ignorado}`]);
   });
 
   // El zip del GTFS NO viaja en el repositorio (`data/gtfs/README.md` explica por qué),
