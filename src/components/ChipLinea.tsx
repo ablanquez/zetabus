@@ -4,7 +4,11 @@ import type { Line } from '@/core';
 //    `contraste.ts` no importa nada de nadie. Tirar del barril metería el núcleo
 //    entero en el bundle del navegador para usar una función de veinte líneas.
 import { contrasteRgb, deHex } from '@/core/contraste';
-import { esBuho } from '@/engine/topologia';
+// ⚠️ De `@/engine/grupos`, NO de `@/engine/topologia`. `topologia` importa el GTFS
+//    horneado (1,9 MB) y este componente lo usan DOS componentes `'use client'`:
+//    importarlo de allí metía la red de Zaragoza entera en el navegador para
+//    preguntar si un nombre de línea empieza por «N». Ver `src/engine/grupos.ts`.
+import { esBuho } from '@/engine/grupos';
 import { AcuseDeToque } from './AcuseDeToque';
 
 /**
@@ -131,7 +135,19 @@ export function textoLegible(fondo: string, preferido: string): { texto: string;
  *    el trazo; sobre uno oscuro, el relleno. Nunca hay un número ilegible.
  * ═══════════════════════════════════════════════════════════════════════════
  */
-export function tonosDeChip(l: Line): { fondo: string; texto: string; buho: boolean } {
+/**
+ * Lo MÍNIMO que hace falta para saber de qué color va un chip: el nombre corto
+ * (dice si es búho) y el color de marca. Nada más.
+ *
+ * ⚠️ Pedir esto en vez de una `Line` entera **no es cosmética de tipos**: una
+ *    `LlegadaViva` ya trae los dos campos, así que el cliente puede pintar el chip
+ *    de un autobús **sin ir a buscar la línea a la topología** — que era justo lo
+ *    que arrastraba 1,9 MB de GTFS al navegador. La firma es la que impide que
+ *    vuelva a pasar: si aquí pusiera `Line`, alguien tendría que ir a por ella.
+ */
+export type LineaParaChip = Pick<Line, 'shortName'> & { readonly color: string };
+
+export function tonosDeChip(l: LineaParaChip): { fondo: string; texto: string; buho: boolean } {
   if (esBuho(l)) {
     // ⭐ NOCTURNAS, INTACTAS: fondo noche + número en el color de la línea (con la
     //    red de D1 por si un búho no se leyera sobre el azul noche). La categoría

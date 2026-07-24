@@ -6,7 +6,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { LlegadaViva } from '@/engine/llegadas';
 import type { LatLon } from '@/core';
-import { linea } from '@/engine/topologia';
 import { tonosDeChip, llevaContorno } from './ChipLinea';
 
 /**
@@ -280,9 +279,16 @@ const ICONO_PARADA = L.divIcon({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Los tonos del marcador salen del MISMO sitio que los del chip de la lista. */
+/**
+ * Los tonos del marcador salen del MISMO sitio que los del chip de la lista.
+ *
+ * ⚠️ Y del mismo DATO, que es lo que se arregló: aquí se llamaba a
+ *    `linea(l.lineaId)` —de `@/engine/topologia`, que arrastra el GTFS de 1,9 MB
+ *    al navegador— teniendo el nombre y el color dentro de la propia llegada.
+ *    Ver la nota larga en `LlegadasVivas.tsx` · `Llegada()`.
+ */
 function tonosDeBus(l: LlegadaViva): { fondo: string; texto: string } {
-  const suya = l.lineaId ? linea(l.lineaId) : null;
+  const suya = l.linea && l.color ? { shortName: l.linea, color: l.color } : null;
   // Sin color de línea (un bus cuya línea no está en el GTFS): el par de tokens,
   // el mismo que usan el chip de la lista y el de filtro. Ver globals.css.
   if (!suya) return { fondo: 'var(--color-sin-color)', texto: 'var(--color-sin-color-tinta)' };

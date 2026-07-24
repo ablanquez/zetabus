@@ -298,59 +298,22 @@ export function paresOficialesDe(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ⭐ LOS GRUPOS DE LÍNEA. También clonado: Diurnas / Lanzaderas / Circulares /
-//  Búhos. Su índice los agrupa así y es la manera correcta de leer 44 líneas.
+//  ⭐ LOS GRUPOS Y EL GIRO SE MUDARON A `./grupos`. AQUÍ SOLO SE RE-EXPORTAN.
+//
+//  ⚠️ Y NO ES UN CAPRICHO DE ORDEN: ES QUE ESTE FICHERO PESA 1,9 MB.
+//     `topologia.ts` importa `@/generated` (el GTFS horneado). Quien importe
+//     CUALQUIER COSA de aquí se lo lleva entero — y `ChipLinea` necesitaba
+//     `esBuho()`, y a `ChipLinea` lo usan dos componentes `'use client'`.
+//     Medido: `/parada/[poste]` mandaba 2.431 KB al navegador contra los ~515 KB
+//     del resto de rutas, para preguntar si un nombre empieza por «N».
+//
+//  Se re-exporta para no tocar los sitios que ya lo importaban de aquí: quien
+//  esté en el SERVIDOR puede seguir pidiéndolo a `topologia` sin pagar nada.
+//  Quien esté en el CLIENTE tiene que ir a `@/engine/grupos` directamente.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type GrupoLinea = 'diurna' | 'lanzadera' | 'circular' | 'buho';
-
-export const GRUPOS: { readonly clave: GrupoLinea; readonly titulo: string; readonly nota: string }[] = [
-  { clave: 'diurna', titulo: 'Diurnas', nota: 'las de todos los días' },
-  { clave: 'circular', titulo: 'Circulares', nota: 'dan la vuelta: un solo sentido' },
-  { clave: 'lanzadera', titulo: 'Lanzaderas', nota: 'refuerzo puntual' },
-  { clave: 'buho', titulo: 'Búhos', nota: 'de madrugada' },
-];
-
-export function grupoDe(l: Line): GrupoLinea {
-  const s = l.shortName;
-  if (/^N/i.test(s)) return 'buho';
-  if (/^Ci/i.test(s)) return 'circular';
-  if (/^C\d/i.test(s)) return 'lanzadera';
-  return 'diurna';
-}
-
-/**
- * ⭐ ¿Es una línea nocturna? La pregunta que responde LA INVERSIÓN del chip (D1).
- *
- * Vive aquí, y no en el componente, para que **haya un solo sitio que lo decida**.
- * Si el chip de la lista, el del itinerario y el del índice lo dedujeran cada uno
- * por su cuenta con su propia expresión regular, bastaría con que uno se
- * despistase para que una N7 saliera pintada de diurna en una pantalla y de búho
- * en otra. Ése es exactamente el fallo del "0C1", con otro traje.
- */
-export const esBuho = (l: Line): boolean => grupoDe(l) === 'buho';
-
-/**
- * ⭐ EL SENTIDO DE GIRO de una línea circular. `null` = no es circular (no gira).
- *
- * ⚠️ ESTE DATO LO DA ANTONIO, no una fuente. El GTFS dice si una línea CIERRA el
- * bucle (geometría), pero NO hacia qué lado gira, y ni siquiera acierta a marcar
- * cuáles son circulares: la Ci1 y la Ci2 vienen con dos sentidos de ida y vuelta
- * en el feed, y aun así son circulares. Por eso esto es una CONSTANTE EXPLÍCITA
- * con su procedencia —conocimiento de campo—, y no se deriva de la topología.
- *
- * Se pinta como un icono ↻/↺ DESPUÉS del nombre en la tarjeta de la home (delante
- * empujaría el texto y rompería la columna alineada de los chips). Ver `page.tsx`.
- */
-export type Giro = 'horario' | 'antihorario';
-const SENTIDO_GIRO: Readonly<Record<string, Giro>> = {
-  // Horario (↻): las circulares al tranvía y las dos primeras Ci.
-  '30': 'horario', '54': 'horario', '55': 'horario', '56': 'horario',
-  '57': 'horario', '58': 'horario', '59': 'horario', Ci1: 'horario', Ci3: 'horario',
-  // Antihorario (↺):
-  Ci2: 'antihorario', Ci4: 'antihorario',
-};
-export const giroDe = (l: Line): Giro | null => SENTIDO_GIRO[l.shortName] ?? null;
+export { GRUPOS, grupoDe, esBuho, giroDe } from './grupos';
+export type { GrupoLinea, Giro } from './grupos';
 
 // ⭐ El "funcionamiento de terminal" (primeras/últimas salidas) YA NO sale del
 //    GTFS: se trae de la tabla web de Avanza en tiempo de vista. Ver

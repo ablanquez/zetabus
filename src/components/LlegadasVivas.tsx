@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { LlegadaViva, LlegadasDeParada } from '@/engine/llegadas';
 import type { Observacion } from '@/core';
-import { linea } from '@/engine/topologia';
 import { FichaVehiculo } from './FichaVehiculo';
 import { tonosDeChip, llevaContorno } from './ChipLinea';
 import { Cita } from './Cita';
@@ -625,8 +624,21 @@ function Llegada({
 }) {
   const inminente = l.etaMinutos <= 1;
   const coche = String(l.coche);
-  // `null` = Avanza anuncia una línea que nuestro GTFS no conoce.
-  const suya = l.lineaId ? linea(l.lineaId) : null;
+  /**
+   * `null` = Avanza anuncia una línea que nuestro GTFS no conoce. Se ENSEÑA IGUAL,
+   * con la etiqueta cruda y sin color: callarla sería peor que no saber su tono.
+   *
+   * ⚠️ AQUÍ SE LLAMABA A `linea(l.lineaId)`, Y ESO COSTABA 1,9 MB.
+   *    `linea()` vive en `@/engine/topologia`, que importa el GTFS horneado
+   *    entero. En un componente `'use client'` eso significa **descargarlo al
+   *    navegador**: medido, `/parada/[poste]` mandaba 2.431 KB contra los ~515 KB
+   *    de las demás rutas. Para dos llamadas. Para pintar un chip de colores.
+   *
+   * ⇒ Y no hacía ninguna falta: la propia `LlegadaViva` **ya trae** `linea` (el
+   *   nombre corto) y `color`, puestos por el servidor, que sí tiene la topología
+   *   delante. El dato ya estaba aquí; se iba a buscarlo a 1,9 MB de distancia.
+   */
+  const suya = l.linea && l.color ? { shortName: l.linea, color: l.color } : null;
   const tonos = suya ? tonosDeChip(suya) : null;
 
   /**

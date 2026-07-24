@@ -57,8 +57,19 @@
  *    su trabajo. `/api/diag` enseña el `pid` precisamente para poder contarlos.
  */
 
-/** Dónde vive todo lo del proceso. Un solo tarro, para no sembrar `globalThis`. */
-const TARRO = Symbol.for('zetabus.proceso');
+/**
+ * Dónde vive todo lo del proceso. Un solo tarro, para no sembrar `globalThis`.
+ *
+ * ⚠️ LA CLAVE NO LLEVA EL NOMBRE DEL PROYECTO, Y TIENE GRACIA POR QUÉ: la puse
+ *    como `'zetabus.proceso'` y **el guardián del núcleo la rechazó**
+ *    (`tests/tranvia-sin-tocar-el-nucleo.test.ts`), porque prohíbe la palabra
+ *    «bus» en `src/core/` para que el modelo no dé por hecho que esto son
+ *    autobuses… y «zetaBUS» la contiene. Es un falso positivo de una regla que
+ *    hace bien su trabajo, así que **el que se adapta es este fichero, no el
+ *    guardián**: aflojar una guarda para que pase mi código es exactamente lo que
+ *    no se hace aquí. `zb/` identifica igual de bien y no pide excepciones.
+ */
+const TARRO = Symbol.for('zb/estado-por-proceso');
 
 type Tarro = Record<string, unknown>;
 
