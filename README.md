@@ -116,7 +116,7 @@ incluidos **los tres en que hubo que retractarse de un informe propio**.
 ### Y el desvío, también en el móvil
 
 <div align="center">
-<img src="docs/capturas/desvio-abierto-movil.png" width="42%" alt="El aviso de desvío en el móvil, con las paradas suprimidas tachadas">
+<img src="docs/capturas/desvio-abierto-movil.png" width="49%" alt="El aviso de desvío en el móvil, con las paradas suprimidas tachadas">
 <br><em>Con la frase que resume el proyecto entero: <strong>«No lo decimos nosotros: lo dice su ruta.»</strong> Y debajo, sus propios límites: <em>«Puede haber otras paradas suprimidas que no detectamos.»</em></em>
 </div>
 
