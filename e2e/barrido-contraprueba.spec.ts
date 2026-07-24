@@ -78,7 +78,12 @@ test.describe('⭐ CONTRAPRUEBA · el barrido caza lo que dice cazar', () => {
     // ⚠️ No basta "algo saltó": tiene que cazar MI defecto, por su texto. Si solo
     //    comprobara `length > 0`, un falso positivo cualquiera daría el test por bueno.
     expect(fuera.some((c) => c.texto.includes('me salgo')), 'tiene que cazar EL bloque inyectado').toBe(true);
-    expect(scroll, 'y el scroll horizontal exacto que provoca (3000 − 360)').toBe(2640);
+    // ⚠️ El scroll esperado se DERIVA del ancho real, no se fija a mano: la primera
+    //    versión pinchaba 2640 (= 3000 − 360) y este spec corre bajo los cinco
+    //    proyectos, así que se ponía roja en los otros cuatro. Un número correcto en
+    //    un viewport es una suposición en los demás.
+    const ancho = page.viewportSize()!.width;
+    expect(scroll, `el scroll horizontal exacto que provoca (3000 − ${ancho})`).toBe(3000 - ancho);
     console.log(`  ⛔ CAZADO desborde: ${fuera[0].detalle}  ·  scroll horizontal: ${scroll} px`);
 
     // 3 · Y se vuelve a la página limpia RECARGANDO, no quitando el nodo.
