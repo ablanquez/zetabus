@@ -2,13 +2,13 @@
 
 **Fase 6: la vigencia. ¿Cómo sabemos que un desvío ha terminado?**
 Fecha: 13/07/2026
-Continúa [FASE 5](AUDITORIA_FUENTES_ZETABUS_FASE5_DESVIOS.md).
+Continúa [FASE 5](03-fase5-desvios.md).
 
 ---
 
 > # 🛑 ESTE INFORME ESTÁ INVALIDADO. NO LO USES.
 >
-> ## La [**FASE 7**](AUDITORIA_FUENTES_ZETABUS_FASE7_ORACULO.md) demuestra que el oráculo en el que se apoya todo lo que sigue **está roto**.
+> ## La [**FASE 7**](05-fase7-oraculo.md) demuestra que el oráculo en el que se apoya todo lo que sigue **está roto**.
 >
 > **Qué falla:** validé la API viva como detector de supresiones usando 16 postes que eran **todos desvíos de ruta** — buses que físicamente no pasaban por allí. Cualquier sistema GPS los habría dado por vacíos. **Nunca probé el único caso que importaba: un autobús que pasa por delante y no para.**
 >
@@ -23,7 +23,7 @@ Continúa [FASE 5](AUDITORIA_FUENTES_ZETABUS_FASE5_DESVIOS.md).
 > - §1-2: la estructura del documento (secciones `<mark>`, `modified_time`, los postes publicados). **Correcto.**
 > - La conclusión de que **el silencio de la API sí es información** (un desvío de RUTA sí se puede verificar y auto-apagar). **Correcto.**
 >
-> Lee la **[Fase 7](AUDITORIA_FUENTES_ZETABUS_FASE7_ORACULO.md)** antes que esto.
+> Lee la **[Fase 7](05-fase7-oraculo.md)** antes que esto.
 
 ---
 

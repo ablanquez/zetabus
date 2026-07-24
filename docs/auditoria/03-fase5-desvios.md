@@ -2,7 +2,7 @@
 
 **Fase 5: ¿se puede REPINTAR una línea desviada?**
 Fecha: 13/07/2026
-Continúa [FASE 3](AUDITORIA_FUENTES_ZETABUS_FASE3.md) y [FASE 4](AUDITORIA_FUENTES_ZETABUS_FASE4_COLOR_Y_DESVIOS.md). **Corrige dos supuestos de la Fase 4** (ver «Autocorrecciones»).
+Continúa [FASE 3](01-fase3-cruce-gtfs.md) y [FASE 4](02-fase4-color-y-desvios.md). **Corrige dos supuestos de la Fase 4** (ver «Autocorrecciones»).
 
 > **Fuera de alcance, cerrado:** los colores de línea salen del `route_color` del GTFS. No se reabre.
 
@@ -12,7 +12,7 @@ Continúa [FASE 3](AUDITORIA_FUENTES_ZETABUS_FASE3.md) y [FASE 4](AUDITORIA_FUEN
 
 > # 🛑 EL VEREDICTO CENTRAL DE ESTE INFORME ESTÁ RETIRADO.
 >
-> ## La [**FASE 7B**](AUDITORIA_FUENTES_ZETABUS_FASE7B_RUTA_REAL.md) demuestra que **SÍ se puede repintar una ruta desviada, con rigor.**
+> ## La [**FASE 7B**](06-fase7b-ruta-real.md) demuestra que **SÍ se puede repintar una ruta desviada, con rigor.**
 >
 > **Qué falla:** aquí evalué **un solo método** —transcribir los comunicados— y concluí que era imposible porque no dan el orden ni el sentido. **Eso es cierto.** Pero la pregunta estaba mal planteada: **el desvío no hay que transcribirlo, hay que PEDIRLO.**
 >
@@ -28,7 +28,7 @@ Continúa [FASE 3](AUDITORIA_FUENTES_ZETABUS_FASE3.md) y [FASE 4](AUDITORIA_FUEN
 > - La descripción de lo que traen los comunicados y sus límites. **Correcta.**
 > - Que las **supresiones de parada** siguen sin ser detectables por ninguna fuente. **Confirmado por la Fase 7 y la 7B.**
 >
-> Lee la **[Fase 7B](AUDITORIA_FUENTES_ZETABUS_FASE7B_RUTA_REAL.md)** antes que esto.
+> Lee la **[Fase 7B](06-fase7b-ruta-real.md)** antes que esto.
 
 ---
 
@@ -346,7 +346,7 @@ PARADAS YA RECUPERADAS                           ← ¡EN EL MISMO DOCUMENTO!
 >
 > **Pero la conclusión se agrava, no se ablanda:** la Fase 6 probó contra la API viva que **7 de las 9 paradas que este documento declara suprimidas ya reciben buses**. Una lleva así desde enero. El separador existe; Avanza no lo usa a tiempo.
 >
-> Ver [Fase 6 — Vigencia](AUDITORIA_FUENTES_ZETABUS_FASE6_VIGENCIA.md).
+> Ver [Fase 6 — Vigencia](04-fase6-vigencia.md).
 
 > ### El ciclo "el aviso desaparece → el parche desaparece" **NO se puede aplicar.** Ni siquiera basta con parsear las dos secciones: hay que **verificar cada supresión contra la API viva**, que es la única que dice la verdad. Si no, ZETABUS tacharía para siempre paradas que ya volvieron.
 

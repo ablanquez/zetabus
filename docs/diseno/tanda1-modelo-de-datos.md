@@ -1,6 +1,6 @@
 # ZETABUS · TANDA 1 — MODELO DE DATOS Y ARQUITECTURA DE CAPAS
 
-> ## 🔶 DOCUMENTO PARCIALMENTE SUPERADO — leer junto a `TANDA1_CIERRE_DE_CABOS.md` (13/07/2026)
+> ## 🔶 DOCUMENTO PARCIALMENTE SUPERADO — leer junto a `tanda1-cierre-de-cabos.md` (13/07/2026)
 >
 > Cuatro secciones han cambiado tras cerrar los cabos. **Lo que dice este documento en esos puntos ya no vale:**
 >
@@ -13,7 +13,7 @@
 >
 > El resto (capas, modelo agnóstico, ruta teórica vs real, tachado vs nota, sin base de datos) **se mantiene íntegro**.
 
-**Fecha:** 13/07/2026 · **Estado:** ✅ **APROBADO el 13/07/2026, con las correcciones de [`TANDA1_CIERRE_DE_CABOS.md`](TANDA1_CIERRE_DE_CABOS.md)**
+**Fecha:** 13/07/2026 · **Estado:** ✅ **APROBADO el 13/07/2026, con las correcciones de [`tanda1-cierre-de-cabos.md`](tanda1-cierre-de-cabos.md)**
 **Alcance:** diseño. Cero código de producto. Los sondeos de esta tanda son scripts de un solo uso en scratchpad.
 **Decisión de producto asociada:** **V1 SOLO ENSEÑA. NO MIDE.** Sin auditoría de frecuencia, sin histórico, sin base de datos.
 

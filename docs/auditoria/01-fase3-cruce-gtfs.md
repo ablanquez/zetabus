@@ -318,7 +318,7 @@ Ninguno es descalificante. **Filtras las rutas sin viajes y tienes una topologí
 **Redundante (el GTFS lo hace igual o mejor):**
 
 - ❌ `sentido1` / `sentido2` → idénticos a `stop_times`. Tirar.
-- ⚠️ `color` → **AFIRMACIÓN RETIRADA EN LA FASE 4.** Aquí se dijo que *"los colores del manual no son los del operador"*, extrapolando desde un solo caso (la línea 21, y encima un gris). **No se sostiene.** La Fase 4 comparó las 46 y arbitró contra el mapa oficial de Avanza: es **la misma paleta transcrita dos veces**, y el arbitraje da **empate técnico (16-16)**. **NO VERIFICADO** cuál coincide con la señalética de la calle. Ver [Fase 4](AUDITORIA_FUENTES_ZETABUS_FASE4_COLOR_Y_DESVIOS.md#1--el-choque-de-colores).
+- ⚠️ `color` → **AFIRMACIÓN RETIRADA EN LA FASE 4.** Aquí se dijo que *"los colores del manual no son los del operador"*, extrapolando desde un solo caso (la línea 21, y encima un gris). **No se sostiene.** La Fase 4 comparó las 46 y arbitró contra el mapa oficial de Avanza: es **la misma paleta transcrita dos veces**, y el arbitraje da **empate técnico (16-16)**. **NO VERIFICADO** cuál coincide con la señalética de la calle. Ver [Fase 4](02-fase4-color-y-desvios.md#1--el-choque-de-colores).
 - ❌ `nombre` → `route_long_name` lo da.
 - ⚠️ `sentido1Nombre`/`sentido2Nombre` → **no portarlos.** Ver el puente.
 

@@ -2,7 +2,7 @@
 
 **Fase 4: el choque de colores y los desvíos**
 Fecha: 13/07/2026
-Continúa [AUDITORIA_FUENTES_ZETABUS_FASE3.md](AUDITORIA_FUENTES_ZETABUS_FASE3.md), que queda **corregido en dos puntos** (ver «Autocorrecciones»).
+Continúa [01-fase3-cruce-gtfs.md](01-fase3-cruce-gtfs.md), que queda **corregido en dos puntos** (ver «Autocorrecciones»).
 
 ---
 

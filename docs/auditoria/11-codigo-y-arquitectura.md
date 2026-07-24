@@ -168,7 +168,7 @@ en todo el árbol versionado):
 | [`src/sources/flota-zetabus/adapter.ts:251`](../../src/sources/flota-zetabus/adapter.ts#L251) | `asVehicleId` | Muerto |
 | [`src/sources/gtfs-nap/identity.ts:28`](../../src/sources/gtfs-nap/identity.ts#L28) | `stopIdFromGtfs` | Muerto |
 | [`e2e/lib/medir.ts:82`](../../e2e/lib/medir.ts#L82) | `pixeles` | Muerto (instrumento) |
-| [`scripts/lib/zip-lectura.ts:9`](../../scripts/lib/zip-lectura.ts#L9) | `ficheroDelZip` | Muerto (build) |
+| `scripts/lib/zip-lectura.ts:9` — ⚠️ **fichero borrado entero en `050a70a`; ya no hay a dónde enlazar** | `ficheroDelZip` | Muerto (build) |
 | `src/modes/index.ts` | fichero entero | **Huérfano.** Nadie importa `@/modes`; todo el mundo va directo a `@/modes/bus/profile` |
 
 ⚠️ **Y uno que no es código muerto sino suciedad publicada:**
