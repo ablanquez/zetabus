@@ -80,8 +80,14 @@ import type { MetadataRoute } from 'next';
  *    caso que no hemos pensado. Ver
  *    `docs/auditoria/12-perimetro-y-publicacion.md` · B-F2.
  *
- * ⚠️ NO se declara `Sitemap:` porque **todavía no hay sitemap** y el dominio no
- *    está en marcha. Anunciar uno que devuelve 404 es peor que no anunciarlo.
+ * ⚠️ NO se declara `Sitemap:` porque **todavía no hay sitemap**. Anunciar uno que
+ *    devuelve 404 es peor que no anunciarlo.
+ *
+ *    ⚠️ Este comentario decía además «y el dominio no está en marcha», y eso
+ *    DEJÓ DE SER CIERTO el 25/07/2026: ZetaBus está en vivo en
+ *    `zetabus.antonioblanquez.es`. La mitad que se retira era una promesa
+ *    caducada; la que queda —que no hay sitemap— sigue en pie, y es la única
+ *    razón que hace falta.
  */
 export default function robots(): MetadataRoute.Robots {
   return {

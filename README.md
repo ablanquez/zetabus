@@ -16,10 +16,22 @@
 
 </div>
 
-> 🚧 **Demo pública: en preparación**, en `zetabus.antonioblanquez.es`.
-> Todavía no está en marcha, así que **no se enlaza**: un README que promete una demo que
-> devuelve 404 es exactamente la clase de cosa que este proyecto persigue. Mientras tanto, se
-> levanta en local en dos comandos → [**Poner en marcha**](#poner-en-marcha).
+<div align="center">
+
+### 🚌 Verlo funcionando → **[zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**
+
+</div>
+
+> **No hay nada que instalar y no es una demo con datos de mentira: son los autobuses que hay
+> ahora mismo en la calle.** Busca tu parada por el número del poste, o mira una línea con su
+> recorrido de hoy.
+>
+> 🕐 **La hora importa, y no es un fallo.** De madrugada casi no hay servicio, así que una parada
+> puede salir sin llegadas: eso **es** la respuesta correcta —ZetaBus no inventa un autobús que no
+> viene—. Y el aviso de desvío solo aparece en las líneas que hoy tengan obras: el día que Avanza
+> restaure la ruta, **se apaga solo**.
+>
+> Para levantarlo en tu máquina, dos comandos → [**Poner en marcha**](#poner-en-marcha).
 
 ---
 
@@ -35,6 +47,9 @@ una avenida cortada**. ZetaBus compara ese recorrido oficial con el que el opera
 hoy*, y **deduce el desvío** — con las paradas por las que hoy no se pasa, tachadas y con su
 fuente al lado. No lo transcribe nadie a mano: **se deriva, y por eso se apaga solo** el día que
 restauren la ruta.
+
+¿Prefieres verlo antes de leer nada más? Está en vivo en
+**[zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**.
 
 <div align="center">
 <img src="docs/capturas/desvio-abierto.png" width="92%" alt="La línea 35 con el aviso de desvío abierto: cinco paradas tachadas por las que hoy no pasa el autobús">
@@ -301,11 +316,11 @@ lo que **no** se pudo comprobar, y las lecciones de método están en
 ## Hoja de ruta
 
 ✅ **Hoy:** llegadas en vivo con posición GPS, ficha de vehículo, recorrido real con desvíos
-derivados, horarios de terminal, transbordos por parada, buscador y modo demo.
+derivados, horarios de terminal, transbordos por parada, buscador, modo demo — y **en marcha en
+[zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**.
 
 Previsto, sin fechas comprometidas:
 
-- **Demo pública** en `zetabus.antonioblanquez.es`.
 - **Panel de estado** del propio servicio: cuánto se le pide al operador y con qué frescura.
 - **Avisos de parada suprimida** en la vista de parada, no solo en la de línea.
 - **Tranvía.** El núcleo ya está preparado para ser multimodal, y hay una prueba que lo vigila.
