@@ -14,8 +14,12 @@ cabos** (`0276170` el `<h1>` de la home, `6d44eec` el fingimiento de horario).
 · El único fallo real de 2.024 páginas —**la home sin `<h1>`**— **arreglado y con test**.
 · El **verde en vacío del horario** —donde el informe dio verde y la pantalla dijo que no—
   **tapado, y con sus dos rojos vistos**.
-**Siguiente:** ⚠️ **cosas que Antonio quiere hacer ANTES de desplegar** (las mismas que se
-hicieron en Linaje) → **TANDA 8: el despliegue.**
+**Y el MACROBLOQUE DE AUDITORÍA, cerrado** (`9855851` … `827ec2b`): código, perímetro y rendimiento
+auditados, implementados y con guardián. **El README ya no dice que el proyecto no existe**, las
+capturas de móvil llevan su marco, y el guardián de enlaces valida **contra lo publicado**, no
+contra el disco.
+
+> # ⬜ SOLO QUEDA LA TANDA 8: EL DESPLIEGUE.
 **Última actualización:** 25/07/2026
 
 ---
@@ -573,12 +577,123 @@ reescritas con otra redacción y renumeradas** — y con **1.186 líneas** que n
 ⚠️ Es **L32 otra vez** (*antes de quitar algo por redundante, comprueba que lo que queda hace lo
 mismo*) — pero peor: **aquí ni siquiera era redundante. Era otra cosa con el mismo nombre.**
 
+⭐⭐ **L50 · LA LISTA DICE DÓNDE MIRAR. NO SUSTITUYE A MIRAR.**
+Cinco documentos de `docs/` llevaban semanas rancios, y **todos compartían una sola causa: no
+estaban en ninguna lista.**
+> *"El README se pudrió 91 commits porque nadie lo miraba; estos 21 documentos se pudrieron porque
+> **nadie los había elegido**. **Listarlos es elegirlos**."*
+⚠️ **Y la otra mitad, que el propio ejecutor añadió con tres pruebas suyas:** entrar en la lista
+**no basta si quien revisa mira el INFORME en vez del FICHERO.** Sus tres errores de la racha
+fueron eso: leyó la auditoría 12 en vez del fichero, leyó una ruta sin su frase, y **dedujo que
+`parked/` estaba ignorado desde el `.gitignore` en vez de preguntárselo a `git ls-files`**.
+
+⭐⭐ **L51 · UNA CONTRAPRUEBA DEMUESTRA QUE EL INSTRUMENTO FUNCIONA DONDE LE PLANTAS EL FALLO — NO
+QUE AHÍ ESTÉN LOS FALLOS.**
+El guardián de enlaces **cazó los dos rotos que se le plantaron** el 24/07… y **no cazó ninguno de
+los 12 rotos que había de verdad**, porque los plantados estaban en el índice y **los reales vivían
+dentro de los documentos**. Su alcance era `docs/README.md`.
+→ *"El verde era real y no significaba nada."*
+⚠️ **Es la dimensión que nadie comprueba de un guardián: DÓNDE MIRA.** Funcionar y cubrir no son
+lo mismo.
+
+⭐⭐ **L52 · EXIGE QUE EL INSTRUMENTO DEMUESTRE QUE TENÍA MATERIAL QUE MIRAR.**
+Al extender el guardián a los 39 documentos, se le puso un *sanity* delante: si `git ls-files`
+devolviera vacío, **el test pasaría en verde habiendo revisado CERO ficheros**.
+> ⭐ *"Es el mismo mecanismo exacto que el contador de `/api/diag` diciendo `peticiones: 0`:
+> **el valor tranquilizador y el valor de «no he medido nada» son el mismo valor**."*
+→ Y el dato que da la medida: **el subproceso de `git` cuesta tres veces más que el trabajo real
+del guardián.** *La comprobación es barata; **enterarse de qué hay que comprobar es lo caro** — y
+es justo el paso que el guardián anterior se saltaba dando la lista por supuesta.*
+
+⭐⭐ **L53 · UNA LISTA BLANCA NO FALLA: OBEDECE.**
+`ZETABUS-ESTADO.md` estaba en el repositorio **desde el segundo commit**, metido **a propósito**
+con una excepción explícita en el `.gitignore` y su porqué escrito. En **190 de 191 commits**.
+⚠️ Y eso **desmiente el argumento que la propia lista blanca lleva dentro**: dice que existe porque
+*"una lista negra falla en silencio"*.
+> ⭐ *"Una lista blanca protege de lo que **nadie previó**; **no protege de una decisión previa que
+> dejó de ser buena**. Cuando la excepción está escrita a mano y razonada, la ejecuta con la misma
+> obediencia que una lista negra ante un fichero olvidado."*
+→ **La pregunta que hay que hacerle a una lista blanca no es «¿falta algo?», sino «¿alguna de
+  estas excepciones ya no vale?».** *Mismo patrón que el README: nadie lo rompió, dejó de ser cierto.*
+
+⭐⭐ **L54 · UNA RESPUESTA VACÍA LEÍDA COMO UN HECHO.**
+`AUDITORIA_Q1` concluyó *"no existe un horario de día completo raspable en la web de Avanza"*.
+**La causa: se pidió `?linea=34` cuando el parámetro real es `?selectLinea=44&selectSentido=-1`.**
+La página contestó **sin tabla —porque la pregunta no tenía sentido para ella—** y de esa ausencia
+se dedujo un hecho sobre el mundo.
+> ⭐ **La fuente no mintió ni una vez.**
+⚠️ *"Cuando una fuente devuelve nada, lo primero que hay que dudar es de la PETICIÓN. **«No hay
+dato» y «no supe pedirlo» se ven exactamente igual desde este lado**."*
+→ Y lo caro no fue el error —se corrigió en horas— sino que **el documento equivocado siguió
+publicado OCHO DÍAS**, contradiciendo a la app en producción, con 1.279 pruebas en verde.
+
+⭐ **L55 · ARREGLAR EL CÓDIGO PUEDE DEJAR MINTIENDO A UN DOCUMENTO QUE ERA CORRECTO.**
+`AUDITORIA_SISTEMA_VISUAL` defendía —con razón en su momento— que la fórmula WCAG estaba separada
+**a propósito**. Al unificarla (`6aa5ae9`), **el documento pasó a defender lo contrario de lo que
+hace el código**, y las líneas que citaba dejaron de existir.
+→ *"**El cambio de código no tiene forma de saber qué prosa lo describía.**"*
+⚠️ Y su hermano: `MOTOR-HORARIOS` **se contradice dentro del mismo recuadro** —dice que la v1 cerró
+con la tabla de la web y **tres líneas después** que no hay recogida de horario web—. *Una
+contradicción a tres líneas de distancia no la ve nadie que no esté buscándola.*
+
+⭐ **L56 · UN FALSO POSITIVO CON CORROBORACIÓN APARENTE ES PEOR QUE UNO SUELTO.**
+El detector de "ficheros que existieron y hoy no están" comparaba **altas** (`--diff-filter=A`)
+contra `git ls-files`. ⚠️ **Un `git mv` no es un alta ni una baja: es una `R`.**
+→ Un fichero movido **salía como borrado por un lado y como inexistente por el otro**, y *"las dos
+mitades del instrumento se confirmaban mutuamente"*.
+⚠️ **Eso es lo que hace bajar la guardia**: dos señales coincidiendo parecen una verificación
+cruzada. Se arregla con `--name-status -M`, que sí distingue una `R`.
+*(Gracias a esto se descubrió que **el quinto documento rancio NO lo era** — y el ejecutor se paró
+antes de plantar una rectificación falsa sobre un documento correcto.)*
+
+⭐⭐ **L57 · UN GUARDIÁN NO SE DEFINE POR LO QUE COMPRUEBA, SINO POR EL CONJUNTO CONTRA EL QUE LO
+COMPRUEBA — Y ESE CONJUNTO CASI NUNCA SE ESCRIBE.**
+El comprobador de enlaces usaba `existsSync`: contesta **"¿está en esta máquina?"** cuando la
+pregunta era **"¿está en el repositorio?"**. El código estaba bien —recorría, resolvía rutas
+relativas, ignoraba externos— y **respondía a la pregunta equivocada**.
+⚠️ **Y ahí está el veneno:** en la máquina donde se desarrolla, las dos preguntas **coinciden casi
+siempre**. *"El instrumento acierta durante todo el desarrollo y falla exactamente en el momento en
+que ya no puedes verlo: **en el clon de otro**."*
+> ⭐ *"Cuando un guardián valida algo que **se publica**, su universo tiene que ser **lo publicado**.
+> **El disco local es el sitio donde todas las respuestas salen bien.**"*
+⚠️ Y la vuelta que lo remata: **el fallo sobrevivió a su propia vigilancia porque el vigilante
+compartía el sesgo del vigilado — los dos vivían en la máquina donde todo está.**
+
+⭐⭐ **L58 · «NO DEBE CONTENER MÁS QUE ESTOS» PERDONA PARA SIEMPRE. «DEBE SER EXACTAMENTE ESTOS»
+OBLIGA A VOLVER.**
+Al no poder arreglar dos enlaces rotos *(era decisión, no arreglo)* se montó una lista de
+excepciones **con igualdad exacta**: se pone roja si aparece uno nuevo **y también si uno de los
+listados se arregla**, pidiendo que se retire.
+→ **Y funcionó:** al arreglar el spike, el guardián **pidió su propia retirada**.
+⚠️ *"Casi ninguna excepción lo hace: **lo normal es que sobreviva a su motivo y nadie vuelva a
+mirarla**"* — **L53**, `ZETABUS-ESTADO.md` metido por una excepción razonada que **190 commits
+después nadie había vuelto a cuestionar**.
+> ⭐ **La diferencia técnica es una línea: igualdad exacta en vez de subconjunto.**
+
+⭐ **L59 · SI AL QUITAR LA IMAGEN SE PIERDE INFORMACIÓN, LA INFORMACIÓN ESTABA EN EL SITIO
+EQUIVOCADO.**
+El enlace roto del spike era **el síntoma**. La causa: **la tabla no se sostenía sola** — decía
+*"calles con nombre / barrios con nombre"* y **delegaba en la foto** cuántos autobuses entraban y
+si el pin encogía, con esos datos escritos **en otro párrafo**.
+> *"Un documento que necesita una imagen para significar algo **es un documento que caduca cuando
+> la imagen no viaja** — y aquí no viajaba desde el primer día."*
+→ **En un informe, la imagen ilustra un resultado que YA ESTÁ ESCRITO.**
+
+⭐ **L60 · ACOTAR EL ALCANCE PARA AHORRAR PUEDE COSTAR MÁS CARO QUE NO ACOTARLO.**
+El guardián recorría `git ls-files docs/` **por coste**. Medido al ampliarlo: `git ls-files docs/`
+**tarda MÁS** que `git ls-files` a secas —el pathspec obliga a git a filtrar— y el filtrado propio
+cuesta **0,4 ms**. Ampliar de 39 a 48 ficheros **bajó el tiempo**.
+> ⭐ *"**Pagué en cobertura por un ahorro que no existía.** Lo descubrí midiendo por obligación,
+> porque se preguntaba por el coste; **si no lo llego a medir, la creencia seguiría ahí**."*
+⚠️ *Optimización sin medición previa = deuda con intereses* — y aquí la deuda **se pagó en
+cobertura**, que es la moneda cara.
+
 **Y una del fallo real de Avanza:**
 *Un test que solo pasa cuando la fuente ajena está sana **no es un test: es un test de Avanza**.*
 
 ---
 
-## 5 · ⚠️ EL INSTRUMENTO HA MENTIDO ~37 VECES
+## 5 · ⚠️ EL INSTRUMENTO HA MENTIDO ~45 VECES
 
 **Ya es una categoría, no una anécdota.**
 
@@ -617,6 +732,14 @@ mismo*) — pero peor: **aquí ni siquiera era redundante. Era otra cosa con el 
 | **35** | ⭐⭐ **VERDE EN VACÍO:** el test de "Información adicional" dio **0 copias anunciadas a todos los anchos** — pasó **porque no había nada que comprobar** (`?fingir=` no produce horario) |
 | **36** | ⭐⭐ **UNA ASERCIÓN DE TOPE SE SATISFACE CON LA NADA.** `toBeLessThanOrEqual(1)` contaba **cero** y pasaba. Ver L47 |
 | **37** | ⭐ **`.first()` COGÍA LA COPIA OCULTA.** Cantaba "no hay caja" con la caja pintada: **medía el elemento equivocado** |
+| **38** | ⭐⭐ **`git status` DABA LIMPIO POR EL FALLO.** El WIP no salía como modificado **porque ya estaba committeado**. Ver L53 |
+| **39** | ⭐⭐ **EL GUARDIÁN CAZÓ LOS FALLOS PLANTADOS Y NINGUNO DE LOS 12 REALES**, porque los reales vivían fuera de su alcance. Ver L51 |
+| **40** | ⭐⭐ **`/api/diag` DECÍA `peticiones: 0` MIENTRAS LAS HACÍA.** *El valor tranquilizador y el de "no he medido nada" son el mismo valor* |
+| **41** | ⭐ **LA FÓRMULA WCAG, CUATRO COPIAS Y UNA NO ERA LA WCAG.** No duplicación: **divergencia**. Coincidían por casualidad |
+| **42** | ⭐ **UN `git mv` NO ES UN ALTA NI UNA BAJA:** el detector daba un **falso positivo con corroboración aparente**. Ver L56 |
+| **43** | ⭐ **`aNumero()` LEÍA «20.9» COMO 209** (punto como separador de millares) y **puso rojo un README que decía la verdad** — *el error más peligroso de un guardián, porque el reflejo es "corrige el documento"* |
+| **44** | ⭐⭐ **EL GUARDIÁN PREGUNTABA AL DISCO (`existsSync`) Y NO A GIT.** *El vigilante compartía el sesgo del vigilado.* Ver L57 |
+| **45** | ⭐ **`git ls-files docs/` ERA MÁS LENTO que `git ls-files`.** Se acotó el alcance **por un ahorro que no existía**. Ver L60 |
 | — | Y una donde **el instrumento tenía razón** y el defecto era propio: `⁺¹` con `<sup>` a altura 0 por `inline-flex` heredado |
 
 **Reglas del proyecto:** *"prefiero un error a un verde prestado"* · *"sospechar del instrumento
@@ -649,6 +772,10 @@ es verificar quién de los dos miente"*.
 | ⭐ **"La acera de V3 se adelgaza a 16 px"** | **Argumento inválido:** a 16 px no va V3, va la Z sola. *El pero real de la prolongación larga es el apaisado* (−13 %) |
 | ⭐ **"Hay que hacer la tabla píxel a píxel"** | **Retirada del cierre** (doc 10): la decisión de diseño ya estaba tomada, y medir hoy daría **diferencias intencionales** |
 | ⭐ **"El flaky de `rutas-basura` es del test"** | **Del ENTORNO:** >100 pases limpios; es el transporte bajo ~14 workers en Windows |
+| ⭐ **"`ZETABUS-ESTADO.md` se coló en `050a70a`"** | ⚠️ **Falso.** Estaba **desde el 2.º commit**, con excepción explícita en el `.gitignore`. En 190 de 191. Ver L53 |
+| ⭐ **"`BARRIDO_APARCADO` está rancio"** | ⚠️ **Falso, y lo desmintió el ejecutor.** `parked/` **está versionado**: `git mv` conserva el seguimiento. Eran **4 rancios, no 5** |
+| ⭐ **"Hay 8 ficheros con rutas de disco"** | **Eran 7.** Se leyó la auditoría **en vez del fichero** — *la L7 con traje nuevo* |
+| ⭐ **"El `<h1>` de la home es el único fallo del repo"** | **De la SUPERFICIE, sí.** Pero **nadie había mirado el CÓDIGO**: de ahí salieron cuatro graves más |
 | ⭐ **"La restauración de scroll está rota"** | ⚠️ **Falso, y lo desmontó el ejecutor con la medición en la mano.** Lo fabricaba Playwright. Ver L39 |
 | ⭐ **"La info adicional no está en la columna derecha"** | **Falso en el código:** la sonda lo confirmó (`left 836`, `gridArea: info`, borde negro). Era otra cosa del navegador |
 | ⭐ **"El hueco es una fila vacía de la rejilla"** | **No:** era el **reparto del sobrante** entre filas `auto`. Distinta causa, distinto arreglo |
@@ -696,6 +823,180 @@ Detalle completo en §1. Lo que dejó el proceso:
   se midió **la objeción de Claude**, no la de Antonio — con **tira ciega a 32 px, sin etiquetas**.
   *La objeción se graduó en vez de confirmarse sola.*
 - **Dos entradas nuevas al catálogo del instrumento** (18 y 19) y **dos lecciones** (L25, L26).
+
+### 25/07 (cierre) — ⭐ EL MARCO DE MÓVIL, Y EL GUARDIÁN QUE MIRABA AL DISCO
+
+**`f7a642d` — el marco de móvil en las capturas del README.** Se pidió *"igual que en Linaje"*, y
+se **midió sobre los píxeles del PNG**, no se miró: bisel 24 px (4,35 % del ancho), color `#0E0F12`
+—*no negro puro*—, radio ajustado a un círculo de **r = 88** con error ≤ 1 px, sombra horneada en
+el alfa, **sin muesca ni botones**.
+· **Dos desviaciones deliberadas, con su motivo:** el marco usa `--color-tinta` **con un aro al
+  16 % de blanco** *(porque `#0F172A` contra el fondo oscuro de GitHub **desaparece**: se verificó
+  componiendo sobre `#ffffff` y sobre `#0d1117` antes de decidir)*; y el margen de sombra baja al
+  9 % *(con el 16 % de Linaje el teléfono salía un **23 % más pequeño**, y estas capturas están
+  para leerse)*.
+· ⚠️ **Y el radio salió mal a la primera:** se puso *"a ojo parecido"* **teniendo el PNG delante
+  para medirlo**. → ⭐ *"Tener la fuente delante no sirve de nada si se la **mira** en vez de
+  **medirla**"* — la misma frase de la racha con otro traje: la auditoría en vez del fichero, la
+  ruta sin su frase, el `.gitignore` en vez de `git ls-files`, y ahora **la curva en vez de sus
+  píxeles**.
+
+**`0d8c473` — ⭐⭐ EL GUARDIÁN PREGUNTABA AL DISCO.** Ver **L57**. Buscando si cazaba una imagen
+movida, apareció algo peor: `SPIKE_SUELO_DE_ZOOM` enlazaba a capturas **que existen en el disco de
+Antonio y NO en el repositorio** (`/capturas/` está denegado). **Enlace roto para cualquiera que
+clone — y el guardián lo daba por bueno.**
+⚠️ **Y el guardián se había estrenado el día antes con dos rojos enseñados… con TRES agujeros
+simultáneos:** cubría **cero de las 8 imágenes del README** *(fichero fuera de la lista **y** forma
+de enlazar desconocida)*, y daba por buenos dos enlaces ya rotos.
+→ *"Planté los fallos donde el instrumento ya miraba, y el verde solo me dijo que allí funcionaba"*
+  — **L51 con la vuelta completa.**
+→ Arreglado: **universo = `git ls-files`**, **48 ficheros** *(no solo `docs/`)* y **cinco formas de
+  enlazar** *(las tres que hoy no se usan van igual: "el día que alguien escriba un `<a href>` no
+  debería estrenarse sin vigilancia")*. Con **el techo declarado**: no cubre anclas, ni externos, ni
+  rutas citadas en `.ts`, ni que el destino **diga lo que promete**.
+⭐ **Y algo nuevo en el proyecto: metió `ZETABUS-ESTADO.md` bajo un guardián que él NO PUEDE
+OBEDECER** — si se pone rojo, no le está permitido arreglarlo.
+> *"**El guardián avisa, no autoriza.** Lo que no se puede es dejar fuera lo que no se puede
+> arreglar, porque **eso es exactamente cómo se pudrieron los 21 del cuaderno de campo**."*
+
+**`827ec2b` — el spike, sin las capturas.** Ver **L59**. Se decidió **cambiar el texto, no publicar
+las imágenes**: la regla del `.gitignore` es correcta y **meter una excepción para dos ficheros la
+rompe por el caso más débil** *(y ya sabemos cómo acaban las excepciones razonadas: L53)*. Además
+**son de julio: publicarlas hoy sería enseñar la foto de un ZetaBus que ya no existe.**
+· La tabla recuperó **los números que el documento tenía dispersos**, incluida la fila que más
+  importaba y no estaba: **el pin mide 22 px a los dos zooms** — *el spike existía para descartar el
+  miedo de que "la parada se vuelva un punto", y ese resultado vivía solo en un párrafo de abajo.*
+· ⭐ **Y la lista `PENDIENTES` pidió su propia retirada** al arreglarse el enlace (**L58**).
+  Se comprobó que **con la lista vacía el guardián sigue cazando** — no se vuelve un no-op.
+
+⭐ **Y el informe cerró declarando que NINGÚN instrumento falló**, con el mismo cuidado que cuando
+fallan: *"es la primera vez en esta racha que el instrumento va por delante y no detrás."*
+
+### 25/07 (noche) — ⭐ EL GUARDIÁN DEL README, Y LA LIMPIEZA DOCUMENTAL
+
+**EL GUARDIÁN (`357ac4a` … `630126a`).** El README mintió 91 commits porque **nadie mira la prosa**.
+De tres niveles propuestos se eligió el **2 + aviso mecánico**, y **no el 3**, por su propio
+argumento: *el nivel 3 exige marcar cada frase y **"se abandona sola"** — el día que alguien escriba
+sin marcar, **la frase queda fuera y el guardián sigue en verde**.*
+→ **El reparto invertido:** el guardián cubre **lo mecánico** (las cifras, que caducan solas y en
+silencio); **el ojo cubre la prosa**; y un **aviso mecánico** dice cuándo lleva demasiado sin
+mirarse, para que "revisar a mano" **no dependa de acordarse**.
+
+· **14 afirmaciones registradas**, y ⚠️ **ninguna `real()` devuelve un número escrito a mano: todas
+  CUENTAN** contra la fuente (L1). Con una regla que no estaba en el encargo: **si el patrón no
+  encuentra la frase, también es rojo** — *una afirmación reescrita saldría del registro en silencio
+  y el guardián se quedaría vigilando un texto que ya no existe.*
+· ⭐⭐ **Y cazó DOS MENTIRAS VIVAS a los diez minutos de existir, sin que nadie las plantara:**
+  el README decía **«403 vehículos del pliego»** cuando son **350** — *y **se contradecía a sí mismo
+  dos filas más abajo**: ya decía que busesmadrid aporta 43 que no están en el pliego, y 350+43
+  nunca fue 403*. **Nadie lo leyó entero.** Y **«Tres lecciones»** habiendo **nueve**.
+· **El vigía: N = 15 commits**, medido sobre la historia real (132 de 187 tocan `src/`; rachas de
+  3, 3, 34 y **91**). Con 15: **cero falsos positivos en toda la historia**, y en la racha del README
+  **habría avisado 76 commits antes de publicar**. Va en `posttest`, **no en el build** —*allí se
+  perdería entre cientos de líneas*—. **Solo avisa, no bloquea:** ⚠️ *"un guardián que se silencia a
+  menudo acaba silenciado siempre."*
+· ⚠️ **Y el techo, declarado en tres sitios**, con un `⛔ NO LEER ESTE FICHERO COMO «ya hay un test
+  que vigila el README»`: **la frase que mintió 91 commits NO TIENE NÚMERO y este guardián NO LA
+  HABRÍA CAZADO.** *Un guardián que promete cubrirlo todo enseña a no mirar.*
+· ⭐ **Y se mordió la cola a los diez minutos:** al añadir 20 pruebas dejó rancio el «451 pruebas»
+  del propio README — *una cifra que su registro no puede vigilar*. **La salida no fue meter un
+  número nuevo: fue escribirlo como SUELO ("más de 470")** — *un suelo aguanta que se añadan
+  pruebas; un número exacto no.*
+
+**LA HISTORIA DEL PROPIO `ZETABUS-ESTADO.md`.** Se creyó que `050a70a` lo había colado con un
+`git add` mal acotado. ⭐ **Falso, y lo desmintió él mismo:** estaba **desde el segundo commit**,
+con excepción explícita en el `.gitignore` (ver **L53**), en **190 de 191 commits**.
+⚠️ **Y cómo lo tapó el instrumento:** al informar *"git status → jamás tocado por mí"*, **era cierto
+en pantalla porque el fichero ya estaba dentro del commit**. `git status` **daba limpio precisamente
+por el fallo**.
+→ **DECISIÓN: se queda en el repositorio.** No se reescribe historia *(serían 190 commits y romper
+todas las referencias de hashes **para esconder algo que no avergüenza**)*. **Ese documento es el
+argumento del proyecto.**
+→ Pero **Claude Code NO LO MODIFICA NUNCA**: regla permanente en `AGENTS.md`, **con su cicatriz
+escrita** *("esta regla existe porque se rompió")*. Y una segunda regla que sale de ahí: ⚠️ **`git
+status` no vale para comprobar que no se ha tocado algo** — lo que vale es `git show --stat` y leer
+la lista de ficheros antes de empujar.
+
+**LOS DOCUMENTOS RANCIOS (`0c11802`).** 23 repasados, ⭐ **4 rancios — no 5** *(el quinto no lo era:
+ver **L56**)*. Rectificados **SIN reescribir**: nota fechada arriba, cuerpo intacto debajo, mismo
+tratamiento que `THIRD-PARTY-NOTICES`.
+⚠️ **El porqué de rectificar y no reescribir:** `AUDITORIA_HORARIO_WEB_AVANZA` **ya abre diciendo
+*"era falso, y el error fue mío y tonto"***. ⭐ **Ese par de documentos, leídos juntos, cuentan una
+historia que vale más que dos documentos limpios.**
+· **`AUDITORIA_Q1`** (ver **L54**) · **`MOTOR-HORARIOS`** (se contradice a tres líneas de sí mismo)
+· **`AUDITORIA_SISTEMA_VISUAL`** (ver **L55**) · **`MODELO-BLOQUE-SALIDAS`** *("la decisión se tomó
+construyéndola, y nadie volvió a bajar a marcar el cabo")*.
+· **21 documentos sueltos entraron en el índice** — ⭐ *listarlos es elegirlos* (**L50**).
+· **12 enlaces rotos arreglados**, y el guardián **extendido a los 39 `.md`** (`1dd420e`) con su
+  *sanity* (**L52**). ⚠️ Uno **no se reapunta**: el fichero se borró entero y **no se inventa un
+  destino** — *"un enlace que lleva a algo que se parece es peor que un enlace roto: **el roto se ve,
+  el parecido miente**."*
+· **Las rutas de los discos** limpias del árbol *(no del historial)*, conservando la frase: en los
+  informes **la referencia es parte del registro**. ⚠️ La peor estaba **en un `console.log`**.
+
+### 25/07 (tarde) — ⭐⭐ EL MACROBLOQUE DE AUDITORÍA, ANTES DE PUBLICAR
+
+**Por qué existe:** la Tanda 7 verificó que la app **funciona y no miente**. **No dijo NADA sobre
+el CÓDIGO.** Y ZetaBus es un proyecto de portfolio: **el repositorio es público y lo van a abrir
+reclutadores**. Un reclutador dedica minutos, no horas — **el código ES el escaparate.**
+Tres auditorías, **de descubrir, no de arreglar**: `9855851` (código) · `58d83ec` (perímetro) ·
+`cbb2141` (rendimiento), cada una con su documento-guía en `docs/auditoria/` (11, 12, 13).
+
+⭐⭐ **EL HALLAZGO QUE LO CORONA — y es el de "¿qué le chirriaría a un reclutador?":**
+> **«Ni una línea de aplicación todavía»** — `README.md:6`. El README llevaba **91 commits**
+> diciendo que el proyecto **no existe**, sobre **12.973 líneas de `src/` y 1.229 tests en verde**.
+> **Es la primera frase que lee cualquiera.**
+Y detrás: auditoría de fuentes **previa al código**, 173 commits con convenio y 4.856 líneas de
+cuerpo, **cero `TODO`/`FIXME`/`@ts-ignore` en 15.641 líneas**, y tres retractaciones documentadas.
+**Nada de eso se llegaba a ver.**
+⚠️ *"Ningún test lo vio, porque los 1.229 miran el código y la pantalla, y **nadie mira la prosa
+que describe el proyecto**. Es el mismo agujero que dejó la home sin `<h1>`."*
+
+**LOS OTROS TRES GRAVES:**
+- ⛔ **`/api/diag` contaba CERO peticiones mientras las hacía.** Medido en producción, mismo `pid`,
+  **con contraprueba en disco** (tras cargar una parada apareció su fichero de caché, *que solo el
+  render pudo escribir*). ⭐ **La causa no estaba en el código: estaba en el framework** — páginas y
+  route handlers son **grafos de módulos distintos** aunque compartan proceso, así que el singleton
+  se instanciaba dos veces.
+  ⚠️ **Y el sesgo iba al lado malo:** en una visita normal la primera petición es la del render.
+  Además **el endpoint decía de sí mismo que la cuenta "es una MEDIDA"**.
+  > *"Ninguna lectura del código lo habría revelado: hubo que arrancar el build de producción y ver
+  > el número no moverse. **Lo que se cree del propio proceso hay que medirlo en el proceso, no
+  > deducirlo del fichero.**"*
+- ⛔ **El `gtfs.json` de 1,9 MB viajaba al navegador.** `/parada` mandaba **2.431 KB** contra los
+  ~148 KB de las demás rutas. Dos `import { linea }` **como valor** en componentes `'use client'`.
+  ⚠️ *"Lo que hacían con esos 1,9 MB eran **dos llamadas, para sacar el color de un chip**."*
+  → **Arreglado: −78 % crudo, −72 % gzip** (532 KB / 154 KB). ⭐ *"El dato estaba en la mano y se
+  iba a buscarlo a 1,9 MB de distancia"* — la `LlegadaViva` ya traía `shortName` y `color`.
+  ⚠️ **Y un coste que solo existe después de compilar no lo encuentra ninguna revisión de código:**
+  *"`import { linea } from '@/engine/topologia'` es una línea perfectamente inocente. Nada en ella
+  dice «esto son 1,9 megas»."*
+- ⛔ **La fórmula WCAG escrita CUATRO veces, y la cuarta no era la WCAG** (luminancia lineal sin
+  gamma). ⚠️ **No era duplicación: era DIVERGENCIA. Coincidían por casualidad.** Unificada en
+  `src/core/contraste.ts` — al núcleo y no a `e2e/lib/`, porque *"si viven separadas, el instrumento
+  puede aprobar exactamente lo que la aplicación considera ilegible"*.
+- ⛔ **`react-leaflet@5` es Hippocratic-2.1**, no aprobada por la OSI, **sin declarar**. Veredicto:
+  **solo aviso, no incompatibilidad** — no es copyleft y Apache 2.0 no prohíbe dependencias con
+  términos propios. *Pero quien tomara ZetaBus creyéndolo "Apache 2.0 y ya" se llevaría dentro una
+  pieza con restricción de uso.* Las 23 declaradas.
+
+**Y el `User-Agent` que prometía un correo que no existía.** ⭐ **Eran CUATRO documentos, no tres —
+y el cuarto era el ORIGEN**: en la Tanda 1 se *propuso* el correo, y de ahí se copió a los otros
+tres **como si fuera un hecho**. No se reescribió *(es el registro de lo que se pensó)*: se anotó
+como no implementado.
+⚠️ **Y no se puso la URL del dominio porque se comprobó que no responde** (000): *"apuntar a un 404
+sería peor"*. **Verificó en vez de asumir lo que yo le dije.**
+
+⭐ **Y UN TEST QUE RECHAZÓ SU PROPIO SÍMBOLO:** `tranvia-sin-tocar-el-nucleo` prohíbe la palabra
+"bus" en `src/core/`, y `Symbol.for('zetabus.…')` la contiene. **Cambió su fichero, no la guarda.**
+> *"Aflojar una guarda para que pase mi código es lo que no se hace aquí."*
+
+**Lo que NO se tocó, y es decisión, no falta de tiempo:** el inglés de `src/core` *(renombrar
+`Line`/`Stop` **mueve el proyecto entero y quema el `git blame`** a cambio de estética)* · unificar
+`ParQuePasa` *(rompe una frontera deliberada; una nota cruzada resuelve el daño real)* · `kml.ts` y
+`entities.ts` *(**no son muertos, son CABOS**)* · CSP *(~1 día, puede romper el mapa, retorno bajo
+sin formularios)* · `X-Frame-Options` y `Permissions-Policy` — ⭐ *"en una app sin un solo botón con
+efecto son adorno, **y decirlo forma parte del trabajo**"*.
 
 ### 25/07 (cierre) — ⭐⭐ LOS DOS CABOS DE LA PARTE B, Y LA TANDA 7 CERRADA
 
@@ -1297,6 +1598,29 @@ atómica y `generadoEn` *(su fallo produce dato de anoche, no una mentira)*.
 - El **estado rancio de la caché** en pantalla (probado en vitest, sin fingimiento en navegador).
 - `src/sources/avanza/kml.ts`: **hace una petición de red y nadie lo importa.** *O es código
   muerto o es un cabo.*
+
+**✅ EL MACROBLOQUE DE AUDITORÍA — CERRADO** (`9855851` … `1dd420e`). Detalle en §7.
+Código, perímetro y rendimiento auditados **y** implementados. Los cuatro graves arreglados
+(README, `/api/diag`, la fórmula WCAG, el bundle −78 %), las licencias completas, el guardián del
+README con su vigía, y **los 4 documentos rancios rectificados sin reescribir**.
+
+**✅ Y EL CIERRE DOCUMENTAL** (`f7a642d` · `0d8c473` · `827ec2b`): el marco de móvil, el guardián
+validando contra `git ls-files` con **48 ficheros y 5 formas de enlazar**, y el spike sin las
+capturas que nunca viajaron. Detalle en §7.
+
+**⬜ LO QUE QUEDÓ LISTADO Y NO SE TOCÓ — decisiones, no olvidos:**
+- **Partir `LlegadasVivas.tsx`** (505 líneas, 6 componentes, 4 responsabilidades). Se puede, pero
+  **cuesta re-verificar cuatro specs**.
+- **Los 6 errores de eslint en `TokensVivos.tsx`** (`react-hooks/set-state-in-effect`), verificados
+  como **anteriores** a todo esto y fuera de lista.
+- ⚠️ **El tope global de claves nuevas por minuto** — la causa de fondo del riesgo del rastreador.
+  *"El `robots.txt` tapa el caso conocido, no el que no hemos pensado."*
+- **`sitemap.xml`**: no estaba en la lista aprobada. Sigue sin haberlo.
+- **Enlazar la demo** en el README: `zetabus.antonioblanquez.es` **no responde todavía** (000).
+  Cuando esté, hay que convertir la nota en enlace y añadir `Sitemap:` al `robots.ts`.
+- ⚠️ **El techo del guardián de enlaces, declarado:** no cubre **anclas** (`#fragmento`), ni enlaces
+  **externos**, ni rutas citadas **en ficheros que no son `.md`**, ni —lo más difícil— **que el
+  destino diga lo que promete**. *Eso último es el ojo, en el cierre de tanda.*
 
 **Y después: LA TANDA 8 — el despliegue y lo que depende de él.**
 - 🔜 **DESPLEGAR.** Hoy ZetaBus corre en local con `npm run dev`. **Todo lo de abajo depende de
