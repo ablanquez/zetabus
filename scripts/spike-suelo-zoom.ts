@@ -18,7 +18,8 @@ import { llegadasDePoste } from '@/engine/llegadas';
 import { paradas, posteDe } from '@/engine/topologia';
 import { motor } from '@/engine/motor';
 import { contador } from '@/sources/avanza/transporte';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const N = Number(process.argv[2] ?? 80);
 const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -81,12 +82,27 @@ async function main() {
     await dormir(260);
   }
 
+  /**
+   * ⚠️ AQUÍ HABÍA UNA RUTA ABSOLUTA DE LA MÁQUINA DE QUIEN ESCRIBIÓ ESTO —con el
+   *    nombre de usuario de Windows y un identificador de sesión— **en un
+   *    repositorio público**. No daba acceso a nada, pero decía cómo se llama el
+   *    disco y cómo están montadas las carpetas de su autor. Y de propina hacía
+   *    que este script **no funcionara en ninguna otra máquina**: era inútil para
+   *    quien clonara el proyecto.
+   *
+   * ⇒ Ahora el destino es un argumento, con un valor por defecto dentro del
+   *   proyecto. `/.spikes/` no entra al repositorio: la lista blanca del
+   *   `.gitignore` solo deja pasar lo que se nombra a mano, y esto no se nombra.
+   */
+  const destino = process.argv[3] ?? '.spikes/muestra-zoom.json';
+  mkdirSync(dirname(destino), { recursive: true });
   writeFileSync(
-    'C:/Users/ORDENA~1/AppData/Local/Temp/claude/f--01-PROYECTOS-003-ZETABUS/2640e540-5594-4313-bac1-f381db32bc48/scratchpad/muestra-zoom.json',
+    destino,
     JSON.stringify({ generado: new Date().toISOString(), muestra: muestra.length, sinBuses, fallos, filas }, null, 1),
   );
 
-  console.log(`\n  aptas ${filas.length} · sin autobuses ${sinBuses} · fallos ${fallos}`);
+  console.log(`\n  escrito en ${destino}`);
+  console.log(`  aptas ${filas.length} · sin autobuses ${sinBuses} · fallos ${fallos}`);
   console.log(`  peticiones a Avanza: ${contador.cuenta.peticiones}\n`);
 }
 

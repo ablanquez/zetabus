@@ -218,7 +218,7 @@ decir**.
 [`scripts/spike-suelo-zoom.ts:85`](../../scripts/spike-suelo-zoom.ts#L85) contiene, escrita a mano:
 
 ```
-'C:/Users/ORDENA~1/AppData/Local/Temp/claude/f--01-PROYECTOS-003-ZETABUS/<uuid-de-sesión>/scratchpad/muestra-zoom.json'
+'C:/Users/<usuario>/AppData/Local/Temp/claude/<proyecto>/<uuid-de-sesión>/scratchpad/muestra-zoom.json'
 ```
 
 Dice el nombre de usuario de la máquina, la estructura de directorios temporales y un
@@ -227,7 +227,8 @@ encargo pedía buscar: *rutas locales que dicen cómo se llama tu disco y tu est
 Y además **el script no funciona en ninguna otra máquina**, lo que lo vuelve inútil para quien
 clone.
 
-Menor, del mismo tipo: `docs/diseno/tanda1-cierre-de-cabos.md:28` cita `F:\01_PROYECTOS\003_ZETABUS\_datos\`.
+Menor, del mismo tipo: `docs/diseno/tanda1-cierre-de-cabos.md:28` citaba la ruta absoluta del disco
+de Antonio.
 
 - **Coste:** 10 min (parametrizar la ruta o leerla de `argv`). **Riesgo:** nulo — nadie llama a
   ese script desde `package.json`; se invoca a mano.

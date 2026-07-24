@@ -25,7 +25,7 @@ Y un hallazgo que cambia el diseño de la demo:
 ## 1.1 · Lo que hay ahora en el proyecto
 
 ```
-F:\01_PROYECTOS\003_ZETABUS\_datos\
+<raíz del proyecto>/_datos/
   ├── flota-avanza-zaragoza.json                          ← ⭐ EL MAESTRO. 403 vehículos.
   ├── REFERENCIA_autobuses-avanza-zaragoza_HEREDADO.json  ← copia del viejo. SOLO REFERENCIA.
   └── zaragoza-gtfs.zip
