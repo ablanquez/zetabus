@@ -9,10 +9,18 @@ import { destinoDeSentido, dosDestinos } from '@/engine/rumbo';
 import { ALIAS_LINEA } from '@/engine/busqueda';
 import { NOMBRE_MARCA } from '@/components/marca-fuente';
 
+/**
+ * ⭐ LO QUE ES ESTA PÁGINA, EN UNA FRASE. Se escribe UNA vez y se usa en DOS sitios: la
+ * pestaña y el `<h1>`. No es reutilización por ahorrar: si fueran dos cadenas a mano, la
+ * pestaña podría prometer una cosa y el encabezado anunciar otra, y divergirían en
+ * silencio — que es exactamente la clase de mentira que este proyecto persigue (L42).
+ */
+const LO_QUE_ES = 'Listado de líneas de transporte de Zaragoza';
+
 // ⚠️ La home es el segmento RAÍZ, el mismo que declara la plantilla → la plantilla NO se
 //    le aplica (Next: `template` solo envuelve a los HIJOS). Por eso el título se escribe
 //    entero aquí, pero el nombre se LEE de la fuente única (no se teclea "ZetaBus").
-export const metadata = { title: `${NOMBRE_MARCA} | Listado de líneas de transporte de Zaragoza` };
+export const metadata = { title: `${NOMBRE_MARCA} | ${LO_QUE_ES}` };
 
 /**
  * Los destinos de una línea, en una cadena, para INDEXARLOS en el buscador (no se
@@ -67,6 +75,24 @@ export default function Home() {
 
   return (
     <div>
+      {/* ⭐⭐ EL ENCABEZADO DE LA PÁGINA. No se ve, y ESO ES LA DECISIÓN, no un descuido.
+          ⚠️ LA CICATRIZ: la home NO TENÍA NINGÚN <h1>. Lo encontró el barrido total de las
+          1.012 páginas —fue su único hallazgo real en 2.024 cargas— y no lo cazó ninguna de
+          las ~30 specs, porque todas miran pantallas concretas y ninguna preguntaba «¿toda
+          página anuncia exactamente un h1?». Quien navega por encabezados con un lector de
+          pantalla llegaba a la portada y no encontraba de qué iba.
+
+          POR QUÉ EN `sr-only` Y NO VISIBLE: la página YA dice lo que es por vía visual —el
+          logo centrado arriba y el buscador como primer control—. Un título visible aquí
+          sería un cambio de MAQUETA, no un arreglo de accesibilidad, y la maqueta no está
+          en juego. `sr-only` lo saca del flujo visual SIN sacarlo del árbol de
+          accesibilidad, que es donde hacía falta. (Comprobado en el ÁRBOL con `getByRole`,
+          no en el CSS: ver `e2e/un-solo-h1.spec.ts`.)
+
+          Y VA EL PRIMERO, antes del buscador: es el orden en que se lee, y deja los <h2> de
+          los grupos colgando de él en vez de arrancar la jerarquía en el nivel 2. */}
+      <h1 className="sr-only">{LO_QUE_ES}</h1>
+
       <Buscador entradas={entradas} />
 
       {/* ⭐ EL ÍNDICE AGRUPADO. Clonado de la referencia: DIURNAS / CIRCULARES /
