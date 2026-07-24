@@ -1,6 +1,6 @@
 # AUDITORÍA DE DISEÑO DE LA REFERENCIA
 
-**Proyecto auditado:** `E:\PROYECTOS WEB\00 ZGZ RADAR` · módulo `moverme/bus`
+**Proyecto auditado:** `00 ZGZ RADAR` · módulo `moverme/bus` — copia local, no publicada
 **Fecha:** 13/07/2026
 **Alcance:** LA INTERFAZ. (Los datos ya se auditaron en la Fase 1.)
 **Regla aplicada:** *la referencia manda en lo visual; no manda en lo que miente.*

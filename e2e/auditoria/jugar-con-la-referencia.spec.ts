@@ -8,7 +8,7 @@
  * capa que faltaba era LA INTERACCIÓN. El CSS no la enseña. El DOM en reposo
  * tampoco. Solo se ve PULSANDO.
  *
- *      cd "E:/PROYECTOS WEB/00 ZGZ RADAR" && npx next dev -p 3002
+ *      cd "<tu copia local de 00 ZGZ RADAR>" && npx next dev -p 3002
  *      npx playwright test e2e/jugar-con-la-referencia.spec.ts --project=360px
  *
  * Este fichero no prueba ZetaBus: DOCUMENTA a la referencia. Se salta solo si su

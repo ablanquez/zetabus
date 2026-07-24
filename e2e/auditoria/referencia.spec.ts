@@ -6,7 +6,7 @@
  *
  * ⚠️ CÓMO SE CORRE (necesita SU servidor, no el nuestro):
  *
- *     cd "E:/PROYECTOS WEB/00 ZGZ RADAR" && npx next dev -p 3100
+ *     cd "<tu copia local de 00 ZGZ RADAR>" && npx next dev -p 3100
  *     cd zetabus && npx playwright test e2e/referencia.spec.ts
  *
  * Se salta solo si el servidor no está en pie: no se finge una comprobación que
@@ -42,7 +42,7 @@ test.beforeAll(async ({ request }) => {
   if (!vivo) {
     console.log('\n  ⚠️  La referencia NO está en pie en :3100. Estos tests se SALTAN.');
     console.log('      No se finge una comprobación que no se ha hecho.');
-    console.log('      → cd "E:/PROYECTOS WEB/00 ZGZ RADAR" && npx next dev -p 3100\n');
+    console.log('      → cd "<tu copia local de 00 ZGZ RADAR>" && npx next dev -p 3100\n');
   }
   mkdirSync('capturas/referencia', { recursive: true });
 });

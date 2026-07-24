@@ -5,7 +5,7 @@
 propósito, con su motivo escrito.
 **Qué se retira:** el cabo *"tabla píxel a píxel contra la referencia"* que figuraba en el cierre
 de la Tanda 7 (`ZETABUS-ESTADO.md`).
-**Referencia de la que se hablaba:** `00 ZGZ RADAR` (`E:\PROYECTOS WEB\00 ZGZ RADAR`, módulo
+**Referencia de la que se hablaba:** `00 ZGZ RADAR` (copia local, no publicada, módulo
 `moverme/bus`), la que se auditó en [`08-diseno-de-la-referencia.md`](08-diseno-de-la-referencia.md).
 
 ---

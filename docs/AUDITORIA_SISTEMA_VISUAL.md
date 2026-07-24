@@ -215,7 +215,7 @@ tokens. `error.tsx` y `not-found.tsx`, que sí viven dentro del layout, usan cor
 
 ## 2 · Qué hay en el repo de referencia (Radar ZGZ)
 
-`E:\PROYECTOS WEB\01 ZGZ RADAR REACT` — Next 16 / React 19 / **Tailwind v4**, mismo stack.
+`01 ZGZ RADAR REACT` (copia local, no publicada) — Next 16 / React 19 / **Tailwind v4**, mismo stack.
 
 **Lo que tiene:**
 - **Tokens token-first** en `src/app/globals.css`: variables CSS semánticas en `:root` +

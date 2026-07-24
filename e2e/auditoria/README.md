@@ -3,7 +3,7 @@
 ⚠️ **Esto NO está a medias, y NO forma parte del cierre de la Tanda 7.**
 
 Estos ficheros son el instrumento con el que se auditó la referencia `00 ZGZ RADAR`
-(`E:\PROYECTOS WEB\00 ZGZ RADAR`, módulo `moverme/bus`, en `:3002`) en julio de 2026:
+(copia local, módulo `moverme/bus`, servida en `:3002`) en julio de 2026:
 disección píxel a píxel, capturas comparadas y documentación de su interacción.
 
 - `diseccion.spec.ts` — vuelca la anatomía de la referencia y de ZetaBus y las tabula.

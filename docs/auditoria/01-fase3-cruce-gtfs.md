@@ -9,7 +9,7 @@ Fecha: 13/07/2026
 | **Publicado por** | Avanza Zaragoza S.A.U. |
 | **Vigencia** | 23/06/2026 – 05/10/2026 *(hoy estamos dentro)* |
 | **Volumen** | 34.427 viajes · 870.717 filas de `stop_times` |
-| **Proyecto de referencia** | `E:\PROYECTOS WEB\00 ZGZ RADAR` (auditado, NO reutilizado como base) |
+| **Proyecto de referencia** | `00 ZGZ RADAR` — copia local, no publicada (auditado, NO reutilizado como base) |
 
 ---
 
