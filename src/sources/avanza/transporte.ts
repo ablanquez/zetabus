@@ -12,6 +12,7 @@
  */
 
 import { IngestError } from '@/core';
+import { unicoPorProceso } from '@/core/proceso';
 
 export interface RespuestaCruda {
   readonly status: number;
@@ -115,8 +116,24 @@ export class ContadorAvanza {
   }
 }
 
-/** El contador del proceso. `/api/diag` lo enseña. */
-export const contador = new ContadorAvanza();
+/**
+ * ⭐ EL CONTADOR DEL PROCESO. `/api/diag` lo enseña.
+ *
+ * ⚠️⚠️ `unicoPorProceso` NO ES DECORACIÓN. Aquí ponía `new ContadorAvanza()` a
+ *    secas, y durante meses `/api/diag` contestó `peticiones: 0` **mientras
+ *    ZetaBus estaba pidiendo datos a Avanza**: en producción, las páginas y los
+ *    route handlers son grafos de módulos distintos, así que había DOS contadores
+ *    y el endoscopio solo veía el suyo.
+ *
+ *    Y cero es una respuesta plausible —significa «no ha entrado nadie»—, así que
+ *    nada delataba el fallo. Un instrumento que devuelve un número tranquilizador
+ *    cuando no mide nada es indistinguible de uno que funciona.
+ *
+ * ⇒ Esto es lo que sostiene la frase de la cabecera del fichero: que las
+ *   peticiones/minuto que se le prometen al operador son **una MEDIDA y no una
+ *   estimación**. Con dos contadores, no lo eran. Ver `src/core/proceso.ts`.
+ */
+export const contador = unicoPorProceso('avanza.contador', () => new ContadorAvanza());
 
 // ─────────────────────────────────────────────────────────────────────────────
 

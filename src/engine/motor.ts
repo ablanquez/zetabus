@@ -11,6 +11,7 @@
 
 import { CacheDosPisos } from '@/cache/dos-pisos';
 import { Limitador } from '@/cache/limitador';
+import { unicoPorProceso } from '@/core/proceso';
 import { transporteReal, contador, type Transporte } from '@/sources/avanza/transporte';
 import type { Dependencias } from './llegadas';
 
@@ -20,10 +21,25 @@ const DIR_CACHE = process.env.ZETABUS_CACHE_DIR ?? '.cache/vivo';
 const DIR_HORARIO = process.env.ZETABUS_HORARIO_DIR ?? '.cache/horario';
 const TTL_HORARIO_MS = 24 * 60 * 60_000;
 
-let cache: CacheDosPisos | null = null;
-const cachesFingidas = new Map<string, CacheDosPisos>();
-let cacheHorario: CacheDosPisos | null = null;
-const cachesHorarioFingidas = new Map<string, CacheDosPisos>();
+/**
+ * ⚠️⚠️ ESTO ERAN CUATRO `let`/`const` A NIVEL DE MÓDULO, Y NO ERAN UNO POR PROCESO.
+ *
+ * La cabecera de este fichero dice —y con razón— que si cada petición se creara su
+ * propia caché «no habría nada que compartir y el vuelo único no existiría». Pues
+ * bien: **eso ya estaba pasando a media escala.** En producción, el render de una
+ * página y el route handler que la refresca corren en grafos de módulos distintos,
+ * así que había DOS motores por proceso y el vuelo único no cruzaba entre ellos.
+ *
+ * No se notó porque **el piso de DISCO lo tapaba**: medido, la segunda petición al
+ * mismo poste encontraba el dato en disco y no llamaba a Avanza otra vez. O sea que
+ * el segundo piso —documentado como «precaución para el día que haya varios
+ * workers»— llevaba meses trabajando de verdad, hoy, con un solo worker.
+ *
+ * ⇒ Con `unicoPorProceso` vuelve a haber UN motor por proceso, que es lo que la
+ *   cabecera prometía. Ver `src/core/proceso.ts`.
+ */
+const cachesFingidas = unicoPorProceso('motor.cachesFingidas', () => new Map<string, CacheDosPisos>());
+const cachesHorarioFingidas = unicoPorProceso('motor.cachesHorarioFingidas', () => new Map<string, CacheDosPisos>());
 
 /**
  * @param transporte Solo se pasa para FINGIR (modo demo). Por defecto, el real.
@@ -76,8 +92,7 @@ export function motor(
     }
     return { cache: c, transporte };
   }
-  cache ??= new CacheDosPisos({ dir: DIR_CACHE });
-  return { cache, transporte };
+  return { cache: unicoPorProceso('motor.cache', () => new CacheDosPisos({ dir: DIR_CACHE })), transporte };
 }
 
 /**
@@ -101,8 +116,11 @@ export function motorHorario(
     }
     return { cache: c, transporte };
   }
-  cacheHorario ??= new CacheDosPisos({ dir: DIR_HORARIO, ttlMs: TTL_HORARIO_MS });
-  return { cache: cacheHorario, transporte };
+  const cache = unicoPorProceso(
+    'motor.cacheHorario',
+    () => new CacheDosPisos({ dir: DIR_HORARIO, ttlMs: TTL_HORARIO_MS }),
+  );
+  return { cache, transporte };
 }
 
 export { contador };
