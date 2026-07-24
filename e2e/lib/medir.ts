@@ -30,7 +30,12 @@ import { PNG } from 'pngjs';
 //  EL PÍXEL REAL. No el color declarado: el que el navegador acabó pintando.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface Rgb { r: number; g: number; b: number }
+// ⚠️ `Rgb` tampoco se declara aquí ya: era la MISMA forma escrita dos veces, y un
+//    tipo duplicado es lo que permite que dos funciones «del mismo color» acepten
+//    cosas distintas sin que el compilador diga nada. Sale del núcleo, con la
+//    fórmula que lo consume. Se re-exporta para no tocar a quien ya lo importa.
+export type { Rgb } from '@/core/contraste';
+import type { Rgb } from '@/core/contraste';
 
 export const aHex = ({ r, g, b }: Rgb) =>
   `#${[r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
@@ -98,22 +103,19 @@ export async function pixeles(page: Page, puntos: { x: number; y: number }[]): P
 //  CONTRASTE — WCAG 2.1, sobre el píxel REAL
 // ─────────────────────────────────────────────────────────────────────────────
 
-const luminancia = ({ r, g, b }: Rgb): number => {
-  const c = [r, g, b].map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-};
-
-export function contraste(a: Rgb, b: Rgb): number {
-  const [x, y] = [luminancia(a), luminancia(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
-}
-
-/** WCAG AA: 4,5:1 para texto normal · 3:1 para texto grande (≥18,66px o ≥14px bold). */
-export const AA_TEXTO = 4.5;
-export const AA_TEXTO_GRANDE = 3;
+/**
+ * ⚠️⚠️ LA FÓRMULA YA NO VIVE AQUÍ, Y ESO ES EL ARREGLO, NO UN DETALLE.
+ *
+ * El instrumento juzga si lo que hay PINTADO cumple AA. La aplicación decide con
+ * esa misma regla el color de un número (`ChipLinea`). Mientras cada uno tuvo su
+ * copia, **el instrumento podía aprobar exactamente lo que la aplicación considera
+ * ilegible** — y nadie lo habría notado, porque las dos copias coincidían.
+ *
+ * Se re-exporta para no tocar los ~12 sitios que ya la usan: lo que cambia es de
+ * dónde sale, no cómo se llama. Ver `src/core/contraste.ts`.
+ */
+export { contrasteRgb as contraste, AA_TEXTO, AA_TEXTO_GRANDE } from '@/core/contraste';
+import { contrasteRgb, luminancia, AA_TEXTO, AA_TEXTO_GRANDE } from '@/core/contraste';
 
 /**
  * ⭐ EL CONTRASTE REAL. SOLO PÍXELES. CERO MODELO.
@@ -207,7 +209,7 @@ export async function contrasteReal(page: Page, selector: string) {
 
   const grande = estilo.fontSize >= 18.66 || (estilo.fontSize >= 14 && Number(estilo.fontWeight) >= 700);
   const minimo = grande ? AA_TEXTO_GRANDE : AA_TEXTO;
-  const ratio = contraste(fg, bg);
+  const ratio = contrasteRgb(fg, bg);
 
   return {
     selector,

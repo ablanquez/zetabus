@@ -1,5 +1,9 @@
 import Link from 'next/link';
 import type { Line } from '@/core';
+// ⚠️ Import PROFUNDO a propósito, no `@/core`: este es un componente de cliente y
+//    `contraste.ts` no importa nada de nadie. Tirar del barril metería el núcleo
+//    entero en el bundle del navegador para usar una función de veinte líneas.
+import { contrasteRgb, deHex } from '@/core/contraste';
 import { esBuho } from '@/engine/topologia';
 import { AcuseDeToque } from './AcuseDeToque';
 
@@ -41,29 +45,18 @@ import { AcuseDeToque } from './AcuseDeToque';
 /** El azul noche de los búhos. Medido en la referencia: rgb(28, 26, 66). */
 export const NOCHE = '#1C1A42';
 
-const aRgb = (hex: string) => {
-  const h = hex.replace('#', '');
-  return {
-    r: parseInt(h.slice(0, 2), 16),
-    g: parseInt(h.slice(2, 4), 16),
-    b: parseInt(h.slice(4, 6), 16),
-  };
-};
-
-/** Luminancia relativa (WCAG 2.x). El mismo cálculo que usa el test de contraste. */
-function luminancia(hex: string): number {
-  const { r, g, b } = aRgb(hex);
-  const f = (v: number) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-}
-
+/**
+ * Contraste WCAG entre dos colores **en hexadecimal**, que es como los da el GTFS.
+ *
+ * ⚠️ Aquí ya no vive la fórmula: vive en `@/core/contraste`, y esto es solo la
+ *    puerta que traduce del hexadecimal al `Rgb` que aquella entiende. Antes sí
+ *    vivía aquí, y era **una de las CUATRO copias** que había en el proyecto —
+ *    con la agravante de que ésta estaba `export`ada, así que la versión buena
+ *    llevaba meses a un `import` de distancia de quien la reescribió. Ver el
+ *    encabezado de `src/core/contraste.ts`.
+ */
 export function contraste(a: string, b: string): number {
-  const la = luminancia(a);
-  const lb = luminancia(b);
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  return contrasteRgb(deHex(a), deHex(b));
 }
 
 /** AA para texto pequeño. Un número de línea ilegible no identifica nada. */

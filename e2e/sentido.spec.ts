@@ -16,13 +16,39 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { capturar } from './lib/medir';
+import { luminancia, deCss } from '@/core/contraste';
 
-/** Luminancia relativa 0..1 de un `rgb(...)`. Para comparar VALOR, no tono. */
+/**
+ * Luminancia relativa 0..1 del fondo de un elemento. Para comparar **VALOR**, no tono.
+ *
+ * ⚠️⚠️ AQUÍ VIVÍA LA CUARTA COPIA DE LA FÓRMULA, Y NO ERA LA MISMA FÓRMULA.
+ *
+ * Hacía esto:
+ *
+ *     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+ *
+ * Los coeficientes son los de la WCAG. **El espacio en el que los aplicaba, no:**
+ * `getComputedStyle` devuelve los canales tal y como están en sRGB, es decir
+ * **codificados en gamma**. Sin linealizarlos primero, eso no es una luminancia.
+ *
+ * ⚠️ Y el daño concreto de esta versión NO era el que se supuso al encontrarla.
+ *    Esta función no juzga un ratio de contraste contra AA: compara el VALOR de
+ *    dos rellenos en escala de grises. Pero se equivocaba igual, y **en la
+ *    dirección que fabrica verdes**: la curva de gamma COMPRIME los tonos medios
+ *    hacia cero, así que dos grises intermedios que en la escala ingenua parecen
+ *    separarse 0,3 pueden estar mucho más juntos de lo que dice el número. Un par
+ *    de rellenos que el ojo apenas distingue habría pasado este test.
+ *
+ * ⇒ Hoy tira de `@/core/contraste`, que es la única fórmula del proyecto. El
+ *   umbral de 0,3 sigue igual **a propósito**: lo que se ha arreglado es la
+ *   escala, no la exigencia. Ver el encabezado de `src/core/contraste.ts`.
+ */
 async function lumaFondo(page: Page, selector: string): Promise<number> {
-  const rgb = await page.locator(selector).first().evaluate((n) => getComputedStyle(n).backgroundColor);
-  const m = rgb.match(/(\d+(?:\.\d+)?)/g)!.map(Number);
-  const [r, g, b] = m;
-  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  const css = await page.locator(selector).first().evaluate((n) => getComputedStyle(n).backgroundColor);
+  const rgb = deCss(css);
+  // Un fondo que no se entiende NO se redondea a cero: se dice, y el test para.
+  expect(rgb, `no se entiende el color de fondo de "${selector}": ${css}`).not.toBeNull();
+  return luminancia(rgb!);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

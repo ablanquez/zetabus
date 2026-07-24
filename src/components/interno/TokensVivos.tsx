@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+// ⚠️ Import PROFUNDO, no `@/core`: componente de cliente. Ver `ChipLinea.tsx`.
+import { contrasteRgb, deCss } from '@/core/contraste';
 
 /**
  * ⭐⭐ LA PIEZA QUE HACE QUE LA GUÍA NO PUEDA MENTIR.
@@ -227,20 +229,19 @@ export function ControlVivo() {
   );
 }
 
-/** rgb(a) → luminancia relativa WCAG. Se LEE del computed style, no se teclea. */
-function luminancia(css: string): number | null {
-  const m = css.match(/(\d+(?:\.\d+)?)/g);
-  if (!m || m.length < 3) return null;
-  const [r, g, b] = m.slice(0, 3).map((n) => Number(n) / 255);
-  const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-}
-
+/**
+ * Contraste entre dos colores **leídos del `computed style`**, no tecleados.
+ * Devuelve `null` si alguno no se entiende: esta pantalla prefiere decir «no lo sé»
+ * a enseñar un número inventado.
+ *
+ * ⚠️ La fórmula ya no está aquí. Estaba, y era una copia a mano de la de
+ *    `ChipLinea.tsx` — dos implementaciones de la MISMA regla, en la aplicación que
+ *    precisamente sirve para auditar el sistema visual. Ver `@/core/contraste`.
+ */
 function contraste(a: string, b: string): number | null {
-  const la = luminancia(a);
-  const lb = luminancia(b);
-  if (la === null || lb === null) return null;
-  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  const ca = deCss(a);
+  const cb = deCss(b);
+  return ca && cb ? contrasteRgb(ca, cb) : null;
 }
 
 /** Dos niveles y solo dos: los que el sistema usa de verdad. No se inventan cuatro. */
