@@ -68,7 +68,7 @@ tocó código.
 | [Terminales en obras](AUDITORIA_TERMINALES_EN_OBRAS.md) | Los extremos de las salidas parciales usan el punto **teórico** del GTFS: apuntan a sitios por los que hoy no se pasa. |
 | [Q1 · ¿de qué fuente sale el horario?](AUDITORIA_Q1_FUENTE_DE_HORARIO.md) | 🛑 **Su veredicto fue refutado el mismo día** por el informe siguiente: sí hay tabla de horario raspable. Se conserva porque es donde se ve el error. |
 | [La tabla de horarios de la web](AUDITORIA_HORARIO_WEB_AVANZA.md) | ⭐ **Rectifica al anterior.** Existe una tabla server-rendered, *day-aware* y con el alcance real del día. Es la que ZetaBus usa hoy. |
-| [El sistema visual](AUDITORIA_SISTEMA_VISUAL.md) | Dónde había más de una fuente de verdad para el mismo valor. Su tabla de contraste **se quedó vieja**: hoy la fórmula WCAG vive una sola vez, en `src/core/contraste.ts`. |
+| [El sistema visual](AUDITORIA_SISTEMA_VISUAL.md) | Dónde había más de una fuente de verdad para el mismo valor. 🛑 **Rectificado:** defendía que la fórmula WCAG estuviera duplicada a propósito; eran **cuatro** copias y hoy hay **una**, en `src/core/contraste.ts`. |
 
 ### Dato crudo, sin conclusiones
 
@@ -91,9 +91,9 @@ tocó código.
 
 | Documento | Qué decide |
 |---|---|
-| [Motor de horarios](MOTOR-HORARIOS.md) | ⏸️ Especificación de v2, aparcada entera. *(Su cabecera dice que ninguna pieza está construida; la recogida del horario web sí lo está.)* |
-| [El bloque de salidas](MODELO-BLOQUE-SALIDAS.md) | Un solo modelo para los 65 sentidos con tabla. Sin modos ni casos especiales. |
-| [El barrido de línea, aparcado](BARRIDO_APARCADO.md) | ⭐ **Por qué NO se hace**: 67 peticiones y 17 s para responder algo que nadie pregunta esperando el bus. El motivo no está en git; está aquí. |
+| [Motor de horarios](MOTOR-HORARIOS.md) | ⏸️ Especificación de v2, aparcada entera. 🛑 **Rectificado:** su recuadro decía que ninguna pieza estaba construida; la recogida del horario web lo está desde el mismo día. |
+| [El bloque de salidas](MODELO-BLOQUE-SALIDAS.md) | Un solo modelo para los 65 sentidos con tabla. Sin modos ni casos especiales. 🛑 **Rectificado:** su «pendiente» sobre los tipos de día ya está decidido y construido. |
+| [El barrido de línea, aparcado](BARRIDO_APARCADO.md) | ⭐ **Por qué NO se hace**: 67 peticiones y 17 s para responder algo que nadie pregunta esperando el bus. El motivo no está en el código; está aquí. Y el código **sí** está, en [`parked/barrido-de-linea/`](../parked/barrido-de-linea/), versionado. |
 | [Web Interface Guidelines (congeladas)](web-interface-guidelines.SNAPSHOT.md) | Cita fija de una fuente ajena y móvil, con su SHA. Auditar contra `main` de otro no es auditar. |
 
 ---
