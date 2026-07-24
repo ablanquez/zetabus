@@ -318,26 +318,30 @@ const documentosDelRepositorio = (): string[] =>
   [...REPOSITORIO.ficheros].filter((f) => f.endsWith('.md')).sort();
 
 /**
- * ⚠️ DEUDA DECLARADA · 25/07/2026 — los enlaces que hoy apuntan fuera del repositorio.
+ * ⚠️ DEUDA DECLARADA — los enlaces que hoy apuntan fuera del repositorio.
  *
- * Aparecieron al cambiar el universo del guardián de «el disco» a «lo publicado».
- * Los dos enlazan capturas de `/capturas/`, que el `.gitignore` deniega a propósito
- * («se regeneran con `npm run visual`»): existen en la máquina donde se escribió el
- * spike y **no existen para nadie que clone**.
+ * **HOY ESTÁ VACÍA, y así es como tiene que estar.** Se deja el mecanismo puesto
+ * para el próximo caso, no la excepción.
  *
  * ⛔ ESTO NO ES UNA LISTA DE PERDÓN, Y SE VIGILA A SÍ MISMA. La comprobación exige
  * igualdad EXACTA con esta lista, así que:
  *   · si aparece un enlace roto nuevo → ROJO (la lista no puede crecer en silencio),
- *   · y si uno de estos se arregla → TAMBIÉN ROJO, pidiendo que se quite de aquí.
+ *   · y si uno de los listados se arregla → TAMBIÉN ROJO, pidiendo que se quite.
  * Una excepción que no se retira sola acaba siendo permanente sin que nadie lo decida.
  *
- * ⚠️ Y no se arreglan desde aquí porque **no es un arreglo, es una decisión**: o se
- * publican esas dos capturas, o se cambia el texto del spike. Antonio elige.
+ * Cómo se usa: **solo para lo que es una DECISIÓN y no un arreglo.** Si el enlace
+ * está roto por un error, se arregla y punto; esto es para cuando hay que elegir
+ * entre dos salidas legítimas y quien elige no está delante.
+ *
+ * ⚠️ HISTORIA, porque una lista vacía no cuenta para qué sirvió. El 25/07/2026
+ * tuvo dos entradas: `docs/SPIKE_SUELO_DE_ZOOM.md` enlazaba dos capturas de
+ * `/capturas/`, que el `.gitignore` deniega a propósito («se regeneran con
+ * `npm run visual`»). Existían en la máquina donde se escribió el spike y no para
+ * nadie que clonara. Se resolvió **cambiando el texto del documento, no publicando
+ * las capturas**: meter una excepción en el `.gitignore` habría roto una regla
+ * razonada por el caso más débil.
  */
-const PENDIENTES: readonly string[] = [
-  'docs/SPIKE_SUELO_DE_ZOOM.md → ../capturas/zetabus/ZOOM-13-poste47.png',
-  'docs/SPIKE_SUELO_DE_ZOOM.md → ../capturas/zetabus/ZOOM-14-poste47.png',
-];
+const PENDIENTES: readonly string[] = [];
 
 interface Desajuste {
   readonly frase: string;

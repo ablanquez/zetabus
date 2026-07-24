@@ -98,10 +98,23 @@ y con 3+ líneas sale recortada **siempre**. La intuición de Antonio apuntaba a
 Misma parada, lado a lado — **poste 47, Av. de América n.º 83** (8 autobuses, el más lejano
 a 2.244 m; es un caso *típico* de los que 13 arregla, no un extremo):
 
-| [zoom 14](../capturas/zetabus/ZOOM-14-poste47.png) | [zoom 13](../capturas/zetabus/ZOOM-13-poste47.png) |
+| **zoom 14** (el suelo de hoy) | **zoom 13** |
 |---|---|
-| **3 de 8 autobuses visibles** | **8 de 8 visibles** |
-| calles con nombre | barrios con nombre |
+| **3 de 8 autobuses visibles** — los 5 restantes, fuera del encuadre | **8 de 8 visibles**, con el más lejano (2.244 m) dentro y con margen |
+| **Nivel calle**: se leen los nombres de las calles del entorno de la parada | **Nivel barrio**: los nombres de calle desaparecen y salen los de barrio |
+| El pin de la parada mide **22 px** | El pin de la parada mide **22 px** — el mismo |
+
+> ⚠️ **Aquí había dos capturas, y ya no están.** El sitio donde vivían (`/capturas/`) **no se
+> versiona**, y con razón: se regeneran con `npm run visual` y versionarlas sería congelar la foto
+> de una tarde. Al enlazarlas desde aquí, este documento prometía a cualquiera que clonara el
+> repositorio dos imágenes que **solo existían en la máquina donde se escribió**. Se retiran los
+> enlaces, **no la comparación**: todo lo que enseñaban está en la tabla de arriba y en el párrafo
+> de abajo, que es lo que se midió. **No las vuelvas a enlazar** — y si alguna vez hace falta la
+> imagen, se regenera y se mira, no se publica.
+>
+> *(Y hay un segundo motivo para no rescatarlas: son de julio de 2026. La aplicación ha cambiado
+> mucho desde entonces, así que publicarlas hoy sería enseñar la foto de un ZetaBus que ya no
+> existe.)*
 
 > ⭐ **Y AQUÍ EL MIEDO NO SE CONFIRMA: la parada NO se vuelve un punto.**
 > El pin es un `divIcon` de **tamaño fijo en píxeles** — 22 px a zoom 14 y 22 px a zoom 13.
