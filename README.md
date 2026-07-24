@@ -149,7 +149,14 @@ pasan por un **desvío** (`provisionales`). Vive en `data/generated/corresponden
 ## Licencia
 
 Código: **[Apache 2.0](LICENSE)**.
-Los datos de terceros conservan sus propias condiciones — ver [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+Los datos **y las dependencias** de terceros conservan sus propias condiciones — ver
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md).
+
+⚠️ Una de ellas no es como las demás: **`react-leaflet` está bajo [Hippocratic
+2.1](https://firstdonoharm.dev/version/2/1/license/)**, que **no es una licencia aprobada por la
+OSI** y añade una restricción de uso que Apache 2.0 no impone. No impide nada, pero **hay que
+saberlo antes de tomar este código**: está explicado en
+[`THIRD-PARTY-NOTICES.md` § 5.2](THIRD-PARTY-NOTICES.md).
 
 Datos de transporte procesados a partir del GTFS publicado por Avanza Zaragoza S.A.U. en el
 Punto de Acceso Nacional. **Powered by [MITRAMS](https://www.transportes.gob.es/).**

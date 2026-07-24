@@ -120,12 +120,91 @@ proyecto entero y a quien lo firma, y se puede pedir **antes** de tener que bloq
 
 ## 5 · Software
 
-| Componente | Licencia |
-|---|---|
-| Next.js | MIT |
-| React | MIT |
-| Leaflet | BSD-2-Clause |
-| OpenStreetMap (teselas y datos) | **ODbL** — atribución obligatoria: «© colaboradores de OpenStreetMap» |
-| TypeScript | Apache-2.0 |
+> ⚠️ **Nota de rectificación (24/07/2026).** Hasta esta fecha, esta sección listaba **cinco**
+> componentes y terminaba con un *«(Se completa con el `package.json` en la Tanda 2.)»* que nunca
+> se completó. Iban ya siete tandas. Faltaban, entre otras, **`react-leaflet`, que no es MIT ni
+> BSD** (§ 5.2). Es la misma forma exacta del incumplimiento de la ODbL que este proyecto ya pagó:
+> **el documento que obligaba llevaba en el repositorio desde el principio.** Ver
+> [`docs/auditoria/12-perimetro-y-publicacion.md`](docs/auditoria/12-perimetro-y-publicacion.md) · B-F3.
 
-*(Se completa con el `package.json` en la Tanda 2.)*
+### 5.1 · Cartografía
+
+| Componente | Licencia | Obligación |
+|---|---|---|
+| **OpenStreetMap** (teselas y datos) | **ODbL 1.0** | Atribución **literal**: «© **colaboradores** de OpenStreetMap», con enlace a `openstreetmap.org/copyright`. Va en el mapa (`MapaParada.tsx`). ⚠️ La palabra *«colaboradores»* **no es opcional**: faltaba, y ese fue un incumplimiento real |
+
+### 5.2 · ⚠️ `react-leaflet` — LA QUE NO ES COMO LAS DEMÁS
+
+| | |
+|---|---|
+| **Versión** | `react-leaflet@5.0.0` |
+| **Licencia** | **Hippocratic License 2.1** — © 2020 Paul Le Cam y colaboradores |
+| **¿Es código abierto?** | ⛔ **No en el sentido de la OSI.** Es una licencia *ethical source*: **no está aprobada por la Open Source Initiative** y no cumple su definición, porque **restringe el uso** |
+| **Qué exige de más** | **(a) Aviso:** quien reciba cualquier parte del software tiene que recibir también la licencia y el aviso de copyright. **(b) Uso:** obliga a usarlo de forma coherente con los Principios de Derechos Humanos de la ONU. **(c) Arbitraje:** las disputas sobre ese punto van a las *Hague Rules on Business and Human Rights Arbitration*, y **quien decline participar pierde la licencia de inmediato** |
+| **¿Se distribuye?** | **Sí.** No está el código fuente en este repositorio (`node_modules` está ignorado), pero **va compilado en el paquete JavaScript que descarga cada navegador que abre una parada**. Eso es distribuir |
+| **Texto completo** | https://firstdonoharm.dev/version/2/1/license/ |
+
+> ### ¿Hay INCOMPATIBILIDAD con la Apache 2.0 de ZetaBus? **No. Hay una obligación de aviso y una restricción de uso — que no es lo mismo, y la diferencia importa.**
+>
+> - **No es copyleft.** Hippocratic 2.1 **no exige** que ZetaBus se relicencie ni que su código
+>   propio pase a estar bajo sus términos. El código de ZetaBus sigue siendo Apache 2.0, entero.
+> - **No hay conflicto de cláusulas.** Apache 2.0 no prohíbe usar dependencias con términos
+>   propios; cada componente conserva los suyos. No hay ninguna condición de una que impida
+>   cumplir la otra.
+> - **Lo que sí hay, y hay que decirlo:** quien tome ZetaBus creyéndolo *«Apache 2.0 y ya»* se
+>   lleva, dentro, **una pieza con restricción de uso y con terminación automática**. Apache 2.0
+>   no impone nada de eso, así que **la etiqueta sola induciría a error**. Por eso está aquí.
+> - **Y una consecuencia práctica, no legal:** algunas organizaciones tienen políticas que
+>   rechazan dependencias no aprobadas por la OSI. Si alguna vez estorba, la salida es directa:
+>   `react-leaflet` es un envoltorio de React sobre **Leaflet**, que sí es BSD-2-Clause, y el mapa
+>   se puede montar contra Leaflet a pelo.
+
+### 5.3 · Dependencias de ejecución
+
+Las que viajan al navegador o corren en el servidor.
+
+| Paquete | Versión | Licencia | Para qué |
+|---|---|---|---|
+| `next` | 16.2.10 | MIT | El framework |
+| `react` | 19.2.4 | MIT | La interfaz |
+| `react-dom` | 19.2.4 | MIT | Ídem |
+| `leaflet` | 1.9.4 | BSD-2-Clause | El mapa |
+| **`react-leaflet`** | **5.0.0** | **Hippocratic-2.1** ⚠️ | El mapa, en React — **ver § 5.2** |
+| `node-html-parser` | 9.0.0 | MIT | Leer el HTML de Avanza (recorrido, horario, poste) |
+
+### 5.4 · Dependencias de desarrollo
+
+No se distribuyen: no están en el paquete que recibe el navegador ni en el servidor de
+producción. Se listan igualmente, porque **una tabla incompleta es lo que trajo el fallo de
+arriba**.
+
+| Paquete | Versión | Licencia |
+|---|---|---|
+| `typescript` | 5.9.3 | **Apache-2.0** |
+| `@playwright/test` | 1.61.1 | **Apache-2.0** |
+| `dotenv` | 17.4.2 | **BSD-2-Clause** |
+| `vitest` | 3.2.7 | MIT |
+| `tsx` | 4.23.1 | MIT |
+| `eslint` | 9.39.5 | MIT |
+| `eslint-config-next` | 16.2.10 | MIT |
+| `tailwindcss` | 4.3.2 | MIT |
+| `@tailwindcss/postcss` | 4.3.2 | MIT |
+| `fflate` | 0.8.3 | MIT |
+| `pngjs` | 7.0.0 | MIT |
+| `@types/node` | 20.19.43 | MIT |
+| `@types/react` | 19.2.17 | MIT |
+| `@types/react-dom` | 19.2.3 | MIT |
+| `@types/leaflet` | 1.9.21 | MIT |
+| `@types/pngjs` | 6.0.5 | MIT |
+
+### 5.5 · Resumen de compatibilidad
+
+**22 de las 23 dependencias declaradas son MIT, BSD-2-Clause o Apache-2.0** — permisivas, sin
+copyleft y compatibles con Apache 2.0 sin ninguna condición añadida.
+**La excepción es una: `react-leaflet` (Hippocratic-2.1).** No bloquea nada; obliga a avisar,
+y este documento es el aviso.
+
+> ⚠️ **Lo que NO cubre esta tabla, y se dice en vez de dar a entender que sí:** son las **23
+> dependencias declaradas en `package.json`**, no el árbol transitivo completo de `node_modules`
+> (cientos de paquetes). Ahí podría esconderse otra licencia infrecuente. **NO CONSTA**: no se ha
+> recorrido.
