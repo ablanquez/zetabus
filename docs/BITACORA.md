@@ -134,3 +134,43 @@ había aprobado mal en la Costura 4.)*
   `sinComentarios`. Lo esquivé reescribiendo mi comentario (no toqué el guardián: está fuera de
   alcance). Pero **el guardián tiene esa costura**: sobre-caza comentarios. No es peligroso (solo
   falsos positivos, nunca falsos negativos), pero es un cabo para estrategia.
+
+### Fase 5 · Tanda B — hacer visitables las 9 solo-barrido (el puente)
+
+- **El puente, sin StopId falso (Vía 3).** Un tipo discriminado `ParadaVisitable` =
+  `{clase:'gtfs', paradaId, poste}` | `{clase:'solo-barrido', poste, coord}`, en
+  `src/engine/paradas.ts` (NO en `topologia.ts`, que sigue GTFS-puro). El `clase` obliga al
+  COMPILADOR a bifurcar en cada consumidor: la disciplina (se olvida) pasó a tipo (no se puede).
+  Se rechazó el StopId sintético por lo de siempre —una mentira estructural en el núcleo, mismo
+  tufillo que `observacion_propia` sobre un dato de feed en la Tanda A—.
+- **La frontera es un fichero, no el índice.** `resolverParada` prueba primero el GTFS
+  (`paradaDelPoste`, intacto) y luego el whitelist estático de 9 claves. `numeroDePoste` se
+  EXTRAJO de `paradaDelPoste` (comportamiento idéntico) para que las dos puertas normalicen los
+  dígitos igual: el agujero de `0x2E8` no vuelve por la puerta nueva. Un 99999 no es de ninguna
+  clase → null → 404.
+- **Las 5 contrapruebas, con su ROJO demostrado antes del verde:**
+  - **1 · frontera:** metí `99999` en el fichero → `resolverParada('99999')` dejó de ser null →
+    **rojo** («expected {clase:'solo-barrido'} to be null»). Quitado → verde.
+  - **2 · las 9 visitables:** vacié el fichero → las 9 no resuelven → **rojo**. Restaurado → verde.
+  - **3 · degradado:** rompí el manejo del índice nulo (`degradado:false`) →
+    `correspondenciasDePoste(null,617)` → **rojo**. Revertido → verde. Y **verde de verdad**:
+    con el índice movido a un lado, un `next start` degradado sirve `/parada/617` en **200** con
+    la nota tenue y SIN caja de desvío.
+  - **4 · regresión GTFS:** rompí la rama GTFS del resolver → `744` dejó de ser `gtfs` →
+    **rojo**. Revertido → verde. (Y la suite entera lo respalda: playwright 826, vitest 527.)
+  - **5 · honestidad del nombre:** forcé `nombreProc='gtfs-marcado'` en la página, reconstruí, y
+    `/parada/617` **pintó el aviso «nombre sin confirmar»** y cambió `data-nombre-fuente` →
+    **rojo**. Revertido a `avanza-web` + rebuild → verde. Es la mentira que el tipo impide: una
+    solo-barrido la nombra Avanza, no el GTFS roto.
+- ⭐⭐ **DESCUBRIMIENTO (destilar al estado) — el feed ya traía el nombre y lo tirábamos.**
+  `parse-poste.ts` sacaba del marcador (`maquinas[0]`) solo la coordenada; su `info`/`title`
+  («Parque de Atracciones») se descartaba. Era la única fuente de runtime del nombre de las 9
+  (el GTFS no las conoce). Ahora se captura —en la rama del marcador, sin rozar el cruce L1 de
+  `tablatiempos`↔`maquinas`, que es sagrado—. Decisión de Antonio (Opción B): el nombre de las 9
+  viene del feed, degradado-proof y fresco.
+- ⚠️ **Cabo confirmado (la costura (e) del diseño):** en degradado **y** con el feed también mudo
+  (p.ej. `?fingir=sin-buses` sin índice), el nombre cae a `«poste 617»` —ni feed ni índice de
+  donde sacarlo—. Es el fallback honesto, no un bug: con Avanza en vivo (el caso real) el feed da
+  el nombre aunque no haya índice. Lo vi porque el `grep "Parque de Atracciones"` del curl en
+  degradado salió **vacío** mientras el test (que solo miraba el 200 y la nota) estaba en verde:
+  el output me dijo lo que la aserción no miraba. Está dicho, no tapado.

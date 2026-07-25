@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { correspondenciasDeParada, type LineaQuePasa } from '@/engine/correspondencias';
+import { correspondenciasDeParada, correspondenciasDePoste, type LineaQuePasa } from '@/engine/correspondencias';
 import { ChipLinea } from '@/components/ChipLinea';
 import { Toponimo } from '@/components/Toponimo';
 import { Cita } from '@/components/Cita';
@@ -143,6 +143,66 @@ export function CajaProvisionales({
   const { provisionales } = correspondenciasDeParada(paradaId);
   if (provisionales.length === 0) return null;
   const href = hrefDe(fingir);
+
+  return (
+    <CajaPlegable
+      punteado
+      papel="provisionales-que-pasan"
+      rotulo={
+        <p
+          className="text-nota font-bold leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+          data-papel="provisionales-rotulo"
+        >
+          Hoy, por un desvío
+        </p>
+      }
+    >
+      {provisionales.map((e, i) => (
+        <FilaLinea
+          key={`${e.linea.shortName}-${clave(e)}`}
+          e={e}
+          href={href}
+          conRaya={i > 0}
+          provisional
+        />
+      ))}
+    </CajaPlegable>
+  );
+}
+
+/**
+ * ⭐ LA CAJA DE DESVÍO DE UNA PARADA SOLO-BARRIDO — POR NÚMERO DE POSTE, no por StopId.
+ *
+ * Estas 9 paradas no están en el GTFS (no tienen StopId): existen solo cuando una línea
+ * se desvía por ellas. Su dato es 100% provisional, así que aquí NO hay caja sólida
+ * "Líneas que pasan por aquí": solo la punteada "Hoy, por un desvío".
+ *
+ * ⚠️ EL VACÍO SE DICE, CON TACTO. Si hoy no consta ningún desvío por aquí —porque no hay
+ *    índice (degradado) o porque hoy ninguna línea se desvía por ella—, en vez de dejar
+ *    la página desnuda va una NOTA TENUE que lo explica. Estructura silenciosa, no
+ *    alarma: es cómo funciona esta parada, no un fallo.
+ */
+export function CajaProvisionalesDePoste({
+  poste,
+  fingir,
+}: {
+  poste: number;
+  fingir: Fingimiento | null;
+}) {
+  const { provisionales } = correspondenciasDePoste(poste);
+  const href = hrefDe(fingir);
+
+  if (provisionales.length === 0) {
+    return (
+      <p
+        className="rounded-tarjeta border border-dashed border-[var(--color-borde)] bg-[var(--color-papel)] px-3 py-2 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+        data-papel="solo-barrido-sin-desvio"
+      >
+        Esta parada solo recibe autobuses cuando una línea se desvía por aquí. Ahora mismo no nos
+        consta ningún desvío que pase por ella. No es un fallo: es que hoy no lo sabemos.
+      </p>
+    );
+  }
 
   return (
     <CajaPlegable

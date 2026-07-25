@@ -2,11 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { motor } from '@/engine/motor';
-import { parada, paradaDelPoste, posteDe } from '@/engine/topologia';
+import { parada } from '@/engine/topologia';
+import { nombreDePoste } from '@/engine/correspondencias';
+import { nombreSoloBarrido, resolverParada } from '@/engine/paradas';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
-import { CajaLineas, CajaProvisionales } from '@/components/LineasQuePasan';
+import { CajaLineas, CajaProvisionales, CajaProvisionalesDePoste } from '@/components/LineasQuePasan';
 import { Cita } from '@/components/Cita';
 import { IconoParada } from '@/components/IconoParada';
 
@@ -53,13 +55,18 @@ interface Props {
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { poste: crudo } = await params;
-  const paradaId = paradaDelPoste(crudo);
+  const pv = resolverParada(crudo);
   // ⚠️ Poste inválido → el componente hará notFound(). El título de una ruta dinámica que
   //    llama a notFound() lo pone SU generateMetadata (no `not-found.tsx`), así que se pone
   //    aquí para que la pestaña diga "ZetaBus | Página no encontrada", no el default pelado.
-  if (paradaId === null) return { title: 'Página no encontrada' };
-  const p = parada(paradaId);
-  return p ? { title: p.name } : { title: 'Página no encontrada' };
+  if (pv === null) return { title: 'Página no encontrada' };
+  if (pv.clase === 'gtfs') {
+    const p = parada(pv.paradaId);
+    return p ? { title: p.name } : { title: 'Página no encontrada' };
+  }
+  // Solo-barrido: el nombre del ÍNDICE (sin red aquí — metadata no pide a Avanza), o un
+  // genérico en degradado. El nombre fresco del feed lo pone el <h1> de la página.
+  return { title: nombreDePoste(pv.poste) ?? `Parada · poste ${pv.poste}` };
 }
 
 export default async function ParadaPage({ params, searchParams }: Props) {
@@ -67,16 +74,27 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   const sp = await searchParams;
 
   // ⭐ EL GUARDIA (L4). La fuente NO distingue un poste inexistente de uno sin
-  //    autobuses: devuelve `{"tablatiempos":""}` para los dos. Así que se
-  //    valida AQUÍ, contra nuestro GTFS, y a Avanza ni se le pregunta.
-  const paradaId = paradaDelPoste(crudo);
-  if (paradaId === null) notFound();
+  //    autobuses: devuelve `{"tablatiempos":""}` para los dos. Así que se valida
+  //    AQUÍ: contra el GTFS y, si no, contra las 9 solo-barrido del fichero estático.
+  //    Un poste que no es de ninguna clase → notFound(); a Avanza ni se le pregunta.
+  const pv = resolverParada(crudo);
+  if (pv === null) notFound();
 
-  const p = parada(paradaId)!;
-  const numero = posteDe(paradaId)!;
+  const numero = pv.poste;
+  // Solo las paradas GTFS tienen `Stop` (nombre y posición del GTFS). Las solo-barrido
+  // no: NO se llama a `parada()`, petaría. Su nombre y posición vienen del feed/fichero.
+  const stop = pv.clase === 'gtfs' ? parada(pv.paradaId)! : null;
 
   const fingir = fingimientoDe(sp);
   const inicial = await llegadasDePoste(numero, motor(transporteDe(fingir), fingir));
+
+  // El nombre y su procedencia, según la clase. Solo-barrido: el del feed (si la
+  // observación trae datos) con fallback al índice / "poste N"; procedencia SIEMPRE
+  // `avanza-web` (el GTFS no las conoce → el aviso "sin confirmar" no les aplica).
+  const nombreParada = stop
+    ? stop.name
+    : nombreSoloBarrido(numero, 'datos' in inicial ? inicial.datos.nombreParada : null);
+  const fuenteNombre = stop ? stop.nombreProc.fuente : ('avanza-web' as const);
 
   // ⭐ EL NOMBRE (a todo el ancho). Es un SLOT: se pinta en el servidor y la rejilla
   //    cliente lo coloca en su área. Cabecera compacta a propósito: cada píxel de aquí
@@ -88,7 +106,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
       <h1
         className="text-titulo font-black leading-tight sin-recortar"
         data-papel="nombre-parada"
-        data-nombre-fuente={p.nombreProc.fuente}
+        data-nombre-fuente={fuenteNombre}
       >
         {/* ⭐ EL ICONO DE PARADA (un nodo en el recorrido), decorativo (aria-hidden): el
             nombre y el "poste N" ya lo dicen todo. Ver `IconoParada.tsx`. */}
@@ -108,7 +126,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
         </span>
         {/* ⚠️ SIN TRUNCAR. Si el nombre es largo, BAJA DE LÍNEA. <Cita>: nombre del
             GTFS/Avanza; el traductor del navegador no lo reescribe. */}
-        <Cita>{p.name}</Cita>
+        <Cita>{nombreParada}</Cita>
       </h1>
       {/* Solo si de verdad se está fingiendo, y diciendo QUÉ. Ver `Fingiendo.tsx`. */}
       <Fingiendo que={fingir} />
@@ -116,7 +134,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
       {/* ⭐ A1 · EL NOMBRE SIN CONFIRMAR SE DICE, NO SE TAPA. Avanza no da el nombre de
           las paradas suprimidas por un desvío; se quedan con el del GTFS, que puede venir
           roto. La señal NO va solo en el tono: borde punteado (forma) + palabra + icono. */}
-      {p.nombreProc.fuente === 'gtfs-marcado' && (
+      {fuenteNombre === 'gtfs-marcado' && (
         <p
           className="es-sin-verificar mt-1.5 inline-flex flex-wrap items-baseline gap-x-1.5 px-2 py-1 text-nota leading-snug text-[var(--color-tinta-suave)] sin-recortar"
           data-papel="nombre-sin-confirmar"
@@ -142,8 +160,17 @@ export default async function ParadaPage({ params, searchParams }: Props) {
       poste={numero}
       fingir={fingir}
       nombre={nombre}
-      lineas={<CajaLineas paradaId={paradaId} fingir={fingir} />}
-      desvio={<CajaProvisionales paradaId={paradaId} fingir={fingir} />}
+      // ⭐ Las solo-barrido son 100% provisionales (no están en la ruta oficial de
+      //    nadie): NO llevan la caja sólida "Líneas que pasan por aquí" —no tienen
+      //    normales—, solo la punteada "Hoy, por un desvío" (o su nota en degradado).
+      lineas={pv.clase === 'gtfs' ? <CajaLineas paradaId={pv.paradaId} fingir={fingir} /> : null}
+      desvio={
+        pv.clase === 'gtfs' ? (
+          <CajaProvisionales paradaId={pv.paradaId} fingir={fingir} />
+        ) : (
+          <CajaProvisionalesDePoste poste={numero} fingir={fingir} />
+        )
+      }
     />
   );
 }

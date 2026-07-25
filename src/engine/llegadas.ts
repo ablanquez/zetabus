@@ -29,7 +29,8 @@ import type { CacheDosPisos } from '@/cache/dos-pisos';
 import { leerPoste } from '@/sources/avanza/poste';
 import { PosteIlegible } from '@/sources/avanza/parse-poste';
 import { FuenteCaida, type Transporte } from '@/sources/avanza/transporte';
-import { lineaDeEtiqueta, parada, paradaDelPoste, perfilDe, posteDe } from './topologia';
+import { lineaDeEtiqueta, parada, perfilDe } from './topologia';
+import { nombreSoloBarrido, resolverParada } from './paradas';
 
 export interface LlegadaViva {
   /** `null` = Avanza anuncia una línea que el GTFS no tiene. Se ENSEÑA IGUAL. */
@@ -49,7 +50,9 @@ export interface LlegadaViva {
 }
 
 export interface LlegadasDeParada {
-  readonly paradaId: StopId;
+  /** `null` = parada SOLO-BARRIDO: existe y se visita, pero no está en el GTFS (no
+   *  tiene `StopId`). No se finge uno falso. Ver `@/engine/paradas`. */
+  readonly paradaId: StopId | null;
   readonly nombreParada: string;
   readonly poste: number;
   readonly posicionParada: LatLon | null;
@@ -77,8 +80,10 @@ export async function llegadasDePoste(
   dep: Dependencias,
 ): Promise<Observacion<LlegadasDeParada>> {
   // ── 1 · EL GUARDIA. Lo único que arregla el agujero de la fuente ───────────
-  const paradaId = paradaDelPoste(entrada);
-  if (paradaId === null) {
+  //    Reconoce las DOS clases: GTFS y solo-barrido. Un poste que no es de ninguna
+  //    (un 99999) sigue siendo `desconocido` → no se pregunta a Avanza.
+  const pv = resolverParada(entrada);
+  if (pv === null) {
     return {
       estado: 'desconocido',
       motivo:
@@ -88,8 +93,11 @@ export async function llegadasDePoste(
         'solo gastaría una petición ajena.',
     };
   }
-  const poste = posteDe(paradaId)!;
-  const p = parada(paradaId)!;
+  const poste = pv.poste;
+  // El GTFS tiene el nombre y la posición de SUS paradas; las solo-barrido no están en
+  // él, así que las suyas salen del feed (nombre) y del fichero estático (posición). No
+  // se llama a `parada()`/`posteDe()` para una solo-barrido: petarían, no tiene StopId.
+  const stop = pv.clase === 'gtfs' ? parada(pv.paradaId)! : null;
 
   // ── 2 y 3 · caché → (si hace falta) Avanza ────────────────────────────────
   const r = await dep.cache.obtener(`poste:${poste}`, () => leerPoste(poste, dep.transporte));
@@ -131,10 +139,14 @@ export async function llegadasDePoste(
   });
 
   const datos: LlegadasDeParada = {
-    paradaId,
-    nombreParada: p.name,
+    paradaId: pv.clase === 'gtfs' ? pv.paradaId : null,
+    // GTFS: el nombre del GTFS/Avanza marcado. Solo-barrido: el del feed (fresco) con
+    // fallback al índice / "poste N". Ver `nombreSoloBarrido`.
+    nombreParada: stop ? stop.name : nombreSoloBarrido(poste, lectura.nombreParada),
     poste,
-    posicionParada: lectura.marcadorParada ?? p.position,
+    // El marcador del feed manda para las dos; si falta, el GTFS o el fichero estático.
+    posicionParada:
+      pv.clase === 'gtfs' ? (lectura.marcadorParada ?? stop!.position) : (lectura.marcadorParada ?? pv.coord),
     /**
      * ⭐⭐ ORDEN ESTRICTO POR TIEMPO. Y ESTO ES COMPORTAMIENTO, NO ESTÉTICA.
      *
