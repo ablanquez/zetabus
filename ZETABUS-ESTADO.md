@@ -19,8 +19,14 @@ auditados, implementados y con guardián. **El README ya no dice que el proyecto
 capturas de móvil llevan su marco, y el guardián de enlaces valida **contra lo publicado**, no
 contra el disco.
 
-> # ⬜ SOLO QUEDA LA TANDA 8: EL DESPLIEGUE.
-**Última actualización:** 25/07/2026
+# ⭐⭐ TANDA 8 — DESPLEGADO Y EN VIVO EN `zetabus.antonioblanquez.es`.
+**El cron nocturno de correspondencias, MONTADO** (24/07). Guardián verificado (401 malo / 202
+bueno), regeneración manual confirmada end-to-end (74/74 sentidos, Avanza consultado de verdad).
+> ⬜ **ÚNICO PENDIENTE:** confirmar en `/api/diag` que el cron **disparó SOLO** de madrugada
+> (`correspondencias.generadoEn` con hora ~02:00). *"Aparece en la lista" no es "funciona" — L17.*
+**Y quedan los remates de la Tanda 8:** panel de control público, 9 postes sin coordenadas,
+`/linea` en escritorio, textos, y la nota del logo en la guía de estilo.
+**Última actualización:** 24/07/2026 (tarde)
 
 ---
 
@@ -687,6 +693,31 @@ cuesta **0,4 ms**. Ampliar de 39 a 48 ficheros **bajó el tiempo**.
 > porque se preguntaba por el coste; **si no lo llego a medir, la creencia seguiría ahí**."*
 ⚠️ *Optimización sin medición previa = deuda con intereses* — y aquí la deuda **se pagó en
 cobertura**, que es la moneda cara.
+
+⭐⭐ **L61 · EL PLANIFICADOR NO TIENE QUE VIVIR DENTRO DEL PROYECTO AL QUE SIRVE.**
+El plan Node de Hostinger **no tiene pestaña de Cron Jobs**, y por SSH **`crontab` está capado**
+(un alias que solo lee; `/etc/cron.d` y `systemd --user` también cerrados). El primer impulso —y la
+ñapa— habría sido meter un *scheduler dentro de la app* (código nuevo, y con la trampa de que si
+Hostinger reinicia el proceso, un `setInterval` se reinicia con él).
+> ⭐ **Un cron es un `curl` a una URL pública. No necesita estar "dentro" de nada — solo internet.**
+La solución limpia: crear el cron en el dominio **PHP de la misma cuenta (Linaje)**, donde Hostinger
+**sí** ofrece la pestaña, apuntando el `curl` a `zetabus.antonioblanquez.es/api/regenerar`.
+⚠️ **Es tu ley aplicada:** *cuando el sistema y tú discrepáis, gana el sistema.* Forzar el cron por
+SSH contra un `crontab` capado —o inyectar un fichero en `/var/spool/cron/` que el panel no muestra
+y un cambio del host podría borrar— habría sido pelearse con la herramienta en vez de usar la suya.
+*(Y encaja con L57: el guardián de estado —`/api/diag`— lee el ARTEFACTO, `generadoEn` de
+finalización, nunca un `empezadoEn`; leer que se intentó daría verde sobre un barrido fallido.)*
+
+⭐⭐ **L62 · EL PORQUÉ DE UN PARÁMETRO PUEDE DESCRIBIR UN MECANISMO QUE NO EXISTE.**
+Escribí que el `-m 180` del cron daba *"margen para que no corte el barrido a mitad"*. **Falso:** el
+`curl` recibe el `202` en milisegundos y se cierra; el barrido corre **después**, en `after()`,
+desligado de la conexión. **Cortar el curl no corta nada.** El valor era inofensivo, pero el motivo
+escrito era una ficción plausible — y una ficción plausible en un documento de memoria **enseña a
+tomar la decisión equivocada** mañana (creer que un `-m` corto trunca el barrido).
+> ⭐ *"El parámetro estaba bien puesto por la razón equivocada. Un valor correcto con un porqué
+> falso es más peligroso que un valor mal puesto: nadie vuelve a mirar lo que 'ya está justificado'."*
+⚠️ *Hermana de L19/L11: una explicación escrita de memoria blinda el malentendido igual que un test
+o una spec. La cazó el ejecutor **leyendo el código** (`route.ts:145`), no mi prosa.*
 
 **Y una del fallo real de Avanza:**
 *Un test que solo pasa cuando la fuente ajena está sana **no es un test: es un test de Avanza**.*
@@ -1557,6 +1588,90 @@ ausencia de dato* — y eso sí le importa al usuario.
 
 ---
 
+### ⭐⭐ TANDA 8 — EL DESPLIEGUE (24/07)
+
+**ZetaBus está EN VIVO en `zetabus.antonioblanquez.es`** (plan Node.js de Hostinger). La app corre
+desde `~/nodejs` — **no** desde `.builds/<hash>/`: el build compila en `.builds/` y Hostinger
+**copia el resultado** a `~/nodejs`, que es una ruta **fija**. Confirmado con **dos lecturas de
+`cwd`** en despliegues distintos (mismo `~/nodejs`) — sin eso, el cron podría escribir en un
+directorio muerto. El índice `data/` viaja hasta el `cwd` de ejecución; escritor y lector comparten
+`RUTA_INDICE`, así que `correspondencias.presente: true` prueba que ambos apuntan al mismo sitio.
+
+**Verificación de que era otro despliegue** *(no un reinicio del mismo)*: se mira
+`datos.generadoEn`, **no** `pid` ni `arriba` — esos dos cambian igual cuando Hostinger reinicia el
+mismo build. Solo `generadoEn` cambia si hubo build nuevo.
+
+#### ⭐ EL CRON NOCTURNO DE CORRESPONDENCIAS — montado, guardián verificado
+
+**Qué hace:** a las **02:00** (franja sin servicio) regenera el índice de correspondencias barriendo
+los 74 sentidos de Avanza (~2 min). Endpoint **`POST /api/regenerar`**, protegido por un token.
+
+**Verificación del guardián — las dos direcciones, con contraprueba:**
+- Token **malo** → **401** (rechaza). *No 503: un 503 habría significado que la variable no existía
+  en el proceso; el 401 confirma de golpe que la variable entró Y que el guardián discrimina.*
+- Token **bueno** → **202 Accepted** — dispara el barrido **en segundo plano** (`after()`, no tiene
+  al `curl` esperando 2 min con la conexión abierta). Más correcto que un 200 para este caso.
+- **Segundo disparo con barrido en curso → 409** *"ya hay un barrido en curso"* (`route.ts:134-140`),
+  con cerrojo por proceso y TTL de 30 min. Un cron nunca puede pisar a otro a medias.
+- **Sin token / método incorrecto:** `GET` → 405; el guardián exige `POST` + `Authorization`.
+
+**⭐ Por qué el barrido puede correr en `~/nodejs`:** al mudar el barrido a `barrido.ts`, **el GTFS
+ya no se lee del zip — se lee del artefacto horneado** (`@/engine/topologia`). Es lo que hace posible
+el despliegue: el zip **no se versiona** y se descarga en `.builds/`, así que un barrido que
+dependiera de él **podría no arrancar nunca** en `~/nodejs`. Asume que se barre la red **de la fecha
+del build** (declarado en código; lo vigila `feedStatus`).
+
+**El guardián de la mudanza — afilado, no prohibido** (`79c5b4c`): `pantalla-no-miente.test.ts` dejó
+de **prohibir la palabra** "barrido" bajo `src/app` y pasa a comprobar la **propiedad** de toda ruta
+que importe `@/engine/barrido` (exporta solo `POST` · exige token · 503 sin él), con contraprueba en
+`regeneracion-cerrada.test.ts`. *Impide que la próxima ruta peligrosa entre sin fianza — el endpoint
+es aceptable no por cómo se llama, sino por lo que exige.*
+
+**Regeneración manual confirmada END-TO-END** *(no basta con que arranque — hay que leer el
+artefacto)*: tras el 202, `/api/diag` mostró `correspondencias.generadoEn` **nuevo**, **74/74
+sentidos** respondidos, 0 fallidos, y `avanza.peticiones` subió de 0 → salió a Avanza **de verdad**.
+
+**Commits:** `ccf7b0d` (expone `cwd` en `/api/diag`) · `79c5b4c` (endpoint `/api/regenerar` +
+guardián afilado).
+
+**⚠️ DÓNDE VIVE EL CRON — y por qué NO está en ZetaBus** *(ver L61)*:
+El plan Node de Hostinger **no tiene pestaña de Cron Jobs**, y por SSH **`crontab` está capado**
+(alias que solo lee). El cron se creó en el dominio **PHP de la misma cuenta — Linaje**
+(`hPanel → linaje → Avanzado → Cron Jobs`), tipo **Personalizado**, apuntando el `curl` a la URL
+pública de ZetaBus. *Un cron es un `curl` a una URL; no tiene que vivir dentro del proyecto.*
+
+- **Programación:** `0 2 * * *`
+- **Comando:**
+  `curl -sS -m 180 -X POST -H "Authorization: Bearer <TOKEN>" https://zetabus.antonioblanquez.es/api/regenerar`
+- ⚠️ `-m 180`: margen generoso, **pero el curl NO espera al barrido** — recibe el `202` en
+  milisegundos y la conexión se cierra; el barrido corre **después** de la respuesta, dentro de
+  `after()` (`route.ts:145`), desligado del curl. **Cortar el curl no corta el barrido.** Con
+  cualquier `-m` de un par de segundos bastaría; los 180 son inofensivos. *(Escribí antes que el
+  margen evitaba "cortar el barrido a mitad" — describía un mecanismo que no existe: L62.)*
+- ⚠️ **El token** vive como variable de entorno **`ZETABUS_REGEN_TOKEN`** en el panel Node de ZetaBus
+  (junto a `NAP_API_KEY`). **La variable primero, el cron después:** un proceso ya en marcha no
+  recoge una variable nueva — hizo falta que Hostinger recompilara/reiniciara para que
+  `process.env.ZETABUS_REGEN_TOKEN` existiera.
+- ⚠️ **Convivencia con Linaje:** sus cron corren a `:00/:10/:25/:40/:55`. El de ZetaBus a las `2:00`
+  coincide en el minuto `:00` con el reset horario de Linaje — procesos independientes en dominios
+  distintos, sin conflicto real. *(Si se quisiera margen absoluto: `2 2 * * *`.)*
+
+> ⬜ **PENDIENTE (verificación real):** mañana, abrir `/api/diag` y comprobar que
+> `correspondencias.generadoEn` marca **~02:00-02:03** de madrugada → el cron **disparó solo**. Si
+> sigue con la hora de la última ejecución manual → **no se disparó**, y toca investigar el tope de
+> intervalo de Hostinger *(como pasó con el `*/5` del auto-deploy de Linaje — L17: la ausencia de
+> fallo no es la presencia de la acción)*.
+
+#### El estado sano medido en el despliegue *(24/07, ~19:16 UTC)*
+`44 líneas · 934 paradas` · feed `20260623_AUZSA_Y_TRANVIA` **vigente** (23/06→05/10) · barrido
+**74/74**, 0 fallidos, 918 postes GTFS + 9 solo-barrido, 32 con provisional, 14 líneas desviadas,
+2.034 incidencias.
+⚠️ *Estos son los números **estructurales** (estables entre lecturas). **NO** anoto aquí los
+contadores `avanza` (timeouts/errores/ms) — son **acumulados por proceso** y derivan solos: a los
+25 min ya marcaban `timeouts:1`. Una foto de un instante no es un dato de estado.*
+
+---
+
 ## 8 · Cabos abiertos
 
 **Para cerrar la Tanda 7:**
@@ -1616,19 +1731,22 @@ capturas que nunca viajaron. Detalle en §7.
 - ⚠️ **El tope global de claves nuevas por minuto** — la causa de fondo del riesgo del rastreador.
   *"El `robots.txt` tapa el caso conocido, no el que no hemos pensado."*
 - **`sitemap.xml`**: no estaba en la lista aprobada. Sigue sin haberlo.
-- **Enlazar la demo** en el README: `zetabus.antonioblanquez.es` **no responde todavía** (000).
-  Cuando esté, hay que convertir la nota en enlace y añadir `Sitemap:` al `robots.ts`.
+- ✅ **Enlazar la demo** en el README: **hecho** (`da3904f`). `zetabus.antonioblanquez.es` está en
+  vivo y enlazado. ⬜ Queda solo añadir `Sitemap:` al `robots.ts`.
 - ⚠️ **El techo del guardián de enlaces, declarado:** no cubre **anclas** (`#fragmento`), ni enlaces
   **externos**, ni rutas citadas **en ficheros que no son `.md`**, ni —lo más difícil— **que el
   destino diga lo que promete**. *Eso último es el ojo, en el cierre de tanda.*
 
-**Y después: LA TANDA 8 — el despliegue y lo que depende de él.**
-- 🔜 **DESPLEGAR.** Hoy ZetaBus corre en local con `npm run dev`. **Todo lo de abajo depende de
-  esto**: sin algo encendido, no hay proceso nocturno que valga.
-- 🔜 **El cron de las 02:00** para regenerar el índice de correspondencias. Franja sin servicio
-  (entre las 2 y las 5 no hay buses entre semana; los búhos son de finde).
+**LA TANDA 8 — el despliegue y lo que depende de él.**
+- ✅ **DESPLEGADO** en `zetabus.antonioblanquez.es` (plan Node de Hostinger, corre desde `~/nodejs`
+  estable). Detalle en §7.
+- ✅ **El cron de las 02:00** montado en el dominio PHP de Linaje (misma cuenta), guardián verificado
+  (401/202), regeneración manual confirmada end-to-end. Detalle en §7 y L61.
+  ⬜ **Pendiente:** confirmar en `/api/diag` que **disparó solo** de madrugada.
   ⚠️ **Cron de Hostinger, no GitHub Actions:** el artefacto es de **runtime**, no de build — un
   Action lo generaría en CI y habría que hacérselo llegar a la app desplegada.
+- ✅ **Demo enlazable, y YA enlazada** (`da3904f`): `README.md:21` tiene el enlace *"Verlo
+  funcionando → zetabus.antonioblanquez.es"*. ⬜ **Solo queda** añadir `Sitemap:` al `robots.ts`.
 - 🔜 ⭐ **EL PANEL DE CONTROL PÚBLICO**, sobre `/api/diag` (que ya expone `generadoEn`, vigencia
   del feed y contadores). Enseña las tripas: cuándo se regeneró cada artefacto, cuántos registros,
   si algún contador no cuadró, y **qué postes están sin coordenadas**.
