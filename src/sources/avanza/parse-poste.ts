@@ -74,6 +74,13 @@ export interface LecturaPoste {
   readonly vehiculos: readonly VehiculoCrudo[];
   /** El marcador de la propia parada. NO es un autobús. */
   readonly marcadorParada: LatLon | null;
+  /**
+   * El NOMBRE de la parada, tal y como lo da Avanza en el marcador ("Parque de
+   * Atracciones"). `undefined` = el feed no lo trajo. Es la única fuente de runtime
+   * del nombre de las paradas SOLO-BARRIDO, que el GTFS no conoce. Los postes del
+   * GTFS ya tienen su nombre en la topología y no lo miran.
+   */
+  readonly nombreParada?: string;
   readonly avisos: readonly string[];
 }
 
@@ -139,6 +146,7 @@ export function parsearPoste(cuerpo: string): LecturaPoste {
   const maquinas = (raiz.maquinas ?? {}) as Record<string, Record<string, unknown>>;
   const vehiculos: VehiculoCrudo[] = [];
   let marcadorParada: LatLon | null = null;
+  let nombreParada: string | undefined;
 
   for (const [clave, m] of Object.entries(maquinas)) {
     const icono = nombreIcono(m.icon);
@@ -148,6 +156,12 @@ export function parsearPoste(cuerpo: string): LecturaPoste {
     //    por lo que la respuesta DECLARA: el icono.
     if (icono === ICONO_PARADA) {
       marcadorParada = coordenada(m);
+      // ⭐ El marcador TRAE EL NOMBRE de la parada (`info`/`title`), y hasta hoy se
+      //    tiraba. Es la única fuente de runtime del nombre de las paradas
+      //    solo-barrido (el GTFS no las conoce). Se lee AQUÍ, en la rama del
+      //    marcador; NO toca el cruce `tablatiempos`↔`maquinas` de más abajo.
+      const nombre = String(m.info ?? m.title ?? '').trim();
+      if (nombreParada === undefined && nombre !== '') nombreParada = nombre;
       continue;
     }
     if (icono !== ICONO_BUS) {
@@ -253,5 +267,5 @@ export function parsearPoste(cuerpo: string): LecturaPoste {
     );
   }
 
-  return { llegadas, vehiculos, marcadorParada, avisos };
+  return { llegadas, vehiculos, marcadorParada, nombreParada, avisos };
 }
