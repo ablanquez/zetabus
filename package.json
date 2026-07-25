@@ -26,6 +26,7 @@
     "nombres:build": "tsx scripts/build-nombres.ts",
     "correspondencias:build": "tsx scripts/build-correspondencias.ts",
     "correspondencias:ensure": "tsx scripts/ensure-correspondencias.ts",
+    "coords:solo-barrido": "tsx scripts/coords-solo-barrido.ts",
     "skill:setup": "node scripts/setup-skill.mjs"
   },
   "dependencies": {
