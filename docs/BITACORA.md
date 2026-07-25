@@ -81,6 +81,49 @@ había aprobado mal en la Costura 4.)*
   por `mtime`** del lector no refrescaba entre sobrescrituras rápidas en Windows → forcé `mtime`
   creciente con `utimesSync`. (Es del arnés de prueba, no del código.)
 
+### Fase 3 · Diagnóstico de las 9 paradas solo-barrido (solo lectura, sin tocar nada)
+
+- ⭐⭐ **DESCUBRIMIENTO 1 — las coordenadas de las 9 NO hacen falta a mano: Avanza las
+  da.** El feed crudo de poste (`gps.avanzabus.com/…/fRefrescaEmpresaExternos`) devuelve
+  el `marcadorParada` (LAT/LON del poste), y el parser YA lo extrae
+  (`parse-poste.ts:76`) y la app YA lo consume (`llegadas.ts:137`). Consulté los 9 en
+  vivo: los 9 devuelven coordenada plausible de Zaragoza. El fichero manual
+  (`data/postes-solo-barrido-coordenadas.json`) está VACÍO (0 resueltos). El barrido no
+  las tiene porque usa `get_stops_list` (orden, no coords); la coord vive en OTRO feed
+  que el barrido no consulta, y el guardia `paradaDelPoste` corta esos postes antes de
+  pedirlo. ⇒ cambia el alcance del remate: puede sembrarse del feed, no observarse a mano.
+- ⭐ **DESCUBRIMIENTO 2 — el `correspondencias.json` de disco NO es de hoy.** Su
+  `generadoEn` es `2026-07-24T18:27:28.945Z` (el que yo dejé la sesión pasada), aunque su
+  mtime es de hoy (25/07 10:27Z) y la puesta al día decía «regenerado hoy, generadoEn de
+  hoy». La causa NO CONSTA (¿barrido a suelo? ¿cp?). No bloquea el diagnóstico (los 9 son
+  estructurales). Reportado a estrategia.
+- ⭐ **DESCUBRIMIENTO 3 — cabo VIVO, no teórico:** las 9 aparecen en el itinerario de sus
+  líneas y se enlazan a `/parada/[poste]` sin mirar `sid` (`Itinerario.tsx:187`), que da
+  404 (`paradaDelPoste` null → `notFound`). Verificado en vivo (11:11Z): las 4 líneas
+  (34/35/52/28) están desviadas por esos postes AHORA. Un usuario los pincha hoy y cae al 404.
+
+### Fase 4 · Tanda A — fijar las 9 coordenadas con procedencia honesta
+
+- **El script** `scripts/coords-solo-barrido.ts` reutiliza `leerPoste` (parse-poste) y saca
+  el `marcadorParada` de los 9. Caja de cordura de Zaragoza; si alguno diera coord ausente,
+  mala o fuera de la caja, NO escribe nada y se para. Los 9 salieron limpios.
+- ⭐⭐ **DESCUBRIMIENTO / choque de procedencia (para destilar al estado):** el fichero de
+  coords y el barrido estaban modelados SOLO para `observacion_propia` (una persona a mano),
+  con el barrido cableando `confidence: 'observacion_propia'` type-locked. Pero estas 9 vienen
+  de un FEED (`avanza-web`), no de una persona. Fijarlas con el modelo viejo habría escrito una
+  **mentira de procedencia**. Se remodeló el tipo a una unión `avanza-web | observacion_propia`
+  y se extrajo `fijarCoordenada` (pura) para que el barrido PROPAGUE la fuente en vez de pisarla.
+  ⇒ corrige lo que el estado decía sobre "buscar las coords a mano": ya no; las da Avanza.
+- **Contraprueba red-first (el corazón):** con `co.fuente='avanza-web'`, `fijarCoordenada` debe
+  devolver `coordProc.fuente='avanza-web'`. Reintroduje el cableado viejo (`{...co, fuente:
+  'observacion_propia'}`) → **rojo**: *expected 'observacion_propia' to be 'avanza-web'* ("el
+  barrido pisó avanza-web"). Revertido → verde. Y verificado en un índice **regenerado en vivo**:
+  9/9 salen `avanza-web`, no supuesto.
+- ⚠️ **Cabo menor, NO tocado (dejo constancia):** `build-correspondencias.ts` sigue imprimiendo
+  *"9 poste(s) solo-barrido con coordenada ya resuelta a mano"* — «a mano» ya no es del todo
+  cierto (vienen del feed). Es un log de presentación, no dato ni pantalla; lo dejé fuera del
+  alcance de las 5 zonas. Cabo para estrategia (una palabra).
+
 - ⭐ **DESCUBRIMIENTO para destilar al estado — un guardián que grepea CRUDO.**
   Al arreglar el millar, el comentario que explicaba *por qué* evito el formateo de locale
   contenía la sintaxis de llamada de ese método, y **`tests/motor-vivo/horas-malas.test.ts` se

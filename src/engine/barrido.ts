@@ -178,13 +178,45 @@ export const barridoEnCursoDesdeMs = (): number | null => cerrojo().empezadoEnMs
 //  3 · EL BARRIDO
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** La coordenada a mano de un poste solo-barrido (observacion_propia). */
-interface CoordObservada {
-  readonly lat: number;
-  readonly lon: number;
-  readonly quien: string;
-  readonly fecha: string;
-  readonly comoLoSupe: string;
+/**
+ * La coordenada FIJADA de un poste solo-barrido, con su procedencia. DOS fuentes:
+ *  · 'avanza-web'         la da el feed de llegadas de Avanza (marcadorParada). Es
+ *                         lo que resuelve las 9 de hoy. Ver scripts/coords-solo-barrido.ts.
+ *  · 'observacion_propia' una persona la resolvió a mano (quien/fecha/comoLoSupe).
+ *                         Hoy no hay ninguna; el modelo la admite.
+ *
+ * ⚠️ La procedencia se PROPAGA al índice tal cual (ver `fijarCoordenada`): NO se
+ *    pisa con un literal fijo. Un dato de Avanza etiquetado 'observacion_propia'
+ *    sería una mentira de procedencia — justo lo que este proyecto persigue. Antes
+ *    aquí ponía `& { confidence: 'observacion_propia' }` cableado, y por eso las 9
+ *    del feed habrían salido como observación manual.
+ */
+type CoordFijada = { readonly lat: number; readonly lon: number } & (
+  | { readonly fuente: 'avanza-web'; readonly fecha: string; readonly comoSeSupo?: string }
+  | { readonly fuente: 'observacion_propia'; readonly quien: string; readonly fecha: string; readonly comoLoSupe: string }
+);
+
+/**
+ * ⭐ EL ESTAMPADO DE COORDENADA — PURO, para poder probar que NO PISA la procedencia.
+ *
+ * Toma la entrada base del poste (sin coord) y la coordenada fijada del fichero, y
+ * devuelve la entrada con `lat/lon` y `coordProc` = la coord tal cual, con SU
+ * `fuente`. No hace red, no toca disco: es la parte verificable de la costura, y
+ * su test (`tests/coords-propagacion.test.ts`) demuestra el rojo si alguien vuelve
+ * a cablear un literal encima.
+ */
+export function fijarCoordenada(
+  base: Pick<EntradaEscrita, 'normales' | 'provisionales' | 'nombre'>,
+  co: CoordFijada,
+): EntradaEscrita {
+  return {
+    normales: base.normales,
+    provisionales: base.provisionales,
+    nombre: base.nombre,
+    lat: co.lat,
+    lon: co.lon,
+    coordProc: co, // ← PROPAGA la procedencia del fichero, NO la pisa
+  };
 }
 
 /** Una entrada del artefacto tal y como se ESCRIBE (más rica que la de la fusión pura). */
@@ -195,7 +227,7 @@ interface EntradaEscrita {
   readonly sinCoordenadas?: true;
   readonly lat?: number;
   readonly lon?: number;
-  readonly coordProc?: CoordObservada & { readonly confidence: 'observacion_propia' };
+  readonly coordProc?: CoordFijada;
 }
 
 export type ResultadoBarrido =
@@ -288,9 +320,9 @@ async function barrer(opts: OpcionesBarrido, t0: number): Promise<ResultadoBarri
     };
   }
 
-  // ── LAS COORDENADAS A MANO (observacion_propia), en los solo-barrido ────────
-  const coords: Record<string, CoordObservada> = existsSync(COORDS)
-    ? ((JSON.parse(readFileSync(COORDS, 'utf8')) as { postes?: Record<string, CoordObservada> }).postes ?? {})
+  // ── LAS COORDENADAS FIJADAS de los solo-barrido (avanza-web u observacion_propia) ──
+  const coords: Record<string, CoordFijada> = existsSync(COORDS)
+    ? ((JSON.parse(readFileSync(COORDS, 'utf8')) as { postes?: Record<string, CoordFijada> }).postes ?? {})
     : {};
 
   let sinCoordenadas = 0;
@@ -305,14 +337,7 @@ async function barrer(opts: OpcionesBarrido, t0: number): Promise<ResultadoBarri
     const co = coords[posteStr];
     if (co) {
       conCoordResuelta++;
-      postesEscritos[poste] = {
-        normales: e.normales,
-        provisionales: e.provisionales,
-        nombre: e.nombre,
-        lat: co.lat,
-        lon: co.lon,
-        coordProc: { ...co, confidence: 'observacion_propia' },
-      };
+      postesEscritos[poste] = fijarCoordenada(e, co);
     } else {
       sinCoordenadas++;
       postesEscritos[poste] = {
