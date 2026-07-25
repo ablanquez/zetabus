@@ -206,21 +206,49 @@ function normalesDelGtfs(paradaId: StopId): LineaQuePasa[] {
   return ordenar(salida);
 }
 
+/** El reparto normal/provisional de un poste presente (o no) en un índice que SÍ existe.
+ *  Si el poste no está, HOY no pasa nada por aquí (no es degradado): el índice es de hoy
+ *  y cubre todos los postes barridos. Se dice el vacío arriba. Es el trozo común de las
+ *  dos puertas (por StopId y por número de poste), en un solo sitio. */
+function desdeIndicePorPoste(indice: ArtefactoIndice, poste: number): CorrespondenciasDeParada {
+  const e = indice.postes[String(poste)];
+  const normales = e ? ordenar(e.normales.map(parALineaQuePasa).filter((x): x is LineaQuePasa => x !== null)) : [];
+  const provisionales = e ? ordenar(e.provisionales.map(parALineaQuePasa).filter((x): x is LineaQuePasa => x !== null)) : [];
+  return { normales, provisionales, degradado: false };
+}
+
 export function correspondenciasDeParadaDesde(
   indice: ArtefactoIndice | null,
   paradaId: StopId,
 ): CorrespondenciasDeParada {
   const poste = posteDe(paradaId);
-  if (indice && poste !== null) {
-    const e = indice.postes[String(poste)];
-    // El índice existe. Si el poste no está, HOY no pasa nada por aquí (no es degradado):
-    // el índice es de hoy y cubre todos los postes barridos. Se dice el vacío arriba.
-    const normales = e ? ordenar(e.normales.map(parALineaQuePasa).filter((x): x is LineaQuePasa => x !== null)) : [];
-    const provisionales = e ? ordenar(e.provisionales.map(parALineaQuePasa).filter((x): x is LineaQuePasa => x !== null)) : [];
-    return { normales, provisionales, degradado: false };
-  }
+  if (indice && poste !== null) return desdeIndicePorPoste(indice, poste);
   // Sin índice → DEGRADADO: normales del GTFS, sin provisionales.
   return { normales: normalesDelGtfs(paradaId), provisionales: [], degradado: true };
+}
+
+/**
+ * ⭐ LAS CORRESPONDENCIAS DE UN POSTE POR NÚMERO — el puente para las paradas SOLO-BARRIDO.
+ *
+ * Ellas no tienen `StopId` (no están en el GTFS), así que no pueden entrar por
+ * `correspondenciasDeParadaDesde`. Su dato es 100% PROVISIONAL por construcción: un poste
+ * que no está en ninguna ruta oficial nunca puede tener una `normal`. Con índice, da sus
+ * provisionales de hoy; SIN índice (o poste ausente del índice de hoy), da vacío y
+ * `degradado`: no hay red del GTFS que caiga —el GTFS no conoce estos postes—, y quien
+ * pinta enseña una nota en vez de una lista vacía con cara de completa.
+ */
+export function correspondenciasDePosteDesde(
+  indice: ArtefactoIndice | null,
+  poste: number,
+): CorrespondenciasDeParada {
+  if (indice) return desdeIndicePorPoste(indice, poste);
+  return { normales: [], provisionales: [], degradado: true };
+}
+
+/** El nombre que el barrido guardó para un poste SOLO-BARRIDO (Avanza lo da, el GTFS no).
+ *  `null` = no está en el índice (poste GTFS, o sin índice). Para el `<title>` sin red. */
+export function nombreDePosteDesde(indice: ArtefactoIndice | null, poste: number): string | null {
+  return indice?.postes[String(poste)]?.nombre ?? null;
 }
 
 /** Dedup por id + orden natural por número de línea. */
@@ -292,6 +320,14 @@ export function estadoIndiceDesde(indice: ArtefactoIndice | null, ahoraMs: numbe
 
 export const correspondenciasDeParada = (paradaId: StopId): CorrespondenciasDeParada =>
   correspondenciasDeParadaDesde(leerIndice(), paradaId);
+
+/** Por número de poste (paradas solo-barrido, sin StopId). Ver `correspondenciasDePosteDesde`. */
+export const correspondenciasDePoste = (poste: number): CorrespondenciasDeParada =>
+  correspondenciasDePosteDesde(leerIndice(), poste);
+
+/** El nombre del índice para un poste solo-barrido (o `null`). Ver `nombreDePosteDesde`. */
+export const nombreDePoste = (poste: number): string | null =>
+  nombreDePosteDesde(leerIndice(), poste);
 
 export const otrasLineasEnPoste = (
   poste: number,

@@ -203,32 +203,53 @@ export const linea = (id: LineId): Line | null => lineaPorId.get(String(id)) ?? 
 export const posteDe = (id: StopId): number | null => posteDeParada.get(String(id)) ?? null;
 
 /**
- * ⭐ EL GUARDIA DE LA ENTRADA. `null` = ese poste NO ES NUESTRO.
- * Todo lo que entra por la URL pasa por aquí antes de que Avanza se entere.
+ * ⭐ EL NÚMERO DE POSTE, VALIDADO. `null` = no es un número de poste de verdad.
+ *
+ * ⚠️ ESTO SOLO NORMALIZA Y VALIDA LOS DÍGITOS; NO dice si el poste EXISTE. Se
+ *    extrajo de `paradaDelPoste` para que TODA puerta que reciba un poste crudo
+ *    de la URL —la del GTFS y la de las paradas solo-barrido (`@/engine/paradas`)—
+ *    use EXACTAMENTE la misma validación. Si dos puertas normalizaran distinto,
+ *    una aceptaría lo que la otra rechaza, y el agujero de `0x2E8` volvería por
+ *    la puerta que se olvidó. Una sola función lo hace imposible.
+ *
+ * ⚠️ SE EXIGEN DÍGITOS. No "algo que JavaScript sepa convertir en número".
+ *
+ * `Number()` es demasiado servicial y acepta cosas que NADIE escribe a mano:
+ *     Number("")      → 0        el vacío se cuela como poste 0
+ *     Number("1e3")   → 1000     notación científica
+ *     Number("0x2E8") → 744      ⭐ hexadecimal: /api/llegadas/0x2E8 te
+ *                                servía Plaza San Miguel. Lo cazó el test
+ *                                de basura de la URL, no yo.
+ *     Number("\n744") → 744      espacios de todo tipo
+ *
+ * Ninguna es peligrosa por sí sola, pero todas significan lo mismo: la entrada
+ * NO era la que creíamos y el motor siguió adelante tan tranquilo. Eso es
+ * exactamente lo que no queremos que ocurra en ninguna capa.
  */
-export function paradaDelPoste(poste: unknown): StopId | null {
+export function numeroDePoste(poste: unknown): number | null {
   let n: number;
   if (typeof poste === 'number') {
     n = poste;
   } else {
     const s = String(poste ?? '').trim();
-    // ⚠️ SE EXIGEN DÍGITOS. No "algo que JavaScript sepa convertir en número".
-    //
-    // `Number()` es demasiado servicial y acepta cosas que NADIE escribe a mano:
-    //     Number("")      → 0        el vacío se cuela como poste 0
-    //     Number("1e3")   → 1000     notación científica
-    //     Number("0x2E8") → 744      ⭐ hexadecimal: /api/llegadas/0x2E8 te
-    //                                servía Plaza San Miguel. Lo cazó el test
-    //                                de basura de la URL, no yo.
-    //     Number("\n744") → 744      espacios de todo tipo
-    //
-    // Ninguna es peligrosa por sí sola, pero todas significan lo mismo: la
-    // entrada NO era la que creíamos y el motor siguió adelante tan tranquilo.
-    // Eso es exactamente lo que no queremos que ocurra en ninguna capa.
     if (!/^\d+$/.test(s)) return null;
     n = Number(s);
   }
   if (!Number.isInteger(n) || n <= 0) return null;
+  return n;
+}
+
+/**
+ * ⭐ EL GUARDIA DE LA ENTRADA. `null` = ese poste NO ES NUESTRO (del GTFS).
+ * Todo lo que entra por la URL pasa por aquí antes de que Avanza se entere.
+ *
+ * ⚠️ Devuelve `null` para las 9 paradas solo-barrido (no están en el GTFS): eso
+ *    es correcto aquí. Quien las reconoce es `resolverParada` (`@/engine/paradas`),
+ *    que prueba primero esta puerta y luego el fichero estático de coordenadas.
+ */
+export function paradaDelPoste(poste: unknown): StopId | null {
+  const n = numeroDePoste(poste);
+  if (n === null) return null;
   return paradaDePoste.get(n) ?? null; // y además TIENE QUE EXISTIR en el GTFS
 }
 
