@@ -20,13 +20,17 @@ capturas de móvil llevan su marco, y el guardián de enlaces valida **contra lo
 contra el disco.
 
 # ⭐⭐ TANDA 8 — DESPLEGADO Y EN VIVO EN `zetabus.antonioblanquez.es`.
-**El cron nocturno de correspondencias, MONTADO** (24/07). Guardián verificado (401 malo / 202
-bueno), regeneración manual confirmada end-to-end (74/74 sentidos, Avanza consultado de verdad).
-> ⬜ **ÚNICO PENDIENTE:** confirmar en `/api/diag` que el cron **disparó SOLO** de madrugada
-> (`correspondencias.generadoEn` con hora ~02:00). *"Aparece en la lista" no es "funciona" — L17.*
-**Y quedan los remates de la Tanda 8:** panel de control público, 9 postes sin coordenadas,
-`/linea` en escritorio, textos, y la nota del logo en la guía de estilo.
-**Última actualización:** 24/07/2026 (tarde)
+**Desplegado (24/07) · cron nocturno MONTADO y VERIFICADO** (disparó solo a las 02:00:01, leído en
+`/api/diag` el 25/07). Guardián 401/202, barrido end-to-end 74/74.
+**Remates del 25/07 CERRADOS (en local, sin push — `ahead 7`):**
+- ✅ **Panel público `/estado`** (`9bbe188`) — cuatro estados honestos. §7 · L63.
+- ✅ **Las 9 paradas solo-barrido: coordenadas (Tanda A) Y visitables (Tanda B)** — ya no dan 404;
+  Avanza da las coords (`avanza-web`), y abren con nombre + mapa + desvío. §7 · L65 · L66.
+> ⬜ **PENDIENTE — EL PUSH.** Hay 7 commits atómicos en local sin subir (el push dispara el
+> auto-deploy de Hostinger; se retiene a propósito hasta cerrar el lote). Cuando Antonio lo decida,
+> un push sube panel + coordenadas + visitabilidad de una vez.
+**Quedan de la Tanda 8:** `Sitemap:` en `robots.ts`, textos, nota del logo, y los cabos menores del §8.
+**Última actualización:** 25/07/2026
 
 ---
 
@@ -721,6 +725,55 @@ o una spec. La cazó el ejecutor **leyendo el código** (`route.ts:145`), no mi 
 
 **Y una del fallo real de Avanza:**
 *Un test que solo pasa cuando la fuente ajena está sana **no es un test: es un test de Avanza**.*
+
+⭐⭐ **L63 · EL VERDE DE LOS TESTS NO CUBRE LO QUE NINGÚN TEST OBSERVA — el bug del millar.**
+`incidencias.toLocaleString('es-ES')` pintó **"2034"**, no "2.034". Los 14 tests del panel `/estado`
+estaban en verde (ninguno miraba ese formato), y `tsc` y `eslint` también. El fallo solo se vio
+**abriendo la página a 360 px y leyendo el píxel**. Causa: Node con **ICU recortado** (como el de
+Hostinger) no agrupa millares con `toLocaleString`. Se arregló con `formatearMillar` (agrupa a mano,
+determinista) y ahora sí hay un test que lo mira.
+> ⭐ *Es la ley entera del proyecto en un caso: ningún test mide "se ve bien"; por eso la página se
+> abre, siempre. Y trae una capa nueva: **el mismo código pinta distinto según el ICU del entorno** —
+> hermano de "SQLite pasa, MySQL falla", pero en la capa de presentación. En `dev` (ICU completo) no
+> se habría visto; solo sobre el `build` de producción.*
+
+⭐ **L64 · UN GUARDIÁN QUE GREPEA CRUDO CAZA LA PROSA, NO EL CÓDIGO.**
+Al comentar *por qué* evito `toLocaleString`, el comentario contenía la sintaxis de ese método, y
+`tests/motor-vivo/horas-malas.test.ts` se puso **rojo**: su primer escaneo (el que prohíbe métodos de
+fecha/locale en `src/engine`) lee el fichero **sin quitar comentarios** y cazó la frase, no una
+llamada. Su propio bloque hermano de la misma línea SÍ usa `sinComentarios`. Es la lección que el
+proyecto ya tiene escrita (*"un test que no distingue el código de la prosa hace grep"*) reapareciendo
+en un guardián propio. No es peligroso (solo falsos positivos, nunca negativos), pero es un **cabo**:
+el guardián sobre-caza comentarios. *(Se esquivó reescribiendo el comentario; el guardián NO se tocó,
+fuera de alcance. Cabo abierto en §8.)*
+
+⭐⭐ **L65 · LA PROCEDENCIA DE UN DATO LA DECIDE SU FUENTE, NO EL HUECO DONDE LO GUARDAS.**
+Las 9 coordenadas solo-barrido venían de un **feed** (`avanza-web`), pero el fichero y el barrido
+estaban modelados SOLO para `observacion_propia` (*"una persona a mano"*), con el barrido cableando
+`confidence: 'observacion_propia'` type-locked. Guardarlas con el modelo viejo habría escrito una
+**mentira de procedencia** — el `_meta` incluso afirmaba "NO es dato raspado de Avanza", que pasaría a
+ser falso. El encargo (mío) pedía "guarda procedencia respetando el patrón existente" **sin que yo
+hubiera mirado que el patrón no tenía hueco para un feed**. El ejecutor lo cazó al ir a implementar.
+> ⭐ *Se remodeló el tipo a una unión `avanza-web | observacion_propia` y se extrajo `fijarCoordenada`
+> (pura) para que el barrido PROPAGUE la fuente en vez de pisarla. La contraprueba red-first (meter el
+> cableado viejo → ver el rojo "pisó avanza-web") es lo que lo blinda.*
+⚠️ *Hermana de L62 y de mi patrón recurrente: **yo estimo de memoria y miento** ("2 líneas" resultaron
+ser 5 zonas; "hay un hueco de procedencia" cuando no lo había). La defensa no es que yo acierte: es
+que el ejecutor VAYA A MIRAR el modelo real y se pare. El "diseño primero, código después" existe para
+esto.*
+
+⭐ **L66 · UNA FRONTERA ESTÁTICA NO ARRASTRA TODOS LOS DATOS QUE PARECE.**
+Al hacer visitables las 9 (Tanda B), se eligió como frontera el **fichero versionado** (whitelist de 9
+claves, siempre presente) en vez del **índice dinámico** (que cambia cada noche y desaparece en
+degradado) — para que las 9 sean visitables SIEMPRE, no un día sí y otro no. Correcto para *¿existe?*
+y *¿dónde está?*. Pero el **nombre** ("Parque de Atracciones") NO estaba en ese fichero: vivía en el
+índice dinámico o en el feed sin parsear. O sea: elegir frontera estática no basta si un dato de la
+página sigue colgando de una fuente dinámica.
+> ⭐ *Se resolvió extendiendo el parser para coger el nombre del feed en vivo (degradado-proof), que
+> además **ya lo traía y se tiraba** (`parse-poste.ts` descartaba `maquinas[0].info`). Y la costura
+> última, dicha con honestidad: en degradado Y con el feed mudo, el nombre cae a "poste 617" —
+> fallback honesto, no bug. Se vio porque el grep del curl salió vacío mientras el test (que solo
+> miraba el 200) estaba en verde: el output dijo lo que la aserción no miraba (otra de L63).*
 
 ---
 
@@ -1672,6 +1725,71 @@ contadores `avanza` (timeouts/errores/ms) — son **acumulados por proceso** y d
 
 ---
 
+### ⭐⭐ TANDA 8 · REMATES POST-DESPLIEGUE (25/07) — panel `/estado`, coordenadas y visitabilidad
+
+Todo esto se hizo **en local, sin push** (el auto-deploy de Hostinger dispara con push a `main`, así
+que iteramos en local y el push se retiene a propósito). Al cierre de sesión: `ahead 7`, commits
+atómicos, working tree limpio (sin `.env.local`, sin este fichero, sin el índice gitignoreado).
+
+#### El panel público `/estado` (commit `9bbe188`) — HECHO
+Ruta pública, indexable, **solo lectura**. Un visitante ve *"¿me puedo fiar del dato ahora?"*. Lee el
+motor **importándolo** (server component), NO por `fetch` a `/api/diag` — la doc de Next lo desaconseja
+y ninguna página del repo fetchea su propia API. Con eso, la **Ley 2** (no filtrar tripas: `pid`,
+`cwd`, `cache`…) deja de ser "acordarse de filtrar" y pasa a ser **garantía estructural**: los campos
+prohibidos ni entran en el módulo de la página.
+**Cuatro estados** (no tres — la remap corrigió lo que yo había aprobado mal): la fórmula literal que
+aprobé no casaba con el motor (`presente:true && degradado:true` NO existe; `!presente` ES "índice
+falta"). Disparadores reales:
+- **Al día** `presente && edad ≤ 26 h` · tinta neutra + ● + borde sólido.
+- **Desactualizado** `presente && edad > 26 h` · ámbar + ◐. *(Umbral 26 h = 24 h + 2 h de colchón que
+  absorbe el ±1 h del DST, porque el cron dispara a las 02:00 **locales**; argumento del ejecutor,
+  mejor que el mío de 1 h.)*
+- **Degradado** `!presente` (índice falta o ilegible) · aviso + forma propia · *"mostrando recorridos
+  oficiales; los desvíos de hoy no están disponibles"*. Estado propio, NO plegado en "no lo sé" —
+  plegarlos sería *agrupar es borrar*: son opuestos.
+- **No lo sabemos** excepción / edad infechable · rojo + ✕.
+⚠️ **No hay verde en el sistema visual** (colisiona con los colores de línea): "Al día" es tinta
+neutra + palabra + forma, no un verde inventado. Prueba de escala de grises con los 4: se distinguen
+sin una gota de color. Y **L63 nació aquí** (el bug del millar).
+
+#### Tanda A · coordenadas de las 9 solo-barrido (commits `78ca2e3` datos · `30667d4` barrido) — HECHO
+Las 9 (617, 646-650 de la 34; 736 de la 35; 1283 de la 52; 8138 de la 28) no tenían `lat/lon` porque
+el barrido usa `get_stops_list` (da orden, no coords). **Descubrimiento que cambió el plan: Avanza SÍ
+da las coordenadas** — el feed de llegadas por poste trae `marcadorParada`, que el parser ya extrae.
+Así que **NO se buscan a mano** (como decía el plan viejo): se sembraron del feed con un script de un
+solo uso (`scripts/coords-solo-barrido.ts`), fijadas en `data/postes-solo-barrido-coordenadas.json`
+(versionado a propósito). Procedencia **`avanza-web`**, propagada honesta al índice (ver **L65** — el
+choque de procedencia y las 5 zonas del barrido, no 2). Verificado en índice regenerado en vivo: 9/9
+salen `avanza-web`, no pisadas.
+Coordenadas fijadas (racimo Duque de Alba agrupado ~41.62/-0.89–0.90, coherente): 617 `41.62227,
+-0.90033` · 646 `41.623121, -0.894192` · 647 `41.620146, -0.901911` · 648 `41.62244, -0.900264` ·
+649 `41.622757, -0.897901` · 650 `41.622668, -0.897976` · 736 `41.640895, -0.895403` · 1283
+`41.655758, -0.909834` · 8138 `41.654644, -0.872222`.
+
+#### Tanda B · hacer visitables las 9 (commits `54fba17` parser · `c23b237` frontera · `b3c8611` puente) — HECHO
+Las 9 daban **404** (`paradaDelPoste` exige GTFS; no están). Ahora abren página completa: nombre, mapa
+en su coord, y caja punteada *"Hoy, por un desvío"*. Cómo, sin ñapa:
+- **Vía 3 — tipo discriminado, sin StopId falso.** `ParadaVisitable = {clase:'gtfs',…} | {clase:'solo-barrido',…}`
+  en `src/engine/paradas.ts` (NO en `topologia.ts`, que sigue GTFS-puro). Se rechazó el StopId
+  sintético: mentira estructural en el núcleo, mismo tufillo que `observacion_propia` sobre un dato de
+  feed. El `clase` obliga al **compilador** a bifurcar en cada consumidor — la disciplina (se olvida)
+  pasa a tipo (no se puede olvidar).
+- **Frontera ESTÁTICA, no dinámica.** La lista de "9 legítimos" sale del **fichero versionado**, no del
+  índice. Por qué (decisión clave): el índice es diario y ausente en degradado → daría un **404
+  intermitente** y un agujero en degradado. El fichero da 9 visitables SIEMPRE. Un `99999` sigue en
+  404 (no es una de las 9 claves). `numeroDePoste` se extrajo de `paradaDelPoste` con comportamiento
+  idéntico (el agujero de `0x2E8` no vuelve por la puerta nueva).
+- **El nombre viene del feed** (Opción B): el parser ahora captura `maquinas[0].info` (que ya traía y
+  se tiraba — **L66**), en su rama segura sin rozar el cruce L1 `tablatiempos↔maquinas`. Degradado-proof.
+- **Las "líneas que pasan" salen honestas sin inventar:** las 9 son 100% provisionales, así que solo la
+  caja punteada "Hoy por un desvío"; nunca la caja sólida. En **degradado** (sin índice), nota tenue:
+  *"esta parada solo recibe autobuses cuando una línea se desvía; hoy no nos consta el desvío"*.
+- **5 contrapruebas con su rojo antes del verde:** frontera (99999→404), las 9 visitables, degradado
+  (200 + nota sin índice), regresión GTFS (una parada normal no cambia), honestidad del nombre
+  (`avanza-web`, no el aviso "sin confirmar"). Suites: vitest 527, playwright 826, tsc/eslint limpios.
+
+---
+
 ## 8 · Cabos abiertos
 
 **Para cerrar la Tanda 7:**
@@ -1747,18 +1865,35 @@ capturas que nunca viajaron. Detalle en §7.
   Action lo generaría en CI y habría que hacérselo llegar a la app desplegada.
 - ✅ **Demo enlazable, y YA enlazada** (`da3904f`): `README.md:21` tiene el enlace *"Verlo
   funcionando → zetabus.antonioblanquez.es"*. ⬜ **Solo queda** añadir `Sitemap:` al `robots.ts`.
-- 🔜 ⭐ **EL PANEL DE CONTROL PÚBLICO**, sobre `/api/diag` (que ya expone `generadoEn`, vigencia
-  del feed y contadores). Enseña las tripas: cuándo se regeneró cada artefacto, cuántos registros,
-  si algún contador no cuadró, y **qué postes están sin coordenadas**.
-  ⚠️ **UN PANEL DE ESTADO ES UN INSTRUMENTO.** Tiene que leer el **ARTEFACTO** que se sirve (su
-  `generadoEn` de finalización), **nunca un registro de que se intentó**: un `empezadoEn` daría
-  **verde sobre una regeneración fallida**.
-- 🔜 **El guardia `paradaDelPoste`** para hacer visitables los 9 postes solo-barrido. Hoy dan 404
-  limpio. ⚠️ Decisión aceptada: **va aparte**, porque hacerlos visitables **sin coordenadas** (y
-  por tanto sin mapa) sería peor que esperar a resolverlas.
-  → El panel avisa de cuáles son; Antonio busca sus coordenadas **a mano una vez**, y como las
-  paradas son **acumulativas**, la coordenada sobrevive al borrado diario (`observacion_propia`).
-- ⬜ Chorradas de **redacción de textos**.
+- ✅ ⭐ **EL PANEL DE CONTROL PÚBLICO `/estado`** (`9bbe188`). Público, solo lectura, cuatro estados
+  honestos (al día / desactualizado / degradado / no lo sé), lee el motor importándolo (Ley 2 como
+  garantía estructural). Detalle en §7 y L63. ⬜ Verificado que el cron **disparó solo** a las
+  02:00:01 (leído en `/api/diag` el 25/07).
+- ✅ **LAS 9 PARADAS SOLO-BARRIDO — coordenadas Y visitables** (Tandas A+B, `78ca2e3`·`30667d4`·
+  `54fba17`·`c23b237`·`b3c8611`). Detalle en §7, L65 y L66.
+  ⚠️ **CORRECCIÓN de lo que este estado decía antes:** el plan era "Antonio busca las coordenadas a
+  mano" y "va aparte de hacerlas visitables". **Ya no aplica:** Avanza da las coordenadas (feed de
+  llegadas, `avanza-web`), se sembraron con script, y visitables se hizo en la misma sesión (Tanda B).
+  Ya NO dan 404: abren página con nombre + mapa + caja "Hoy, por un desvío".
+- ⬜ **Añadir `Sitemap:` al `robots.ts`** (lo único que quedó del bloque de README).
+- ⬜ Chorradas de **redacción de textos**, y la **nota del logo** en la guía de estilo.
+
+**⬜ CABOS NUEVOS de la sesión del 25/07 (menores, reportados por descubrimiento):**
+- El log de `build-correspondencias.ts` dice *"9 postes con coordenada resuelta **a mano**"* — ya no
+  es "a mano" (vienen del feed). Una palabra a cambiar. Ni dato ni pantalla, solo consola.
+- El guardián `tests/motor-vivo/horas-malas.test.ts` **sobre-caza comentarios** (grepea crudo, sin
+  `sinComentarios`, al revés que su bloque hermano). Solo falsos positivos, nunca negativos. Ver L64.
+- La **costura (e)** de la Tanda B: en degradado Y con el feed mudo, el nombre de una solo-barrido cae
+  a "poste N" (ni feed ni índice). Fallback honesto, no bug — con Avanza vivo el feed lo da. Ver L66.
+
+**⬜ TANDA FUTURA APARCADA — jerarquía de procedencia de coordenadas.**
+Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
+nuevo por un desvío nuevo → mismo agujero. La idea (aparcada a propósito, NO se metió en la Tanda B):
+un proceso que resuelva solo los postes solo-barrido nuevos, con **prioridad de fuentes** (GTFS >
+`avanza-web` > `observacion_propia`), en vez de a mano uno a uno. Es *"el comportamiento va en la tabla,
+no en el código"* aplicado a las coordenadas. **Base ya construida:** el feed como fuente, el patrón de
+procedencia (`avanza-web`/`observacion_propia`), el fichero modelado para las dos fuentes. Cuando se
+retome, no empieza de cero.
 
 ## 9 · Método y entorno
 
