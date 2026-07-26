@@ -22,17 +22,20 @@ contra el disco.
 # ⭐⭐ TANDA 8 — DESPLEGADO Y EN VIVO EN `zetabus.antonioblanquez.es`.
 **Desplegado (24/07) · cron nocturno MONTADO y VERIFICADO** (disparó solo a las 02:00:01). Guardián
 401/202, barrido 74/74.
-**Remates de cierre CERRADOS (25/07, en local, sin push — `ahead 16`):**
+**Remates de cierre CERRADOS (25/07, en local, sin push — `ahead 22`):**
 - ✅ **Panel público `/estado`** — cuatro estados honestos. §7 · L63.
 - ✅ **Las 9 paradas solo-barrido: coordenadas + visitables** — ya no dan 404. §7 · L65 · L66.
 - ✅ **Sitemap + metadataBase** — 47 URLs, cero paradas, dominio con fuente única. §7.
 - ✅ **OG image** — tarjeta 1200×630 al compartir. §7.
 - ✅ **Lint del CI cerrado de raíz** — `npm test` no corría eslint; ahora sí. §7 · L67.
 - ✅ **README honesto** — roadmap, "a mano", "74 páginas", "Sumadas" corregidos. §7 · L68 · L69.
-> ⬜ **PENDIENTE — EL PUSH.** 16 commits atómicos en local sin subir (el push dispara el auto-deploy de
-> Hostinger; se retiene hasta cerrar el lote de cierre). Un push sube todo de una vez.
-**Quedan para CERRAR (Fase 5):** el "momento oro" jugable (GIF/demo del "no lo sé"), y CHANGELOG + bump
-de versión (sigue en 0.1.0). Detalle y cabos menores en §8.
+- ✅ **ZetaBus v1.0.0** — release (`36614b5`): versión + CHANGELOG limpio + badge. §7.
+- ✅ **Momento oro** — GIF de la transición "Avanza cae → 'no lo sé'" en el README (a pelo, animado;
+  enmarcarlo costaba 6× el peso). §7 · L70.
+> ⬜ **PENDIENTE — EL PUSH + TAG.** 22 commits atómicos en local sin subir. El push dispara el
+> auto-deploy de Hostinger y sube todo de una vez; el tag `v1.0.0` marca el release. Lo hace Antonio.
+**ZetaBus está CERRADO** — todos los remates de cierre hechos. Solo falta el push + tag. Cabos menores
+y la tanda futura (jerarquía de coordenadas) en §8.
 **Última actualización:** 25/07/2026
 
 ---
@@ -814,6 +817,24 @@ ellos.
 > relación falsa entre números verificados. Se arregló con reword escueto ("las dos principales dan
 > 393; con fuentes menores, los 403"), sin completar la tabla — el detalle de las 4 procedencias vive
 > en /sobre-los-datos, no en el escaparate (el motor sabe la verdad, la presentación decide cuánto).*
+
+⭐ **L70 · UN GATE DE VIABILIDAD BIEN PUESTO AHORRA UN COMMIT FEO — el GIF que no se pudo enmarcar.**
+El GIF del momento oro es el único móvil sin marco; se intentó enmarcarlo para igualar a sus 3 hermanos.
+El encargo llevaba un GATE dado por Antonio: *"si supera ~1 MB o pierde nitidez, párate, no commitees"*.
+Saltó: enmarcar un GIF animado da **~5-6 MB** (5,7 / 5,0 / 4,9 en tres montajes), y es **estructural**,
+no de afinado: el marco necesita transparencia (esquinas + sombra sobre fondo agnóstico de tema, porque
+GitHub tiene claro y oscuro), y la transparencia **rompe la compresión entre-frames** del GIF — cada
+frame se guarda casi entero. No baja tocando fps/colores/dither.
+> ⭐ *La regla ganadora, del propio Antonio: **"mejor GIF a pelo nítido que enmarcado gordo/borroso"**.
+> El GIF se queda a pelo (787 KB) — excepción JUSTIFICADA a "móvil con marco", no un descuido. Y el
+> gate evitó commitear un GIF de 5 MB "por coherencia". La coherencia visual no vale ensuciar la pieza
+> estrella.*
+✅ *Bonus: el intento dejó `scripts/marco-movil.mjs` — la receta del marco (antes A MANO, commit
+`f7a642d`) hecha código y parametrizada. Va fina para PNG (160 KB); rechaza GIF con mensaje claro y
+documenta el porqué en la cabecera (footgun cerrado). Los marcos ya no son a mano — son derivables.*
+⚠️ *Y una distinción que Antonio necesitó aclarar: **movimiento vs marco es GIF vs PNG, no móvil vs
+PC**. GitHub no reproduce vídeo en el README; el movimiento solo lo da el GIF, que no admite marco. Se
+eligió el movimiento (la transición cuenta la historia mejor que dos fotos).*
 
 ---
 
@@ -1864,6 +1885,27 @@ cuando son 44 (los 74 son sentidos, query `?sentido=`, no URLs); y el *"Sumadas"
 cuando dan 393 (**L69**). Pasada de honestidad del README completa: sólido salvo esos puntos, ya
 corregidos. Guardián `readme-no-miente` verde en todo.
 
+#### Release v1.0.0 + badge (commits `36614b5` release · `d068828` badge) — HECHO
+Bump 0.1.0 → **1.0.0** en los sitios vivos (package.json, User-Agent hacia Avanza en `transporte.ts`,
+README, THIRD-PARTY) — contraprueba real: la petición que sale a Avanza dice `ZetaBus/1.0`, no solo el
+`package.json`. Descubrimiento: la versión vive en **6+ sitios** cableados por separado (no 3), sin
+guardián del desfase (cabo en §8); los 2 históricos (`docs/auditoria`, `docs/diseno`) NO se tocaron —
+describen su momento, reescribirlos falsearía el registro. `CHANGELOG.md` limpio (Keep a Changelog):
+solo `[1.0.0]`, solo `Added` (en una v1 no hay historia previa que `Changed`/`Fixed`). Badge de versión
+en la cabecera del README (violeta-poste `4E22B8`), + licencia + stack; **ningún** badge de
+build/CI/coverage (no hay infra que lo respalde → sería mentira en el escaparate). El `.gitignore` de la
+raíz hacía nacer `CHANGELOG.md` ignorado → rescatado por allowlist (mismo patrón que mordió antes).
+
+#### Momento oro — el GIF de "cuando no sabe, lo dice" (commits `5c010c6`·`683dc3c`·`e76bcde`) — HECHO
+GIF de la transición **servicio normal → Avanza cae → "no lo sé"** en el README, generado con Playwright
+(`?fingir=caido` en `/parada/744`, `ECONNREFUSED` → estado `caido`) + ffmpeg, reproducible
+(`e2e/momento-oro.spec.ts` + `scripts/gif-momento-oro.mjs`). Copy REAL de `LlegadasVivas.tsx`, no maqueta.
+787 KB, móvil 380px, con **pie honesto** que lo marca como estado simulado. Dos decisiones de honestidad
+clave: la **banda de demo** ("datos inventados") se queda DENTRO del GIF (quitarla sería mentir en la
+pieza que demuestra el no-mentir), y la coletilla `ECONNREFUSED (fingido)` entera (suma transparencia).
+A pelo, sin marco (enmarcarlo costaba 6× — **L70**); el movimiento cuenta la transición mejor que dos
+fotos estáticas.
+
 ---
 
 ## 8 · Cabos abiertos
@@ -1956,16 +1998,11 @@ capturas que nunca viajaron. Detalle en §7.
 - ✅ **OG image** (`81f9799`), **lint del CI** (`a23fbf2`·`f6462cd`), **README honesto**
   (`9081529`·`5ca07c7`·`4ca8cf6`). §7.
 
-**⬜ LO QUE QUEDA PARA CERRAR (Fase 5 — presentación):**
-- **El "momento oro" jugable.** La mejor historia del proyecto —"cuando Avanza se cae, la app dice 'no
-  lo sé' en vez de mentir" (pasó de verdad el 13/07)— está contada en README y `/sobre-los-datos`, pero
-  el reclutador NO puede hacer clic para verla (`?fingir=caido` necesita `ZETABUS_DEMO=1`, no está en
-  producción, y robots lo bloquea). Hay que SEMBRARLO (GIF/captura, o una demo controlada). Es el
-  remate de más gancho para el portfolio.
-- **CHANGELOG + bump de versión.** No hay CHANGELOG (la Fase 5 lo pide). Y la versión sigue en **0.1.0**
-  pese a estar desplegado con todo — lee como inacabado. ⚠️ La versión está acoplada en 3 sitios
-  (`package.json`, el User-Agent que se manda a Avanza en `transporte.ts`, el README): se tocan los tres
-  juntos o se crea desfase.
+**✅ TODO LO DE CIERRE (Fase 5) — HECHO:**
+- ✅ **Momento oro** — GIF de la transición en el README (`5c010c6`). §7 · L70.
+- ✅ **CHANGELOG + v1.0.0 + badge** (`36614b5`·`d068828`). §7.
+> ⬜ **SOLO QUEDA — EL PUSH + TAG `v1.0.0`.** 22 commits en local. Lo hace Antonio: `git push` (dispara
+> el auto-deploy de Hostinger) + `git tag -a v1.0.0` + `git push --tags`. Ese es el cierre de ZetaBus.
 
 **⬜ CABOS MENORES (cosméticos, reportados por descubrimiento):**
 - ✅ El log "coordenada resuelta a mano" → corregido a "desde el feed de Avanza" (`9081529`·`5ca07c7`).
@@ -1977,6 +2014,12 @@ capturas que nunca viajaron. Detalle en §7.
   `e2e`, `no-unused-vars`). No rompen el lint (sale 0). Sin tocar.
 - **DUDOSO** (baja prioridad): el README apunta las lecciones a `docs/LECCIONES.md` (que tiene L1-L9),
   pero L10+ viven en este estado. No dice "todas", así que no es falso — solo un puntero incompleto.
+- **La versión vive en 6+ sitios cableados por separado**, sin guardián del desfase (se descubrió al
+  bumpear a 1.0.0). Candidato a un futuro guardián que verifique que todos digan lo mismo. Al subir a
+  1.1 hay que tocarlos todos a mano (incluido el badge del README).
+- ✅ **Los marcos de móvil ya no son a mano** — `scripts/marco-movil.mjs` scripta la receta de
+  `f7a642d` (para PNG; el GIF no admite marco, L70). Disponible para re-enmarcar los 3 PNG si hiciera
+  falta.
 
 **⬜ TANDA FUTURA APARCADA — jerarquía de procedencia de coordenadas.**
 Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
