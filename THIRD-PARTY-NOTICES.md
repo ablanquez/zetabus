@@ -91,7 +91,7 @@ Ver [`docs/auditoria/07-contrato-de-explotacion.md`](docs/auditoria/07-contrato-
 |---|---|
 | **Qué es** | `gps.avanzabus.com` (posiciones GPS y tiempos de llegada) y `zaragoza.avanzagrupo.com/wp-admin/admin-ajax.php` (recorrido real, alteraciones), más los ficheros KML de trazado. |
 | **Licencia** | **NINGUNA.** Sin documentar, sin términos de uso publicados, sin permiso. |
-| **¿Se consume?** | **Sí**, en tiempo de ejecución, con techo de peticiones, tiempo de espera, cortacircuitos y un `User-Agent` identificable: `ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)`. |
+| **¿Se consume?** | **Sí**, en tiempo de ejecución, con techo de peticiones, tiempo de espera, cortacircuitos y un `User-Agent` identificable: `ZetaBus/1.0 (+https://github.com/ablanquez/zetabus)`. |
 | **¿Se redistribuye?** | ⛔ **NO. NI UN BYTE.** No hay respuestas cacheadas en este repositorio, ni de ejemplo, ni de prueba, ni como *fixture*. El `.gitignore` lo impide explícitamente. |
 
 **La distinción no es un tecnicismo:**

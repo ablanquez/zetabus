@@ -53,7 +53,7 @@ export type Transporte = (
  *    prosa y el código se separaron y nadie se enteró, porque **ningún test mira la
  *    prosa**. Ver docs/auditoria/11-codigo-y-arquitectura.md · A-F2.
  */
-export const AGENTE = 'ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)';
+export const AGENTE = 'ZetaBus/1.0 (+https://github.com/ablanquez/zetabus)';
 
 export const transporteReal: Transporte = async (url, { cuerpo, cabeceras, senal }) => {
   const res = await fetch(url, {

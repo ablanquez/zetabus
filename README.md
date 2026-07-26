@@ -204,7 +204,7 @@ haya que esconderlo: **lo justificamos.**
 - **Se pide con techo y con cortesía:** caché compartida en servidor (10 personas en la misma
   parada = **1 petición**, no 10), límite duro de peticiones por segundo, tiempo de espera,
   cortacircuitos, y **cero peticiones cuando nadie está mirando**.
-- **Vamos identificados.** Cada petición lleva `ZetaBus/0.1 (+https://github.com/ablanquez/zetabus)`:
+- **Vamos identificados.** Cada petición lleva `ZetaBus/1.0 (+https://github.com/ablanquez/zetabus)`:
   nombre, versión y la URL de este repositorio, donde está explicado todo y quién lo firma. Si
   molestamos, queremos que puedan pedirnos que paremos **antes** de tener que bloquearnos.
 - **Y el `robots.txt` no indexa las paradas** — ni por cortesía ni por ahorro: porque los minutos
@@ -324,7 +324,8 @@ lo que **no** se pudo comprobar, y las lecciones de método están en
 ✅ **Hoy:** llegadas en vivo con posición GPS, ficha de vehículo, recorrido real con desvíos
 derivados, horarios de terminal, transbordos por parada, buscador, panel de estado del propio
 servicio (cuánto se le pide al operador y con qué frescura), modo demo — y **en marcha en
-[zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**.
+[zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**. Todo lo que incluye esta
+primera versión está en el [**CHANGELOG**](CHANGELOG.md).
 
 Previsto, sin fechas comprometidas:
 

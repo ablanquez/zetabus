@@ -318,3 +318,34 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   ancla en cadenas literales es sensible al ajuste de línea del Markdown — al reescribir cerca de una
   frase vigilada, no la partas.
 - **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537. Commit atómico (solo README).
+
+### Fase 12 · Cierre: versión 1.0.0 + CHANGELOG (remate de presentación)
+
+- **Decisión (Antonio):** ZetaBus está desplegado y completo → es una **v1 real**, no 0.1.0 de
+  andamiaje. CHANGELOG **limpio**: solo `[1.0.0]`, solo `Added` (en una primera versión no hay historia
+  previa que `Changed`/`Fixed` — inventarla sería mentir).
+- **Contraprueba REAL del User-Agent:** no basta con `package.json`. Importé la constante `AGENTE` (la
+  que se usa literal en `'User-Agent': AGENTE`, `transporte.ts:63`) y confirmé que la petición sale con
+  **`ZetaBus/1.0`**, no solo que el `package.json` diga 1.0.0.
+- ⚠️⚠️ **DESCUBRIMIENTO — la versión NO vive en 3 sitios, vive en 6+, y cableada por separado.** El
+  diagnóstico contaba 3 (`package.json`, `transporte.ts`, README); el barrido de `ZetaBus/0.1` encontró
+  también `THIRD-PARTY-NOTICES.md:94` y **dos docs históricos** (`docs/auditoria/11-…:69`,
+  `docs/diseno/tanda1-…:706`). Criterio aplicado: se suben a 1.0 los **4 de estado actual** (package.json,
+  el UA real, README:207, THIRD-PARTY:94 — este último lo **manda** la cicatriz de `transporte.ts`:
+  «actualizar README y THIRD-PARTY § 4 EN EL MISMO COMMIT»). Los **2 históricos NO se tocan**: son
+  informes de fase que describen lo que se auditó entonces; reescribirlos falsearía el registro (mismo
+  principio «no inventar historia» del CHANGELOG). **Para destilar al estado:** la versión está cableada
+  a mano en N sitios sin fuente única, y no hay guardián que vigile el desfase (ningún test mira el UA).
+- **NO se unifica (a mano, y anotado como cabo):** README y THIRD-PARTY son prosa (no pueden leer de una
+  fuente), y unificar el código metería un import de `package.json` + lógica `major.minor` en un módulo
+  de red, contra el «cero lógica» de esta tanda. El repo ya trata esto como disciplina manual (la propia
+  cicatriz). Un guardián que cruce `AGENTE` con `package.json` sería el arreglo de fondo — queda como
+  cabo para valorar.
+- ⚠️ **CHANGELOG.md nacía IGNORADO.** El `.gitignore` usa «denegar todo en la raíz (`/*`) + allowlist»;
+  los docs de raíz se rescatan con `!/…`. CHANGELOG no estaba en la lista, así que `git add` lo rechazaba
+  y el guardián de enlaces (`readme-no-miente`, resuelve con `git ls-files`) marcó el enlace
+  README→CHANGELOG como roto **antes** de dejarme commitear un enlace a un fichero fantasma. Se rescató
+  con `!/CHANGELOG.md` junto a sus hermanos. El guardián hizo exactamente su trabajo.
+- **Un commit de release atómico** (no troceado): la cicatriz obliga a README+THIRD-PARTY+UA juntos, y
+  el enlace del README al CHANGELOG obliga a que CHANGELOG viaje en el mismo commit. Todo atado.
+- **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537 · lint 0 errors.

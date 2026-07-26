@@ -26,6 +26,7 @@
 !/NOTICE
 !/THIRD-PARTY-NOTICES.md
 !/README.md
+!/CHANGELOG.md
 
 #    Memoria persistente del proyecto. Va en la RAÍZ y no en docs/ a
 #    propósito: docs/ se consulta, el estado se LEE SIEMPRE al empezar.
