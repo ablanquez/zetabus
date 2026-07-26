@@ -349,3 +349,21 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
 - **Un commit de release atómico** (no troceado): la cicatriz obliga a README+THIRD-PARTY+UA juntos, y
   el enlace del README al CHANGELOG obliga a que CHANGELOG viaje en el mismo commit. Todo atado.
 - **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537 · lint 0 errors.
+
+### Fase 13 · Badge de versión en el README (escaparate honesto)
+
+- **Un badge, y solo los ciertos.** Se añade en la cabecera un shield `versión 1.0.0` (del release real,
+  no inventado), enlazado al CHANGELOG. Color **`4E22B8`** (violeta-poste de la marca) para que no
+  colisione con el de licencia (`7048E8`) — badge distinto, misma familia de marca. Licencia (Apache-2.0,
+  ya presente y = `LICENSE`) y stack (Next/TS/Leaflet, ya presentes) NO se duplican.
+- ⛔ **Ningún badge de build/CI/coverage:** no hay infra pública que los respalde; un badge así sería una
+  mentira en el escaparate, justo lo contrario del proyecto.
+- ⚠️ **Casi toco el resto:** al principio recoloreé el badge de licencia para que el de versión fuera el
+  violeta principal. Lo revertí: la tanda dice no tocar el resto del README. El badge de versión lleva el
+  tono de marca oscuro y punto; licencia queda como estaba.
+- **Verificado que se ve:** el shield renderiza (HTTP 200, image/svg+xml) y el SVG contiene «versión» y
+  «1.0.0» (el acento sale bien con `versi%C3%B3n`). readme-no-miente verde (el enlace a CHANGELOG resuelve
+  —ya trackeado— y el shields.io externo no lo vigila el guardián de enlaces).
+- **Cabo conocido, no empeorado:** el «1.0.0» del badge es otro sitio a mano de la versión (ver Fase 12).
+  Es texto estático; al subir a 1.1 se cambia aquí también. No crea acoplamiento oculto nuevo: es visible
+  y queda anotado con los demás sitios de la versión (Fase 12).

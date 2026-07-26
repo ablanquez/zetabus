@@ -6,6 +6,7 @@
 
 **Dónde está tu autobús en Zaragoza, cuánto falta, y qué te están ocultando las fuentes.**
 
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.0.0-4E22B8)](CHANGELOG.md)
 [![Licencia](https://img.shields.io/badge/licencia-Apache%202.0-7048E8)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org/)
