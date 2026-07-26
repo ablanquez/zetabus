@@ -393,3 +393,24 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   diferencia del CHANGELOG). Aun así se añadió al índice ANTES de `npm test`: el guardián de enlaces
   resuelve con `git ls-files`, y un README que enlaza a una imagen no trackeada da rojo.
 - **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537.
+
+### Fase 15 · Quitar el GIF de escritorio + diagnóstico de marcos de las imágenes
+
+- **Parte 1 (hecha):** fuera el `<details>` «Verlo en escritorio» del README, `git rm` de
+  `docs/capturas/momento-oro-escritorio.gif`, y el script/spec dejan de generar el 1280px (solo móvil).
+  El GIF móvil intacto. npm test (con lint) verde, readme-no-miente 24 ✓.
+- **Parte 2 (diagnóstico, sin tocar imágenes):** inventario mirando las 8 de verdad. **Hay un sistema
+  coherente: móvil → marco de teléfono; escritorio → a pelo.** Con marco: `home-movil`, `parada-movil`,
+  `desvio-abierto-movil`. A pelo: `home-escritorio`, `parada-escritorio`, `desvio-abierto`,
+  `linea-recorrido`. **La excepción es el GIF:** es formato móvil pero SIN marco → rompe la regla. La
+  impresión de Antonio era correcta.
+- **Cómo se hizo el marco (commit `f7a642d`):** dibujado DENTRO del PNG (fondo transparente, sombra en
+  el alfa; el README solo lleva `<img>`, GitHub no tiene CSS). `#0F172A` (--color-tinta) + aro de 1,5 px
+  al 16 % blanco (para no desaparecer sobre el fondo oscuro de GitHub), bisel 4,35 %, radio 14,67 %,
+  margen de sombra 9 %. **NO hay script que lo componga: se aplicó a mano.** La receta está en el mensaje
+  del commit, así que es reproducible… pero hoy no lo está.
+- **Recomendación (para decisión de Antonio):** enmarcar SOLO el GIF (el móvil que falta), para que case
+  con los otros tres móviles y se respete la regla ya existente. Coste: 1 imagen. Viabilidad: componer el
+  bisel sobre un GIF animado es factible con ffmpeg/sharp, pero hay que verificar peso y nitidez (el
+  bisel es plano y oscuro → barato en paleta). Sería, además, la ocasión de SCRIPTAR el marco (desde la
+  receta de `f7a642d`) y dejarlo reproducible. Va en tanda aparte.

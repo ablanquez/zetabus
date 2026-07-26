@@ -2,7 +2,7 @@
  * ⭐ MONTA EL GIF DEL «MOMENTO ORO» a partir de los PNG que captura
  * `e2e/momento-oro.spec.ts`. Reproducible: cualquiera regenera el GIF con
  *
- *   npx playwright test e2e/momento-oro.spec.ts --project=390px --project=1280px
+ *   npx playwright test e2e/momento-oro.spec.ts --project=390px
  *   node scripts/gif-momento-oro.mjs
  *
  * Necesita `ffmpeg` en el PATH (v8 probada). NO edita ni recorta el copy ni la banda
@@ -18,10 +18,10 @@ import { join } from 'node:path';
 const ORIGEN = join('capturas', 'zetabus', 'momento-oro');
 const DESTINO = join('docs', 'capturas');
 
-// El móvil es el principal (se vive como una marquesina); el escritorio, extra.
+// Solo móvil: se vive como una marquesina, y /parada es una columna max-w-2xl a
+// cualquier ancho (en escritorio sería la misma columna con márgenes grises).
 const OBJETIVOS = [
   { viewport: '390px', ancho: 380, salida: 'momento-oro.gif' },
-  { viewport: '1280px', ancho: 820, salida: 'momento-oro-escritorio.gif' },
 ];
 
 // Segundos por tramo (idénticos al prototipo aprobado).

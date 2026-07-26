@@ -10,8 +10,8 @@
  *
  * Deja dos PNG por viewport en `capturas/zetabus/momento-oro/` (dir de scratch,
  * gitignoreado). El montaje a GIF lo hace `scripts/gif-momento-oro.mjs` con ffmpeg.
- * Regenerar todo:
- *   npx playwright test e2e/momento-oro.spec.ts --project=390px --project=1280px
+ * Regenerar todo (el README usa solo el móvil):
+ *   npx playwright test e2e/momento-oro.spec.ts --project=390px
  *   node scripts/gif-momento-oro.mjs
  */
 

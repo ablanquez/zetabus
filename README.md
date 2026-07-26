@@ -91,14 +91,6 @@ incluidos **los tres en que hubo que retractarse de un informe propio**.
 <br><em><strong>Cuando el operador no responde, ZetaBus lo dice</strong> — en vez de inventar un autobús o dejar la pantalla en blanco. <br>(Estado <strong>simulado</strong> con <code>?fingir=caido</code>; la banda roja es el propio aviso de demo de la app.)</em>
 </div>
 
-<div align="center">
-<details>
-<summary>Verlo en escritorio</summary>
-<br>
-<img src="docs/capturas/momento-oro-escritorio.gif" width="90%" alt="La misma transición «Avanza cae → no lo sabemos», en la vista de escritorio">
-</details>
-</div>
-
 ---
 
 ## Capturas
