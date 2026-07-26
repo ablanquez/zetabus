@@ -226,3 +226,39 @@ había aprobado mal en la Costura 4.)*
   concretos>` en vez del lint completo, así que el «eslint verde» reportado era **parcial** —solo los
   ficheros tocados—, no el repo entero. Mis 3 ficheros de la OG están limpios; el rojo es pre-existente y
   ajeno. Se commitea la OG aparte (atomicidad); `TokensVivos` va como su propia tanda.
+
+### Fase 8 · Cerrar los 6 errores de lint Y la causa raíz (el CI que no corría eslint)
+
+- ⚠️⚠️ **EL CAMPO ESTRELLA — un instrumento que mentía por omisión.** El `npm test` era `vitest` +
+  vigía-README: **no ejecutaba `eslint`**. Y el «verde» de cada tanda era `eslint <ficheros tocados>`,
+  parcial por diseño. Resultado: el lint completo llevaba rojo **sin que nada lo cazara**. La suite decía
+  «todo bien» porque **no miraba** — no porque estuviera bien. Un guardián que no se ejecuta no es un
+  guardián; es una promesa. Se cierra enganchando el lint al comando de test.
+- **Corrección al hallazgo de la Fase 7 (con evidencia):** el rojo **no** entró el 24/07 con `6aa5ae9`.
+  El blame lo desmiente: las 6 líneas son de `5c2cda8` (15/07), `332e588` (15/07) y `ac51123` (20/07);
+  `6aa5ae9` solo fue **el último commit que tocó el fichero**, no las líneas. Y la regla no es nueva:
+  `eslint-plugin-react-hooks@7.1.1` (que trae `set-state-in-effect`) entró con el install de Next 16.2
+  (`a53df4d`). El rojo es tan viejo como el código (**15/07**), no del 24.
+- **Orden = contraprueba (rojo antes que verde).** (1) `pretest: npm run lint` en `package.json` → (2)
+  `npm test` **aborta en rojo** cazando los 6 dentro del comando (antes daba verde ignorándolos): la
+  causa raíz demostrada. (3) arreglo → (4) `npm test` verde.
+- **Diagnóstico previo (con evidencia):** las 6 son **legítimas**, no antipatrón. El mismo gesto —
+  `useState(null)` → `useEffect(setState(leído del navegador), [])`— porque leen **CSSOM/DOM que no
+  existe en SSR** (`getComputedStyle`, `styleSheets`, `getBoundingClientRect`). `deps []`, un disparo,
+  sin cascada; el doble render placeholder→valor es **intencionado y SSR-safe**. Es el caso que la regla
+  no distingue del malo. **Ninguna es bug latente.**
+- **El arreglo: encapsular, no silenciar.** Hook **`useLecturaDelDom(fn)`** —el patrón una sola vez— con
+  **UN** `eslint-disable-next-line react-hooks/set-state-in-effect` justificado (el único del repo). Las
+  6 repeticiones (Paleta/Escala/Radios/Control/Superficies/Espaciado) pasan a una llamada al hook. La
+  regla **no se relaja** en la config: desaparecen porque hay un punto legítimo, no porque se silencie.
+- ⚠️ **Un segundo `disable`, de OTRA regla:** `react-hooks/exhaustive-deps` en el hook. Inevitable al
+  encapsular —`fn` entra como parámetro y la regla lo pediría en `deps`, y queremos `[]` a propósito—.
+  Comprobado con `--report-unused-disable-directives`: **ninguno de los dos es un directive muerto**.
+- **Comportamiento idéntico:** verificado a ojo (`/interno/sistema-visual`, capturas 390px: paleta con
+  valores reales, radios 6/8/12/16, control 24/44/48/56) + `e2e/sistema-visual.spec.ts` verde. Mismo
+  placeholder, misma lectura, mismo doble render.
+- **Descubrimiento menor (ajeno, NO tocado):** enganchar el lint destapa **2 warnings** pre-existentes
+  —`.tmp/commits.mjs` y `e2e/nombres.spec.ts`, `no-unused-vars`—. Son *warnings*, no rompen el lint
+  (sale 0), y son de otra deuda. Se dejan.
+- **Verde antes de commitear:** tsc 0 · lint completo (pretest) verde · vitest 537 · playwright 826 ·
+  vigía. Dos commits atómicos: el refactor+hook, y el enganche del CI.

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "typecheck": "tsc --noEmit",
+    "pretest": "npm run lint",
     "test": "vitest run",
     "posttest": "node scripts/vigia-readme.mjs",
     "test:watch": "vitest",
