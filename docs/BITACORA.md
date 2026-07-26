@@ -367,3 +367,29 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
 - **Cabo conocido, no empeorado:** el «1.0.0» del badge es otro sitio a mano de la versión (ver Fase 12).
   Es texto estático; al subir a 1.1 se cambia aquí también. No crea acoplamiento oculto nuevo: es visible
   y queda anotado con los demás sitios de la versión (Fase 12).
+
+### Fase 14 · Momento oro — el GIF «Avanza cae → no lo sabemos» (Fase 5, escaparate)
+
+- **El diferenciador, VISTO.** El reclutador leía «cuando no sabe, lo dice» pero no podía verlo (el
+  estado caído se dispara con `?fingir=caido` + `ZETABUS_DEMO=1`, que no está en producción). Ahora un
+  GIF en el README lo muestra: parada 744 con autobuses en vivo → Avanza deja de responder → «Avanza no
+  responde · no lo sabemos» (copy REAL de `LlegadasVivas.tsx`, no maqueta).
+- **Reproducible, no un binario caído del cielo:** `e2e/momento-oro.spec.ts` captura los dos estados
+  reales (con el `?fingir=` de verdad); `scripts/gif-momento-oro.mjs` los monta con **ffmpeg** (normal
+  2 s → fundido 0,5 s → caído 3 s, 12 fps, bucle). Un comando regenera todo.
+- **Dos decisiones de honestidad (Antonio), y por qué:** (1) la **banda de demo** («los datos son
+  inventados») SE QUEDA dentro del GIF — quitarla presentaría un dato falso como real en la pieza que
+  demuestra la honestidad; es el mecanismo de honestidad EN ACCIÓN. (2) la **coletilla técnica**
+  (`ECONNREFUSED (fingido)`) SE QUEDA — el `(fingido)` suma transparencia; no se edita el copy (sería
+  inventar). Pie de imagen honesto que lo marca como estado **simulado**.
+- **Verificado mirándolo, no fiándome del verde:** abrí el GIF (primer frame = normal con banda) y
+  extraje el último frame (= caído con «no lo sabemos» + `(fingido)`) → la transición está entera.
+- **Peso:** móvil 787 KB, escritorio 756 KB — los dos < 1 MB. No inflado.
+- **Descubrimiento (menor):** el **escritorio aporta poco**. `/parada` es una columna `max-w-2xl` a
+  cualquier ancho, así que en 1280px es la misma columna centrada con márgenes grises. Se genera igual
+  como extra (`<details>` «Verlo en escritorio», secundario) por pedirlo Antonio, pero el móvil es el
+  que cuenta —se vive como una marquesina—.
+- **`docs/capturas/` SÍ estaba allowlisted** (`!/docs/`), así que el GIF se trackea sin rescate (a
+  diferencia del CHANGELOG). Aun así se añadió al índice ANTES de `npm test`: el guardián de enlaces
+  resuelve con `git ls-files`, y un README que enlaza a una imagen no trackeada da rojo.
+- **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537.

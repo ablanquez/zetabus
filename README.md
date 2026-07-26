@@ -86,6 +86,19 @@ Esa es la diferencia entre esto y un *scraper* con un mapa encima: **primero se 
 después se escribió el código.** Los informes están en [`docs/auditoria/`](docs/auditoria/) — trece,
 incluidos **los tres en que hubo que retractarse de un informe propio**.
 
+<div align="center">
+<img src="docs/capturas/momento-oro.gif" width="320" alt="En la parada 744: primero los autobuses en vivo con sus minutos; cuando Avanza deja de responder, la pantalla muestra «Avanza no responde — no lo sabemos» en vez de vaciarse o inventar un dato">
+<br><em><strong>Cuando el operador no responde, ZetaBus lo dice</strong> — en vez de inventar un autobús o dejar la pantalla en blanco. <br>(Estado <strong>simulado</strong> con <code>?fingir=caido</code>; la banda roja es el propio aviso de demo de la app.)</em>
+</div>
+
+<div align="center">
+<details>
+<summary>Verlo en escritorio</summary>
+<br>
+<img src="docs/capturas/momento-oro-escritorio.gif" width="90%" alt="La misma transición «Avanza cae → no lo sabemos», en la vista de escritorio">
+</details>
+</div>
+
 ---
 
 ## Capturas
