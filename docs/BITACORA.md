@@ -457,3 +457,30 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   el procedimiento oficial** tras cada deploy: panel de Hostinger → Caché → Borrar caché.
 - **Hecho:** los 3 cambios de `revalidate` **revertidos** (nunca se commitearon), árbol limpio. La purga
   manual documentada en `README.md` → «Poner en marcha» → **Desplegar**, como checklist visible.
+
+### Fase 18 · Vulnerabilidades de dependencias — grupos A+B aceptados y documentados (`SECURITY.md`)
+
+- **Punto de partida:** `npm audit` = **12 high**, todas transitivas. Grupo A = cadena de ESLint (9,
+  dev-only); grupo B = `next` + sus transitivas `postcss` / `sharp` (3).
+- ⚠️⚠️ **LECCIÓN (para destilar al estado): `next@16.2.12` NO limpia el grupo B.** El diagnóstico asumió
+  que `npm audit fix` subiría Next a 16.2.12 y arreglaría postcss+sharp de golpe. **Falso, por dos
+  motivos encadenados:** (1) Next está **clavado exacto** (`"next": "16.2.10"`), así que `npm audit fix`
+  sin `--force` lo deja "fuera de rango" y no hace nada; (2) probado con `npm install next@16.2.12
+  --save-exact`: 16.2.12 **empaqueta las MISMAS** `postcss@8.4.31` y `sharp@0.34.5` vulnerables que
+  16.2.10 (verificado con `npm ls`), y tras el bump el audit seguía en 12 y su "fix available" pasaba a
+  sugerir un **downgrade absurdo a `next@9.3.3`**. No hay parche no-breaking de Next que suba esas
+  transitivas. **Todo revertido**, árbol a baseline (next@16.2.10).
+- **Decisión (Antonio): aceptar A+B documentado, NO forzar dependencias.** `overrides` metería versiones
+  que Next no ha probado (riesgo real de romper build/runtime) para tapar **CVEs no explotables** en el
+  uso de ZetaBus. Coste/beneficio malo.
+- **Hecho: `SECURITY.md` en la raíz**, honesto por diseño — **no afirma «no nos afecta», lo demuestra:**
+  cada CVE lleva la feature que necesita + que ZetaBus no la tiene + el **comando** para comprobarlo.
+  Verificado con grep ANTES de escribir: sin `'use server'`, sin `middleware.*`, sin `next/image`, sin
+  `rewrites`/`i18n` en la config; `postcss` solo build-time (Tailwind), `sharp` solo en
+  `scripts/marco-movil.mjs`. Añadido `!/SECURITY.md` al allowlist del `.gitignore` (misma trampa que
+  CHANGELOG: `/*` lo ignoraba). Incluye vía de reporte (GitHub Security Advisories).
+- **Cabo menor arreglado:** el `package-lock.json` tenía `"version": "0.1.0"` (rancio del bump a 1.0.0).
+  Sincronizado a `1.0.0` tocando **solo** ese campo — `git diff` del lock = 2 líneas, cero cambios de
+  dependencias, `npm audit` sin alterar (sigue 12).
+- **Verde:** tsc · lint · vitest 537 · playwright · vigía-README. Sin cambios funcionales (solo doc +
+  gitignore + campo version del lock).
