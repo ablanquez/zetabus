@@ -174,3 +174,32 @@ había aprobado mal en la Costura 4.)*
   el nombre aunque no haya índice. Lo vi porque el `grep "Parque de Atracciones"` del curl en
   degradado salió **vacío** mientras el test (que solo miraba el 200 y la nota) estaba en verde:
   el output me dijo lo que la aserción no miraba. Está dicho, no tapado.
+
+### Fase 6 · El sitemap (estático, coherente con robots)
+
+- **Tres piezas, un dominio.** `src/sitio.ts` (`URL_SITIO`) es la ÚNICA fuente del dominio, que hasta
+  hoy solo vivía en comentarios y `.env.example`. La leen tres: `metadataBase` del layout, el
+  `Sitemap:` de robots, y las URLs del `app/sitemap.ts`. Sin copia a mano.
+- **Estático de verdad.** `next build` lista `/sitemap.xml` como `○ (Static)`: no usa API de
+  request-time, así que se hornea. El conjunto (portada + 44 líneas de `lineas()`) sale del GTFS del
+  bundle → cambia con el deploy, que es cuando el estático se rehace. El cron NO lo toca (regeneraría
+  algo idéntico e invitaría a `lastmod=hoy`).
+- **El sitemap renderizado, medido (no supuesto):** 47 `<url>`, **0 localhost, 0 `/parada/`, 0
+  `?sentido=`, 0 `<priority>`, 0 `<changefreq>`**; 44 `<lastmod>` (solo las líneas), todos =
+  `2026-07-25T10:48:05.567Z`, que es exactamente el `generatedAt` del GTFS. Las 3 fijas (`/`,
+  `/sobre-los-datos`, `/estado`) sin `<lastmod>`. `robots.txt` mantiene sus allow/disallow intactos y
+  añade `Sitemap: https://zetabus.antonioblanquez.es/sitemap.xml`.
+- **Las contrapruebas, con su ROJO antes del verde:**
+  - **coherencia sitemap↔robots (la más cara):** metí `/parada/617` en el sitemap → **rojo**
+    («el sitemap lista "/parada/617", bloqueado por robots "/parada/"»). Quitado → verde.
+  - **lastmod honesto:** cambié `generadoEn` por `new Date()` → **rojo** (el test fija el esperado al
+    `generadoEn`). Revertido → verde.
+  - Y sin rojo pero fijados: las 44 líneas salen de `lineas()` (no número mágico), ninguna con
+    `?sentido=`, todas absolutas contra el dominio.
+- **Aclaración honesta (no es bug):** el sitemap emite URLs absolutas porque las compone con
+  `URL_SITIO` directamente, NO porque dependa de `metadataBase`. Así que el test de "URLs absolutas"
+  pasaría aunque faltara `metadataBase` — su verdadero cometido es OG/canónicas y callar el aviso de
+  build de Next. Los dos beben de la misma `URL_SITIO`, así que no divergen.
+- **Cabos para estrategia (ya reportados):** faltaba `metadataBase`/constante de dominio (resuelto con
+  `@/sitio`); y `robots.ts:33` sigue diciendo «74 páginas» de `/linea` cuando son **44** (74 son
+  sentidos, que van por `?sentido=`) — no lo toqué, es prosa de un comentario ajeno a esta tanda.

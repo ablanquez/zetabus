@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { URL_SITIO } from '@/sitio';
 
 /**
  * ⭐⭐ QUÉ SE INDEXA Y QUÉ NO. Y NO ES «CERRARLO TODO» NI «ABRIRLO TODO».
@@ -89,14 +90,15 @@ import type { MetadataRoute } from 'next';
  *    caso que no hemos pensado. Ver
  *    `docs/auditoria/12-perimetro-y-publicacion.md` · B-F2.
  *
- * ⚠️ NO se declara `Sitemap:` porque **todavía no hay sitemap**. Anunciar uno que
- *    devuelve 404 es peor que no anunciarlo.
+ * ⭐ SÍ se declara `Sitemap:`, y ahora es cierto: ya existe `app/sitemap.ts` (3 fijas +
+ *    44 líneas, cero paradas). Su URL absoluta sale de `@/sitio`, la MISMA base que usan
+ *    el `metadataBase` del layout y el propio sitemap: una sola fuente de dominio.
  *
- *    ⚠️ Este comentario decía además «y el dominio no está en marcha», y eso
- *    DEJÓ DE SER CIERTO el 25/07/2026: ZetaBus está en vivo en
- *    `zetabus.antonioblanquez.es`. La mitad que se retira era una promesa
- *    caducada; la que queda —que no hay sitemap— sigue en pie, y es la única
- *    razón que hace falta.
+ *    ⚠️ Antes aquí decía «NO se declara porque todavía no hay sitemap». Dejó de ser
+ *    cierto cuando el sitemap aterrizó — y viajaron en el MISMO commit a propósito: un
+ *    sitemap sin anunciar en robots, o un `Sitemap:` que apunte a un 404, es peor que
+ *    nada. El sitemap NO lista ninguna URL que estas reglas bloqueen (se prueba en
+ *    `tests/sitemap.test.ts`): la coherencia dura sitemap↔robots.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -105,5 +107,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: ['/', '/linea/', '/sobre-los-datos'],
       disallow: ['/parada/', '/api/', '/interno/', '/*?fingir='],
     },
+    sitemap: `${URL_SITIO}/sitemap.xml`,
   };
 }
