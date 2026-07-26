@@ -5,6 +5,7 @@ import './globals.css';
 import { AvisoFeed } from '@/components/AvisoFeed';
 import { Marca } from '@/components/Marca';
 import { NOMBRE_MARCA } from '@/components/marca-fuente';
+import { URL_SITIO } from '@/sitio';
 
 /**
  * ⭐ INTER, SELF-HOSTED. `next/font/google` descarga la fuente EN EL BUILD y la
@@ -30,6 +31,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
  *    todas). El eslogan, si hace falta, es cosa de la home, no del molde.
  */
 export const metadata: Metadata = {
+  /**
+   * ⭐ LA BASE DE TODAS LAS URLs ABSOLUTAS. Sin esto, Next las genera contra
+   * `localhost` (el sitemap saldría roto en producción) y avisa por consola. El
+   * dominio vive en UN solo sitio (`@/sitio`), del que también leen `robots` y el
+   * `sitemap`. NO cambia el `robots.txt` (sus reglas son rutas, no absolutas).
+   */
+  metadataBase: new URL(URL_SITIO),
   title: {
     template: `${NOMBRE_MARCA} | %s`,
     default: NOMBRE_MARCA,
