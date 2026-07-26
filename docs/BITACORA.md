@@ -414,3 +414,20 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   bisel sobre un GIF animado es factible con ffmpeg/sharp, pero hay que verificar peso y nitidez (el
   bisel es plano y oscuro → barato en paleta). Sería, además, la ocasión de SCRIPTAR el marco (desde la
   receta de `f7a642d`) y dejarlo reproducible. Va en tanda aparte.
+
+### Fase 16 · El GIF se queda a pelo; el marco, scriptado (para PNG)
+
+- ⚠️⚠️ **HALLAZGO (para destilar al estado): enmarcar un GIF animado es prohibitivo en peso.** El marco
+  necesita transparencia (esquinas redondeadas + sombra suave sobre fondo agnóstico de tema: GitHub
+  claro/oscuro), y la transparencia **rompe la compresión entre-frames** — cada frame se guarda casi
+  entero. Medido sobre `momento-oro.gif` (787 KB a pelo): GIF enmarcado con dither **5,7 MB**, APNG con
+  sombra **5,0 MB**, GIF sin dither/128 colores **4,9 MB**. Todos ~5-6× el techo de 1 MB. Y un GIF solo
+  tiene alfa de 1 bit → ni siquiera reproduce la sombra suave. **Decisión (Antonio): el GIF se queda A
+  PELO** (787 KB, nítido) — el propio fallback «mejor a pelo nítido que enmarcado gordo/borroso». La
+  única captura de móvil sin marco es una **excepción justificada por el peso**, no un descuido.
+- ⭐ **DESCUBRIMIENTO (para el estado): el marco de móvil ya NO es a mano.** `scripts/marco-movil.mjs`
+  scripta la receta de `f7a642d` (bisel 4,36 %, radio 14,67 %, margen 9 %, `#0F172A`, aro al 16 % blanco)
+  como constantes con nombre. Verificado sobre una captura cruda → PNG de la misma familia que
+  `home-movil.png`, ~160 KB. **Solo PNG** (rechaza GIF a propósito, con el porqué en la cabecera). Queda
+  disponible para re-enmarcar los 3 PNG de móvil en el futuro de forma reproducible; **hoy no se aplica**
+  (ya tienen marco). El GIF (`momento-oro.gif`) y el README quedan intactos.
