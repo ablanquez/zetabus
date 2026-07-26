@@ -71,6 +71,36 @@ function leerTokens(prefijos: readonly string[], excluir: RegExp | null = null):
 }
 
 /**
+ * ⭐ EL PATRÓN «LEER EL NAVEGADOR TRAS MONTAR», UNA SOLA VEZ Y EN UN SOLO SITIO.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Los seis paneles de esta guía hacen EL MISMO gesto: no pueden calcular su dato
+ *  en render porque LO LEEN del navegador —el CSSOM (`getComputedStyle`,
+ *  `document.styleSheets`) o la geometría real (`getBoundingClientRect`)—, y eso
+ *  NO existe en el servidor ni en el primer render. Así que arrancan en `null`
+ *  (placeholder «Leyendo…») y, ya montados, leen y guardan. El doble render
+ *  placeholder→valor es INTENCIONADO y SSR-safe.
+ *
+ *  ⚠️ EL ÚNICO `eslint-disable` de `set-state-in-effect` del repo vive AQUÍ, y es
+ *     legítimo, no un silenciador: sistema externo = CSSOM/DOM, deps `[]` (un solo
+ *     disparo), y el `setState` no realimenta al efecto → sin cascada ni bucle. Es
+ *     EXACTAMENTE el caso que la regla no sabe distinguir del malo. Encapsularlo
+ *     una vez mató las seis repeticiones: un punto justificado, no seis a ciegas.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+function useLecturaDelDom<T>(leer: () => T): T | null {
+  const [valor, setValor] = useState<T | null>(null);
+  useEffect(() => {
+    // Lectura única del CSSOM/DOM al montar (ver cabecera): deps [], sin cascada, SSR-safe.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setValor(leer());
+    // El lector se ejecuta SOLO al montar; deliberadamente no se re-suscribe a `leer`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return valor;
+}
+
+/**
  * ⭐ LA PALETA VIVA. Un swatch por token de color. El fondo se pinta con `var()`
  * (el color REAL) y la etiqueta muestra el valor LEÍDO. Los dos, del mismo sitio.
  */
@@ -86,10 +116,7 @@ const SOLO_NUESTROS_COLORES = /(-\d+$)|^--color-(black|white|transparent|current
 const SOLO_NUESTROS_TEXTOS = /--line-height$|^--text-(xs|sm|base|lg|\d?xl)$/;
 
 export function PaletaViva() {
-  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
-  useEffect(() => {
-    setTokens(leerTokens(['--color-'], SOLO_NUESTROS_COLORES));
-  }, []);
+  const tokens = useLecturaDelDom(() => leerTokens(['--color-'], SOLO_NUESTROS_COLORES));
 
   if (tokens === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo los tokens del CSS…</p>;
@@ -125,12 +152,9 @@ const EJEMPLO = 'Bus 4848 llega en 3 min · poste 744 · línea 21';
  * token, cambian los dos.
  */
 export function EscalaViva() {
-  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
-  useEffect(() => {
-    // Solo NUESTROS tamaños (`--text-dato`…), sin los `--line-height` ni la escala
-    // por defecto de Tailwind (`--text-sm`, `--text-2xl`…).
-    setTokens(leerTokens(['--text-'], SOLO_NUESTROS_TEXTOS));
-  }, []);
+  // Solo NUESTROS tamaños (`--text-dato`…), sin los `--line-height` ni la escala
+  // por defecto de Tailwind (`--text-sm`, `--text-2xl`…).
+  const tokens = useLecturaDelDom(() => leerTokens(['--text-'], SOLO_NUESTROS_TEXTOS));
 
   if (tokens === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo la escala del CSS…</p>;
@@ -170,10 +194,7 @@ const SOLO_NUESTROS_RADIOS = /^--radius-(xs|sm|md|lg|\d?xl)$/;
  * y muestra el valor leído. El sistema 6/8/12/16 que estaba disperso, a la vista.
  */
 export function RadiosVivos() {
-  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
-  useEffect(() => {
-    setTokens(leerTokens(['--radius-'], SOLO_NUESTROS_RADIOS));
-  }, []);
+  const tokens = useLecturaDelDom(() => leerTokens(['--radius-'], SOLO_NUESTROS_RADIOS));
 
   if (tokens === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo los radios del CSS…</p>;
@@ -202,10 +223,7 @@ export function RadiosVivos() {
  * Son los objetivos táctiles (24 mín WCAG, 44 cómodo, 48 principal, 56 fila).
  */
 export function ControlVivo() {
-  const [tokens, setTokens] = useState<TokenLeido[] | null>(null);
-  useEffect(() => {
-    setTokens(leerTokens(['--control']));
-  }, []);
+  const tokens = useLecturaDelDom(() => leerTokens(['--control']));
 
   if (tokens === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo las alturas del CSS…</p>;
@@ -261,8 +279,7 @@ const NIVELES = [
  * la página lo DICE en vez de esconderlo. Declarar el techo es parte del sistema.
  */
 export function SuperficiesVivas() {
-  const [datos, setDatos] = useState<{ valores: string[]; salto: number | null; borde: string } | null>(null);
-  useEffect(() => {
+  const datos = useLecturaDelDom(() => {
     const cs = getComputedStyle(document.documentElement);
     const valores = NIVELES.map((n) => cs.getPropertyValue(n.token).trim());
     const borde = cs.getPropertyValue('--color-borde').trim();
@@ -275,8 +292,8 @@ export function SuperficiesVivas() {
       d.remove();
       return rgb;
     };
-    setDatos({ valores, salto: contraste(pintado(valores[0]), pintado(valores[1])), borde });
-  }, []);
+    return { valores, salto: contraste(pintado(valores[0]), pintado(valores[1])), borde };
+  });
 
   if (datos === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Leyendo las superficies del CSS…</p>;
@@ -353,8 +370,7 @@ const RITMO = [
 ] as const;
 
 export function EspaciadoVivo() {
-  const [medidas, setMedidas] = useState<Record<string, number> | null>(null);
-  useEffect(() => {
+  const medidas = useLecturaDelDom(() => {
     const out: Record<string, number> = {};
     for (const r of RITMO) {
       const d = document.createElement('div');
@@ -364,8 +380,8 @@ export function EspaciadoVivo() {
       out[r.clase] = Math.round(d.getBoundingClientRect().height * 100) / 100;
       d.remove();
     }
-    setMedidas(out);
-  }, []);
+    return out;
+  });
 
   if (medidas === null) {
     return <p className="text-nota text-[var(--color-tinta-tenue)]">Midiendo el ritmo…</p>;
