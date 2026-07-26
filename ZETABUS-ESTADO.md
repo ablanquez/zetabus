@@ -20,16 +20,19 @@ capturas de móvil llevan su marco, y el guardián de enlaces valida **contra lo
 contra el disco.
 
 # ⭐⭐ TANDA 8 — DESPLEGADO Y EN VIVO EN `zetabus.antonioblanquez.es`.
-**Desplegado (24/07) · cron nocturno MONTADO y VERIFICADO** (disparó solo a las 02:00:01, leído en
-`/api/diag` el 25/07). Guardián 401/202, barrido end-to-end 74/74.
-**Remates del 25/07 CERRADOS (en local, sin push — `ahead 7`):**
-- ✅ **Panel público `/estado`** (`9bbe188`) — cuatro estados honestos. §7 · L63.
-- ✅ **Las 9 paradas solo-barrido: coordenadas (Tanda A) Y visitables (Tanda B)** — ya no dan 404;
-  Avanza da las coords (`avanza-web`), y abren con nombre + mapa + desvío. §7 · L65 · L66.
-> ⬜ **PENDIENTE — EL PUSH.** Hay 7 commits atómicos en local sin subir (el push dispara el
-> auto-deploy de Hostinger; se retiene a propósito hasta cerrar el lote). Cuando Antonio lo decida,
-> un push sube panel + coordenadas + visitabilidad de una vez.
-**Quedan de la Tanda 8:** `Sitemap:` en `robots.ts`, textos, nota del logo, y los cabos menores del §8.
+**Desplegado (24/07) · cron nocturno MONTADO y VERIFICADO** (disparó solo a las 02:00:01). Guardián
+401/202, barrido 74/74.
+**Remates de cierre CERRADOS (25/07, en local, sin push — `ahead 16`):**
+- ✅ **Panel público `/estado`** — cuatro estados honestos. §7 · L63.
+- ✅ **Las 9 paradas solo-barrido: coordenadas + visitables** — ya no dan 404. §7 · L65 · L66.
+- ✅ **Sitemap + metadataBase** — 47 URLs, cero paradas, dominio con fuente única. §7.
+- ✅ **OG image** — tarjeta 1200×630 al compartir. §7.
+- ✅ **Lint del CI cerrado de raíz** — `npm test` no corría eslint; ahora sí. §7 · L67.
+- ✅ **README honesto** — roadmap, "a mano", "74 páginas", "Sumadas" corregidos. §7 · L68 · L69.
+> ⬜ **PENDIENTE — EL PUSH.** 16 commits atómicos en local sin subir (el push dispara el auto-deploy de
+> Hostinger; se retiene hasta cerrar el lote de cierre). Un push sube todo de una vez.
+**Quedan para CERRAR (Fase 5):** el "momento oro" jugable (GIF/demo del "no lo sé"), y CHANGELOG + bump
+de versión (sigue en 0.1.0). Detalle y cabos menores en §8.
 **Última actualización:** 25/07/2026
 
 ---
@@ -774,6 +777,43 @@ página sigue colgando de una fuente dinámica.
 > última, dicha con honestidad: en degradado Y con el feed mudo, el nombre cae a "poste 617" —
 > fallback honesto, no bug. Se vio porque el grep del curl salió vacío mientras el test (que solo
 > miraba el 200) estaba en verde: el output dijo lo que la aserción no miraba (otra de L63).*
+
+⭐⭐ **L67 · UN INSTRUMENTO QUE NO MIDE Y CALLA SE LEE COMO APROBACIÓN — el CI que mentía por omisión.**
+`npm run lint` del repo llevaba **rojo desde el 15/07** (6 errores en `TokensVivos.tsx`) sin que nadie
+lo viera. La causa: `npm test` = `vitest` + vigía README, **NO ejecutaba eslint**. Y las tandas corrían
+`eslint <ficheros tocados>`, parcial por diseño. O sea: el "eslint verde" que se reportaba tanda tras
+tanda era verde **de los ficheros de esa tanda**, no del repo — y `npm test` decía "bien" **porque no
+miraba el lint en absoluto**, no porque el lint estuviera bien.
+> ⭐ *Categoría NUEVA en el catálogo del instrumento mentiroso: no es "mide la cosa equivocada" (verde
+> sobre un bug), es **"no mide, y su silencio se lee como aprobación"**. Hermano del silencio falso,
+> pero en el CI. El antídoto: `pretest: npm run lint` — que el comando que dice "bien" tenga que
+> EJECUTAR la comprobación, no omitirla.*
+⚠️ *Y el cierre correcto fue la CAUSA RAÍZ (enganchar el lint al `npm test`), no solo el síntoma (los 6
+errores). Arreglar las 6 sin cerrar el CI habría dejado la deuda volviendo a acumularse invisible.*
+✅ *Los 6 errores, además, eran TODOS legítimos (leer CSSOM/DOM tras montar, SSR-safe; el caso que
+`set-state-in-effect` no distingue del malo). Se encapsularon en un hook `useLecturaDelDom` con UN solo
+`disable` justificado — matar la repetición, no sembrar 6 silencios sueltos.*
+
+⭐ **L68 · UN GUARDIÁN QUE ANCLA POR CADENA LITERAL SE ROMPE CON EL WRAP DEL MARKDOWN.**
+Al reescribir el "Sumadas" del README, `readme-no-miente` se puso rojo — pero NO por semántica: el
+guardián ancla en la cadena literal `los **403 vehículos** que ZetaBus reconoce` (espacios simples), y
+el reajuste del párrafo partió "que\nZetaBus" en dos líneas, así que el patrón dejó de casar. El
+guardián vigilaba un texto contiguo que el wrap había partido.
+> ⭐ *Hermana de L64 (el guardián que grepea crudo): los dos anclan en la FORMA textual, que es frágil.
+> Regla: al reescribir cerca de una frase que un guardián ancla por cadena literal, no la partas con el
+> salto de línea del Markdown. La cifra y la afirmación estaban intactas; solo el salto rompía el match.*
+
+⭐ **L69 · CADA DATO CORRECTO, LA SUMA MENTIROSA — la palabra "Sumadas".**
+El README decía *"Sumadas dan los 403 vehículos"* tras una tabla con pliego=350 y busesmadrid=43. Las
+tres cifras, correctas por separado (el guardián las vigila, verdes). Lo falso era la palabra
+**"Sumadas"**: 350+43 = 393, no 403 — los 10 restantes vienen de dos fuentes menores que la tabla no
+lista. El guardián no lo cazó porque vigila los NÚMEROS, no la ARITMÉTICA que la prosa promete entre
+ellos.
+> ⭐ *Es el patrón del panel (cada barra bien pintada, dos casos distintos con el mismo color): las
+> piezas correctas, la RELACIÓN mentirosa. Un número verificado no protege de una frase que afirma una
+> relación falsa entre números verificados. Se arregló con reword escueto ("las dos principales dan
+> 393; con fuentes menores, los 403"), sin completar la tabla — el detalle de las 4 procedencias vive
+> en /sobre-los-datos, no en el escaparate (el motor sabe la verdad, la presentación decide cuánto).*
 
 ---
 
@@ -1788,6 +1828,42 @@ en su coord, y caja punteada *"Hoy, por un desvío"*. Cómo, sin ñapa:
   (200 + nota sin índice), regresión GTFS (una parada normal no cambia), honestidad del nombre
   (`avanza-web`, no el aviso "sin confirmar"). Suites: vitest 527, playwright 826, tsc/eslint limpios.
 
+#### Sitemap + metadataBase (commits `a7ab7c8` dominio · `4c597ef` sitemap) — HECHO
+`app/sitemap.ts` estático, 47 URLs = 3 fijas (/, /sobre-los-datos, /estado) + 44 líneas generadas de
+`lineas()` (no a mano). **Cero paradas** — `robots.ts` ya prohíbe `/parada/*` (su contenido caduca en
+15 s; indexarlo es publicar una mentira), así que un sitemap que las listara contradiría a robots
+(Google marca la incoherencia). Las 9 solo-barrido son `/parada/*` → fuera también. `lastmod` = el
+`generadoEn` del GTFS para las líneas (no `new Date()`, que mentiría); `/estado` sin `lastmod`; sin
+`priority`/`changefreq` (Google los ignora). **Estático, no dinámico** (se descartó engancharlo al cron:
+el set de URLs solo cambia con el deploy, que es cuando el estático se regenera; el cron daría un
+sitemap idéntico cada noche e invitaría a `lastmod=hoy` falso). Prerrequisito resuelto: `src/sitio.ts`
+con `URL_SITIO` como **fuente única del dominio** (antes solo vivía en comentarios), leída por layout
+(`metadataBase`), robots y sitemap. Contraprueba: un test que verifica que ninguna URL del sitemap está
+en el `disallow` de robots (metió `/parada/617` → rojo → fuera → verde).
+
+#### OG image (commit `81f9799`) — HECHO
+`app/opengraph-image.tsx` genera la tarjeta 1200×630 al compartir el enlace (patrón Linaje adaptado a
+Next 16: describe la app, no datos de sesión). Marca reproducida desde `Z_PATH` (no redibujada), colores
+de los tokens de `globals.css`, pie con `44 líneas · 934 paradas` **derivado del motor** (`lineas()`/
+`paradas()`, no cableado → no se pudre). Subtítulo (elegido por Antonio): *"Autobuses de Zaragoza en
+tiempo real. Y cuando no lo sabe, lo dice."* — la tesis del proyecto. Meta tags `og:*`/`twitter:*`
+absolutas vía `metadataBase`. `/opengraph-image` → 200 image/png.
+
+#### El lint del CI y los 6 de TokensVivos (commits `a23fbf2` hook · `f6462cd` CI · `9081529`·`5ca07c7`·`4ca8cf6` honestidad) — HECHO
+Ver **L67**: `npm test` no ejecutaba eslint → el repo llevaba el lint rojo desde el 15/07 sin verse. Se
+enganchó `pretest: npm run lint` (el CI ahora SÍ mira), y los 6 errores de `TokensVivos.tsx` (todos
+legítimos: leer CSSOM/DOM tras montar, SSR-safe) se encapsularon en el hook `useLecturaDelDom` con un
+solo `disable` justificado. Orden fix→CI a propósito: ningún commit del historial queda con `npm test`
+rojo.
+
+#### Correcciones de honestidad del README y logs (commits `9081529`·`5ca07c7`·`4ca8cf6`) — HECHO
+Barrido de "prosa que fue verdad y se quedó rancia": el roadmap listaba `/estado` como *previsto* estando
+ya vivo (movido a hecho; "avisos de parada suprimida" sigue previsto de verdad, intacto); dos logs decían
+coordenada *"a mano"* cuando vienen del feed (`avanza-web`); `robots.ts` decía *"74 páginas"* de línea
+cuando son 44 (los 74 son sentidos, query `?sentido=`, no URLs); y el *"Sumadas"* que prometía 350+43=403
+cuando dan 393 (**L69**). Pasada de honestidad del README completa: sólido salvo esos puntos, ya
+corregidos. Guardián `readme-no-miente` verde en todo.
+
 ---
 
 ## 8 · Cabos abiertos
@@ -1875,18 +1951,43 @@ capturas que nunca viajaron. Detalle en §7.
   mano" y "va aparte de hacerlas visitables". **Ya no aplica:** Avanza da las coordenadas (feed de
   llegadas, `avanza-web`), se sembraron con script, y visitables se hizo en la misma sesión (Tanda B).
   Ya NO dan 404: abren página con nombre + mapa + caja "Hoy, por un desvío".
-- ⬜ **Añadir `Sitemap:` al `robots.ts`** (lo único que quedó del bloque de README).
-- ⬜ Chorradas de **redacción de textos**, y la **nota del logo** en la guía de estilo.
+- ✅ **Sitemap + metadataBase** (`a7ab7c8`·`4c597ef`) — 47 URLs, cero paradas, fuente única de dominio.
+  §7.
+- ✅ **OG image** (`81f9799`), **lint del CI** (`a23fbf2`·`f6462cd`), **README honesto**
+  (`9081529`·`5ca07c7`·`4ca8cf6`). §7.
 
-**⬜ CABOS NUEVOS de la sesión del 25/07 (menores, reportados por descubrimiento):**
-- El log de `build-correspondencias.ts` dice *"9 postes con coordenada resuelta **a mano**"* — ya no
-  es "a mano" (vienen del feed). Una palabra a cambiar. Ni dato ni pantalla, solo consola.
-- El guardián `tests/motor-vivo/horas-malas.test.ts` **sobre-caza comentarios** (grepea crudo, sin
-  `sinComentarios`, al revés que su bloque hermano). Solo falsos positivos, nunca negativos. Ver L64.
-- La **costura (e)** de la Tanda B: en degradado Y con el feed mudo, el nombre de una solo-barrido cae
-  a "poste N" (ni feed ni índice). Fallback honesto, no bug — con Avanza vivo el feed lo da. Ver L66.
+**⬜ LO QUE QUEDA PARA CERRAR (Fase 5 — presentación):**
+- **El "momento oro" jugable.** La mejor historia del proyecto —"cuando Avanza se cae, la app dice 'no
+  lo sé' en vez de mentir" (pasó de verdad el 13/07)— está contada en README y `/sobre-los-datos`, pero
+  el reclutador NO puede hacer clic para verla (`?fingir=caido` necesita `ZETABUS_DEMO=1`, no está en
+  producción, y robots lo bloquea). Hay que SEMBRARLO (GIF/captura, o una demo controlada). Es el
+  remate de más gancho para el portfolio.
+- **CHANGELOG + bump de versión.** No hay CHANGELOG (la Fase 5 lo pide). Y la versión sigue en **0.1.0**
+  pese a estar desplegado con todo — lee como inacabado. ⚠️ La versión está acoplada en 3 sitios
+  (`package.json`, el User-Agent que se manda a Avanza en `transporte.ts`, el README): se tocan los tres
+  juntos o se crea desfase.
+
+**⬜ CABOS MENORES (cosméticos, reportados por descubrimiento):**
+- ✅ El log "coordenada resuelta a mano" → corregido a "desde el feed de Avanza" (`9081529`·`5ca07c7`).
+- El guardián `tests/motor-vivo/horas-malas.test.ts` **sobre-caza comentarios** (grepea crudo). Solo
+  falsos positivos. Ver L64.
+- La **costura (e)** de la Tanda B: en degradado + feed mudo, el nombre cae a "poste N". Fallback
+  honesto, no bug. Ver L66.
+- **2 warnings de lint** pre-existentes y ajenos que destapó el `pretest` (en `.tmp/commits.mjs` y un
+  `e2e`, `no-unused-vars`). No rompen el lint (sale 0). Sin tocar.
+- **DUDOSO** (baja prioridad): el README apunta las lecciones a `docs/LECCIONES.md` (que tiene L1-L9),
+  pero L10+ viven en este estado. No dice "todas", así que no es falso — solo un puntero incompleto.
 
 **⬜ TANDA FUTURA APARCADA — jerarquía de procedencia de coordenadas.**
+Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
+nuevo por un desvío nuevo → mismo agujero. La idea (aparcada a propósito, NO se metió en la Tanda B):
+un proceso que resuelva solo los postes solo-barrido nuevos, con **prioridad de fuentes** (GTFS >
+`avanza-web` > `observacion_propia`), en vez de a mano uno a uno. Es *"el comportamiento va en la tabla,
+no en el código"* aplicado a las coordenadas. **Base ya construida:** el feed como fuente, el patrón de
+procedencia (`avanza-web`/`observacion_propia`), el fichero modelado para las dos fuentes. Cuando se
+retome, no empieza de cero.
+
+## 9 · Método y entorno
 Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
 nuevo por un desvío nuevo → mismo agujero. La idea (aparcada a propósito, NO se metió en la Tanda B):
 un proceso que resuelva solo los postes solo-barrido nuevos, con **prioridad de fuentes** (GTFS >
