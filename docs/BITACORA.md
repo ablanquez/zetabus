@@ -286,3 +286,20 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   todavía». El «a mano» arrastra la misma inexactitud (hoy se resuelven desde el feed). Fuera de alcance
   de esta tanda; se reporta para valorar aparte. Y los **warnings del lint son 3, no 2** como dije en la
   Fase 8 (me comí el de `src/engine/fingir.ts` al truncar la salida): los tres pre-existentes y ajenos.
+
+### Fase 10 · La gemela de «a mano» + barrido de mentiras del README (solo lectura)
+
+- **Parte 1 (corregida):** la gemela que reporté en la Fase 9. `build-correspondencias.ts:106`, log:
+  «poste(s) solo-barrido SIN coordenada **a mano** todavía» → «SIN coordenada **del feed de Avanza**
+  todavía». Grep previo: solo esa (la otra «a mano» del fichero, línea 28, es «ejecución a mano» =
+  correr el script a mano, otro sentido; **no se toca**). npm test (con lint) verde.
+- **Parte 2 (informe, README NO tocado):** barrido entero buscando SOLO mentiras (no estilo). Verificado
+  contra el repo: 44 líneas · 934 paradas ✅ · pliego 350 / busesmadrid 43 / total 403 ✅ (guardados) ·
+  13 informes de auditoría = «trece» ✅ · UA `ZetaBus/0.1 (+…/zetabus)` exacto (`transporte.ts:56`) ✅ ·
+  503 sin token en `/api/regenerar` ✅ · stack (Next 16 / React 19 / TS 5 / Tailwind 4 / Leaflet /
+  Vitest / Playwright) ✅ · todos los pantallazos y enlaces (`.env.example`, `LICENSE`,
+  `THIRD-PARTY-NOTICES.md`, `LECCIONES.md`, `data/gtfs/README.md`) existen ✅.
+- **UN hallazgo (para Antonio, tanda aparte):** README:182 «**Sumadas** dan los 403 vehículos» — 350+43
+  = **393**, no 403. Las tres cifras son correctas por separado (guardián verde), pero «Sumadas» implica
+  una suma que no cuadra: los 10 que faltan vienen de `observacion-propia` y `json-heredado-sin-verificar`
+  (fuentes que la tabla no lista como filas de conteo). No se toca aquí (es diagnóstico).

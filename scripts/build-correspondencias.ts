@@ -103,7 +103,7 @@ async function main(): Promise<void> {
 
   if (r.sinCoordenadas > 0) {
     console.log(
-      `⚠️  ${r.sinCoordenadas} poste(s) solo-barrido SIN coordenada a mano todavía. Están en el índice y en\n` +
+      `⚠️  ${r.sinCoordenadas} poste(s) solo-barrido SIN coordenada del feed de Avanza todavía. Están en el índice y en\n` +
         '    /api/diag, pero no se pueden pintar en el mapa. Se resuelven UNA VEZ en\n' +
         '    data/postes-solo-barrido-coordenadas.json\n',
     );
