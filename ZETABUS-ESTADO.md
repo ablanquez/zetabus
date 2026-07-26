@@ -19,24 +19,24 @@ auditados, implementados y con guardián. **El README ya no dice que el proyecto
 capturas de móvil llevan su marco, y el guardián de enlaces valida **contra lo publicado**, no
 contra el disco.
 
-# ⭐⭐ TANDA 8 — DESPLEGADO Y EN VIVO EN `zetabus.antonioblanquez.es`.
-**Desplegado (24/07) · cron nocturno MONTADO y VERIFICADO** (disparó solo a las 02:00:01). Guardián
-401/202, barrido 74/74.
-**Remates de cierre CERRADOS (25/07, en local, sin push — `ahead 22`):**
-- ✅ **Panel público `/estado`** — cuatro estados honestos. §7 · L63.
-- ✅ **Las 9 paradas solo-barrido: coordenadas + visitables** — ya no dan 404. §7 · L65 · L66.
-- ✅ **Sitemap + metadataBase** — 47 URLs, cero paradas, dominio con fuente única. §7.
-- ✅ **OG image** — tarjeta 1200×630 al compartir. §7.
-- ✅ **Lint del CI cerrado de raíz** — `npm test` no corría eslint; ahora sí. §7 · L67.
-- ✅ **README honesto** — roadmap, "a mano", "74 páginas", "Sumadas" corregidos. §7 · L68 · L69.
-- ✅ **ZetaBus v1.0.0** — release (`36614b5`): versión + CHANGELOG limpio + badge. §7.
-- ✅ **Momento oro** — GIF de la transición "Avanza cae → 'no lo sé'" en el README (a pelo, animado;
-  enmarcarlo costaba 6× el peso). §7 · L70.
-> ⬜ **PENDIENTE — EL PUSH + TAG.** 22 commits atómicos en local sin subir. El push dispara el
-> auto-deploy de Hostinger y sube todo de una vez; el tag `v1.0.0` marca el release. Lo hace Antonio.
-**ZetaBus está CERRADO** — todos los remates de cierre hechos. Solo falta el push + tag. Cabos menores
-y la tanda futura (jerarquía de coordenadas) en §8.
-**Última actualización:** 25/07/2026
+# ⭐⭐ ZetaBus **v1.0.0 EN VIVO** en `zetabus.antonioblanquez.es` — CERRADO Y VERIFICADO EN PRODUCCIÓN.
+**Pusheado + tag `v1.0.0` en GitHub (26/07).** Verificado en vivo: `/estado` muestra los estados
+honestos, `/parada/617` ABRE (no 404) con "Parque de Atracciones" + mapa (Tanda B confirmada en prod),
+sitemap y OG sirviendo. El deploy arrancó en degradado (Avanza caído al compilar) y lo COMUNICÓ con
+honestidad — la tesis del proyecto operando en vivo.
+**Remates de cierre (todos ✅, §7):** panel `/estado` (L63), las 9 paradas coord+visitables (L65·L66),
+sitemap+metadataBase, OG image, lint del CI de raíz (L67), README honesto (L68·L69), release v1.0.0 +
+CHANGELOG + badge, momento oro (L70).
+**Los 3 fuegos POST-LANZAMIENTO, cerrados (§7 · L71-L74):**
+- ✅ **CDN servía HTML viejo** (sin estilos tras re-deploy) → purga manual documentada en el README como
+  paso de deploy. Vía `revalidate` descartada (dispara re-prefetch, L72). §7 · L71 · L72.
+- ✅ **15 vulnerabilidades** → analizadas, NINGUNA explotable en ZetaBus; aceptadas documentadas en
+  `SECURITY.md` con evidencia verificable. Sin parche no-breaking (L73). §7 · L73 · L74.
+- ✅ **package-lock rancio** (0.1.0 → 1.0.0) corregido.
+> ⚠️ **PROCEDIMIENTO DE DEPLOY (documentado en README):** `git push` → auto-deploy Hostinger → **purgar
+> caché del CDN a mano** (panel → Caché → Borrar caché) → verificar en vivo. Sin la purga: HTML viejo,
+> web sin estilos. `ahead 3` en local (CDN doc + SECURITY + lock) sin push al cierre de esta cola.
+**Última actualización:** 26/07/2026
 
 ---
 
@@ -835,6 +835,58 @@ documenta el porqué en la cabecera (footgun cerrado). Los marcos ya no son a ma
 ⚠️ *Y una distinción que Antonio necesitó aclarar: **movimiento vs marco es GIF vs PNG, no móvil vs
 PC**. GitHub no reproduce vídeo en el README; el movimiento solo lo da el GIF, que no admite marco. Se
 eligió el movimiento (la transición cuenta la historia mejor que dos fotos).*
+
+⭐⭐ **L71 · EL PRIMER RE-DEPLOY DESTAPA LO QUE EL PRIMER DEPLOY OCULTA — el CDN sirviendo HTML viejo.**
+Tras el push de v1.0.0, la web cargó **sin estilos** (HTML desnudo). Causa (diagnosticada con curl, no
+supuesta): el CDN de Hostinger cachea el HTML prerenderizado con `s-maxage=31536000` (1 año, default de
+Next) y NO lo purga al desplegar. El HTML viejo pedía un CSS con hash del build anterior; el build nuevo
+generó otro hash y borró el viejo → 404 → sin estilos.
+> ⭐ *Por qué "iba ayer y hoy no": **ayer fue el primer deploy** (HTML y assets cacheados coincidían);
+> hoy fue el primer RE-deploy, y ahí se rompió la coincidencia. Un fallo que solo aparece la SEGUNDA vez
+> que despliegas — invisible en el estreno.*
+⚠️ *Método que evitó perseguir fantasmas: **en local (build+next start, idéntico a prod) se veía BIEN**.
+Eso descartó de un golpe el código, el build y el metadataBase (sospechoso principal). El fallo era
+100% del entorno de producción. "Compáralo en local" es la bisección más barata.*
+✅ *Arreglo: purga manual (panel → Caché → Borrar caché), documentada en el README como PASO de deploy.
+No se automatiza (ver L72): ZetaBus está cerrado, se despliega poco, y un GitHub Action + token para
+purgar por API sale más caro que acordarse del botón.*
+
+⭐⭐ **L72 · UN LEVER PUEDE TENER UN SEGUNDO EFECTO QUE NO ESTÁ EN SU NOMBRE — `revalidate` no es solo cache.**
+Para que el CDN se autocurase sin purga manual, se probó `export const revalidate = 30` (baja el
+`s-maxage` del HTML a 30 s). El header cambió bien (contraprueba curl ✓) y los assets quedaron intactos
+✓. PERO rompió 2 e2e y metió tráfico de fondo: `revalidate` **no es solo cache del CDN — es también el
+stale-time del router de cliente de Next**, y disparó un burst de re-prefetch `?_rsc=` de montaje
+(16→24 peticiones medidas) en cada carga.
+> ⭐ *Lo clave: **no es afinable por TTL**. Se midió 30 y 300 — idénticos (el burst es de montaje del
+> router, no del TTL). Subir N no lo calma. La Vía 2 entera cobra ese peaje a TODOS los visitantes, a
+> cualquier valor. Descartada con números, no con intuición.*
+⚠️ *Mi suposición del encargo ("revalidate es config de ruta, no rompe nada") salió **inexacta** — por
+eso el encargo pedía "confirma las suites igualmente", y por eso se cazó. Un nombre de API describe su
+efecto PRINCIPAL, no todos sus efectos.*
+
+⭐ **L73 · UN "FIX AVAILABLE" DEL AUDIT NO ES UN FIX HASTA QUE LO INSTALAS Y RE-AUDITAS.**
+`npm audit` sugería "fix available: next@16.2.12" para el grupo B. DOS premisas falsas encadenadas: (1)
+`npm audit fix` sin `--force` NO llega, porque Next está **clavado exacto** (`"16.2.10"`, sin `^`) →
+16.2.12 queda "fuera de rango" y npm solo lo aplica con `--force` (que arrastra el ESLint breaking). (2)
+Se instaló `next@16.2.12` por la vía limpia (`npm install --save-exact`)... y **NO limpió nada**: 16.2.12
+empaqueta las MISMAS `postcss@8.4.31` y `sharp@0.34.5` vulnerables que 16.2.10. El "fix available" del
+resolver era una sugerencia que no se corresponde con lo que la versión trae de verdad.
+> ⭐ *Se probó y se revirtió cada paso (árbol siempre limpio). La lección: un pin exacto cambia cómo se
+> actualiza (la vía es `npm install pkg@v --save-exact`, no `audit fix`), y un "fix available" se
+> VERIFICA instalando + re-auditando, no se cree. Otra del "el instrumento sugiere, no garantiza".*
+
+⭐⭐ **L74 · EL RIESGO ACEPTADO SE DOCUMENTA CON EVIDENCIA VERIFICABLE, NO SE AFIRMA — el SECURITY.md.**
+Sin parche no-breaking para el grupo B (y forzar `overrides` metería versiones que Next no probó =
+riesgo real por CVEs no explotables), la salida honesta fue ACEPTAR A+B documentado en `SECURITY.md`.
+Pero un documento de seguridad que dice "no nos afecta" sin respaldo es el peor verde que miente. Regla
+aplicada: **cada "no aplica" lleva su ancla verificable** — qué feature necesita la CVE, que ZetaBus no
+la tiene, y el comando `grep` para que el lector lo compruebe. Y se corrió cada grep ANTES de escribir
+(`'use server'` vacío, sin `middleware.*`, sin `next/image`, sin `rewrites/i18n`, sharp solo en
+`marco-movil.mjs`, postcss solo build-time).
+> ⭐ *Lo mejor del documento: declara **cuándo CADUCA el análisis** (si aparece parche, si hay update
+> mayor, o si ZetaBus añade alguna de esas features). No vende seguridad eterna: dice "esto es cierto
+> HOY bajo estas condiciones, y aquí está cuándo dejaría de serlo". Epistemología honesta en la pieza
+> donde una mentira sería más cara. No forzado, no ignorado: analizado y aceptado con motivo.*
 
 ---
 
@@ -1906,6 +1958,39 @@ pieza que demuestra el no-mentir), y la coletilla `ECONNREFUSED (fingido)` enter
 A pelo, sin marco (enmarcarlo costaba 6× — **L70**); el movimiento cuenta la transición mejor que dos
 fotos estáticas.
 
+### ⭐⭐ POST-LANZAMIENTO (26/07) — push, verificación en vivo, y los 3 fuegos de producción
+
+#### El push + tag v1.0.0 y la verificación en vivo — HECHO
+`git push` (79c5b4c..caa3e62, con los 3 destilados de estado de la sesión) + `git tag -a v1.0.0` +
+`git push --tags`. ZetaBus **v1.0.0 en GitHub y en producción**. Verificado leyendo el artefacto (no
+fiándose del deploy): `/estado` mostró "Servicio reducido" (el 4º estado, en vivo por primera vez —
+Avanza estaba caído al compilar y el build arrancó en degradado SIN morir, gritando la verdad);
+`/api/diag` confirmó `correspondencias: {presente:false, degradado:true}` con `datos` sano;
+`/parada/617` ABRE con "Parque de Atracciones" + mapa en su coord (Tanda B confirmada en prod, el 404
+vivo eliminado). El degradado se auto-resuelve con el cron nocturno cuando Avanza responde.
+
+#### FUEGO 1 · el CDN servía HTML viejo → sin estilos (L71·L72) — CERRADO (purga manual documentada)
+Tras el re-deploy, web sin estilos. Causa: el CDN cachea el HTML 1 año y no purga al desplegar → HTML
+viejo pide CSS con hash borrado → 404. Diagnóstico con curl + comparación con local (que iba bien →
+descartó código/build/metadataBase). Arreglo: purga manual (panel → Caché → Borrar caché), documentada
+en el README como PASO de deploy. Se descartó la Vía 2 (`revalidate`): autocuraba el CDN pero disparaba
+re-prefetch `?_rsc=` del router (no afinable por TTL, 30 y 300 idénticos), rompía e2e y metía tráfico a
+todos los visitantes (L72). No se automatiza la purga (API existe pero sin hook de deploy → GitHub
+Action + token, sobra para un proyecto cerrado). **Procedimiento oficial: push → purgar → verificar.**
+
+#### FUEGO 2 · 15 vulnerabilidades de dependencias → SECURITY.md (L73·L74) — CERRADO (aceptadas documentadas)
+Diagnóstico: NINGUNA explotable en cómo ZetaBus usa las librerías (grep real: sin `'use server'`, sin
+middleware, sin `next/image`, sin rewrites/i18n; postcss y sharp solo build/dev). Grupo A (cadena
+ESLint): dev-only. Grupo B (next→postcss/sharp): sin parche no-breaking — `next@16.2.12` empaqueta las
+MISMAS versiones vulnerables (L73), y `overrides` metería riesgo por CVEs no explotables. Salida honesta:
+`SECURITY.md` (commit `c064ea3`) que **muestra el análisis con evidencia verificable** (cada "no aplica"
+con su `grep`), declara cuándo caduca, y da vía de reporte (L74). No forzado, no ignorado. `.gitignore`
+rescató SECURITY.md por allowlist (trampa de la raíz, como CHANGELOG).
+
+#### FUEGO 3 · package-lock rancio — CERRADO
+`package-lock.json` tenía `"version": "0.1.0"` mientras `package.json` es 1.0.0 (rancio del bump).
+Corregido a 1.0.0 (commit `afcb281`, diff de solo 2 líneas, sin tocar el árbol de deps).
+
 ---
 
 ## 8 · Cabos abiertos
@@ -2020,6 +2105,18 @@ capturas que nunca viajaron. Detalle en §7.
 - ✅ **Los marcos de móvil ya no son a mano** — `scripts/marco-movil.mjs` scripta la receta de
   `f7a642d` (para PNG; el GIF no admite marco, L70). Disponible para re-enmarcar los 3 PNG si hiciera
   falta.
+
+**⬜ CABOS PERMANENTES DE PRODUCCIÓN (26/07):**
+- ⚠️ **Purga manual del CDN tras CADA deploy.** No es un bug a arreglar: es el procedimiento (README →
+  Desplegar). `git push` → auto-deploy → **purgar caché** (panel → Caché → Borrar caché) → verificar. Se
+  puede automatizar algún día (API `hosting_clearWebsiteCacheV1` + GitHub Action + token), pero no
+  compensa para un proyecto cerrado. L71·L72.
+- **15 vulnerabilidades ACEPTADAS documentadas** en `SECURITY.md` (grupos A+B, no explotables en ZetaBus,
+  sin parche no-breaking). Se revisan si aparece parche, update mayor, o si ZetaBus añade middleware/
+  Server Actions/next-image/rewrites (el análisis caducaría). L73·L74.
+- **Modo degradado transitorio:** si Avanza está caído al desplegar/barrer, la app arranca sin índice de
+  correspondencias (degradado honesto, no bug). Se auto-resuelve con el cron de las 02:00 o
+  `npm run correspondencias:build` cuando Avanza responde.
 
 **⬜ TANDA FUTURA APARCADA — jerarquía de procedencia de coordenadas.**
 Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
