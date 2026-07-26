@@ -109,7 +109,7 @@ async function main(): Promise<void> {
     );
   }
   if (r.conCoordResuelta > 0) {
-    console.log(`  ✅ ${r.conCoordResuelta} poste(s) solo-barrido con coordenada ya resuelta a mano.\n`);
+    console.log(`  ✅ ${r.conCoordResuelta} poste(s) solo-barrido con coordenada ya resuelta desde el feed de Avanza.\n`);
   }
 
   console.log(`  → índice publicado  (${r.postes} postes · ${(r.bytes / 1024).toFixed(0)} KB)`);

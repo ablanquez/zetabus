@@ -30,8 +30,9 @@ import { URL_SITIO } from '@/sitio';
  *                       «línea 35 Zaragoza recorrido» quiere exactamente esto, y
  *                       lo que hay aquí **es cierto durante meses**: el recorrido,
  *                       las paradas en orden, el desvío vigente, los horarios de
- *                       terminal. Son 74 páginas —no 934— y su caché de horario
- *                       dura UN DÍA, así que el coste contra Avanza está acotado
+ *                       terminal. Son 44 páginas —una por línea, no 934; los 74
+ *                       sentidos van como `?sentido=`, query y no URLs aparte— y su
+ *                       caché de horario dura UN DÍA, así que el coste contra Avanza está acotado
  *                       y se reparte. Cerrarlo sería tirar el tráfico útil por
  *                       una precaución que aquí no hace falta.
  *

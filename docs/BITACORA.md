@@ -262,3 +262,27 @@ había aprobado mal en la Costura 4.)*
   (sale 0), y son de otra deuda. Se dejan.
 - **Verde antes de commitear:** tsc 0 · lint completo (pretest) verde · vitest 537 · playwright 826 ·
   vigía. Dos commits atómicos: el refactor+hook, y el enganche del CI.
+
+### Fase 9 · Tres textos que se quedaron rancios (misma familia que el «no existe todavía»)
+
+Prosa que fue cierta y nadie actualizó. Cero lógica, cero comportamiento: literal/log/comentario de
+cara a humano. Los números, verificados contra el motor/estado real antes de tocar (no de memoria):
+`lineas()` = **44**; las 9 solo-barrido = **`avanza-web`** las 9 (lo dice el `_meta` del propio
+`postes-solo-barrido-coordenadas.json`: «NO de observación manual»).
+
+- **README · hoja de ruta:** el «Panel de estado» estaba en *Previsto, sin fechas* — pero `/estado` YA
+  está desplegado y vivo (`app/estado/`). Se mueve a la línea **✅ Hoy**. ⚠️ El otro previsto —«avisos
+  de parada suprimida en la vista de parada»— **sigue pendiente de verdad** y se deja intacto.
+- **`scripts/build-correspondencias.ts` (log):** «coordenada ya resuelta **a mano**» → «resuelta **desde
+  el feed de Avanza**». Desde la Tanda A las 9 vienen del feed (avanza-web), no de una persona. Es un log
+  de consola, ni dato ni pantalla.
+- **`src/app/robots.ts` (comentario):** «Son **74** páginas —no 934—» → «Son **44** —una por línea; los
+  74 **sentidos** van como `?sentido=`, query y no URLs aparte—». 44 líneas = 44 URLs; los 74 son
+  sentidos, no páginas distintas (el sitemap ya emite 44, una por `lineas()`).
+- **Guardián:** `readme-no-miente.test.ts` sigue verde (24 ✓) — el reword no tocó ninguna cifra que
+  vigile. npm test completo (con lint) verde.
+- **Descubrimiento (ajeno, NO tocado):** en el MISMO log (`build-correspondencias.ts`, unas líneas
+  arriba) queda otra frase de la misma familia: «poste(s) solo-barrido **SIN coordenada a mano**
+  todavía». El «a mano» arrastra la misma inexactitud (hoy se resuelven desde el feed). Fuera de alcance
+  de esta tanda; se reporta para valorar aparte. Y los **warnings del lint son 3, no 2** como dije en la
+  Fase 8 (me comí el de `src/engine/fingir.ts` al truncar la salida): los tres pre-existentes y ajenos.

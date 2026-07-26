@@ -321,12 +321,12 @@ lo que **no** se pudo comprobar, y las lecciones de método están en
 ## Hoja de ruta
 
 ✅ **Hoy:** llegadas en vivo con posición GPS, ficha de vehículo, recorrido real con desvíos
-derivados, horarios de terminal, transbordos por parada, buscador, modo demo — y **en marcha en
+derivados, horarios de terminal, transbordos por parada, buscador, panel de estado del propio
+servicio (cuánto se le pide al operador y con qué frescura), modo demo — y **en marcha en
 [zetabus.antonioblanquez.es](https://zetabus.antonioblanquez.es)**.
 
 Previsto, sin fechas comprometidas:
 
-- **Panel de estado** del propio servicio: cuánto se le pide al operador y con qué frescura.
 - **Avisos de parada suprimida** en la vista de parada, no solo en la de línea.
 - **Tranvía.** El núcleo ya está preparado para ser multimodal, y hay una prueba que lo vigila.
 
