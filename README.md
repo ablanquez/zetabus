@@ -179,7 +179,8 @@ incluidos **los tres en que hubo que retractarse de un informe propio**.
 | **busesmadrid.es** | Los **43 vehículos** que circulan y no están en el pliego | No es oficial → salen **marcados con asterisco** |
 | **OpenStreetMap** | La cartografía | — |
 
-Sumadas dan los **403 vehículos** que ZetaBus reconoce, y cada ficha dice **de qué fuente sale cada
+Las dos fuentes principales dan 393; con algunas fuentes menores se llega a
+los **403 vehículos** que ZetaBus reconoce, y cada ficha dice **de qué fuente sale cada
 uno de sus campos** — no el vehículo entero: el campo. Un coche del pliego con una longitud
 observada a mano no se blanquea por el resto.
 

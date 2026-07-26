@@ -303,3 +303,18 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   = **393**, no 403. Las tres cifras son correctas por separado (guardián verde), pero «Sumadas» implica
   una suma que no cuadra: los 10 que faltan vienen de `observacion-propia` y `json-heredado-sin-verificar`
   (fuentes que la tabla no lista como filas de conteo). No se toca aquí (es diagnóstico).
+
+### Fase 11 · Corregir el «Sumadas» (la suma que no sumaba)
+
+- **Reword escueto (decisión de Antonio):** «**Sumadas** dan los 403 vehículos» → «Las dos fuentes
+  principales dan **393**; con algunas fuentes menores se llega a los **403** vehículos que ZetaBus
+  reconoce». Honesta: ya no afirma que 350+43=403. Sin filas nuevas en la tabla, sin nombrar las fuentes
+  menores (ese detalle vive en `/sobre-los-datos` y en el dato), sin tocar 350/43/403.
+- ⚠️ **El guardián se puso rojo, y NO era una mentira nueva:** `readme-no-miente` vigila la cadena
+  literal `los **403 vehículos** que ZetaBus reconoce` con espacios simples. Al reajustar el párrafo
+  partí «que\nZetaBus» en dos líneas y el patrón dejó de casar («vigilando un texto que ya no existe»).
+  Era un artefacto de salto de línea de mi propio reword, no un choque semántico. Arreglo: mantener la
+  frase vigilada contigua en una sola línea. Cifra y afirmación, intactas. **Lección:** un guardián que
+  ancla en cadenas literales es sensible al ajuste de línea del Markdown — al reescribir cerca de una
+  frase vigilada, no la partas.
+- **Verde:** npm test (con lint) · readme-no-miente 24 ✓ · vitest 537. Commit atómico (solo README).
