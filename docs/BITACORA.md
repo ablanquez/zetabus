@@ -203,3 +203,26 @@ había aprobado mal en la Costura 4.)*
 - **Cabos para estrategia (ya reportados):** faltaba `metadataBase`/constante de dominio (resuelto con
   `@/sitio`); y `robots.ts:33` sigue diciendo «74 páginas» de `/linea` cuando son **44** (74 son
   sentidos, que van por `?sentido=`) — no lo toqué, es prosa de un comentario ajeno a esta tanda.
+
+### Fase 7 · La OG image (la tarjeta al compartir)
+
+- **`app/opengraph-image.tsx`** (convención Next 16 · `ImageResponse`): 1200×630, marca (Z + poste +
+  bandera, dos tonos violeta) desde la **fuente única** `Z_PATH` —interpolada como en `icon.tsx`, NO
+  redibujada: `marca-z-unica.test.ts` sigue verde—, "ZetaBus", subtítulo, y pie con
+  `zetabus.antonioblanquez.es` + `44 líneas · 934 paradas` **derivado de `lineas()`/`paradas()`** (no a
+  mano, no se pudre). La marca va como `<img>` data-URI SVG (Satori no pinta `<svg>` inline).
+- **Subtítulo elegido por Antonio (A):** «Autobuses de Zaragoza en tiempo real. Y cuando no lo sabe, lo
+  dice.» — la tesis del proyecto (función + sello de honestidad delante).
+- **Hex a pelo, con el motivo del favicon:** Satori no lee `var(--color-…)`, así que los tokens van por
+  valor y su copia está en el allowlist de `tests/sistema-visual.test.ts` (`opengraph-image.tsx`).
+- **`openGraph`/`twitter` en el layout:** tipo, url, siteName, locale y `summary_large_image`; el
+  título/descripción se **heredan** (no se reescriben) y la **imagen la añade Next sola** (og:image +
+  twitter:image absolutas vía `metadataBase`). Verificado en vivo: `/opengraph-image` → **200 image/png**,
+  y las meta tags salen con URL absoluta contra el dominio (no localhost). Miré el PNG a ojo: legible,
+  on-brand.
+- ⚠️⚠️ **HALLAZGO (para destilar al estado):** `npm run lint` del repo **llevaba ROJO desde el 24/07 sin
+  que se viera** — 6 errores en `src/components/interno/TokensVivos.tsx` (`react-hooks/set-state-in-effect`,
+  último commit del fichero `6aa5ae9`, 24/07). Por qué no se vio: las tandas corrían `eslint <ficheros
+  concretos>` en vez del lint completo, así que el «eslint verde» reportado era **parcial** —solo los
+  ficheros tocados—, no el repo entero. Mis 3 ficheros de la OG están limpios; el rojo es pre-existente y
+  ajeno. Se commitea la OG aparte (atomicidad); `TokensVivos` va como su propia tanda.

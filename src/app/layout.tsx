@@ -44,6 +44,22 @@ export const metadata: Metadata = {
   },
   description:
     'Los autobuses que hay AHORA MISMO en la calle, con la edad del dato a la vista. Sin inventar lo que no se sabe.',
+  /**
+   * ⭐ LA TARJETA AL COMPARTIR EL ENLACE. La IMAGEN la añade Next solo, desde
+   * `app/opengraph-image.tsx` (og:image + twitter:image, absolutas vía metadataBase):
+   * no se lista aquí para no tener dos fuentes. Aquí van el resto de campos —tipo, URL,
+   * nombre, locale, tarjeta grande—; el título y la descripción los HEREDA de arriba
+   * (no se reescriben, o divergirían).
+   */
+  openGraph: {
+    type: 'website',
+    siteName: NOMBRE_MARCA,
+    url: URL_SITIO,
+    locale: 'es_ES',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
 };
 
 /**

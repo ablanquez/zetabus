@@ -49,6 +49,10 @@ const PERMITIDOS: Record<string, readonly string[]> = {
   // repite el hex de la marca a pelo. Que no se separe del token lo vigila
   // `marca-z-unica.test.ts` (compara este hex con `--color-marca` del CSS).
   'src/app/icon.tsx': ['#7048e8'],
+  // La OG image: mismo caso que el favicon. `ImageResponse`/Satori genera un PNG y
+  // NO puede leer `var(--color-…)`, así que repite los tokens a pelo. Son EXACTAMENTE
+  // los valores de globals.css (marca, poste, tinta, tinta-suave, papel).
+  'src/app/opengraph-image.tsx': ['#7048e8', '#4e22b8', '#0f172a', '#475569', '#ffffff'],
 };
 
 /**
