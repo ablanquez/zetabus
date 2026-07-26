@@ -302,6 +302,25 @@ ZETABUS_DEMO=1 npm run dev
 `?fingir=` **intercepta todas las peticiones**: cero bytes hacia el operador. Sirve para ver los
 casos raros —fuente caída, respuesta ilegible, línea desviada— sin esperar a que ocurran.
 
+### Desplegar
+
+El servidor **auto-despliega en cada `git push` a `main`** (Hostinger). Pero hay **un paso a mano
+que no se puede saltar:**
+
+> **Tras cada deploy → purgar la caché del CDN.**
+> Panel de Hostinger → la web → **Caché** → **Borrar caché**.
+
+**Por qué.** Next marca el HTML prerenderizado con `s-maxage=31536000` (un año), y el CDN de
+Hostinger lo cachea y **no lo purga al desplegar**. Sin purgar, sigue sirviendo el HTML viejo, que
+apunta a los `/_next/static/*` con el hash **antiguo** —que el build nuevo ya borró— → **la web
+carga sin estilos** hasta que se purga a mano. Pasó el 26/07/2026, en el primer re-deploy que lo
+destapó.
+
+Se estudió automatizarlo —bajar el `s-maxage` con `revalidate`, o purgar por API—, pero **para un
+proyecto cerrado que se despliega poquísimo no compensa:** el `revalidate` metía tráfico de
+prefetch de fondo a todos los visitantes, y una API de purga es un token y un *action* que
+mantener. La purga a mano es el procedimiento oficial.
+
 ---
 
 ## Cómo está construido

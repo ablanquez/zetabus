@@ -431,3 +431,29 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   `home-movil.png`, ~160 KB. **Solo PNG** (rechaza GIF a propósito, con el porqué en la cabecera). Queda
   disponible para re-enmarcar los 3 PNG de móvil en el futuro de forma reproducible; **hoy no se aplica**
   (ya tienen marco). El GIF (`momento-oro.gif`) y el README quedan intactos.
+
+### Fase 17 · El CDN sirve HTML viejo tras deploy — Vía 2 (`revalidate`) DESCARTADA, purga a mano
+
+- **El problema (26/07):** tras un re-deploy, ZetaBus cargaba **sin estilos**. Causa: Next marca el HTML
+  prerenderizado con `s-maxage=31536000` (un año); el CDN de Hostinger lo cachea y **no lo purga al
+  desplegar** → sirve el HTML viejo, que apunta a `/_next/static/*` con hash **antiguo** que el build
+  nuevo ya borró → 404 en los assets → página a pelo.
+- **Vía 2 probada y medida: `revalidate` en las 3 estáticas (`/`, `/sobre-los-datos`,
+  `/interno/sistema-visual`) para bajar el `s-maxage` y que el CDN se autocure.** El header SÍ cambiaba
+  bien (`s-maxage=30`/`300`, assets `immutable` intactos, `/estado` `no-store` intacta). **Pero rompía 2
+  e2e** (`momento-oro`, `linea-sin-barrido`, las de `networkidle`) de forma **determinista**.
+- ⚠️⚠️ **HALLAZGO (para destilar al estado): `revalidate` NO es solo cache del CDN — es también el
+  stale-time del router de cliente de Next, y NO es afinable por TTL.** Cualquier ruta con `revalidate`
+  enlazada desde el pie (`/` y `/sobre-los-datos` lo están en TODAS las páginas) dispara un **burst de
+  prefetch `?_rsc=` al montar**. Medido en `/parada/744?fingir=caido` (misma sonda, ventana 15 s):
+  baseline **16** peticiones `_rsc` → con `revalidate` **24** (9× `/` + 15× `/sobre-los-datos`). **Subir
+  el TTL de 30 a 300 NO lo calma:** el burst es de montaje, no de expiración. Ese tráfico mantiene el
+  `goto {networkidle}` abierto los 30 s → timeout. Contraprueba limpia: stash → rebuild baseline → **20
+  passed**; con el cambio → **10 failed**. No es fragilidad del test: es tráfico de fondo REAL y mayor
+  para todos los visitantes.
+- **Decisión (Antonio): Vía 2 descartada, NO se automatiza.** El `revalidate` cobra un peaje de prefetch
+  a cada visitante; una API de purga (`hosting_clearWebsiteCacheV1`) es un token + un *action* que
+  mantener. **ZetaBus está cerrado y se despliega poquísimo** → no compensa. **La purga MANUAL del CDN es
+  el procedimiento oficial** tras cada deploy: panel de Hostinger → Caché → Borrar caché.
+- **Hecho:** los 3 cambios de `revalidate` **revertidos** (nunca se commitearon), árbol limpio. La purga
+  manual documentada en `README.md` → «Poner en marcha» → **Desplegar**, como checklist visible.
