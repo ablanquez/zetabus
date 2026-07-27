@@ -48,7 +48,7 @@
 
 import type { LineId, Observacion } from '@/core';
 import type { CacheDosPisos } from '@/cache/dos-pisos';
-import { leerRecorrido, type SentidoAvanza } from '@/sources/avanza/recorrido';
+import { leerRecorridoRuntime, type SentidoAvanza } from '@/sources/avanza/recorrido';
 import type { Transporte } from '@/sources/avanza/transporte';
 import { idParada, linea as buscarLinea, parada, posteDe, sentidosDe } from './topologia';
 
@@ -230,7 +230,10 @@ export async function desviosDeLinea(
 
     const clave = `recorrido:${l.shortName}:${s.directionId}`;
     const r = await dep.cache.obtener(clave, () =>
-      leerRecorrido(l.shortName, SENTIDO_AVANZA[s.directionId], dep.transporte).then((ps) => [...ps]),
+      // Runtime: nonce memoizado por proceso, con reintento si caducó. El nonce NO
+      // entra en la clave de caché: el recorrido cacheado no depende de con qué
+      // nonce se leyó. Ver `leerRecorridoRuntime`.
+      leerRecorridoRuntime(l.shortName, SENTIDO_AVANZA[s.directionId], dep.transporte).then((ps) => [...ps]),
     );
 
     let veredicto: Veredicto;

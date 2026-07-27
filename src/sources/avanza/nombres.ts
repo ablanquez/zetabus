@@ -18,7 +18,7 @@
  */
 
 import type { PosteDelRecorrido } from './recorrido';
-import { leerRecorrido, type SentidoAvanza } from './recorrido';
+import { leerNonce, leerRecorrido, type SentidoAvanza } from './recorrido';
 import type { Transporte } from './transporte';
 
 /** Una petición que toca hacer: una línea, un sentido. */
@@ -145,13 +145,26 @@ export async function pedirNombres(
   const dormir = opciones.dormir ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const salida: RespuestaDeSentido[] = [];
 
+  // ⚠️ UN nonce por barrido, fresco (dato volátil), sacado ANTES del bucle y
+  //    reusado en los 74 POST. Si el GET del nonce falla (Avanza cambió la página,
+  //    o está caída), no se lanzan 74 POST condenados: se devuelve TODO como fallo,
+  //    que cae solo en el degradado honesto (0% < suelo → se mantiene el índice de
+  //    ayer). Es el mismo fail-safe que ya existía para el 403 de cada sentido.
+  let nonce: string;
+  try {
+    nonce = await leerNonce(transporte);
+  } catch (e) {
+    const motivo = `no se pudo obtener el nonce: ${(e as Error)?.message ?? String(e)}`;
+    return peticiones.map((peticion) => ({ peticion, ok: false, motivo }));
+  }
+
   for (let i = 0; i < peticiones.length; i++) {
     const peticion = peticiones[i];
     if (i > 0) await dormir(pausaMs);
 
     let r: RespuestaDeSentido;
     try {
-      const postes = await leerRecorrido(peticion.lineaEtiqueta, peticion.sentido, transporte);
+      const postes = await leerRecorrido(peticion.lineaEtiqueta, peticion.sentido, transporte, nonce);
       r = { peticion, ok: true, postes };
     } catch (e) {
       r = { peticion, ok: false, motivo: (e as Error)?.message ?? String(e) };

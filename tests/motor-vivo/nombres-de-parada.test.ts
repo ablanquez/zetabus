@@ -14,6 +14,7 @@ import {
   type RespuestaDeSentido,
 } from '@/sources/avanza/nombres';
 import { aplicarNombres, type TablaNombresLeida } from '@/sources/avanza/aplicar-nombres';
+import { conNonce } from './dobles';
 import type { Transporte } from '@/sources/avanza/transporte';
 import type { Stop } from '@/core';
 import { stopId } from '@/core';
@@ -109,7 +110,7 @@ describe('⭐ pedirNombres · la orquestación, con un transporte de mentira', (
       throw new Error('timeout');
     };
 
-    const r = await pedirNombres(dosPeticiones, aMedias, { dormir: sinDormir });
+    const r = await pedirNombres(dosPeticiones, conNonce(aMedias), { dormir: sinDormir });
     const t = fundirNombres(r);
     expect(t.contadores.respondidas).toBe(1);
     expect(t.contadores.fallidas).toBe(1);
@@ -120,15 +121,16 @@ describe('⭐ pedirNombres · la orquestación, con un transporte de mentira', (
     const raro = 'Peñaflor / Camión de La Muñeca · nº 3';
     const html = `<option value="900">900 - ${raro}</option>`;
     const t: Transporte = async () => ({ status: 200, texto: html });
-    const r = await pedirNombres([{ lineaEtiqueta: 'C1', sentido: -1 }], t, { dormir: sinDormir });
+    const r = await pedirNombres([{ lineaEtiqueta: 'C1', sentido: -1 }], conNonce(t), { dormir: sinDormir });
     expect(fundirNombres(r).porPoste[900]).toBe(raro);
   });
 
   it('la pausa entre peticiones se respeta (N-1 esperas para N peticiones)', async () => {
     let esperas = 0;
     const t: Transporte = async () => ({ status: 200, texto: '<option value="1">1 - X</option>' });
-    await pedirNombres(dosPeticiones, t, { dormir: async () => { esperas++; } });
+    await pedirNombres(dosPeticiones, conNonce(t), { dormir: async () => { esperas++; } });
     // Entre 2 peticiones hay 1 pausa. Ni una antes de la primera (sería tiempo tirado).
+    // (El GET del nonce va antes del bucle y no duerme → sigue siendo 1.)
     expect(esperas).toBe(1);
   });
 });

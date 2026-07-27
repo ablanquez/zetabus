@@ -381,6 +381,11 @@ function paginaHorarioFingida(url: string): string {
     `* Festivos y domingos – de 7:46h a 14:23h.</p>`;
 
   return (
+    // ⚠️ EL NONCE VA AQUÍ, IGUAL QUE EN LA PÁGINA REAL. Esta misma página
+    //    (`lineas-y-horarios`) es de donde `leerNonce` saca el `avz_bus_ajax_nonce`
+    //    para `get_stops_list`. Sin él, en demo el desvío saldría `indeterminado`
+    //    (el nonce GET cae aquí porque `URL_NONCE` también es `lineas-y-horarios`).
+    `<input type="hidden" id="avz_bus_ajax_nonce" name="avz_bus_ajax_nonce" value="demo-nonce">` +
     `<p>Frecuencia media: laborables: 9, sábados: 16, domingos y festivos: 16 min.</p>` +
     `<div id="infoHorarios">` +
     tabla('table-horarios-primeras-desc', horas) +

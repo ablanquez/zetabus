@@ -484,3 +484,32 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   dependencias, `npm audit` sin alterar (sigue 12).
 - **Verde:** tsc · lint · vitest 537 · playwright · vigía-README. Sin cambios funcionales (solo doc +
   gitignore + campo version del lock).
+
+### Fase 19 · El barrido pedía sin nonce → 403 (degradado). Arreglado: nonce de WordPress
+
+- ⚠️⚠️ **CORRECCIÓN DEL DIAGNÓSTICO (era L75): NO era Radware.** El 403 de `get_stops_list` lo ponía
+  **WordPress por falta de un `nonce`** que Avanza añadió a sus AJAX (jul/26). Aislando variables (Node
+  plano): sin nonce → 403; con nonce → 200, **incluso con el UA de ZetaBus y sin cookies**. `rdwr_response:
+  allowed` decía literal que Radware dejaba pasar. El nonce vive en el HTML de `lineas-y-horarios/` como
+  `<input hidden id="avz_bus_ajax_nonce">`, lo baja un GET normal, es de ventana temporal (~12 h). **El
+  asistente/bookmarklet queda descartado por innecesario:** el servidor cruza el «muro» él solo.
+- **El arreglo (`recorrido.ts`):** `leerNonce` (GET + scrape del campo, HTML no regex), y `leerRecorrido`
+  pasa a exigir el `nonce` como parámetro (guardarraíl en compilación). Dos estrategias, a propósito:
+  - **Build** (`pedirNombres`): un nonce **fresco por barrido**, sacado antes del bucle y reusado en los
+    74 POST. Si el GET del nonce falla → todo-fallido → degradado honesto (0% < suelo → índice de ayer).
+  - **Runtime** (`desviosDeLinea` → `leerRecorridoRuntime`): nonce **memoizado por proceso** (TTL 30 min ≪
+    validez ~12 h) para no pagar un GET por cada vista de línea. Y **fallback**: si el cacheado da 403
+    (rotó antes del TTL), se invalida, se re-pide UNA vez y se reintenta; si el fresco también da 403,
+    sube → `indeterminado`. Sin bucle, sin reventar.
+- **Demo:** la página de horario fingida (`fingir.ts`) ahora lleva el `avz_bus_ajax_nonce`, **igual que la
+  real** (es la misma página; `URL_NONCE` también es `lineas-y-horarios`). Sin esto, `?fingir=desviada`
+  saldría `indeterminado` y su e2e caería. Con esto, `desvio-acordeon` sigue verde (30 ✓).
+- **Tests (sin falsear):** el doble sirve la página del nonce (`respuestaNonce`/`conNonce`); se destapó un
+  **verde falso** —el test de desvíos pasaba vacío porque el doble no servía el nonce y todo caía a
+  `indeterminado`, saltándose la aserción real—; se arregló. Nuevo test del fallback 403→reintento.
+- **Contraprueba:** aislado, sin nonce → **403** / con nonce fresco → **32 postes reales** (Cosuenda,
+  Marqués de La Cadena…). **Barrido real en local: 74/74 respondieron, 0 fallaron → índice publicado (927
+  postes, 93 KB).** El degradado se cura. Verde: tsc · vitest **539** · lint (0 err) · playwright **829**.
+- **Cabo (reportado, no tocado):** un `probe.tmp.ts` **untracked** en la raíz (leftover con la firma vieja)
+  rompía `next build`; se **movió al scratchpad** (no se borró: no era mío). Y `TTL_RECORRIDO_MS` sigue
+  siendo código muerto (declarado, no usado) — ajeno a esta tanda.

@@ -12,11 +12,15 @@ import { join } from 'node:path';
 import { CacheDosPisos } from '@/cache/dos-pisos';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { compararRecorrido, desviosDeLinea, UMBRAL_ABSURDO } from '@/engine/desvios';
+import { invalidarNonce, leerRecorridoRuntime, URL_NONCE } from '@/sources/avanza/recorrido';
+import type { Transporte } from '@/sources/avanza/transporte';
 import { canonLinea, idLinea, idParada, lineas, paradaDelPoste, perfilDe, posteDe, sentidosDe } from '@/engine/topologia';
-import { POSTE_MUDO, respuestaPoste, respuestaRecorrido, siempre, transporteFalso, posteDelCuerpo } from './dobles';
+import { POSTE_MUDO, respuestaNonce, respuestaPoste, respuestaRecorrido, siempre, transporteFalso, posteDelCuerpo } from './dobles';
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-m-')); });
+// ⚠️ El nonce de runtime está memoizado por proceso (`obtenerNonce`). Se invalida
+//    entre tests para que cada uno ejercite su propio doble y no herede un nonce.
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'zetabus-m-')); invalidarNonce(); });
 afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
 const cache = () => new CacheDosPisos({ dir });
@@ -438,4 +442,43 @@ describe('⭐ EL DIFF NO PUEDE MIRAR LO VIVO. NI QUERIENDO.', () => {
       }
     }
   }, 30_000);
+});
+
+/**
+ * ⭐ EL NONCE EN RUNTIME. Avanza exige un nonce WP en `get_stops_list` (jul/26): sin
+ * él, 403. Runtime lo cachea por proceso; si el cacheado caduca (Avanza lo rota antes
+ * del TTL), la primera lectura da 403 y hay que re-pedirlo, no arrastrar 30 min de 403.
+ */
+describe('⭐ nonce runtime · un 403 con el nonce cacheado se reintenta con uno fresco', () => {
+  it('403 → invalida → re-GET del nonce → reintenta UNA vez → 200', async () => {
+    invalidarNonce();
+    let getsDeNonce = 0;
+    const noncesEnviados: (string | null)[] = [];
+    const t: Transporte = async (url, { cuerpo }) => {
+      if (url === URL_NONCE) {
+        getsDeNonce++;
+        return { status: 200, texto: respuestaNonce(`n${getsDeNonce}`) }; // n1, luego n2
+      }
+      const nonce = new URLSearchParams(cuerpo ?? '').get('nonce');
+      noncesEnviados.push(nonce);
+      // El primer nonce (n1) ya no vale → 403. El fresco (n2) sí.
+      if (nonce === 'n1') return { status: 403, texto: '' };
+      return { status: 200, texto: respuestaRecorrido([{ poste: 55, nombre: 'X' }]) };
+    };
+
+    const postes = await leerRecorridoRuntime('C1', -1, t);
+
+    expect(postes.map((p) => p.poste)).toEqual([55]); // acabó leyendo bien
+    expect(getsDeNonce).toBe(2); // re-pidió el nonce tras el 403
+    expect(noncesEnviados).toEqual(['n1', 'n2']); // reintentó con el fresco
+  });
+
+  it('si el reintento TAMBIÉN da 403 → sube el error (sin bucle, sin reventar)', async () => {
+    invalidarNonce();
+    const t: Transporte = async (url) => {
+      if (url === URL_NONCE) return { status: 200, texto: respuestaNonce() };
+      return { status: 403, texto: '' }; // el recorrido SIEMPRE 403
+    };
+    await expect(leerRecorridoRuntime('C1', -1, t)).rejects.toThrow(/HTTP 403/);
+  });
 });
