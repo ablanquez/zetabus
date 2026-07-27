@@ -513,3 +513,35 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
 - **Cabo (reportado, no tocado):** un `probe.tmp.ts` **untracked** en la raíz (leftover con la firma vieja)
   rompía `next build`; se **movió al scratchpad** (no se borró: no era mío). Y `TTL_RECORRIDO_MS` sigue
   siendo código muerto (declarado, no usado) — ajeno a esta tanda.
+
+### Fase 20 · La tabla de nombres llega al build — `nombres:ensure` (el aviso deja de ser ruido)
+
+- **El problema:** en producción **TODAS las 934 paradas** salían «nombre sin confirmar». La tabla
+  (`src/generated/nombres.json`) existía y funcionaba (`nombres:build`, ya con el nonce de la Fase 19) pero
+  **no estaba enganchada a nada**, y está **gitignorada** (raspado de Avanza: no se versiona). Un aviso que
+  salta en todas es ruido — no se lee.
+- **La solución (Diseño C):** `scripts/ensure-nombres.ts`, **calcado de `ensure-correspondencias.ts`**:
+  genera la tabla **solo si falta** (proceso hijo a `build-nombres`, no reimplementa nada), **no-fatal** (si
+  Avanza cae o no llega al suelo del 80%, el build sigue y avisa con recuadro). Enganchado en el `build`
+  **ANTES de `data:build`** — orden **crítico**: la tabla es **entrada** del horneado (`data:build` la lee y
+  cuece los nombres en `gtfs.json`; en runtime nadie relee `nombres.json`). Si fuera después, nacería tarde.
+- **Se DESCARTÓ unificar los dos barridos (Diseño B):** los nombres son **entrada** de `data:build` y el
+  barrido de correspondencias necesita la **topología ya horneada** (`topologia.ts` importa `@/generated`) →
+  corren en fases distintas **por necesidad**. Unir exigiría partir `barrerCorrespondencias` (el órgano que
+  funciona en prod) y arriesgar que el índice regrese. No compensa: los nombres son **estables** (una vez por
+  build) y las correspondencias las **refresca el cron cada noche** — ciclos de vida distintos.
+- **Contraprueba del ensure (dos direcciones):** con `nombres.json` presente → **se salta en 3 s** (no
+  rebarre); sin él → **lo genera** (barrido real 2m24s, **74/74 respondieron, 927 nombres**).
+- **Contraprueba del efecto real** (`npm run build` en frío, borrando la tabla): el log de `data:build` pasó
+  de *«NO hay tabla… TODAS sin confirmar»* a **`918/934 con nombre de Avanza (98%)` · `16/934 marcadas`**.
+  El aviso baja de **934 → 16**, y las 16 son el corredor de desvíos de hoy (Coso, Av. Valencia, P.
+  Independencia, San Vicente de Paúl): Avanza no las da porque las líneas van desviadas fuera → aviso
+  **legítimo**, no ruido.
+- **Página mirada (no solo el log):** `/parada/2` y `/parada/55` → sin aviso, `avanza-web`, nombre bien
+  escrito («Av. de Cataluña n.º 51»); `/parada/264` y `/parada/333` (en desvío) → con aviso, `gtfs-marcado`,
+  nombre roto del GTFS («Av. **De** Valencia», «Coso **N.º** 54»). El contraste es exacto.
+- **Coste medido:** build en frío completo **con los DOS barridos** = **5m54s** (nombres 141s + correspondencias
+  141s + resto). Dentro del ~6,5 min previsto. Hostinger no publica límite: si se cortara, el deploy falla
+  visible y la web se queda con la versión anterior.
+- **Alcance:** solo `scripts/ensure-nombres.ts` + el orden en `package.json`. **Cero cambios** a `barrido.ts`,
+  el aviso de la UI, el parser o los consumidores. Verde: tsc · vitest **539** · lint (0 err) · playwright **831**.

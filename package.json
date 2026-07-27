@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run gtfs:fetch && npm run data:build && npm run correspondencias:ensure && next build",
+    "build": "npm run gtfs:fetch && npm run nombres:ensure && npm run data:build && npm run correspondencias:ensure && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -25,6 +25,7 @@
     "auditoria": "playwright test e2e/auditoria --project=360px --grep-invert=NUNCA",
     "flota:build": "tsx scripts/build-flota.ts",
     "nombres:build": "tsx scripts/build-nombres.ts",
+    "nombres:ensure": "tsx scripts/ensure-nombres.ts",
     "correspondencias:build": "tsx scripts/build-correspondencias.ts",
     "correspondencias:ensure": "tsx scripts/ensure-correspondencias.ts",
     "coords:solo-barrido": "tsx scripts/coords-solo-barrido.ts",
