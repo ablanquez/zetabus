@@ -545,3 +545,16 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   visible y la web se queda con la versión anterior.
 - **Alcance:** solo `scripts/ensure-nombres.ts` + el orden en `package.json`. **Cero cambios** a `barrido.ts`,
   el aviso de la UI, el parser o los consumidores. Verde: tsc · vitest **539** · lint (0 err) · playwright **831**.
+
+### Fase 21 · README: documentada la capa de nombres (cerrado el hueco de la Fase 20)
+
+- El README describía la capa de **correspondencias** en el build pero **no la de nombres** (hueco reportado
+  al cerrar la Fase 20). Añadida una sección `### La capa de nombres`, **paralela** a la de correspondencias
+  (mismo sitio, tono y longitud): qué es (el `ucwords()` del export rompe los nombres → se **piden** a
+  `get_stops_list`), cuándo corre (`nombres:ensure` **antes** de `data:build`, y por qué ese orden), el
+  resultado **medido** (918 de 934 con nombre de Avanza, 98 %; 16 marcadas, que son el corredor de desvíos
+  del día → varía) y el fail-safe (Avanza caída → todas al GTFS marcado, el build lo dice).
+- ⚠️ El guardián `readme-no-miente` ancla `/(\d+) paradas/`==934 y `/(\d+) líneas/`==44: el texto se redactó
+  para que **solo «934» quede pegado a «paradas»** y **ningún número a «líneas»** («sus líneas van desviadas»).
+  Verde: `readme-no-miente` **24** ✓ · `npm test` **539** · vigía verde.
+- **Alcance:** solo `README.md` (+ esta bitácora). Cero código. El hueco queda cerrado.

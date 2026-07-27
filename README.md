@@ -292,6 +292,30 @@ código, no una copia— se dispara con `POST /api/regenerar`, protegido por un 
 Si el token no está configurado en el servidor, **el endpoint no ejecuta nada**: responde `503`.
 Ver [`.env.example`](.env.example).
 
+### La capa de nombres
+
+Los nombres de parada del GTFS vienen rotos: el exportador de Avanza les mete un
+`ucwords()` que estropea mayúsculas y abreviaturas («Av. **De** Valencia», «Coso **N.º**
+54»). El operador los escribe bien en `get_stops_list` —el mismo endpoint que los
+desvíos—, así que **no se corrigen a mano: se PIDEN**, en el *build*, y se hornean en las
+paradas.
+
+`nombres:ensure` corre **antes** de `data:build` (genera la tabla solo si falta), y ese
+orden no es casual: `data:build` es quien la lee y la aplica, así que una tabla que
+naciera después llegaría cuando el artefacto ya está horneado sin nombres. Hoy quedan 918
+de las 934 paradas con el nombre confirmado de Avanza (un 98 %); las **16** restantes se
+quedan con el del GTFS. Y lo honesto: esas 16 son las que Avanza no da **porque hoy sus
+líneas van desviadas fuera de ellas** — mañana serán otras.
+
+Esas 16 llevan en pantalla un aviso, «nombre sin confirmar»: ahora sale en 16 y no en
+todas, y por eso **informa** en vez de ser ruido. Y como con las correspondencias, si el
+operador está caído durante el *build* **no se muere**: no hay tabla, todas las paradas
+caen al nombre del GTFS marcado, y el build lo dice.
+
+```bash
+npm run nombres:build   # regenerar la tabla a mano (~2 min)
+```
+
 ### Ver cómo funciona sin tocar la red
 
 ```bash
