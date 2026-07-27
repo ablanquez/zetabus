@@ -558,3 +558,25 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   para que **solo «934» quede pegado a «paradas»** y **ningún número a «líneas»** («sus líneas van desviadas»).
   Verde: `readme-no-miente` **24** ✓ · `npm test` **539** · vigía verde.
 - **Alcance:** solo `README.md` (+ esta bitácora). Cero código. El hueco queda cerrado.
+
+### Fase 22 · Cabeceras de seguridad: +X-Frame-Options, +HSTS, +Permissions-Policy (perímetro, Fase 2 de la guía)
+
+- `securityheaders.com` daba **C**: faltaban `Strict-Transport-Security`, `X-Frame-Options` y
+  `Permissions-Policy`. Añadidas en `next.config.ts` → `headers()`. **Sin tocar la CSP** (la
+  `upgrade-insecure-requests` que ve el escáner **viene del hosting, no de la app** — confirmado: 0
+  coincidencias de CSP en el código) ni el `Cache-Control`.
+- ⚠️ **Permissions-Policy INFORMADA, no copiada a ciegas:** grep confirmó que `navigator.geolocation` **no
+  se usa ni una vez** (el chip «Cerca de mí» es decorativo, [Buscador.tsx:26]), ni cámara, ni micrófono, y
+  que Leaflet no pide nada del navegador → `camera=(), microphone=(), geolocation=()` (apaga las tres,
+  incluida la propia página). El día que se haga el «cerca de mí», se abre `geolocation=(self)`.
+- ⚠️ **HSTS es pegajosa:** el `max-age` fuerza HTTPS un año AUNQUE se retire la cabecera; si el SSL cayera,
+  el sitio quedaría inaccesible para quien ya la recibió. Se asume porque el SSL de Hostinger es estable y
+  es lo estándar (decisión escrita en el commit).
+- **Revisa una decisión anterior:** `docs/auditoria/12·B-D1` anotaba las tres como «adorno/teatro» (informe
+  **histórico**, se queda como está); el comentario de `next.config.ts` se actualizó para no contradecirse.
+- **Contraprueba (la cabecera que LLEGA):** *antes* (producción) = solo `referrer-policy` +
+  `x-content-type-options` + CSP del hosting; *después* (local `build`+`start`) = las **tres nuevas
+  presentes** en `/`, `/parada/744` y `/linea/35`. **Mapa:** `/parada/744` renderiza `.leaflet-container`,
+  **16 teselas OSM 200 / 0 fallidas, 0 errores y 0 avisos de consola** en las tres rutas. Verde: tsc ·
+  vitest **539** · lint (0 err) · playwright **830** (+1 flaky de red, re-pasado 15/15).
+- **Alcance:** solo `next.config.ts`. No CSP, no `Cache-Control`, no código de app.

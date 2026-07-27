@@ -9,35 +9,51 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   /**
-   * ⭐⭐ LAS DOS CABECERAS QUE APLICAN DE VERDAD A ESTA APLICACIÓN. Y SOLO ESAS DOS.
+   * ⭐⭐ LAS CABECERAS DE SEGURIDAD. Cinco, y cada una con su porqué: una lista
+   * larga no es una app más segura, es una app que PARECE más segura, así que aquí
+   * cada línea se gana el sitio o se va.
    *
    * ═══════════════════════════════════════════════════════════════════════════
-   *  ⚠️ LO QUE **NO** SE PONE, Y POR QUÉ — porque decirlo es parte del trabajo:
+   *  SE PONEN:
    *
-   *  · `Content-Security-Policy` — **cara y arriesgada aquí.** Next inyecta
-   *    scripts en línea y Leaflet inyecta estilos, así que haría falta *nonce* y
-   *    un middleware: ~1 día de trabajo con capacidad real de romper el mapa. Y
-   *    **sin formularios, sin sesiones y sin login, el retorno es bajo.** Puesta a
-   *    medias (o en `report-only` sin mirar los informes) es PEOR que no ponerla:
-   *    parece protección y no lo es.
+   *  · `Referrer-Policy` · `X-Content-Type-Options` — las de siempre. Su porqué,
+   *    con el daño concreto que evita cada una, va EN LÍNEA junto a ellas abajo.
    *
-   *  · `X-Frame-Options` / `frame-ancestors` — **adorno en esta app.** Protegen
-   *    del *clickjacking*: engañar a alguien para que pulse algo con efecto.
-   *    **ZetaBus no tiene ni un solo botón con efecto en el servidor.** Lo peor
-   *    que consigue quien la enmarque es enseñar horarios de autobús.
+   *  · `X-Frame-Options: SAMEORIGIN` — anti-clickjacking. En un visor sin un solo
+   *    botón con efecto en el servidor el riesgo real es casi nulo (lo peor que
+   *    logra quien la enmarque es enseñar horarios), pero es estándar y gratis, y
+   *    cierra la puerta a que la embeban y la hagan pasar por suya.
    *
-   *  · `Permissions-Policy` — **adorno.** No se usa geolocalización, ni cámara,
-   *    ni micrófono, ni pagos. No hay permiso que denegar.
+   *  · `Permissions-Policy: camera=(), microphone=(), geolocation=()` — apaga las
+   *    tres APIs sensibles PARA TODOS, la propia página incluida. Y NO a ciegas: se
+   *    comprobó por grep que `navigator.geolocation` no se usa ni una vez (el chip
+   *    «Cerca de mí» es decorativo), ni cámara, ni micrófono, y que Leaflet no pide
+   *    nada del navegador. Apagar lo que no se usa no rompe nada y deja dicho que no
+   *    se pide. El día que se haga el «cerca de mí», se abre `geolocation=(self)`
+   *    aquí y en ningún otro sitio.
    *
-   *  · `Strict-Transport-Security` — **sí aplica, pero NO AQUÍ.** Es del hosting.
-   *    Declararla desde la aplicación sin HTTPS garantizado puede dejar el sitio
-   *    inaccesible para quien la reciba una vez.
+   *  · `Strict-Transport-Security: max-age=31536000; includeSubDomains` — fuerza
+   *    HTTPS un año. ⚠️ ES PEGAJOSA: el navegador que la ve fuerza HTTPS durante el
+   *    `max-age` AUNQUE se retire la cabecera; si el SSL cayera, el sitio quedaría
+   *    inaccesible para quien ya la recibió. Se asume porque el SSL de Hostinger es
+   *    estable y es lo estándar.
    *
-   *  · `X-XSS-Protection` — **obsoleta.** Retirada de los navegadores modernos.
-   *    Ponerla sería teatro.
+   *  ⚠️ ESTO REVISA UNA DECISIÓN ANTERIOR. Las tres de arriba estaban anotadas como
+   *     «adorno» en `docs/auditoria/12-perimetro-y-publicacion.md`·B-D1 (ese informe
+   *     describe su momento y se queda como está). Se añaden ahora a sabiendas de que
+   *     en un visor sin login no suben la seguridad REAL: son baratas, estándar, y el
+   *     escaneo del perímetro (securityheaders) las pide.
    *
-   *  ⇒ Una lista larga de cabeceras no es una app más segura: es una app que
-   *    parece más segura. Ver `docs/auditoria/12-perimetro-y-publicacion.md`·B-D1.
+   * ═══════════════════════════════════════════════════════════════════════════
+   *  SIGUEN SIN PONERSE:
+   *
+   *  · `Content-Security-Policy` — cara y arriesgada aquí. Next inyecta scripts en
+   *    línea y Leaflet estilos: haría falta *nonce* y middleware, ~1 día con
+   *    capacidad real de romper el mapa (las teselas vienen de otro dominio). Sin
+   *    formularios ni sesiones el retorno es bajo, y a medias es PEOR que nada. Otra
+   *    tanda, con pruebas. No se pone CSP desde la app.
+   *
+   *  · `X-XSS-Protection` — obsoleta, retirada de los navegadores modernos. Teatro.
    * ═══════════════════════════════════════════════════════════════════════════
    */
   async headers() {
@@ -72,6 +88,15 @@ const nextConfig: NextConfig = {
            * Barato y correcto. Importa sobre todo en `/api/*`, que devuelve JSON.
            */
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+
+          // Anti-clickjacking. No necesitamos que nadie nos embeba.
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+
+          // Fuerza HTTPS un año. Pegajosa (ver arriba); el SSL de Hostinger es estable.
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+
+          // Apaga geolocalización/cámara/micrófono para todos: ninguna se usa (grep).
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
     ];
