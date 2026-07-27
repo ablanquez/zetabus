@@ -2280,15 +2280,6 @@ procedencia (`avanza-web`/`observacion_propia`), el fichero modelado para las do
 retome, no empieza de cero.
 
 ## 9 · Método y entorno
-Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
-nuevo por un desvío nuevo → mismo agujero. La idea (aparcada a propósito, NO se metió en la Tanda B):
-un proceso que resuelva solo los postes solo-barrido nuevos, con **prioridad de fuentes** (GTFS >
-`avanza-web` > `observacion_propia`), en vez de a mano uno a uno. Es *"el comportamiento va en la tabla,
-no en el código"* aplicado a las coordenadas. **Base ya construida:** el feed como fuente, el patrón de
-procedencia (`avanza-web`/`observacion_propia`), el fichero modelado para las dos fuentes. Cuando se
-retome, no empieza de cero.
-
-## 9 · Método y entorno
 
 **Levantar:**
 ```
@@ -2316,7 +2307,44 @@ usabilidad manda quien la usa.**
 
 ---
 
-## 10 · La frase que resume el proyecto
+## 10 · 🔍 PROTOCOLO DE AUDITORÍAS EXTERNAS (escáneres de terceros)
+
+**Para qué está esto:** convertir "probar herramientas sueltas" en una **checklist repetible** — qué se
+pasa, qué mide cada una, qué salió y cuándo. Sirve para ZetaBus y para los proyectos siguientes (Turnia,
+Desplázame): el día que toque auditar, la lista ya está hecha.
+
+⚠️ **REGLA DE LECTURA (aplica a TODAS):** son **mediciones de laboratorio**, no certificados. Varían
+entre ejecuciones sin que hayas tocado nada (carga del servidor de prueba, red del momento). Y una nota
+alta NO significa "está bien": significa "esto concreto que mide, cuadra". **El instrumento también
+miente aquí** — es el mismo principio del resto del documento aplicado a herramientas ajenas.
+
+### Pasadas (27/07/2026)
+
+| Herramienta | Qué mide | Resultado | Nota |
+|---|---|---|---|
+| **Hostinger → Rendimiento** (Lighthouse) | Velocidad de carga | **98** escritorio · **99** móvil | Solo da la nota de Rendimiento, no las otras 3 de Lighthouse |
+| **securityheaders.com** (Snyk) | Cabeceras de seguridad HTTP | **C → A+** tras añadirlas | ⭐ La A+ salió **sin CSP estricta**: la mínima del hosting (`upgrade-insecure-requests`) cuenta como presente |
+
+### Pendientes de pasar (candidatas, por valor)
+
+- **Lighthouse completo** (Chrome DevTools → pestaña Lighthouse). ⭐ **La más rentable**: da 4 notas, y
+  de ZetaBus solo conocemos la de Rendimiento. Faltan **Accesibilidad, Buenas prácticas y SEO**. Gratis,
+  sin registro, y corre contra `localhost` (útil ANTES de desplegar).
+- **wave.webaim.org** — accesibilidad sobre la página real. ⚠️ Los escáneres automáticos cazan como
+  mucho el **30-40%** de los problemas de accesibilidad reales; el resto solo con lector de pantalla y
+  persona. Útil para lo que detecta, insuficiente como veredicto.
+- **search.google.com/test/rich-results** — datos estructurados (`schema.org`). ⭐ De las pocas con
+  beneficio **tangible**, no solo nota: existen esquemas de transporte (`BusStop`, `Place`) que ayudarían
+  a que Google entienda las páginas de parada. ZetaBus probablemente no tiene ninguno.
+- **Google Search Console** — no es un escáner de un rato (hay que verificar dominio), pero diría si
+  Google **indexa de verdad** las 47 URLs del sitemap. Dato real, no laboratorio.
+- **validator.w3.org** — HTML válido. Con Next suele salir limpio; caza anidamientos/atributos raros.
+- **ssllabs.com/ssltest** — configuración TLS. ⚠️ Poco accionable: **el SSL lo gestiona Hostinger**, así
+  que si la nota no fuera perfecta, poco se puede tocar. Curiosidad más que tarea.
+
+---
+
+## 11 · La frase que resume el proyecto
 
 > **El GTFS oficial da la topología, pero miente cuando hay obras — y por calendario.**
 > **La API viva da la ruta real, pero no las supresiones.**
