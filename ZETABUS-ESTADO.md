@@ -57,6 +57,20 @@ id="avz_bus_ajax_nonce">`), lo baja un GET normal. **Confirmado desde la IP de H
 - ⚠️ Cabo abierto: el nonce es dato volátil (validez WP ~12 h) — NUNCA se cablea, se re-scrapea. Si Avanza
   cambia la página del nonce, `leerNonce` falla RUIDOSO (HTML no regex) → degradado honesto, no silencio.
 
+## ⏳ EN LOCAL, PENDIENTE DE DESPLEGAR (27/07) — la CAPA DE NOMBRES ya llega al build
+El arreglo del nonce desbloqueó también `nombres:build` (mismo endpoint). Se enganchó al build con un
+`nombres:ensure` (commit `387546a`, `ahead 1`, **sin push**): `gtfs:fetch && nombres:ensure && data:build
+&& correspondencias:ensure && next build`. **El orden es crítico** — la tabla es ENTRADA de `data:build`
+(L78).
+- **El efecto:** el aviso "⚠ nombre sin confirmar" baja de **934 paradas a 16** (medido en build local en
+  frío). Deja de ser ruido; las 16 son el corredor de desvíos de hoy, donde el aviso SÍ informa. **L77.**
+- **Coste:** el build pasa a ~6 min (5m54s medido: dos barridos de ~141 s). Hostinger no publica límite;
+  si se cortara, el deploy falla VISIBLE en los logs y la web se queda con la versión anterior.
+- ⚠️ Al desplegar: **purgar el CDN a mano** (README → Desplegar).
+- ✅ El README ya documenta la capa de nombres (commit `2bdc988`), a la par que la de correspondencias
+  (con el porqué del orden y las cifras reales). Guardián `readme-no-miente` verde.
+> **2 commits en local sin push:** `387546a` (nombres:ensure) + `2bdc988` (README) + el de este estado.
+
 **Última actualización:** 27/07/2026
 
 ---
@@ -957,6 +971,41 @@ líneas desviadas detectadas, ZetaBus AL DÍA. Dos estrategias de nonce (build f
 reconocer (cookies Radware = bot-wall) es sospechosa POR encajar tan fácil.** La verdad estaba a un
 experimento de distancia (con nonce vs sin nonce), no en la firma reconocible. Aislar la variable >
 reconocer el patrón.*
+
+⭐⭐ **L77 · UN AVISO QUE GRITA EN TODAS NO SE ARREGLA EN LA UI — SE ARREGLA DÁNDOLE EL DATO QUE LE FALTA.**
+Antonio cazó, harto, un aviso ("⚠ nombre sin confirmar") que salía **debajo de CADA parada**. Diagnóstico
+correcto: **el aviso no estaba mal diseñado** — es un `if` limpio sobre la fuente del nombre
+(`gtfs-marcado` vs `avanza-web`). Salía en las 934 porque **faltaba la tabla de nombres**
+(`src/generated/nombres.json`): `nombres:build` existía y funcionaba, pero **no estaba enganchado a nada**
+y la tabla está gitignorada (dato raspado: no se versiona). Sin tabla → todas al GTFS → todas marcadas.
+> ⭐⭐ **El arreglo fue AGUAS ARRIBA, no en la pantalla:** enganchar `nombres:ensure` al build (antes de
+> `data:build`, que es quien hornea los nombres). Resultado medido: **el aviso baja de 934 a 16.** Y esas
+> 16 no son residuo: son **el corredor de desvíos de hoy** (Coso, Av. Valencia, P. Independencia, San
+> Vicente de Paúl…) — Avanza no las da porque las líneas van desviadas fuera. **El aviso pasó de ruido
+> constante a información con significado, sin tocar una línea de su código.**
+✅ *La verificación que lo cerró: abrir la página y CONTRASTAR. Las confirmadas salen bien escritas
+("Agustín Príncipe n.º 2", sin aviso); las marcadas llevan el `ucwords()` roto del GTFS ("Av. De Valencia
+N.º 41", con aviso). El aviso coincide EXACTAMENTE con las que de verdad tienen el nombre feo.*
+⚠️ *La tentación era rediseñar/suavizar el aviso. Habría sido optimizar para un estado anómalo — y peor:
+habría escondido un aviso que SÍ debe verse en esas 16. **Antes de tocar cómo se comunica algo, mira si
+el problema es lo que se está comunicando.***
+
+⭐⭐ **L78 · DOS PROCESOS QUE PIDEN LO MISMO PUEDEN SER INUNIFICABLES POR LA FASE EN QUE CORREN.**
+Al ver que el barrido de correspondencias YA llamaba a `pedirNombres` (misma red, mismos 74 sentidos,
+mismos campos), la conclusión "obvia" fue: **unifícalos, un barrido en vez de dos.** El diseño en papel
+—pedido ANTES de escribir código— la tumbó con una trampa estructural:
+> ⭐ **La tabla de nombres es ENTRADA de `data:build`** (los nombres se hornean dentro de `gtfs.json`) →
+> debe existir **ANTES**. **El barrido de correspondencias necesita la topología YA horneada**
+> (`import artefacto from '@/generated'`) → corre **DESPUÉS**. Uno va antes del horno, el otro después.
+> **Un solo barrido no puede estar en los dos lados.** El `package.json` los tenía separados por
+> `data:build` no por descuido: era la única ordenación posible.
+✅ *Y el argumento de fondo, más allá de lo técnico: **tienen ciclos de vida distintos.** Los nombres son
+estables (una vez por build sobra); las correspondencias se refrescan cada noche por cron. Meterlos en un
+mismo barrido es remar contra esa diferencia. Se eligió el camino separado (dos `ensure`), que paga solo
+minutos de build (~6 min medidos) y NO toca `barrerCorrespondencias` — el órgano que ya funciona en prod.*
+⚠️ *Lección de método: **"piden lo mismo" no implica "son la misma cosa".** La red era idéntica; la FASE,
+incompatible. Y esto se cazó en papel, por el precio de un diseño — no en código, tras dos horas y un
+rollback. **El diseño previo pagó su coste entero en una sola tanda.***
 
 ---
 
