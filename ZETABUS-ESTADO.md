@@ -35,8 +35,31 @@ CHANGELOG + badge, momento oro (L70).
 - ✅ **package-lock rancio** (0.1.0 → 1.0.0) corregido.
 > ⚠️ **PROCEDIMIENTO DE DEPLOY (documentado en README):** `git push` → auto-deploy Hostinger → **purgar
 > caché del CDN a mano** (panel → Caché → Borrar caché) → verificar en vivo. Sin la purga: HTML viejo,
-> web sin estilos. `ahead 3` en local (CDN doc + SECURITY + lock) sin push al cierre de esta cola.
-**Última actualización:** 26/07/2026
+> web sin estilos. (26/07 se pusheó todo, incluido este lote; en vivo con estilos.)
+
+## ⛔⛔ CABO ABIERTO GRANDE (27/07) — AVANZA CERRÓ LOS RECORRIDOS CON UN MURO ANTI-BOT (Radware)
+**El índice de correspondencias NO se puede regenerar: la fuente se cerró a bots.** Diagnóstico
+completo (L75): el endpoint de recorridos (`zaragoza.avanzagrupo.com/wp-admin/admin-ajax.php`,
+`action=get_stops_list`) devuelve **403 + cookies Radware** a cualquier cliente HTTP plano. Global,
+determinista, UA-agnóstico → **cambio permanente, no una caída.** El cron dispara bien (verificado en
+log) pero choca con el muro cada noche. **Esperar NO lo arregla.**
+- **ZetaBus FUNCIONA en degradado:** la web va, las paradas abren, las llegadas en vivo salen (usan OTRO
+  host, `gps.avanzabus.com`, sin muro). Solo faltan las correspondencias provisionales (desvíos del día),
+  y la app lo dice honestamente ("Servicio reducido"). El degradado honesto ES el comportamiento correcto.
+- **Vías de arreglo (NINGUNA hecha — decisión pendiente, todas son tanda seria):**
+  1. Resolver el reto Radware (navegador headless que cargue la página, resuelva el JS y reuse las
+     cookies `__uzm*` en el POST). Complejo y frágil (los muros cambian); y es forzar una fuente que
+     explícitamente no quiere bots.
+  2. Otra fuente para el recorrido (¿GTFS shapes? ¿otro endpoint?) — investigación.
+  3. Aceptar el degradado de esa capa como **permanente** y ajustar ZetaBus para comunicarlo como estado
+     estable, no como "avería temporal".
+- ⚠️ Ojo: horarios (`horario.ts`) y KML (`kml.ts`) comparten host → probablemente también tras el muro
+  (a verificar si se retoma).
+- ⚠️ "Genero el índice en local y lo subo" NO funciona: (a) el índice está gitignoreado (el push no lo
+  sube), y (b) Radware bloquea también en local (mismo 403). El barrido está roto en TODAS partes, no en
+  Hostinger — el muro está en la fuente, no en el sitio.
+
+**Última actualización:** 27/07/2026
 
 ---
 
@@ -887,6 +910,32 @@ la tiene, y el comando `grep` para que el lector lo compruebe. Y se corrió cada
 > mayor, o si ZetaBus añade alguna de esas features). No vende seguridad eterna: dice "esto es cierto
 > HOY bajo estas condiciones, y aquí está cuándo dejaría de serlo". Epistemología honesta en la pieza
 > donde una mentira sería más cara. No forzado, no ignorado: analizado y aceptado con motivo.*
+
+⭐⭐ **L75 · "0 ERRORES" NO ES "TODO BIEN" — la fuente puede cerrarse con un 200/403 que el contador no ve.**
+27/07: ZetaBus llevaba en degradado sin auto-curarse. La cadena de diagnóstico (SSH + reproducir la
+petición + VER el contenido literal) desmontó **tres suposiciones** de golpe:
+1. **No era el cron.** El log del servidor probó `02:00:03 barrido aceptado` — el cron dispara solo,
+   perfecto. (El "cron verificado" del estado era cierto; lo que faltaba era saber que falla por la
+   fuente, no por el cron.)
+2. **No era el token ni el endpoint.** `/api/regenerar` respondió `aceptado:true` — sano.
+3. **`avanza.errores: 0` NO significaba "Avanza responde bien".** El contador solo suma en el `catch`
+   (fetch reventado/timeout). Un **403** es un fetch que SÍ volvió → suma `peticiones`, deja `errores:0`,
+   y el "no sirve" se decide arriba (`status !== 200` → ilegible). Por eso el diag decía `errores:0` y el
+   barrido decía "0% respondió": **medían cosas distintas, no se contradecían.**
+> ⭐⭐ **La causa raíz (vista, no inferida):** Avanza puso **Radware Bot Manager** delante del endpoint de
+> recorridos (`zaragoza.avanzagrupo.com/wp-admin/admin-ajax.php`). El POST del barrido recibe **403 +
+> cuerpo vacío + cookies `__uzm*`/`rdwr_response`** (firma de Radware). Global (0%, no parcial),
+> UA-agnóstico (Chrome también 403), determinista (4 sentidos idénticos). **Cambio deliberado y
+> permanente, no una caída** — esperar NO lo arregla.
+✅ *Por qué la WEB sigue funcionando: las llegadas en vivo pegan a **otro host** (`gps.avanzabus.com`),
+que NO está tras el muro. El recorrido pega a `zaragoza.avanzagrupo.com`, que SÍ. No es "Avanza caído":
+es "una parte de Avanza se cerró a bots, justo la del recorrido". El degradado honesto de ZetaBus es,
+irónicamente, el comportamiento correcto ante esto — la app dice la verdad ("Servicio reducido") en vez
+de inventar desvíos.*
+⚠️ *Lección de método: **para saber por qué una fuente "no responde", hay que VER lo que devuelve, no
+mirar el contador.** El contador dijo "0 errores"; la respuesta literal dijo "403 Radware". La verdad
+estaba en el cuerpo/cabeceras, no en la métrica agregada. Otra de "el instrumento mide lo que mide, no
+lo que crees".*
 
 ---
 
@@ -2114,9 +2163,10 @@ capturas que nunca viajaron. Detalle en §7.
 - **15 vulnerabilidades ACEPTADAS documentadas** en `SECURITY.md` (grupos A+B, no explotables en ZetaBus,
   sin parche no-breaking). Se revisan si aparece parche, update mayor, o si ZetaBus añade middleware/
   Server Actions/next-image/rewrites (el análisis caducaría). L73·L74.
-- **Modo degradado transitorio:** si Avanza está caído al desplegar/barrer, la app arranca sin índice de
-  correspondencias (degradado honesto, no bug). Se auto-resuelve con el cron de las 02:00 o
-  `npm run correspondencias:build` cuando Avanza responde.
+- ⛔ **Modo degradado — YA NO TRANSITORIO (27/07).** Lo que se creía "Avanza caído, se auto-cura con el
+  cron" resultó ser un **muro anti-bot permanente** (Radware) sobre el endpoint de recorridos. El cron
+  dispara pero choca con el 403. **NO se auto-resuelve.** Ver el CABO GRANDE en la cabecera y L75. Las
+  vías de arreglo (Radware headless / otra fuente / aceptar degradado permanente) están sin decidir.
 
 **⬜ TANDA FUTURA APARCADA — jerarquía de procedencia de coordenadas.**
 Hoy las 9 se resolvieron una vez con un script. Pero mañana Avanza puede sacar un poste solo-barrido
