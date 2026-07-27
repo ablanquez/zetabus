@@ -71,6 +71,19 @@ El arreglo del nonce desbloqueó también `nombres:build` (mismo endpoint). Se e
   (con el porqué del orden y las cifras reales). Guardián `readme-no-miente` verde.
 > **2 commits en local sin push:** `387546a` (nombres:ensure) + `2bdc988` (README) + el de este estado.
 
+## ⏳ TAMBIÉN EN LOCAL (27/07) — CABECERAS DE SEGURIDAD (commit `b471605`)
+Escaneo externo (`securityheaders.com`) daba **C**: faltaban `X-Frame-Options`, `HSTS` y
+`Permissions-Policy`. Añadidas en `next.config.ts`, **verificadas con `curl -I` en local** (llegan de
+verdad, no solo escritas) en `/`, `/parada/744` y `/linea/35`.
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()` — decidida DESPUÉS de comprobar con grep
+  que ZetaBus **no usa ninguna** (`navigator.geolocation`: cero; Leaflet no usa `.locate()`, solo pinta
+  teselas). El día que se haga el "cerca de mí", se abre `geolocation=(self)`.
+- ⚠️ **HSTS es pegajosa**: el navegador que la recibe fuerza HTTPS un año aunque se quite la cabecera.
+  Decisión consciente, constancia en el commit.
+- **La CSP NO se toca** (sigue `upgrade-insecure-requests`, del hosting). Una CSP estricta es lo que
+  subiría a A, pero puede dejar sin mapa (Leaflet carga teselas de OSM). Tanda aparte, con pruebas.
+- Mapa verificado tras el cambio: 16 teselas OSM 200/0 fallidas, consola sin errores.
+
 **Última actualización:** 27/07/2026
 
 ---
@@ -1313,6 +1326,12 @@ sería peor"*. **Verificó en vez de asumir lo que yo le dije.**
 `entities.ts` *(**no son muertos, son CABOS**)* · CSP *(~1 día, puede romper el mapa, retorno bajo
 sin formularios)* · `X-Frame-Options` y `Permissions-Policy` — ⭐ *"en una app sin un solo botón con
 efecto son adorno, **y decirlo forma parte del trabajo**"*.
+> ⭐ **REVISADO el 27/07** (y es sano que una decisión se revise con contexto nuevo): un escaneo externo
+> (`securityheaders.com` → **C**) puso las cabeceras en el escaparate, no solo en la teoría. Se
+> añadieron `X-Frame-Options`, `HSTS` y `Permissions-Policy` (commit `b471605`). El argumento de "son
+> adorno **para la seguridad real de ESTA app**" sigue siendo cierto — lo que cambió es que ahora hay un
+> segundo motivo (el perímetro se escanea, y un reclutador técnico lo mira). **La CSP sigue fuera**: es
+> la que de verdad sube la nota y la que puede romper el mapa de Leaflet. Esa decisión NO se revisó.
 
 ### 25/07 (cierre) — ⭐⭐ LOS DOS CABOS DE LA PARTE B, Y LA TANDA 7 CERRADA
 
@@ -2224,6 +2243,19 @@ capturas que nunca viajaron. Detalle en §7.
 - ✅ **Los marcos de móvil ya no son a mano** — `scripts/marco-movil.mjs` scripta la receta de
   `f7a642d` (para PNG; el GIF no admite marco, L70). Disponible para re-enmarcar los 3 PNG si hiciera
   falta.
+
+**⬜ CABOS DETECTADOS EL 27/07 (sin diagnosticar — mirar con cabeza fresca):**
+- **"PLAZA EMPERADOR CARLOS QUINTO" vs "Plaza Emperador Carlos V".** La MISMA parada sale con dos
+  grafías según la vista: el feed de llegadas en vivo (`gps.avanzabus.com`) dice "CARLOS QUINTO"; el GTFS
+  dice "Carlos V". ⚠️ NO diagnosticado: falta confirmar si es literal de Avanza (dos fuentes, dos
+  grafías → decisión de PRODUCTO: ¿respetar la fuente, coherente con la tesis, o normalizar?) o si
+  ZetaBus transforma algo por el camino (→ entonces es BUG). Son escenarios con respuestas opuestas.
+  *(Relacionado: `nombres.ts` ya decidió que un poste con dos nombres según sentido es un DATO, no un
+  error — se registra como discrepancia. Esto es el mismo fenómeno entre fuentes distintas.)*
+- **El chip "Cerca de mí" del buscador es DECORATIVO.** `Buscador.tsx:26` — un `<span aria-hidden>` sin
+  `onClick`: tiene pinta de control y no hace nada. En una app cuya tesis es "la interfaz no miente", un
+  elemento con aspecto de botón que no responde merece una mirada. Puede estar justificado (placeholder
+  visual, `aria-hidden` para que no se anuncie como pulsable), pero está sin decidir.
 
 **⬜ CABOS PERMANENTES DE PRODUCCIÓN (26/07):**
 - ⚠️ **Purga manual del CDN tras CADA deploy.** No es un bug a arreglar: es el procedimiento (README →
