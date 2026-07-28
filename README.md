@@ -364,7 +364,8 @@ mirado la pantalla»*.
 
 **3 · Lo que se descubre se escribe, aunque duela.** Cada informe de auditoría trae una sección de
 lo que **no** se pudo comprobar, y las lecciones de método están en
-[`docs/LECCIONES.md`](docs/LECCIONES.md) — incluidas las que se aprendieron equivocándose.
+[`docs/LECCIONES.md`](docs/LECCIONES.md) (L1–L9) y, de la L10 en adelante, en el registro vivo de
+[`ZETABUS-ESTADO.md`](ZETABUS-ESTADO.md) — incluidas las que se aprendieron equivocándose.
 
 ---
 

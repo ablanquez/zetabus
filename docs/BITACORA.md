@@ -580,3 +580,29 @@ cara a humano. Los números, verificados contra el motor/estado real antes de to
   **16 teselas OSM 200 / 0 fallidas, 0 errores y 0 avisos de consola** en las tres rutas. Verde: tsc ·
   vitest **539** · lint (0 err) · playwright **830** (+1 flaky de red, re-pasado 15/15).
 - **Alcance:** solo `next.config.ts`. No CSP, no `Cache-Control`, no código de app.
+
+### Fase 23 · Limpieza (parcial): puntero de lecciones corregido; el chip y el TTL, PARADOS por descubrimiento
+
+De tres limpiezas pedidas, **solo una se pudo hacer limpia**; las otras dos chocan con lo que dice el
+código, y pararse era lo correcto.
+
+- **✅ Puntero de lecciones (README).** [README.md:366-367] apuntaba las lecciones a `docs/LECCIONES.md`
+  (que tiene **L1–L9**) sin decir que de la **L10 en adelante** viven en `ZETABUS-ESTADO.md`. No era falso
+  —no decía «todas»— pero era un puntero incompleto. Corregido con el enlace al ESTADO. Guardián
+  `readme-no-miente` verde (**24**); el enlace nuevo resuelve.
+- **⛔ Chip «Cerca de mí»: NO EXISTE en el código.** El render de `Buscador.tsx` (43-106) es label + input
+  + pista + lista de resultados; el `aria-hidden` de la 87 es el **badge del número** de cada resultado.
+  Las únicas menciones a «Cerca de mí» en `src/` son **comentarios que dicen lo contrario**: *«ZetaBus
+  TAMPOCO lo tiene todavía»* [page.tsx:44], *«NO ESTÁ HECHO AQUÍ TAMPOCO»* [Buscador.tsx:29] (describen el
+  chip de la app de REFERENCIA, no el nuestro). **Ningún test lo cubre** (nada que ponerse rojo). No se
+  puede «quitar» lo que no está: parado. (La nota del ESTADO·2255 apunta a `Buscador.tsx:26`, que es una
+  LÍNEA DE COMENTARIO, no un elemento — a reconciliar.)
+- **⛔ TTL_RECORRIDO_MS: muerto Y con un test que afirma algo FALSO.** Nadie lo importa (código muerto,
+  cierto). PERO el recorrido se cachea de verdad con `motor().cache`, TTL por defecto **15 s**
+  [motor.ts:95 → dos-pisos.ts:45] (2 s en `fingir`), **no 30 min**. El comentario de [desvios.ts:204] («la
+  caché del recorrido: 30 min») y el test [pantalla-no-miente.test.ts:440] («son 30 minutos… si bajara a
+  15 s ×120 tráfico») afirman un caché de 30 min **que no existe**: el recorrido YA está a los 15 s que el
+  test dice temer. Borrar la constante pondría rojo un test que no vigilaba algo real. Parado: ¿solo
+  cosmético (borrar const + test), o había intención de cachear recorridos 30 min que nunca se cableó
+  (cabo de eficiencia: hoy se pide `get_stops_list` cada 15 s por sentido)? Lo decide Antonio.
+- **Diagnóstico de la versión:** entregado aparte, solo lectura, sin implementar.
