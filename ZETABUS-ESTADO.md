@@ -84,7 +84,17 @@ verdad, no solo escritas) en `/`, `/parada/744` y `/linea/35`.
   subiría a A, pero puede dejar sin mapa (Leaflet carga teselas de OSM). Tanda aparte, con pruebas.
 - Mapa verificado tras el cambio: 16 teselas OSM 200/0 fallidas, consola sin errores.
 
-**Última actualización:** 27/07/2026
+## ⏳ EN LOCAL, PENDIENTE DE PUSH (28/07) — 3 commits + este estado
+- `b471605` **cabeceras de seguridad** (X-Frame-Options, HSTS, Permissions-Policy) → llevó
+  `securityheaders.com` de **C a A+**. §10.
+- `97fc897` **puntero de lecciones del README** — ahora dice la verdad: `docs/LECCIONES.md` tiene L1-L9 y
+  de L10 en adelante viven aquí.
+- `c5dab60` **TTL del recorrido cableado a 1 h** (`motorRecorrido()`, caché dedicada como
+  `motorHorario`). Antes: declarado 30 min, cableado ninguno, real 15 s. **L79.**
+> ⚠️ Al desplegar: **purgar el CDN a mano** (README → Desplegar). Build ~6 min si faltan las tablas.
+> Verificar en vivo: `/linea/35` (desvíos se ven), `/parada/744` (llegadas vivas, TTL 15 s intacto).
+
+**Última actualización:** 28/07/2026
 
 ---
 
@@ -1019,6 +1029,34 @@ minutos de build (~6 min medidos) y NO toca `barrerCorrespondencias` — el órg
 ⚠️ *Lección de método: **"piden lo mismo" no implica "son la misma cosa".** La red era idéntica; la FASE,
 incompatible. Y esto se cazó en papel, por el precio de un diseño — no en código, tras dos horas y un
 rollback. **El diseño previo pagó su coste entero en una sola tanda.***
+
+⭐⭐ **L79 · UNA CONSTANTE DECLARADA NO ES UNA PROTECCIÓN CABLEADA — y el test que la "vigilaba" mentía en verde.**
+`TTL_RECORRIDO_MS = 30 min` estaba declarada en `desvios.ts`, con su comentario explicando el porqué…
+y **nunca se conectó a nada**. La caché del recorrido caía al TTL por defecto: **15 segundos**.
+Consecuencia real: la vista de línea pedía `get_stops_list` a Avanza **cada 15 s por sentido**, cuando el
+diseño quería 30 min — contra la ética escrita del repo de no martillear a la fuente.
+> ⭐⭐ **Y lo peor: había un TEST que lo "vigilaba".** Afirmaba que eran 30 min y decía temer que "si
+> bajara a 15 s, ×120 el tráfico"… **cuando ya estaba a 15 s.** El test temía en verde un escenario que
+> ya estaba ocurriendo. Vigilaba una protección inexistente leyendo la CONSTANTE, no el CABLEADO.
+✅ *Arreglo (commit `c5dab60`), cableado a **1 hora**: ni 30 min (la frescura extra no compensaba) ni 6 h
+(esta capa es el detector de desvíos DEL DÍA; el índice nocturno ya cubre las 02:00 — con 6 h un corte de
+calle de las 9:00 sería invisible hasta las 15:00).*
+⚠️ **La regla que sale de aquí:** *un test que comprueba `CONSTANTE === valor` daría VERDE sobre
+exactamente este bug. **El test debe verificar el CABLEADO, no la declaración.*** La contraprueba que lo
+demostró: descablear el TTL → el test nuevo se pone ROJO (`expected 15 to be 3600`). Si hubiera seguido
+verde, no probaba nada.
+
+⭐⭐ **L80 · EL ESTADO TAMBIÉN MIENTE — una nota falsa vivió aquí hasta que alguien fue a actuar sobre ella.**
+Este documento afirmaba que el buscador tenía un chip decorativo "Cerca de mí". **No existe.** Se
+descubrió al ir a quitarlo. El origen: un reporte citó un **comentario del código** (que decía que ZetaBus
+*NO* tiene ese chip, describiendo el de la app de referencia), y al destilar se leyó la cita como si
+describiera un elemento propio.
+> ⭐ *Nadie lo verificó porque **era plausible**. Sobrevivió en la memoria del proyecto hasta que se
+> convirtió en una orden de trabajo — y solo entonces se cayó. Es el modo de fallo del propio proyecto
+> aplicado a su propia memoria: no petó, **estaba escrito con toda naturalidad**.*
+⚠️ *Corolario para el método: la destilación **hereda los errores de lectura del que destila**. Una cita
+de un comentario no es una descripción del código. Cuando el estado afirme que algo EXISTE, esa
+afirmación merece el mismo escepticismo que cualquier instrumento en verde.*
 
 ---
 
@@ -2208,8 +2246,12 @@ capturas que nunca viajaron. Detalle en §7.
   funcionando → zetabus.antonioblanquez.es"*. ⬜ **Solo queda** añadir `Sitemap:` al `robots.ts`.
 - ✅ ⭐ **EL PANEL DE CONTROL PÚBLICO `/estado`** (`9bbe188`). Público, solo lectura, cuatro estados
   honestos (al día / desactualizado / degradado / no lo sé), lee el motor importándolo (Ley 2 como
-  garantía estructural). Detalle en §7 y L63. ⬜ Verificado que el cron **disparó solo** a las
-  02:00:01 (leído en `/api/diag` el 25/07).
+  garantía estructural). Detalle en §7 y L63. ✅ **CERRADO el 28/07 — el ciclo autónomo COMPLETO,
+  verificado:** el cron disparó solo a las **02:00:01.910**, sacó el nonce, barrió **74/74 sin fallos** y
+  reescribió el índice (14 líneas desviadas detectadas). Es la primera vez que se ve el bucle entero
+  funcionando SIN intervención desde que Avanza metió el nonce. *(Antes solo se había verificado el
+  endpoint y un disparo manual — el autónomo llevaba ⬜ desde el 25/07, citando L17: "la ausencia de
+  fallo no es la presencia de la acción". Ahora hay presencia de la acción, con hora y resultado.)*
 - ✅ **LAS 9 PARADAS SOLO-BARRIDO — coordenadas Y visitables** (Tandas A+B, `78ca2e3`·`30667d4`·
   `54fba17`·`c23b237`·`b3c8611`). Detalle en §7, L65 y L66.
   ⚠️ **CORRECCIÓN de lo que este estado decía antes:** el plan era "Antonio busca las coordenadas a
@@ -2244,6 +2286,28 @@ capturas que nunca viajaron. Detalle en §7.
   `f7a642d` (para PNG; el GIF no admite marco, L70). Disponible para re-enmarcar los 3 PNG si hiciera
   falta.
 
+**⬜ CABOS NUEVOS (28/07):**
+- **`/api/diag` se quedó COJO tras separar la caché del recorrido.** El diag solo lee `motor().cache`, y
+  el recorrido vive ahora en `motorRecorrido()` → **su caché ya no se ve en el panel**. No es un fallo
+  (funciona), es **pérdida de observabilidad**: si mañana cachea mal, el diag no lo diría. Le pasa lo
+  mismo a `motorHorario` desde siempre, así que es coherente, no una anomalía. Follow-up pequeño: añadir
+  su `instantanea()` al diag. *(Ninguno de los dos lo anticipamos al elegir la opción B — es el coste que
+  apareció al implementar.)*
+- ⚠️ **REVISAR QUE ESTE DOCUMENTO NO LLEVE DATOS SENSIBLES.** `ZETABUS-ESTADO.md` está en un **repo
+  público** y a lo largo de las sesiones ha ido acumulando infraestructura: usuario del servidor, IP,
+  puerto SSH, rutas internas, la existencia del token de regeneración, cómo está montado el cron. Hay que
+  pasarle una revisión con calma. **Es literalmente la lección de Linaje** (*"`git add -A` reportó '98
+  ficheros, nada sensible' mientras las notas internas viajaban a un repositorio público"*). De los cabos
+  abiertos, **el único con implicación de seguridad real.**
+- **La VERSIÓN: diagnóstico hecho, implementación sin decidir.** No es "un número en N sitios": son **dos
+  formas** — el semver completo `1.0.0` (package.json, lock, badge del README, CHANGELOG) y el
+  `major.minor` **`1.0`** del User-Agent (transporte.ts:56, README:213, THIRD-PARTY:94). Nadie lee la
+  versión desde código (el UA está cableado por su cuenta) y **ni el badge ni el UA los vigila**
+  `readme-no-miente`. Plan recomendado: (a) **código** → hornear `src/generated/version.ts` desde
+  `package.json` en el build (patrón que el repo ya usa; evita colar el `package.json` en el bundle del
+  cliente, que publicaría la lista de dependencias); (b) **documentos** → extender `readme-no-miente` con
+  2-3 entradas (badge y UA), ~15-25 líneas, riesgo bajo. **Vigilar, no generar** — la filosofía del repo.
+
 **⬜ CABOS DETECTADOS EL 27/07 (sin diagnosticar — mirar con cabeza fresca):**
 - **"PLAZA EMPERADOR CARLOS QUINTO" vs "Plaza Emperador Carlos V".** La MISMA parada sale con dos
   grafías según la vista: el feed de llegadas en vivo (`gps.avanzabus.com`) dice "CARLOS QUINTO"; el GTFS
@@ -2252,10 +2316,24 @@ capturas que nunca viajaron. Detalle en §7.
   ZetaBus transforma algo por el camino (→ entonces es BUG). Son escenarios con respuestas opuestas.
   *(Relacionado: `nombres.ts` ya decidió que un poste con dos nombres según sentido es un DATO, no un
   error — se registra como discrepancia. Esto es el mismo fenómeno entre fuentes distintas.)*
-- **El chip "Cerca de mí" del buscador es DECORATIVO.** `Buscador.tsx:26` — un `<span aria-hidden>` sin
-  `onClick`: tiene pinta de control y no hace nada. En una app cuya tesis es "la interfaz no miente", un
-  elemento con aspecto de botón que no responde merece una mirada. Puede estar justificado (placeholder
-  visual, `aria-hidden` para que no se anuncie como pulsable), pero está sin decidir.
+- ✅ **"Cerca de mí" — FALSA ALARMA, y la nota era MÍA (corregido 28/07).** Este documento afirmaba que
+  había un chip decorativo en el buscador (`Buscador.tsx:26`). **NO EXISTE.** Al ir a quitarlo se
+  comprobó: el render es label + input + pista + resultados; el `aria-hidden` de esa zona es el badge del
+  número de cada resultado, y el de la home el triángulo `▸` del `<summary>`. Las únicas menciones a
+  "Cerca de mí" en `src/` son **comentarios que dicen lo contrario** ("NO ESTÁ HECHO AQUÍ TAMPOCO",
+  "ZetaBus TAMPOCO lo tiene todavía") y describen **el chip de la app de referencia**, no uno propio.
+  > ⚠️ **Cómo entró la mentira:** un reporte citó ese comentario, y al destilar se leyó la cita como si
+  > describiera un elemento de ZetaBus. Se escribió aquí como cabo real y **sobrevivió hasta que alguien
+  > fue a actuar sobre ella**. Es el patrón del proyecto aplicado a su propia memoria: una afirmación
+  > falsa, coherente, que nadie verifica porque parece plausible. **El estado también miente.**
+  · ⬜ Sin decidir: si matizar esos comentarios (hoy llaman al "cerca de mí" un cabo pendiente, cuando la
+    decisión es que la geolocalización se hará en el 004 y se traerá hecha). Cosmético.
+
+- **Contraste de los chips de línea (⚠️ tres herramientas coinciden).** WAVE (21), axe (16) y Lighthouse
+  (resta el 96 de Accesibilidad) señalan lo mismo: contraste insuficiente en los chips de número. Sin
+  resolver la contradicción de axe (lee `#000000` donde el elemento declara `#FFFFFF`; la clase se llama
+  `zb-num-contorno`). Hay que **medir el píxel resultante**, y si es real, es decisión de PRODUCTO: los
+  colores son los OFICIALES de Avanza. Detalle completo en §10.
 
 **⬜ CABOS PERMANENTES DE PRODUCCIÓN (26/07):**
 - ⚠️ **Purga manual del CDN tras CADA deploy.** No es un bug a arreglar: es el procedimiento (README →
@@ -2318,29 +2396,50 @@ entre ejecuciones sin que hayas tocado nada (carga del servidor de prueba, red d
 alta NO significa "está bien": significa "esto concreto que mide, cuadra". **El instrumento también
 miente aquí** — es el mismo principio del resto del documento aplicado a herramientas ajenas.
 
-### Pasadas (27/07/2026)
+### Pasadas (27/07/2026) — RONDA COMPLETA
 
-| Herramienta | Qué mide | Resultado | Nota |
+| Herramienta | Qué mide | Resultado | Caveat |
 |---|---|---|---|
-| **Hostinger → Rendimiento** (Lighthouse) | Velocidad de carga | **98** escritorio · **99** móvil | Solo da la nota de Rendimiento, no las otras 3 de Lighthouse |
-| **securityheaders.com** (Snyk) | Cabeceras de seguridad HTTP | **C → A+** tras añadirlas | ⭐ La A+ salió **sin CSP estricta**: la mínima del hosting (`upgrade-insecure-requests`) cuenta como presente |
+| **PageSpeed Insights** (Lighthouse) | 4 categorías | **Rend. 100 · Acces. 96 · Prácticas 100 · SEO 100** (móvil Y escritorio) + *Navegación agéntica 2/2* | ⭐ Métricas: escritorio FCP **0,3 s**, LCP 0,5 s; móvil (Moto G, 4G lento) 1,1 / 1,7 s. **CLS 0** |
+| **Hostinger → Rendimiento** (Lighthouse) | Velocidad | **98** escritorio · **99** móvil | ⚠️ **Google dio 100/100 el MISMO día.** Mismo motor, números distintos → el caveat de arriba, en vivo |
+| **securityheaders.com** (Snyk) | Cabeceras HTTP | **C → A+** tras añadirlas | ⭐ A+ **sin CSP estricta**: la mínima del hosting (`upgrade-insecure-requests`) cuenta como presente |
+| **SSL Labs** (Qualys) | Configuración TLS | **A+** en los **4** servidores (2 IPv4 + 2 IPv6 del CDN) | Mérito de Hostinger (gestiona el SSL), no accionable. Consistente en todos los nodos |
+| **validator.w3.org** | HTML válido | ✅ **Cero errores y cero warnings** | ⚠️ Muestra **28 bloques amarillos "Info"** que NO son errores (el validador los excluye del recuento): son la barra final de `<meta …/>`, que **React/Next genera al estilo JSX**. No es tuyo ni arreglable. *Quedarse con la impresión visual en vez del veredicto = susto falso* |
+| **rich-results** (Google) | Datos estructurados | ❌ **Ninguno detectado** | No es fallo: nunca se puso. Ver candidatos abajo |
+| **WAVE** (extensión) | Accesibilidad | 0 errores · 0 alertas · **21 errores de contraste** | ⚠️ Ver abajo el fallo de la versión WEB |
+| **axe DevTools** (extensión) | Accesibilidad | **16 incidencias, TODAS de contraste** (cero de otro tipo) | Tiene botón **"Exportación"** (la extensión de WAVE no exporta) |
 
-### Pendientes de pasar (candidatas, por valor)
+### ⚠️ WAVE web dio un 8.5 FALSO — el instrumento mintió con toda la coherencia
+La versión **web** de WAVE carga la página **dentro de un iframe**… y la `X-Frame-Options: SAMEORIGIN`
+que se añadió ESE MISMO DÍA lo bloquea. WAVE mostró **"Error!"** en su panel derecho **y aun así pintó
+un resumen completo con un AIM Score de 8.5/10** — analizando su propia página de error, no ZetaBus (lo
+delataba: "1 heading", "No page regions", un `noscript`).
+> ⭐ **No petó: PINTÓ.** Si se apunta ese 8.5 sin mirar el panel derecho, entra un dato falso al registro.
+> **Caveat permanente:** con `X-Frame-Options` puesta, **toda herramienta que audite vía iframe fallará**
+> → usar extensiones o herramientas que no framen.
 
-- **Lighthouse completo** (Chrome DevTools → pestaña Lighthouse). ⭐ **La más rentable**: da 4 notas, y
-  de ZetaBus solo conocemos la de Rendimiento. Faltan **Accesibilidad, Buenas prácticas y SEO**. Gratis,
-  sin registro, y corre contra `localhost` (útil ANTES de desplegar).
-- **wave.webaim.org** — accesibilidad sobre la página real. ⚠️ Los escáneres automáticos cazan como
-  mucho el **30-40%** de los problemas de accesibilidad reales; el resto solo con lector de pantalla y
-  persona. Útil para lo que detecta, insuficiente como veredicto.
-- **search.google.com/test/rich-results** — datos estructurados (`schema.org`). ⭐ De las pocas con
-  beneficio **tangible**, no solo nota: existen esquemas de transporte (`BusStop`, `Place`) que ayudarían
-  a que Google entienda las páginas de parada. ZetaBus probablemente no tiene ninguno.
-- **Google Search Console** — no es un escáner de un rato (hay que verificar dominio), pero diría si
-  Google **indexa de verdad** las 47 URLs del sitemap. Dato real, no laboratorio.
-- **validator.w3.org** — HTML válido. Con Next suele salir limpio; caza anidamientos/atributos raros.
-- **ssllabs.com/ssltest** — configuración TLS. ⚠️ Poco accionable: **el SSL lo gestiona Hostinger**, así
-  que si la nota no fuera perfecta, poco se puede tocar. Curiosidad más que tarea.
+### ⬜ CABO REAL detectado: el contraste de los chips de línea
+**Tres herramientas independientes coinciden** (WAVE 21, axe 16, Lighthouse resta el 96 por contraste) →
+la hipótesis de "falso positivo" se debilita mucho: **probablemente es real**.
+⚠️ Pero queda una contradicción SIN resolver: axe reporta *"color de primer plano `#000000`"* mientras el
+elemento declara `style="…color:#FFFFFF"`. Y la clase se llama **`zb-num-contorno`** → los números
+llevarían un contorno de texto, algo que los verificadores automáticos **no saben evaluar**.
+> **Cómo cerrarlo (sin decidir aún):** medir el **píxel RESULTANTE**, no el declarado (la ley del
+> proyecto). ¿De qué color se pinta de verdad ese número? Y si el contraste fuera bajo de verdad, la
+> decisión es de PRODUCTO: **esos colores son los oficiales de Avanza** (el rojo #D1221D es el de la
+> línea 31, el que la gente ve en la marquesina) → "arreglarlo" significa dejar de usar el color de la
+> línea. Mismo dilema que "Carlos Quinto vs Carlos V".
+
+### Candidatos de MEJORA (no notas, valor real)
+- ⭐ **Datos estructurados (`schema.org`)** — confirmado que no hay ninguno. Existen esquemas de
+  transporte (`BusStop`, `BusStation`, `BusTrip`, `GeoCoordinates`) y ZetaBus **ya tiene esos datos**
+  (934 paradas con nombre y coordenadas, 44 líneas). Ayudaría a que Google entienda las páginas de
+  parada/línea. Es marcado **derivado**, no inventado — encaja con la tesis. **Tanda propia.**
+- **Google Search Console** — sin pasar (hay que verificar el dominio). Diría si Google **indexa de
+  verdad** las 47 URLs del sitemap. Dato real, no laboratorio.
+- **Automatizar la accesibilidad por CLI** (`pa11y`, `@axe-core/cli`): escupen JSON/CSV, son
+  reproducibles, versionables, y correrían contra `localhost` **antes** de desplegar. Convertiría "pasar
+  un escáner de vez en cuando" en un instrumento del proyecto.
 
 ---
 
