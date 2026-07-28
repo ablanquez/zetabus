@@ -668,3 +668,23 @@ código, y pararse era lo correcto.
     *«el badge dice 1.1.0 y package.json es 1.0.0»*; UA de THIRD-PARTY →9.9 → *«dice ZetaBus/9.9 y major.minor
     es 1.0»*. Restaurados, verde. (No se sube la versión: sigue 1.0.0; esto unifica de dónde se lee.)
 - **Verde en los tres:** tsc · vitest **547** (+2 del guardián) · lint (0 err) · playwright **831**.
+
+### Fase 26 · Cerrar la observabilidad del diag — la caché del horario (`motorHorario`)
+
+- **El cabo tonto que se cierra:** desde la Fase 24 (y en realidad desde siempre) `motorHorario` era la
+  única caché del sistema que `/api/diag` **no veía**. La Fase 25 dejó el diag con DOS entradas
+  (`llegadas`, `recorrido`) y anotó ésta como pendiente de decisión; Antonio aprueba meterla — es la misma
+  línea, y cierra la observabilidad completa en vez de dejar un cabo anotado para dentro de seis meses.
+- **El cambio, una línea:** el bloque `cache` pasa a TRES entradas con nombre —`llegadas` (TTL 15 s),
+  `recorrido` (TTL 3600 s) y **`horario` (TTL 86400 s = 1 día)**—, cada una su `instantanea()` con su
+  `ttlSegundos`, contador y techo propios. Solo `route.ts`; no se toca `motorHorario` ni su TTL.
+- **Contraprueba en vivo (contadores moviéndose, no un bloque de ceros):** recién arrancado el dev,
+  `horario` a cero (`ttlSegundos: 86400`, todo lo demás 0). Tras abrir `/linea/35` —la vista que consume el
+  horario web—, sus contadores **se mueven**: `clavesEnMemoria 0→1`, `aciertosDisco 0→1`, `fallosDeCache
+  0→1` (mem-miss → **disk-hit**: el horario estaba caliente en disco de una corrida previa, por eso acierto
+  de disco y no `llamadasAlOrigen`; en ambos casos es una lectura REAL de esa caché) → lee la caché
+  correcta, no un instrumento decorativo.
+- **Las otras dos, intactas:** `llegadas` sigue a **cero** tras abrir `/linea` (correcto: la vista de línea
+  no toca el vivo) y `recorrido` se movió como en la Fase 25 (`clavesEnMemoria: 2`) — añadir la tercera no
+  rompió las dos que ya estaban.
+- **Verde:** tsc 0 · vitest **547** · lint (0 err) · playwright **831** · vigía-README. Commit atómico.

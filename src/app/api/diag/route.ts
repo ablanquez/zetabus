@@ -21,7 +21,7 @@
  * enseña son cuentas nuestras, no secretos.
  */
 
-import { motor, motorRecorrido, contador } from '@/engine/motor';
+import { motor, motorRecorrido, motorHorario, contador } from '@/engine/motor';
 import { generadoEn, validez, lineas, paradas } from '@/engine/topologia';
 import { estadoIndice } from '@/engine/correspondencias';
 import { feedStatus, feedWarning } from '@/core';
@@ -86,13 +86,16 @@ export async function GET() {
             : null,
       },
 
-      // ⭐ DOS cachés, CON NOMBRE. La del VIVO (llegadas, TTL 15 s) y la del RECORRIDO
-      //    (desvíos, TTL 1 h — instancia aparte, ver `motorRecorrido`). Sin nombre
-      //    serían dos bloques idénticos y no se sabría cuál se está moviendo. Cada una
-      //    tiene su `ttlSegundos`, su contador y su techo propios.
+      // ⭐ LAS TRES cachés del sistema, CON NOMBRE. La del VIVO (llegadas, TTL 15 s), la del
+      //    RECORRIDO (desvíos, TTL 1 h) y la del HORARIO WEB (TTL 1 día) — cada una es una
+      //    instancia aparte (ver `motorRecorrido` y `motorHorario`). Sin nombre serían bloques
+      //    idénticos y no se sabría cuál se está moviendo. Cada una tiene su `ttlSegundos`, su
+      //    contador y su techo propios. Si una caché del sistema no sale aquí, hay un trozo del
+      //    que el endoscopio no puede decir nada — que es justo lo que este endpoint persigue.
       cache: {
         llegadas: cache.instantanea(),
         recorrido: motorRecorrido().cache.instantanea(),
+        horario: motorHorario().cache.instantanea(),
       },
 
       // ⭐ EL ÍNDICE DE CORRESPONDENCIAS. AQUÍ es donde se nota si va en modo degradado
