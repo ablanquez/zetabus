@@ -688,3 +688,38 @@ código, y pararse era lo correcto.
   no toca el vivo) y `recorrido` se movió como en la Fase 25 (`clavesEnMemoria: 2`) — añadir la tercera no
   rompió las dos que ya estaban.
 - **Verde:** tsc 0 · vitest **547** · lint (0 err) · playwright **831** · vigía-README. Commit atómico.
+
+### Fase 27 · Dos comentarios que mentían + eliminar el silencio del script de coords
+
+Viene del diagnóstico de la Fase anterior (integridad de las coords solo-barrido). El veredicto fue: la
+preocupación de Antonio ("que no tiremos un dato íntegro en cada barrido") es **teórica hoy** —nada corre
+`coords-solo-barrido.ts` automáticamente—, pero destapó tres cosas. Se arreglan las que no son
+sobre-ingeniería: los dos comentarios, y el silencio. **NO se construye la jerarquía de procedencia**
+(resolvería un escenario sin disparador); solo se hace VISIBLE lo que ya pasa.
+
+- **Comentario 1 · `.gitignore` mentía.** Decía que las coords eran `observacion_propia`, *"alguien las
+  resuelve mirando la calle"*. **Falso desde la Tanda A:** son `avanza-web`, las da el `marcadorParada` del
+  feed de llegadas y las fija el script una vez. Ahora el comentario dice la procedencia real y conserva el
+  porqué del versionado (sobrevivir al borrado diario del índice + viajar con el deploy). Misma familia que
+  el "a mano" que ya se corrigió en `build-correspondencias`.
+- **Comentario 2 · `coords-solo-barrido.ts:45` era aspiracional.** Decía que un poste nuevo *"se pasa por
+  argv"*, pero `main()` usa `POSTES_POR_DEFECTO` y **no lee argv**. Ahora dice la verdad: se AÑADE a la
+  constante a mano, y sin coordenada fijada un solo-barrido no es visitable (404). ⚠️ NO se implementa argv
+  (solo el comentario dice la verdad).
+- **El silencio, eliminado (NO la semántica).** El script SIGUE sobrescribiendo el fichero entero —esa es
+  la decisión: una parada no se mueve, se re-fija—. Lo que cambia: antes de escribir, **LEE lo que había y
+  ANUNCIA** qué postes son NUEVOS, cuáles IGUALES, y —lo que importa— cuáles CAMBIAN de coordenada, con
+  `anterior → nueva` y la **distancia en metros** (haversine). También avisa de los que DESAPARECEN (estaban
+  y ya no se escriben). Es la regla del proyecto: *ante un silencio falso, elimina el silencio manteniendo
+  la semántica* — anuncia, no bloquea, no decide. La caja de cordura frena lo absurdo; esto hace visible lo
+  plausible-pero-peor (una coord distinta dentro de Zaragoza pasaba la caja y pisaba la buena **sin avisar**).
+- **Colocación con cuidado:** el anuncio va **DESPUÉS del todo-o-nada** (tras el `process.exit(1)` de los
+  fallos), para que no mienta anunciando un cambio que al final no se escribe. El todo-o-nada y la caja
+  siguen intactos.
+- **Contraprueba (scratchpad, fichero de PRUEBA — el real NO se toca):** ejercité el anuncio con las cuatro
+  ramas. Salida real: `＋ NUEVO 646`; `~ CAMBIA 736  41.655,-0.878 → 41.6548,-0.87765 (Δ ~37 m)`;
+  `= IGUALES 1: 617`; `✗ DESAPARECE 8138`. El caso (c), el del cambio con `anterior→nueva`+distancia, es el
+  que prueba que el trabajo está hecho. `git status` confirma `data/postes-solo-barrido-coordenadas.json`
+  **intacto**.
+- **Verde:** tsc 0 · vitest **547** · lint (0 err) · playwright **831** · vigía-README. Dos commits atómicos
+  (el comentario del `.gitignore`; y el script: comentario argv + anuncio).

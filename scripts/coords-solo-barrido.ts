@@ -34,7 +34,7 @@
  *    fuera de Zaragoza), NO se fija NADA: el script se para y lo dice. Fijar una
  *    coordenada basura es la mentira silenciosa que este proyecto persigue.
  */
-import { mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { leerPoste } from '@/sources/avanza/poste';
 import { transporteReal } from '@/sources/avanza/transporte';
 
@@ -42,7 +42,10 @@ const OUT = 'data/postes-solo-barrido-coordenadas.json';
 
 /**
  * Los 9 postes solo-barrido de hoy, con la línea a la que pertenecen (de su
- * provisional). Si algún día aparece otro, se añade aquí o se pasa por argv.
+ * provisional). Si algún día aparece otro, se AÑADE A ESTA LISTA a mano: no hay
+ * vía por argv (el script usa siempre esta constante, ver `main`). Sin coordenada
+ * fijada, un poste solo-barrido no es visitable (`paradas.ts` → 404), así que
+ * añadirlo aquí y volver a correr el script es el paso que lo hace visible.
  */
 const POSTES_POR_DEFECTO = [
   { poste: 617, linea: '34', nombre: 'Parque de Atracciones' },
@@ -84,9 +87,84 @@ interface Fijada {
   readonly comoSeSupo: string;
 }
 
+/** Distancia en metros entre dos coordenadas (haversine). Solo para el anuncio: da la magnitud de un cambio. */
+function distanciaMetros(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6_371_000;
+  const rad = (g: number): number => (g * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLon = rad(b.lon - a.lon);
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(s)));
+}
+
+interface CoordLeida {
+  readonly lat: number;
+  readonly lon: number;
+}
+
+/**
+ * ⭐ ELIMINA EL SILENCIO. El script SOBREESCRIBE el fichero entero (esa es la
+ * semántica: una parada no se mueve, se re-fija). Lo que NO puede es sobreescribir
+ * SIN DECIRLO: una coordenada distinta-pero-plausible (dentro de Zaragoza) pasa la
+ * caja de cordura y pisa la buena. La caja frena lo absurdo; esto hace VISIBLE lo
+ * plausible. No decide, no bloquea: ANUNCIA lo que va a pasar antes de que pase.
+ *
+ * ⚠️ Se llama DESPUÉS del todo-o-nada: si algún poste falló, no se llega aquí y el
+ *    anuncio no miente diciendo que iba a cambiar algo que al final no se escribió.
+ */
+function anunciarCambios(anteriores: Record<string, CoordLeida>, resueltas: Record<string, Fijada>): void {
+  const nuevos: string[] = [];
+  const iguales: string[] = [];
+  const cambios: string[] = [];
+
+  for (const [clave, n] of Object.entries(resueltas)) {
+    const a = anteriores[clave];
+    if (!a) {
+      nuevos.push(`  ＋ NUEVO   ${clave.padStart(5)}  →  ${n.lat}, ${n.lon}`);
+    } else if (a.lat === n.lat && a.lon === n.lon) {
+      iguales.push(clave);
+    } else {
+      cambios.push(
+        `  ~ CAMBIA  ${clave.padStart(5)}  ${a.lat}, ${a.lon}  →  ${n.lat}, ${n.lon}  (Δ ~${distanciaMetros(a, n)} m)`,
+      );
+    }
+  }
+  // Postes que estaban y ya NO se escriben: también es una pérdida silenciosa.
+  const desaparecen = Object.keys(anteriores).filter((c) => !(c in resueltas));
+
+  console.log(`\n  ── Cambios respecto a ${OUT} ${'─'.repeat(38)}`);
+  if (Object.keys(anteriores).length === 0) {
+    console.log('  (no había fichero previo: los 9 se fijan por primera vez)');
+  }
+  for (const l of nuevos) console.log(l);
+  for (const l of cambios) console.log(l);
+  if (iguales.length > 0) console.log(`  =  IGUALES ${iguales.length}: ${iguales.join(', ')}`);
+  for (const c of desaparecen) console.log(`  ✗ DESAPARECE ${c.padStart(5)}  (estaba en el fichero y ya no se escribe)`);
+  console.log(
+    `\n  Resumen: ${nuevos.length} nuevo(s) · ${cambios.length} cambiado(s) · ` +
+      `${iguales.length} igual(es) · ${desaparecen.length} desaparecido(s). Se ESCRIBE de todos modos (se anuncia, no se bloquea).\n`,
+  );
+}
+
+/** Lee las coordenadas ya fijadas en disco, o `{}` si el fichero no existe / no se puede leer. */
+function coordsAnteriores(): Record<string, CoordLeida> {
+  if (!existsSync(OUT)) return {};
+  try {
+    const crudo = JSON.parse(readFileSync(OUT, 'utf8')) as { postes?: Record<string, CoordLeida> };
+    return crudo.postes ?? {};
+  } catch {
+    // Un fichero ilegible NO frena la fijación (la escritura atómica lo va a reemplazar sano);
+    // pero se dice, para que el anuncio no finja que todo era nuevo por un JSON roto.
+    console.warn(`  ⚠️ No se pudo leer ${OUT} para comparar (¿JSON roto?): se anuncia todo como nuevo.`);
+    return {};
+  }
+}
+
 async function main(): Promise<void> {
   const postes = POSTES_POR_DEFECTO;
   const fecha = hoy();
+  // Lo que YA hay en disco, para poder anunciar qué cambia (se lee antes de tocar nada).
+  const anteriores = coordsAnteriores();
 
   console.log(`\n  Fijando coordenadas de ${postes.length} postes solo-barrido desde el feed de Avanza`);
   console.log(`  (marcadorParada · ritmo pausado · solo la coordenada, no las llegadas)\n`);
@@ -140,6 +218,10 @@ async function main(): Promise<void> {
     );
     process.exit(1);
   }
+
+  // ⭐ Todos respondieron: SE VA A ESCRIBIR. Antes, se anuncia qué cambia respecto a
+  //    lo que había —sobre todo las coordenadas que se PISAN con un valor distinto—.
+  anunciarCambios(anteriores, resueltas);
 
   const artefacto = {
     _meta: {
