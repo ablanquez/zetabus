@@ -95,8 +95,9 @@ verdad, no solo escritas) en `/`, `/parada/744` y `/linea/35`.
 > intacto**, que era el riesgo grande de separar cachés); `/linea/35` → recorrido bien. Web con estilos
 > en normal e incógnito (esta vez el CDN sirvió fresco sin purgar).
 
-## ⏳ LOTE DE CIERRE (28/07) — 7 commits en local, PENDIENTES DE PUSH
-El día en que ZetaBus se cerró: se barrieron TODOS los cabos técnicos. Detalle en §8.
+## ⏳ LOTE DE CIERRE (28/07) — 19 commits en local, PENDIENTES DE PUSH
+
+### Parte 1 · Barrido de cabos (7 commits)
 - `9f674f8` · `6bba554` — `/api/diag` ve las **tres** cachés (llegadas 15 s · recorrido 1 h · horario 1 d)
 - `ce06168` — comentarios "Cerca de mí" (va al 004, no es cabo de ZetaBus)
 - `e7614a6` — **la versión: fuente única + guardián** (ROJO demostrado en badge y UA)
@@ -104,10 +105,33 @@ El día en que ZetaBus se cerró: se barrieron TODOS los cabos técnicos. Detall
   (anuncia NUEVO/IGUAL/CAMBIA/DESAPARECE antes de escribir)
 - `9822789` — **`BreadcrumbList`** en `/linea/*` (lo único de schema.org que sobrevivió — **L82**)
 > Cerrados SIN trabajo, por diagnóstico: el **contraste** (artefacto, **L81**) y la **integridad de las
-> coordenadas** (riesgo teórico: nada lo reescribe solo). Y **radar eliminado** del servidor (se llevó dos
-> procesos zombis de 4-5 días).
+> coordenadas** (riesgo teórico). Y **radar eliminado** del servidor (se llevó dos zombis de 4-5 días).
+
+### Parte 2 · ⭐ AUDITORÍA DE CIERRE · BLOQUE A (CÓDIGO) — cerrado y verificado
+Se estrena un método nuevo: **auditoría de puesta a punto en seis bloques** (A código · B interfaz/textos
+· C tests/guardianes · D documentación · E operación/datos · F experiencia). Solo lectura, con **mapa de
+hallazgos priorizado**; los arreglos van después, en tandas. Informes en `docs/auditoriafinal/`
+(registro histórico fechado, **no se reescriben**).
+- `10952c1` — **el informe** `A-codigo.md` (auditado sobre `5ba78d4`). Titular: **cero 🔴**, cero `any`,
+  cero `@ts-ignore`, cero secretos, cero `catch` que oculte. 14 hallazgos: 4 🟠 + 10 🔵.
+- `d4dd50b` — el día civil en **Madrid**, no en UTC. *(El repo YA sabía esto: `feed-validity` lo
+  resolvía bien. La lección no había llegado a ese sitio — ley 7 de Linaje.)* Rojo enseñado en verano,
+  invierno **y la noche del cambio de hora**.
+- `fc30461` — `sharp` **usado sin declarar** (funcionaba por transitiva opcional de Next).
+- `0a6b73c` — el umbral `4.5` **reteclado** existiendo `AA_TEXTO` en el módulo que ya se importaba: la
+  última "copia a mano" viva.
+- `c31fcae` — dos comentarios citaban un guardián **inexistente**.
+- `560a59f` — ⭐ **el guardián que faltaba** (`desvios-no-miran-lo-vivo`): la tesis del proyecto estaba
+  **prometida, no protegida**. **L83.**
+- `c6d12e2` — dos fechas más sin `timeZone` (mismo patrón). `612036c` — 4 interfaces del núcleo
+  declaradas y nunca cableadas, retiradas (−70 líneas). `5a55610` — el sobre de desvíos dejaba de
+  afirmar frescura falsa cuando **no se había observado nada**.
+- `24962ab` — **la VERIFICACIÓN** (`A-codigo-verificacion.md`): los 14 hallazgos comprobados con
+  evidencia re-corrida. Encontró que el informe original **subcontaba** un hallazgo. **L84.**
 > ⚠️ Al desplegar: **purgar el CDN a mano** (README → Desplegar). Build ~6 min.
-> ⬜ Tras el deploy: validar el breadcrumb en `validator.schema.org` y `rich-results` con la URL real.
+> ⬜ Tras el deploy: validar el breadcrumb en `validator.schema.org` y `rich-results` con la URL real, y
+> repetir la ronda de escáneres del §10 como **comprobación de regresión**.
+> ⬜ **Quedan los bloques B, C, D, E y F** de la auditoría.
 
 **Última actualización:** 28/07/2026
 
@@ -1120,6 +1144,44 @@ mentir). **Ninguna se hizo.***
 > ⭐ *Lección: una mejora anotada en una lista **no está verificada por estar anotada**. "Beneficio
 > tangible" era una hipótesis mía sin comprobar, y sobrevivió hasta que alguien fue a diseñarla. Mismo
 > patrón que L80, pero con una propuesta en vez de con un dato.*
+
+⭐⭐⭐ **L83 · UN COMENTARIO QUE PRESUME DE UN GUARDIÁN ES PEOR QUE NO TENERLO — si el guardián no existe.**
+`desvios.ts` llevaba desde siempre este comentario, protegiendo **la tesis del proyecto**:
+> *"ESTE FICHERO NO IMPORTA NI PUEDE IMPORTAR `poste.ts` NI `llegadas.ts`. **No es una convención: lo
+> comprueba `tests/desvios-no-miran-lo-vivo.test.ts`**, que lee este fichero y se pone rojo si aparece un
+> import del canal vivo. **La disciplina se olvida. Un test, no.**"*
+**Ese test NUNCA EXISTIÓ** (`git log --diff-filter=D/A` sin rastro: no es una promesa que fue cierta, no
+lo fue jamás). Y lo que protege es el corazón del proyecto: un poste callado puede ser un desvío, las 4
+de la mañana, o un poste que Avanza no tiene dado de alta — **la API devuelve lo mismo en los tres
+casos**. Deducir un desvío de un silencio es **inventárselo**.
+> ⭐⭐ **El daño exacto:** el comentario dice "la disciplina se olvida, un test no" — y lo único que había
+> **era la disciplina**. Quien lo leyera confiaría en una red inexistente. **Un comentario que promete
+> una protección o la tiene, o hay que retirar la promesa.** No hay tercera opción honesta.
+⚠️ *Y el FALSO AMIGO que casi lo tapa: `horas-malas.test.ts` **sí lee** `desvios.ts` (está en su lista
+`CAMINO_VIVO`)… pero comprueba OTRA garantía (que no razone con el calendario). Un vistazo rápido diría
+"sí hay un test que lo mira". **Buscar por CONTENIDO, no por nombre ni por parecido.***
+✅ *Creado (`560a59f`) con **BFS del grafo de imports**, no regex: el comentario sugería "lee este
+fichero", que solo cazaría el import DIRECTO — y la cicatriz de este repo (los 1,9 MB al cliente) enseña
+que **el peligro es el indirecto**. Probado con un puente intermedio: `desvios → _puente-vivo →
+llegadas` se caza con la ruta completa. Diana PRECISA (no "todo `sources/`", que daría falso rojo sobre
+`recorrido`, legítimo) — porque un guardián que da falso rojo **enseña a no mirarlo**.*
+
+⭐⭐⭐ **L84 · LA AUDITORÍA TAMBIÉN SE VERIFICA — y la primera pasada había subcontado.**
+Tras arreglar los hallazgos del Bloque A se hizo una **pasada de verificación**: comprobar, con
+**evidencia RE-CORRIDA sobre el árbol actual** (no "lo cambié en el commit X"), que cada hallazgo estaba
+cerrado o deliberadamente dejado.
+> ⭐⭐ **Y encontró que el informe original CONTABA MAL:** decía 2 `as unknown as` y hay **3** (el tercero
+> preexistente, no introducido por los arreglos). Una imprecisión pequeña — pero **si no se verifica al
+> auditor, sus imprecisiones se quedan como verdad.** La auditoría es un instrumento más, y los
+> instrumentos de este proyecto se comprueban.
+⚠️ *La razón de fondo: **la verificación la hace quien hizo los arreglos.** Es el auditor auditándose. Por
+eso la regla fue "no vale 'lo arreglé, está bien': cada cierre con su grep re-corrido y su salida". Un
+informe de verificación que dijera "todo cerrado" sin enseñarlo sería el instrumento mintiendo sobre sí
+mismo — el peor sitio posible.*
+✅ *También despejó el riesgo del cambio de contrato: al hacer que el sobre de desvíos pueda venir
+`caido`, había que comprobar si algún consumidor asumía `ok`. `campo.ts` ya hacía
+`if (r.estado !== 'ok')` → no rompe, y ahora imprime el motivo. **Cambiar un contrato obliga a revisar a
+todos los que lo consumen, no solo al que lo emite.***
 
 ---
 
