@@ -57,8 +57,17 @@ const formateador = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 });
 
-/** El día del calendario EN ZARAGOZA en el instante `now`. `YYYY-MM-DD`. */
-function diaCivil(now: Date): string {
+/**
+ * El día del calendario EN ZARAGOZA en el instante `now`. `YYYY-MM-DD`.
+ *
+ * ⭐ LA FUENTE ÚNICA DE «QUÉ DÍA ES HOY EN ZARAGOZA». Se `export`a a propósito: quien
+ *    necesite el día civil —una clave de caché diaria, un «hoy»— tira de aquí y NO
+ *    reescribe `new Date().toISOString().slice(0,10)`, que da el día en UTC y entre
+ *    medianoche y las 01:00/02:00 de Madrid devuelve el de AYER. Es la misma lección
+ *    que la cabecera de este fichero (`getUTCDate` daba el feed por caducado dos horas
+ *    tarde): la había, y no había llegado a los demás sitios que preguntan «hoy».
+ */
+export function diaCivil(now: Date): string {
   return formateador.format(now);
 }
 

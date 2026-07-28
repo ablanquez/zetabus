@@ -18,6 +18,7 @@ import { Fingiendo } from '@/components/Fingiendo';
 import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { RecorridoVivo } from '@/components/RecorridoVivo';
 import type { Line, LineId, StopId } from '@/core';
+import { diaCivil } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 import { migasJsonLd } from '@/migas';
 
@@ -132,7 +133,10 @@ export default async function LineaPage({ params, searchParams }: Props) {
   // ⭐ LA TABLA DE HORARIOS DE HOY, de la web de Avanza. Una petición más, pero
   //    cacheada UN DÍA (el horario no es el vivo). La clave lleva la fecha para
   //    renovarse al cambiar de día. Ver `engine/horario.ts`.
-  const hoy = new Date().toISOString().slice(0, 10);
+  // ⚠️ EL DÍA, EN ZARAGOZA — NO en UTC. `diaCivil` es la fuente única (`feed-validity`):
+  //    `toISOString().slice(0,10)` daba el día en UTC y entre medianoche y las 01:00/02:00
+  //    de Madrid la clave se quedaba en AYER (un día entero de horario del día anterior).
+  const hoy = diaCivil(new Date());
   const horario = await horarioDeLinea(l.shortName, activo.directionId, hoy, motorHorario(transporteDe(fingir), fingir));
 
   // ⭐ LA VISTA DE LÍNEA es una REJILLA, como /parada: UN SOLO ÁRBOL, sin medir ancho con
