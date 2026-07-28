@@ -110,7 +110,7 @@ export default function SobreLosDatos() {
               Se descarga y se hornea en el build. Nada se pide en caliente. Publica{' '}
               <strong>{validez.publisher}</strong>.{' '}
               <strong>Vigencia: hasta el {validez.endDate}.</strong> Generado el{' '}
-              {new Date(generadoEn).toLocaleDateString('es-ES')}. Cuando caduque, la aplicación lo
+              {new Date(generadoEn).toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid' })}. Cuando caduque, la aplicación lo
               dice arriba, en rojo, sin que nadie tenga que acordarse.
             </p>
             <Nota>

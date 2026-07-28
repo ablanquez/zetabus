@@ -37,6 +37,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { leerPoste } from '@/sources/avanza/poste';
 import { transporteReal } from '@/sources/avanza/transporte';
+import { diaCivil } from '@/core';
 
 const OUT = 'data/postes-solo-barrido-coordenadas.json';
 
@@ -72,11 +73,15 @@ const enZaragoza = (lat: number, lon: number): boolean =>
 const linea = '═'.repeat(70);
 const dormir = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/** La fecha civil de hoy, `YYYY-MM-DD`. Es un script de terminal: aquí sí se mira el reloj. */
+/**
+ * La fecha civil de hoy EN ZARAGOZA, `YYYY-MM-DD`. Es un script de terminal: aquí
+ * sí se mira el reloj — pero NO el huso del host donde se ejecute. Tira de la
+ * fuente única `diaCivil` (`Europe/Madrid`), la misma que el resto del proyecto;
+ * los getters locales daban el día del servidor, que en Hostinger no sabemos cuál
+ * es. Ver `core/feed-validity.ts`.
+ */
 function hoy(): string {
-  const d = new Date();
-  const p = (n: number): string => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return diaCivil(new Date());
 }
 
 interface Fijada {

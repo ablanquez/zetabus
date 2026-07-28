@@ -871,3 +871,24 @@ desvío de un silencio es inventárselo.** Estaba protegida solo por que nadie s
   el código: con el guard creado, la promesa deja de mentir sola.
 - **Verde:** tsc 0 · vitest **561** (+3 del guardián) · lint (0 err, 3 warnings previos) · playwright **831**
   (94 skipped). Commit atómico (test + bitácora). NO push.
+
+### Fase 32 · Cerrar el Bloque A — los tres últimos hallazgos
+
+Los tres que quedaban del informe `A-codigo.md`. Commits atómicos, uno por hallazgo. #10 y #5 directos;
+el #8 se diseña aparte (cambia un contrato) y se decide antes de tocar código.
+
+- **#10 (A9) · Las fechas, en Zaragoza y no en el huso del host** (`fix(fechas)`). Dos sitios calculaban
+  el día/fecha civil con el reloj del SERVIDOR (que en Hostinger no sabemos cuál es), **el mismo patrón que
+  el `hoy` en UTC de la Fase 30**: `app/sobre-los-datos/page.tsx:113` (`toLocaleDateString('es-ES')` **sin
+  `timeZone`**, render de servidor) y `scripts/coords-solo-barrido.ts:76` (`hoy()` con `getFullYear/Month/Date`
+  locales). La incoherencia lo delataba: `paso.ts`, `campo.ts` y `canario.ts` **sí** nombran `Europe/Madrid`.
+  Arreglo: sobre-los-datos añade `{ timeZone: 'Europe/Madrid' }` (el patrón que ya usan los otros tres);
+  coords **reutiliza `diaCivil`** —la fuente única de `feed-validity`—, NO una tercera forma. **Barrido:** son
+  los DOS únicos sitios; el resto de `new Date()` (barrido, estado, diag, AvisoFeed) son INSTANTES
+  (`toISOString`/`feedStatus`), correctos. **Contraprueba enseñada** (`tests/fechas-en-zaragoza.test.ts`): con
+  el host fijado a `America/New_York` y un instante que en Madrid ya es el día siguiente, `diaCivil` da el día
+  de Zaragoza; **ROJO** demostrado poniendo getters locales en `diaCivil` → `expected '2026-07-31' to be
+  '2026-08-01'`. ⚠️ **Este test cubre una laguna de `dia-civil.test.ts`:** aquél corre en host Madrid, donde
+  getters-locales y Zaragoza COINCIDEN, así que NO cazaría una regresión al huso del host; éste sí, fijando el
+  huso.
+  Verde: tsc 0 · vitest **563** (+2) · lint (0 err, 3 warnings previos) · playwright **831**. NO push.
