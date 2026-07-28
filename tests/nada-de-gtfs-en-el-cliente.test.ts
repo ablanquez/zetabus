@@ -79,6 +79,12 @@ function importaciones(fichero: string): string[] {
     if (llaves && !/(?:^|,)\s*(?!type\s)[A-Za-z_$*]/.test(llaves[1])) continue;
     fuera.push(m[2]);
   }
+  // ⚠️ IMPORTS DE EFECTO LATERAL: `import '@/generated';` — sin `from` ni binding.
+  //    El regex de arriba EXIGE `from`, así que éstos se le escapaban: un `import '@/x'`
+  //    ejecuta el módulo entero y arrastra su grafo (y su peso) igual que un import con
+  //    nombre. NO puede ser de solo-tipo (esa sintaxis no existe), así que no se filtra.
+  const reLado = /(?:^|\n)\s*import\s+['"]([^'"]+)['"]/g;
+  for (const m of src.matchAll(reLado)) fuera.push(m[1]);
   return fuera;
 }
 
