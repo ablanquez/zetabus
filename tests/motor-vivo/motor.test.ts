@@ -442,6 +442,58 @@ describe('⭐ EL DIFF NO PUEDE MIRAR LO VIVO. NI QUERIENDO.', () => {
       }
     }
   }, 30_000);
+
+  it('⭐ TODOS los sentidos fallan al leerse → `caido`, NO `ok` con frescura inventada', async () => {
+    // El silencio falso latente: antes, si NINGÚN sentido se podía leer, el sobre
+    // salía `estado:'ok'`, `observadoEn: ahora`, `edad: 0` — "recién observado"
+    // cuando no se observó NADA. Con Avanza caída (ni nonce ni recorrido):
+    const l = lineas().find((x) => x.shortName === '35')!;
+    const id = idLinea(String(l.id));
+    const t = transporteFalso({ explota: 'ECONNREFUSED' });
+
+    const r = await desviosDeLinea(id, { cache: cache(), transporte: t.transporte });
+
+    expect(r.estado).toBe('caido'); // ⛔ con el código viejo esto era 'ok'
+    expect(r).not.toHaveProperty('datos'); // no hay veredictos que ofrecer
+    expect(r).not.toHaveProperty('observadoEn'); // ⭐ ni una frescura que fingir
+    if (r.estado === 'caido') {
+      expect(r.motivo).toMatch(/no se ha podido leer la ruta de hoy de ninguno/);
+    }
+  }, 30_000);
+
+  it('⚠️ si SOLO UN sentido falla → sigue `ok`, con su frescura REAL y los dos veredictos', async () => {
+    // El caso PARCIAL no se toca: algo se leyó, así que hay frescura de verdad y el
+    // sentido caído se cuenta como `indeterminado`, no tumba el sobre entero.
+    const l = lineas().find((x) => x.shortName === '35')!;
+    const id = idLinea(String(l.id));
+    const t = transporteFalso({
+      responder: (url, cuerpo) => {
+        if (url.includes('admin-ajax')) {
+          const pedido = new URLSearchParams(cuerpo ?? '').get('selectSentido');
+          // ⚠️ El sentido -2 (dir 1) se cae con un 500; el -1 (dir 0) responde bien.
+          if (pedido === '-2') return { status: 500, texto: '' };
+          const s = sentidosDe(id).find((x) => x.directionId === 0);
+          const postes: { poste: number; nombre: string }[] = [];
+          for (const sid of s?.official.stops ?? []) {
+            const p = posteDe(idParada(sid));
+            if (p) postes.push({ poste: p, nombre: 'x' });
+          }
+          return { status: 200, texto: respuestaRecorrido(postes) };
+        }
+        return { status: 200, texto: POSTE_MUDO };
+      },
+    });
+
+    const r = await desviosDeLinea(id, { cache: cache(), transporte: t.transporte });
+
+    expect(r.estado).toBe('ok'); // NO 'caido': un sentido SÍ se leyó
+    if (r.estado === 'ok') {
+      const tipos = r.datos.map((d) => d.veredicto.tipo);
+      expect(tipos).toContain('comparado'); // el que se leyó
+      expect(tipos).toContain('indeterminado'); // el que se cayó
+      expect(r.observadoEn).toBeTruthy(); // ⭐ frescura REAL, del sentido que sí se leyó
+    }
+  }, 30_000);
 });
 
 /**

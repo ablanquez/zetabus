@@ -105,11 +105,20 @@ test.describe('⭐ el aviso de desvío es un acordeón', () => {
     await expect(page.locator('.acordeon-cerrado')).toBeHidden();
   });
 
-  test('una línea SIN desvío no muestra ni chip ni acordeón (ni cuadro suelto)', async ({ page }) => {
-    // `caido` → no se puede leer la ruta de hoy → veredicto indeterminado, NO desvío.
+  test('una línea que no se puede leer: NO desvío, pero SÍ el aviso honesto "no lo sé"', async ({ page }) => {
+    // `caido` → la fuente no responde para NINGÚN sentido → el sobre es `caido`, y la
+    // página lo mapea a "no hemos podido comprobar". NO se inventa un desvío, pero
+    // TAMPOCO se calla: callarlo cambiaría un silencio falso por uno real. Ver
+    // engine/desvios.ts + app/linea/[linea]/page.tsx.
     await page.goto('/linea/35?fingir=caido', { waitUntil: 'networkidle' });
     await expect(page.locator('[data-papel="hay-desvio"]')).toHaveCount(0);
     await expect(page.locator('[data-papel="paradas-fuera"]')).toHaveCount(0);
     await expect(page.locator('[data-papel="parada-tachada"]')).toHaveCount(0);
+    // ⭐ EL AVISO TIENE QUE ESTAR. Si desapareciera, este `toBeVisible` se pone rojo —
+    //    que es justo lo que impide que el arreglo del sobre nos deje mudos.
+    await expect(page.locator('[data-papel="desvio-indeterminado"]')).toBeVisible();
+    await expect(
+      page.getByText('No hemos podido comprobar si esta línea está desviada'),
+    ).toBeVisible();
   });
 });

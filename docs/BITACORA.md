@@ -903,5 +903,29 @@ el #8 se diseña aparte (cambia un contrato) y se decide antes de tocar código.
   incluido `A-codigo.md`). Verde: tsc 0 (imports huérfanos cazados) · vitest **563** (el guardián
   `tranvia-sin-tocar-el-nucleo` sigue verde) · lint (0 err) · playwright **831**. NO push.
 
-⚠️ **Falta el #8** (el sobre de desvíos que dice «ok» sin observar nada): cambia el contrato de
-`desviosDeLinea`, así que se diseña y se aprueba ANTES de tocar código. Pendiente de esa decisión.
+- **#8 (A9) · El sobre de desvíos deja de afirmar frescura falsa** (`fix(desvios)`, Opción B). Si TODOS los
+  sentidos de una línea fallaban al leerse, `desviosDeLinea` devolvía `estado:'ok'`, `observadoEn: ahora`,
+  `edadSegundos: 0` — «recién observado» cuando **no se observó nada**. Silencio falso latente (hoy nadie
+  lee esa frescura; grep confirmado), pero esperando a un consumidor futuro. La condición es limpia:
+  `observadoEn` sigue `null` ⟺ ningún sentido se leyó. Ahora, en ese caso, el sobre dice la verdad:
+  `{ estado:'caido', motivo }` con motivo honesto (por qué no respondió la fuente). **El caso PARCIAL
+  —algún sentido bien— NO se toca:** sigue `ok` con su frescura REAL.
+  ⚠️ **El riesgo del cambio, y cómo se evita:** con `estado:'ok'` la página SÍ pintaba el aviso honesto por
+  sentido; con `caido` podría quedarse muda. Se evita **mapeando en la página** `caido` → el MISMO veredicto
+  `indeterminado` (con su motivo) — así el sobre puede decir la verdad sin que la pantalla pierda el mensaje,
+  y sin tocar `Observacion` (que era la opción C, descartada). El subcomponente no cambia.
+  · **Caso intermedio detectado y manejado con precisión:** una línea con CERO sentidos también deja
+    `observadoEn` null; la guarda lleva `resultados.length > 0` para no confundir «no había nada que leer»
+    con «se cayó todo». No cambia el caso degenerado.
+  · **Contrapruebas:** ROJO enseñado (todos fallan → antes `ok`, `expected 'ok' to be 'caido'`); caso PARCIAL
+    fijado (un sentido cae con 500, el otro lee → `ok`, frescura real, los dos veredictos). **E2E con dientes:**
+    `/linea/35?fingir=caido` DEBE mostrar la caja "No hemos podido comprobar…"; demostrado que **se pone rojo
+    en los 5 viewports** si el aviso desaparece (rompiendo el mapeo a propósito).
+  · **La página, ABIERTA y MIRADA** (build propio, `?fingir=caido`): la caja está, con el motivo honesto
+    («…de ninguno de los 2 sentidos de la línea 35: … ECONNREFUSED (fingido)»), y CERO acordeón de desvío.
+  · Verde: tsc 0 · vitest **565** (+2) · lint (0 err, 3 warnings previos) · playwright **831** (94 skipped).
+    Commit atómico. NO push.
+
+Con esto, **el Bloque A del informe `A-codigo.md` queda cerrado**: los 4 🟠 + el guardián fantasma + estos
+tres (#10, #5, #8). Lo deliberadamente dejado (`kml.ts`, `noUncheckedIndexedAccess`, los 🔵) sigue
+documentado en el informe, sin tocar.

@@ -215,6 +215,7 @@ export async function desviosDeLinea(
   const resultados: DesvioDeSentido[] = [];
   let masViejo = 0;
   let observadoEn: string | null = null;
+  const fallos: string[] = [];
 
   for (const s of sentidosDe(lineaId)) {
     // La ruta OFICIAL: la del GTFS, con nombre y todo.
@@ -238,6 +239,7 @@ export async function desviosDeLinea(
       // ⚠️ NO se compara contra una lista vacía. "No he podido leerlo" y "no hay
       //    desvío" son cosas distintas, y confundirlas tacharía la línea entera.
       veredicto = { tipo: 'indeterminado', motivo: `no se ha podido leer la ruta de hoy: ${r.motivo}` };
+      fallos.push(r.motivo);
     } else {
       veredicto = compararRecorrido(
         oficial,
@@ -256,6 +258,23 @@ export async function desviosDeLinea(
       headsign: s.headsign,
       veredicto,
     });
+  }
+
+  // ⚠️ NINGÚN sentido se pudo leer: los hubo, pero TODOS fallaron (`observadoEn`
+  //    sigue null ⟺ ninguna lectura tuvo éxito). No hay NADA observado, así que un
+  //    sobre `ok` con `observadoEn: ahora` afirmaría "recién observado" cuando no se
+  //    observó nada — el silencio falso que este proyecto persigue. Se dice la
+  //    verdad: la fuente está caída para esta línea. La página lo pinta igual de
+  //    honesto (mapea `caido` → el aviso "no hemos podido comprobar"; ver
+  //    `app/linea/[linea]/page.tsx`). El caso PARCIAL —algún sentido bien— cae al
+  //    return de abajo con `ok` y su frescura REAL.
+  if (resultados.length > 0 && observadoEn === null) {
+    return {
+      estado: 'caido',
+      motivo:
+        `no se ha podido leer la ruta de hoy de ninguno de los ${resultados.length} ` +
+        `sentidos de la línea ${l.shortName}${fallos[0] ? `: ${fallos[0]}` : '.'}`,
+    };
   }
 
   return {

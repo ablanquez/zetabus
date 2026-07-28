@@ -115,10 +115,17 @@ export default async function LineaPage({ params, searchParams }: Props) {
   // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
   const desvios = await desviosDeLinea(id, motorRecorrido(transporteDe(fingir), fingir));
 
+  // El sobre de desvíos, mapeado a lo que la caja necesita. `caido` = la fuente no
+  // respondió para NINGÚN sentido: para el usuario es un "no lo sé" honesto, así que
+  // se pinta el MISMO aviso que un veredicto `indeterminado`, con su motivo. Así el
+  // sobre puede decir la verdad (`caido`, no un `ok` con frescura inventada) sin que
+  // la pantalla pierda el mensaje. Ver `engine/desvios.ts`.
   const veredicto: Veredicto | null =
     desvios.estado === 'ok'
       ? (desvios.datos.find((d) => d.directionId === activo.directionId)?.veredicto ?? null)
-      : null;
+      : desvios.estado === 'caido'
+        ? { tipo: 'indeterminado', motivo: desvios.motivo }
+        : null;
 
   // ⭐ ¿HAY CAJA DE DESVÍOS? (un desvío de hoy, un "no lo sé", o una línea sin trazado).
   //    Un día normal la MAYORÍA de líneas NO la tienen. Se calcula aquí para dos cosas:
