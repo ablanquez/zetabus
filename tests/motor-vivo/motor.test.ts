@@ -231,6 +231,9 @@ describe('⚠️ LOS ESTADOS RAROS', () => {
       respuestaPoste({ buses: [{ coche: '4650', linea: '039', destino: 'VADORREY', eta: 2 }] }),
     );
     const r = await llegadasDePoste(POSTE_REAL, { cache: cache(), transporte: t.transporte });
+    // ⚠️ GUARDA: sin ella, un estado != 'ok' saltaría el `if` y el test pasaría en verde
+    //    SIN comprobar el cruce 039↔39 — que es justo lo que existe para probar.
+    expect(r.estado).toBe('ok');
     if (r.estado === 'ok') {
       expect(r.datos.llegadas[0].linea).toBe('39'); // ← casó
       expect(r.datos.llegadas[0].color).toMatch(/^#/); // y trae su color de marca
@@ -357,6 +360,8 @@ describe('⭐ EL DIFF DE DESVÍOS', () => {
   it('reordenar sin quitar nada TAMBIÉN es un desvío', () => {
     const alReves = [...RUTA].reverse();
     const v = compararRecorrido(RUTA, alReves);
+    // ⚠️ GUARDA: sin ella, un `indeterminado` saltaría el `if` y el test no probaría nada.
+    expect(v.tipo).toBe('comparado');
     if (v.tipo === 'comparado') {
       expect(v.reordenado).toBe(true);
       expect(v.hayDesvio).toBe(true);
@@ -382,6 +387,8 @@ describe('⭐ EL DIFF DE DESVÍOS', () => {
   it('⚠️ una parada de HOY que el GTFS no conoce: se lista, pero sin coordenadas', () => {
     const hoy = [...RUTA, P(99999, 'parada que no está en el GTFS')];
     const v = compararRecorrido(RUTA, hoy);
+    // ⚠️ GUARDA: sin ella, un `indeterminado` saltaría el `if` y el test no probaría nada.
+    expect(v.tipo).toBe('comparado');
     if (v.tipo === 'comparado') {
       expect(v.hacia.map((p) => p.poste)).toEqual([99999]);
       // Y arriba, quien la pinte, tendrá que mirar si existe. `posteDe` dirá
