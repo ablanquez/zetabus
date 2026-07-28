@@ -95,6 +95,20 @@ verdad, no solo escritas) en `/`, `/parada/744` y `/linea/35`.
 > intacto**, que era el riesgo grande de separar cachés); `/linea/35` → recorrido bien. Web con estilos
 > en normal e incógnito (esta vez el CDN sirvió fresco sin purgar).
 
+## ⏳ LOTE DE CIERRE (28/07) — 7 commits en local, PENDIENTES DE PUSH
+El día en que ZetaBus se cerró: se barrieron TODOS los cabos técnicos. Detalle en §8.
+- `9f674f8` · `6bba554` — `/api/diag` ve las **tres** cachés (llegadas 15 s · recorrido 1 h · horario 1 d)
+- `ce06168` — comentarios "Cerca de mí" (va al 004, no es cabo de ZetaBus)
+- `e7614a6` — **la versión: fuente única + guardián** (ROJO demostrado en badge y UA)
+- `3b76f27` · `fc14991` — coordenadas: dos comentarios que mentían + **el silencio eliminado**
+  (anuncia NUEVO/IGUAL/CAMBIA/DESAPARECE antes de escribir)
+- `9822789` — **`BreadcrumbList`** en `/linea/*` (lo único de schema.org que sobrevivió — **L82**)
+> Cerrados SIN trabajo, por diagnóstico: el **contraste** (artefacto, **L81**) y la **integridad de las
+> coordenadas** (riesgo teórico: nada lo reescribe solo). Y **radar eliminado** del servidor (se llevó dos
+> procesos zombis de 4-5 días).
+> ⚠️ Al desplegar: **purgar el CDN a mano** (README → Desplegar). Build ~6 min.
+> ⬜ Tras el deploy: validar el breadcrumb en `validator.schema.org` y `rich-results` con la URL real.
+
 **Última actualización:** 28/07/2026
 
 ---
@@ -1058,6 +1072,54 @@ describiera un elemento propio.
 ⚠️ *Corolario para el método: la destilación **hereda los errores de lectura del que destila**. Una cita
 de un comentario no es una descripción del código. Cuando el estado afirme que algo EXISTE, esa
 afirmación merece el mismo escepticismo que cualquier instrumento en verde.*
+
+⭐⭐⭐ **L81 · COINCIDIR EN LA ETIQUETA NO ES COINCIDIR EN EL HALLAZGO — "tres herramientas" eran dos motores midiendo canales OPUESTOS.**
+Tres escáneres señalaron "contraste" en los chips de línea: WAVE (21 errores), axe (16) y Lighthouse
+(restando el 96 de Accesibilidad). La conclusión "coinciden tres → es real" se dio por buena. **Era
+falsa por dos motivos, ninguno comprobado:**
+1. **No eran tres instrumentos: eran DOS motores.** axe DevTools y Lighthouse/PageSpeed corren **el mismo
+   código** (axe-core). El "96" de Lighthouse **son exactamente los mismos 16 de axe**, contados otra vez.
+   No se corroboraban: era un instrumento midiendo dos veces.
+2. **Los conjuntos son DISJUNTOS.** axe marca 16 chips (fondos oscuros), WAVE marca 21 (fondos claros), y
+   **16 + 21 = 37 = TODOS los chips diurnos.** Cada chip falla en una herramienta y **pasa en la otra**.
+   No hay ni uno que falle en ambas.
+> ⭐⭐ **La causa, medida:** el número es blanco con un **trazo negro** de 0,7px
+> (`-webkit-text-stroke`, `paint-order: stroke`). **axe lee el color del TRAZO** (#000) y lo toma por el
+> del texto; **WAVE lee el RELLENO** (#FFF) e ignora el trazo. **El ojo ve los dos a la vez** — que es lo
+> que la fórmula WCAG no sabe modelar. Medido: `max(blanco, negro) ≥ 4,58` SIEMPRE en las 44 líneas
+> (peor caso 4,80). Y mirado con lupa: se lee al instante.
+⚠️ *Matiz honesto: las herramientas **no tienen un bug**. Dentro de su modelo aciertan ("blanco solo"
+falla en fondos claros). Lo que no ven es el glifo de DOS colores. Es una limitación de la fórmula, no un
+falso positivo.*
+> ⭐⭐⭐ **La regla:** *cuando varios instrumentos "coincidan", comprueba DOS cosas antes de creerles:
+> **(a) ¿son independientes de verdad, o comparten motor?** y **(b) ¿coinciden en el HALLAZGO o solo en
+> la ETIQUETA?** Aquí coincidían en la palabra "contraste" y señalaban conjuntos opuestos — que es lo
+> contrario de corroborar.*
+
+⭐⭐ **L82 · LA MEJORA QUE SE VENDIÓ COMO "BENEFICIO TANGIBLE" NO LO ERA — y el propio proyecto ya lo había decidido.**
+Los datos estructurados (`schema.org`) se anotaron como *"de las pocas con beneficio TANGIBLE, no solo
+nota"*, porque existen esquemas de transporte (`BusStop`, `BusTrip`) y ZetaBus tiene esos datos. **Nadie
+lo verificó.** El diseño en papel lo tumbó con tres hechos:
+1. **`BusStop`/`BusTrip`/`Place` NO están en el catálogo de rich results de Google.** Los entiende, pero
+   **no dibuja nada visible**. Aunque se marcaran las 934 paradas, el test seguiría diciendo "no se ha
+   detectado ningún elemento". El beneficio prometido no existía.
+2. ⭐ **Y el argumento que lo cierra: `/parada/*` está BLOQUEADA en `robots.txt` A PROPÓSITO.** El propio
+   comentario lo razona: lo único valioso de una parada son los minutos que faltan, que caducan en 15 s;
+   indexarla sería *"publicar una mentira"*. **El sitio natural del `BusStop` es exactamente el que
+   ZetaBus le dice a Google que no mire.** La propuesta chocaba con una decisión que el proyecto ya
+   había tomado, y bien tomada.
+3. **La honestidad prohíbe el resto:** un JSON-LD es una afirmación de máxima confianza **sin la interfaz
+   honesta alrededor** — no hay dónde poner el "⚠ nombre sin confirmar", ni el "hace 30 s", ni el aviso
+   de degradado. Marcar una llegada volátil como `departureTime` sería la peor mentira del catálogo.
+✅ *Sobrevivió UNA pieza y se implementó (commit `9822789`): **`BreadcrumbList` en `/linea/*`** — es
+verdad, Google SÍ lo dibuja, va en páginas indexables, y **no se pudre** (se deriva de `shortName` en
+cada render). Con escape anti-XSS demostrado (`Línea a</script><b` → `\u003c`) y guardián visto en ROJO.*
+⚠️ *Y dos trampas descartadas a propósito: `FAQPage` (inventar una FAQ que no existe para conseguir una
+ficha bonita) y `SearchAction` (deprecado por Google, y el buscador es de cliente: declararlo sería
+mentir). **Ninguna se hizo.***
+> ⭐ *Lección: una mejora anotada en una lista **no está verificada por estar anotada**. "Beneficio
+> tangible" era una hipótesis mía sin comprobar, y sobrevivió hasta que alguien fue a diseñarla. Mismo
+> patrón que L80, pero con una propuesta en vez de con un dato.*
 
 ---
 
@@ -2287,6 +2349,43 @@ capturas que nunca viajaron. Detalle en §7.
   `f7a642d` (para PNG; el GIF no admite marco, L70). Disponible para re-enmarcar los 3 PNG si hiciera
   falta.
 
+**✅ CABOS CERRADOS EL 28/07 — el día de cierre**
+- ✅ **`/api/diag` ve las TRES cachés** (`9f674f8` recorrido · `6bba554` horario): `llegadas` 15 s ·
+  `recorrido` 1 h · `horario` 1 día. Contadores verificados moviéndose al usarlas de verdad (no bloques
+  de ceros). *Y una verificación cruzada que salió gratis: `llegadas` se queda a CERO al abrir `/linea` —
+  correcto, la vista de línea no toca el canal vivo. Si se hubiera movido, sería el síntoma.*
+- ✅ **Comentarios "Cerca de mí"** (`ce06168`): ya no lo llaman cabo pendiente de ZetaBus; dicen que la
+  geolocalización va al proyecto **004 (Desplázame)**. No se borró lo que cuentan de la app de referencia
+  (sigue siendo cierto).
+- ✅ **La VERSIÓN: fuente única + vigilada** (`e7614a6`). Código: `data:build` hornea
+  `src/generated/version.ts` y `transporte.ts` compone el UA desde ahí (`major.minor`) — **sin importar
+  `package.json`**, que habría publicado la lista de dependencias en el bundle. Docs: dos entradas nuevas
+  en `readme-no-miente` que cruzan el badge (semver) y el UA (major.minor) con `package.json`.
+  **ROJO demostrado en las dos** (badge a 1.1.0 → "el badge dice 1.1.0 y package.json es 1.0.0"; UA a 9.9
+  → "dice ZetaBus/9.9 y major.minor es 1.0"). Y el UA REAL medido: bump a 1.1.0 → `ZetaBus/1.1`.
+  ⚠️ *Nota: `version.ts` es artefacto de build (gitignorado) → en un clon limpio el código de red no
+  compila hasta correr `data:build`. Mismo contrato que `@/generated`, pero ahora también lo necesita el
+  código de red.*
+- ✅ **CONTRASTE de los chips: NO hay problema real** (diagnosticado, nada que arreglar). Ver **L81**:
+  eran dos motores midiendo canales opuestos; `max(blanco, negro) ≥ 4,58` siempre. El contorno ya
+  resolvía la legibilidad. **Cualquier "arreglo" tocaría los colores oficiales de Avanza o silenciaría el
+  medidor sin mejorar nada.**
+- ✅ **COORDENADAS solo-barrido: riesgo TEÓRICO** + silencio eliminado (`3b76f27`·`fc14991`). Nada
+  reescribe el fichero automáticamente (ni build, ni cron, ni barrido): solo un script a mano, con
+  todo-o-nada y caja de cordura geográfica. **El hueco real:** sobrescribe sin comparar → protegido
+  contra lo absurdo, NO contra lo plausible-pero-peor. **No se construyó la jerarquía** (sobre-ingeniería
+  para un escenario sin disparador); se **eliminó el silencio**: ahora anuncia NUEVO / IGUAL / **CAMBIA
+  (anterior → nueva + distancia)** / **DESAPARECE** antes de escribir. *(El cuarto caso lo añadió el
+  ejecutor por iniciativa propia — y es el más peligroso: perder un poste es peor que cambiarle la
+  coordenada.)* Y dos comentarios que mentían, corregidos (el `.gitignore` decía "mirando la calle"
+  cuando hoy vienen del feed; y una vía `argv` que no está implementada).
+- ✅ **schema.org: el diseño grande DESCARTADO con evidencia, el breadcrumb HECHO** (`9822789`). Ver
+  **L82**. `BreadcrumbList` en `/linea/*`, con escape anti-XSS demostrado y guardián
+  (`migas-no-miente`) visto en ROJO. ⬜ *Pendiente menor: validar el fragmento en `validator.schema.org`
+  y `rich-results` tras el deploy (con la URL real).*
+- ✅ **RADAR eliminado del servidor** — proyecto caduco, verificado antes (nadie lo enlaza, todo en local,
+  se consulta levantándolo en la máquina). Se llevó con él los dos procesos zombis.
+
 **⬜ CABOS NUEVOS (28/07):**
 - ✅ **PROCESOS ZOMBIS — eran de RADAR, no de ZetaBus (resuelto 28/07).** Las gráficas del hosting daban
   un salto sostenido (memoria ~300→900 MB, procesos ~25→100 de 120, con picos tocando el techo) desde que
@@ -2304,35 +2403,21 @@ capturas que nunca viajaron. Detalle en §7.
   ✅ *Y de paso quedó verificado: **ZetaBus arranca solo** tras matarle el proceso (Node levanta al primer
   visitante), y levanta **3 `next-server` en frío** — comportamiento normal aquí (ya se veía en los logs:
   varios `▲ Next.js` al arrancar), no un síntoma.*
-- **`/api/diag` se quedó COJO tras separar la caché del recorrido.** El diag solo lee `motor().cache`, y
-  el recorrido vive ahora en `motorRecorrido()` → **su caché ya no se ve en el panel**. No es un fallo
-  (funciona), es **pérdida de observabilidad**: si mañana cachea mal, el diag no lo diría. Le pasa lo
-  mismo a `motorHorario` desde siempre, así que es coherente, no una anomalía. Follow-up pequeño: añadir
-  su `instantanea()` al diag. *(Ninguno de los dos lo anticipamos al elegir la opción B — es el coste que
-  apareció al implementar.)*
 - ⚠️ **REVISAR QUE ESTE DOCUMENTO NO LLEVE DATOS SENSIBLES.** `ZETABUS-ESTADO.md` está en un **repo
   público** y a lo largo de las sesiones ha ido acumulando infraestructura: usuario del servidor, IP,
   puerto SSH, rutas internas, la existencia del token de regeneración, cómo está montado el cron. Hay que
   pasarle una revisión con calma. **Es literalmente la lección de Linaje** (*"`git add -A` reportó '98
   ficheros, nada sensible' mientras las notas internas viajaban a un repositorio público"*). De los cabos
   abiertos, **el único con implicación de seguridad real.**
-- **La VERSIÓN: diagnóstico hecho, implementación sin decidir.** No es "un número en N sitios": son **dos
-  formas** — el semver completo `1.0.0` (package.json, lock, badge del README, CHANGELOG) y el
-  `major.minor` **`1.0`** del User-Agent (transporte.ts:56, README:213, THIRD-PARTY:94). Nadie lee la
-  versión desde código (el UA está cableado por su cuenta) y **ni el badge ni el UA los vigila**
-  `readme-no-miente`. Plan recomendado: (a) **código** → hornear `src/generated/version.ts` desde
-  `package.json` en el build (patrón que el repo ya usa; evita colar el `package.json` en el bundle del
-  cliente, que publicaría la lista de dependencias); (b) **documentos** → extender `readme-no-miente` con
-  2-3 entradas (badge y UA), ~15-25 líneas, riesgo bajo. **Vigilar, no generar** — la filosofía del repo.
-
 **⬜ CABOS DETECTADOS EL 27/07 (sin diagnosticar — mirar con cabeza fresca):**
 - **"PLAZA EMPERADOR CARLOS QUINTO" vs "Plaza Emperador Carlos V".** La MISMA parada sale con dos
   grafías según la vista: el feed de llegadas en vivo (`gps.avanzabus.com`) dice "CARLOS QUINTO"; el GTFS
-  dice "Carlos V". ⚠️ NO diagnosticado: falta confirmar si es literal de Avanza (dos fuentes, dos
-  grafías → decisión de PRODUCTO: ¿respetar la fuente, coherente con la tesis, o normalizar?) o si
-  ZetaBus transforma algo por el camino (→ entonces es BUG). Son escenarios con respuestas opuestas.
-  *(Relacionado: `nombres.ts` ya decidió que un poste con dos nombres según sentido es un DATO, no un
-  error — se registra como discrepancia. Esto es el mismo fenómeno entre fuentes distintas.)*
+  dice "Carlos V". ✅ **Antonio confirmó (28/07) que en la web Y en las apps de Avanza sale "CARLOS
+  QUINTO"** → es la **grafía oficial del operador**, no algo que ZetaBus invente. Con eso el "problema"
+  casi se desactiva: ZetaBus muestra fielmente lo que dice cada fuente, que es su tesis.
+  ⬜ *Lo único que quedaría: confirmar que el "Carlos V" sale del GTFS (probable) y decidir si se
+  documenta. NO es un bug — son dos fuentes con dos grafías. (Relacionado: `nombres.ts` ya decidió que un
+  poste con dos nombres es un DATO, no un error.)*
 - ✅ **"Cerca de mí" — FALSA ALARMA, y la nota era MÍA (corregido 28/07).** Este documento afirmaba que
   había un chip decorativo en el buscador (`Buscador.tsx:26`). **NO EXISTE.** Al ir a quitarlo se
   comprobó: el render es label + input + pista + resultados; el `aria-hidden` de esa zona es el badge del
@@ -2343,14 +2428,8 @@ capturas que nunca viajaron. Detalle en §7.
   > describiera un elemento de ZetaBus. Se escribió aquí como cabo real y **sobrevivió hasta que alguien
   > fue a actuar sobre ella**. Es el patrón del proyecto aplicado a su propia memoria: una afirmación
   > falsa, coherente, que nadie verifica porque parece plausible. **El estado también miente.**
-  · ⬜ Sin decidir: si matizar esos comentarios (hoy llaman al "cerca de mí" un cabo pendiente, cuando la
-    decisión es que la geolocalización se hará en el 004 y se traerá hecha). Cosmético.
-
-- **Contraste de los chips de línea (⚠️ tres herramientas coinciden).** WAVE (21), axe (16) y Lighthouse
-  (resta el 96 de Accesibilidad) señalan lo mismo: contraste insuficiente en los chips de número. Sin
-  resolver la contradicción de axe (lee `#000000` donde el elemento declara `#FFFFFF`; la clase se llama
-  `zb-num-contorno`). Hay que **medir el píxel resultante**, y si es real, es decisión de PRODUCTO: los
-  colores son los OFICIALES de Avanza. Detalle completo en §10.
+  · ✅ *Comentarios corregidos el 28/07 (`ce06168`): ya dicen que la geolocalización va al **004
+    (Desplázame)** y que no es un cabo pendiente de ZetaBus.*
 
 **⬜ CABOS PERMANENTES DE PRODUCCIÓN (26/07):**
 - ⚠️ **Purga manual del CDN tras CADA deploy.** No es un bug a arreglar: es el procedimiento (README →
