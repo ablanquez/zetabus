@@ -769,3 +769,37 @@ grande**, que es tan valioso como lo que se implementa:
   previo en `src` (verificado). No se tocó `robots.ts`, ni el sitemap, ni `/parada`.
 - **Verde:** tsc 0 · vitest **554** (+7 del guardián) · lint (0 err) · playwright **831** · vigía-README.
   Commit atómico.
+
+### Fase 29 · Auditoría de cierre · Bloque A — código (solo lectura)
+
+Primera de seis auditorías de puesta a punto (A código · B interfaz · C tests · D docs · E operación · F
+experiencia), de las que se destilará un checklist maestro para los siguientes proyectos. **Solo lectura:
+la única escritura fue el informe** en `docs/auditoriafinal/A-codigo.md` (carpeta nueva; **NO nace
+ignorada** —`docs/` está en la allowlist—, a diferencia de CHANGELOG/SECURITY). Commit auditado `5ba78d4`.
+El informe es **registro histórico fechado**: no se reescribe.
+
+- **Método:** cuatro barridos mecánicos en paralelo (código muerto · duplicación/deps · tipos/seguridad ·
+  errores/fechas), cada hallazgo con fichero+línea, y los materiales **re-verificados a mano** (la regla de
+  la tanda: «la auditoría también miente» → se cruzó cada agente). Lectura humana directa de ~35
+  ficheros-crux para patrones/estructura/rendimiento. **Cobertura declarada** en el informe: `src/` 100 %
+  barrido + ~35 leídos a fondo, `scripts/` 100 %, config 100 %.
+- **Titular honesto:** el código está muy limpio. **Cero `any`, cero `@ts-ignore`, cero secretos, cero
+  `catch` que oculte, cero default que fabrique un silencio, un solo `dangerouslySetInnerHTML` (el JSON-LD,
+  escapado). Nada 🔴** que rompa o mienta en producción hoy — y se dice CÓMO se comprobó, no a secas.
+- **Deuda real (🟠), toda trivial:** (1) `linea/page.tsx:135` calcula `hoy` en **UTC** para la clave de
+  caché del horario → al borde de medianoche Madrid usa el día de ayer, **contradiciendo la lección de
+  `feed-validity.ts`**; (2) `sharp` **usado sin declarar** en `package.json` (marco-movil.mjs, por
+  transitiva opcional de next); (3) `ChipLinea.AA = 4.5` **reteclado** cuando `core/contraste.AA_TEXTO` ya
+  existe en el módulo que ya importa (la «copia a mano»); (4) dos comentarios (`core/index.ts:10`,
+  `entities.ts:14`) citan un **guardián que no existe** (`core-agnostico.test.ts`; el real es
+  `tranvia-sin-tocar-el-nucleo`).
+- **Cosmético/opinable (🔵):** 4 interfaces del núcleo declaradas y nunca cableadas (decisión de producto:
+  retirar o conservar como modelo); el módulo `kml.ts` efectivamente muerto (cabo ya documentado);
+  exports que solo respira un test; el sobre de desvíos «ok/edad 0» cuando todo falla (sin consumidor de
+  pantalla hoy); fechas sin `timeZone` en dos sitios; el `as unknown as Artefacto`; `noUncheckedIndexedAccess`
+  ausente. Detalle y coste en el informe.
+- **Lo que está bien** (para el maestro): terceros validados en runtime, fallo cerrado consistente, fuente
+  única vigilada por tests, disciplina de bundle de cliente, `feed-validity` como referencia de zona horaria,
+  caché-como-honestidad con versión-de-forma. El informe cierra con un **checklist maestro en genérico**.
+- Nada al estado por mi parte: es diseño/diagnóstico, lo destila Antonio. Commit atómico del informe +
+  bitácora. NO push.
