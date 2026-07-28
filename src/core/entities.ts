@@ -1,6 +1,5 @@
-import type { Hex, LatLon, LineId, Mode, StopId, VehicleId } from './ids';
+import type { Hex, LatLon, LineId, Mode, StopId } from './ids';
 import type { Provenance, ProcedenciaDelNombre } from './provenance';
-import type { VehicleProfile } from './profiles';
 
 /**
  * LAS ENTIDADES DEL NÚCLEO.
@@ -80,72 +79,4 @@ export interface Direction {
   readonly official: RouteShape;
   /** Lo que el operador ejecuta HOY. Manda ésta. Puede faltar (Tanda 3). */
   readonly current: RouteShape | null;
-}
-
-/**
- * La diferencia entre lo oficial y lo real. NO se guarda: se calcula.
- * Lo derivable no se persiste.
- */
-export interface RouteDelta {
-  /** En `official` y no en `current` → el vehículo YA NO PASA. Se tacha. */
-  readonly removed: readonly StopId[];
-  /** En `current` y no en `official` → parada provisional. */
-  readonly added: readonly StopId[];
-  readonly reordered: boolean;
-  readonly geometryChanged: boolean;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Un vehículo detectado ahora mismo.
- *
- * ⚠️ NO tiene `articulado`, ni `combustible`, ni `longitud`. Eso es específico
- * del modo y vive en `profile` (ver `profiles.ts`). El núcleo solo sabe que un
- * vehículo PUEDE llevar un perfil, y que el perfil se discrimina por `mode`.
- *
- * `profile: null` significa **SIN DATOS**, y así se enseña. Nunca un valor por
- * defecto: un valor por defecto miente, y encima con confianza.
- */
-export interface Vehicle {
-  readonly id: VehicleId;
-  readonly mode: Mode;
-  readonly lineId: LineId | null;
-  readonly headsign: string | null;
-  readonly position: LatLon;
-  readonly observedAt: string;
-  readonly profile: VehicleProfile | null;
-}
-
-/** Un vehículo que viene hacia una parada. */
-export interface Arrival {
-  readonly stopId: StopId;
-  readonly lineId: LineId;
-  readonly vehicleId: VehicleId | null;
-  readonly headsign: string;
-  readonly etaMinutes: number;
-  /** ⚠️ Entero en la fuente. `0 km` significa "menos de 1 km", NO "ha llegado". */
-  readonly distanceKm: number | null;
-  readonly observedAt: string;
-}
-
-/**
- * Lo que el operador DICE. Nunca lo que nosotros deducimos.
- *
- * ⚠️ Un `Advisory` NO tacha ni oculta nada por sí solo. Solo anota.
- * Lo que se tacha es lo que se DERIVA (una parada ausente de `current`), porque
- * eso se auto-apaga el día que restauran la ruta. Lo declarado se cita.
- */
-export interface Advisory {
-  readonly id: string;
-  readonly publishedAt: string;
-  readonly scope: {
-    readonly lineIds: readonly LineId[];
-    readonly stopIds: readonly StopId[];
-  };
-  readonly kind: 'suppression' | 'diversion' | 'schedule' | 'other';
-  readonly title: string;
-  readonly bodyHtml: string;
-  readonly url: string;
-  readonly provenance: Provenance;
 }

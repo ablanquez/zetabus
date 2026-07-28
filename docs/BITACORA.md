@@ -892,3 +892,16 @@ el #8 se diseña aparte (cambia un contrato) y se decide antes de tocar código.
   getters-locales y Zaragoza COINCIDEN, así que NO cazaría una regresión al huso del host; éste sí, fijando el
   huso.
   Verde: tsc 0 · vitest **563** (+2) · lint (0 err, 3 warnings previos) · playwright **831**. NO push.
+- **#5 (A1e) · Las cuatro interfaces del núcleo sin cablear** (`refactor(core)`). `RouteDelta`, `Vehicle`,
+  `Arrival` y `Advisory` estaban declaradas en `core/entities.ts` y **consumidas en NINGÚN sitio** —el
+  «declarado y nunca cableado» que este proyecto lleva dos tandas persiguiendo—. Grep exacto (`\bNombre\b`)
+  en `src/`, `scripts/`, `tests/`, `e2e/` y `docs/`: **cero uso en código**; solo aparecen en su declaración
+  y en tres documentos que las DESCRIBEN (el diseño de la Tanda 1, la auditoría histórica `11-...`, y
+  `A-codigo.md` —el hallazgo mismo—). Documentación histórica, no consumo. Se retiran (git las conserva si
+  algún día hacen falta), con sus comentarios, y se limpian los imports que quedaban huérfanos (`VehicleId`,
+  `VehicleProfile`, que solo usaban esas interfaces). **NO se toca ningún doc** (son registros históricos,
+  incluido `A-codigo.md`). Verde: tsc 0 (imports huérfanos cazados) · vitest **563** (el guardián
+  `tranvia-sin-tocar-el-nucleo` sigue verde) · lint (0 err) · playwright **831**. NO push.
+
+⚠️ **Falta el #8** (el sobre de desvíos que dice «ok» sin observar nada): cambia el contrato de
+`desviosDeLinea`, así que se diseña y se aprueba ANTES de tocar código. Pendiente de esa decisión.
