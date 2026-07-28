@@ -79,10 +79,12 @@
 #    `git blame` de este fichero: por eso va versionado, y por eso va solo.
 !/data/flota-observada.json
 
-#    ⭐ COORDENADAS A MANO de los postes provisionales que solo salen en el
-#    barrido y que el GTFS no conoce (Avanza no da lat/lon). Es observacion_propia,
-#    igual que la flota observada: alguien las resuelve mirando la calle. Por eso
-#    va versionado y sobrevive al borrado diario del índice (que sí es raspado).
+#    ⭐ COORDENADAS del FEED de Avanza de los postes provisionales que solo salen
+#    en el barrido y que el GTFS no conoce. Son `avanza-web`, no observación manual:
+#    las da el `marcadorParada` del feed de llegadas, y las FIJA una vez
+#    `scripts/coords-solo-barrido.ts` (no las derivamos cada noche). Van versionadas
+#    para sobrevivir al borrado diario del índice (que sí es raspado) y viajar con
+#    el deploy: así las paradas solo-barrido son visitables haya índice o no.
 !/data/postes-solo-barrido-coordenadas.json
 
 #    Fichero heredado. NO es producto: es material de auditoría.
