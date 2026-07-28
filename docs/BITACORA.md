@@ -803,3 +803,38 @@ El informe es **registro histórico fechado**: no se reescribe.
   caché-como-honestidad con versión-de-forma. El informe cierra con un **checklist maestro en genérico**.
 - Nada al estado por mi parte: es diseño/diagnóstico, lo destila Antonio. Commit atómico del informe +
   bitácora. NO push.
+
+### Fase 30 · Arreglar los cuatro 🟠 del Bloque A (cuatro commits atómicos)
+
+Los cuatro son **la misma familia**: algo declarado que no corresponde con la realidad (como los dos de la
+mañana y el `TTL_RECORRIDO_MS` de ayer). Se arreglan uno por commit, sin tocar el informe histórico.
+
+- **1 · El día en Zaragoza, no en UTC** (`fix(horario)`). `linea/page.tsx` calculaba `hoy` con
+  `toISOString().slice(0,10)` (UTC) para la clave de caché del horario → entre medianoche y la 01:00/02:00
+  de Madrid usaba el día de AYER (horario de ayer una jornada entera, TTL de un día). **El repo ya lo sabía:**
+  `feed-validity` resuelve el día civil en `Europe/Madrid`. Se **exporta `diaCivil`** (la fuente única, NO una
+  segunda forma) y la página tira de ella. **Contraprueba con reloj inyectado** (`tests/dia-civil.test.ts`):
+  verano, invierno y la noche del cambio de hora, 23:30Z → día de Madrid; **ROJO demostrado** poniendo la forma
+  vieja (UTC) en `diaCivil` → 3/4 en rojo (`expected '2026-08-31' to be '2026-09-01'`). Restaurado → verde.
+- **2 · `sharp` declarado** (`build(deps)`). Lo usaba `marco-movil.mjs` sin estar en `package.json`
+  (funcionaba por transitiva *opcional* de next). Declarado en `devDependencies` a su versión real (0.34.5).
+  El árbol NO cambia más allá de la declaración (sharp + `@img/colour` + `semver` pasan de `optional` a
+  `devOptional`, misma versión/hash; `npm audit` sigue en 12 high). Verificado que sharp carga y opera.
+  **Barrido:** era el ÚNICO paquete usado sin declarar.
+- **3 · El umbral AA, de una sola fuente** (`refactor(contraste)`). ChipLinea reteclaba `AA = 4.5` teniendo
+  `AA_TEXTO = 4.5` en `core/contraste` —el módulo que ya importaba—. Se elimina la copia; ChipLinea usa
+  `AA_TEXTO`, y los consumidores externos (`contraste-de-los-chips`, `cruces`, y el `4.5` literal de
+  `e2e/mapa.spec.ts`) pasan a la fuente única. Grep de cierre: **cero `4.5` como umbral en código**, nadie
+  importa `AA` de ChipLinea, el umbral vive solo en `core/contraste`.
+- **4 · El guardián citado existe** (`docs`/comentarios). `core/index.ts:10` y `entities.ts:14` citaban
+  `tests/core-agnostico.test.ts` —que NO existe—; el real es `tranvia-sin-tocar-el-nucleo.test.ts`
+  (verificado que existe **y** que su test comprueba lo que el comentario afirma: núcleo sin importar de
+  `sources/` y sin la palabra «bus» salvo como literal `Mode`). Corregidas las dos citas.
+- ⚠️ **Reportado, NO arreglado (el patrón del día otra vez):** al barrer citas a ficheros de test, apareció
+  **un segundo fantasma** — `desvios.ts:57` cita `tests/desvios-no-miran-lo-vivo.test.ts`, que **no existe**
+  (no hay ningún fichero `*desvio*` en `tests/`). No lo toco: es un descubrimiento nuevo, fuera del alcance
+  de esta tanda. Antonio decide si la garantía («el motor de desvíos no mira lo vivo») está cubierta en otro
+  test (¿`pantalla-no-miente`?) o si falta el guard. Y de dependencias sin declarar / copias del umbral: **no
+  hay más** (barridas todas).
+- **Verde tras cada uno:** tsc 0 · vitest **558** (+4 del test de fecha) · lint (0 err, 3 warnings previos) ·
+  playwright **831** · vigía. Cuatro commits atómicos. NO push.

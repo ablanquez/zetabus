@@ -7,7 +7,7 @@
  * ⚠️ REGLA QUE NO SE NEGOCIA:
  *    `src/core/` NO PUEDE IMPORTAR NADA DE `src/sources/`. Nunca.
  *    Si un tipo del núcleo necesita saber de dónde vino, está mal puesto.
- *    Lo vigila `tests/core-agnostico.test.ts`, no la buena voluntad.
+ *    Lo vigila `tests/tranvia-sin-tocar-el-nucleo.test.ts`, no la buena voluntad.
  */
 export * from './ids';
 export * from './provenance';

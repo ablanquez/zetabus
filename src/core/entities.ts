@@ -11,9 +11,9 @@ import type { VehicleProfile } from './profiles';
  * Todo eso son detalles de UN proveedor concreto y viven en `src/sources/`.
  * Zaragoza-bus es el PRIMER INQUILINO de este modelo, no el modelo.
  *
- * El test `tests/core-agnostico.test.ts` lo comprueba automáticamente: si
- * alguien mete la palabra "bus" aquí, o hace que `core/` importe de
- * `sources/`, el test se pone rojo.
+ * El test `tests/tranvia-sin-tocar-el-nucleo.test.ts` lo comprueba
+ * automáticamente: si alguien mete la palabra "bus" aquí, o hace que `core/`
+ * importe de `sources/`, el test se pone rojo.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
