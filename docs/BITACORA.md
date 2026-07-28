@@ -984,3 +984,56 @@ cada paso del `build`, **rastree el grafo de imports** (reutilizando el resolver
 Habría cazado esto. Coste: **acotado, no trivial** (por el spawn) — casi una tanda propia. La alternativa
 —un build limpio en CI— es la prueba de verdad pero es cara y depende de Avanza. No lo construyo: lo dejo
 para que se decida si compensa.
+
+### Fase 34 · Arreglar los siete hallazgos triviales del Bloque C (siete commits atómicos)
+
+El Bloque C (`docs/auditoriafinal/C-tests.md`) auditó tests y guardianes **rompiendo lo que dicen
+proteger** (8 mutaciones: 5 cazadas, 2 escapadas, 1 control). Veredicto general bueno —*«el conjunto es
+inusualmente riguroso; los hallazgos son huecos concretos, no tests malos»*—. Antonio aprueba cerrar **los
+siete triviales**. **F2** (barridos que escriben JSON que nadie agrega) y **F4** (el guardián del contraste
+caza copias divergentes pero no una copia correcta reescrita) quedan **fuera**, se deciden aparte.
+
+- **F1 · El suelo táctil MIDE Y AFIRMA** (`a360aba`). `barrido-fino-2.spec.ts` recogía cada zona <44 px en
+  `flojos` y las tiraba a `console.log`: medía el suelo y no lo vigilaba. Se le pone el `expect`. Al afirmar,
+  **ROJO real: 401 zonas por debajo de 44 px**, ⚠️ **TODAS en la lista de recorrido de `/linea/*`** — 338
+  filas de parada (ancho completo × 24 px de alto) + 63 chips de correspondencia (24×24). **Ni una** en la
+  home ni en `/parada/*`. El suelo de 44 es criterio **AAA que el proyecto se puso a sí mismo** (los 24×24
+  cumplen el mínimo AA de WCAG 2.5.8). **NO se tapó el umbral**: el arreglo es de interfaz → **espera al
+  BLOQUE B**. Va en `test.fixme` (con nota completa y cómo reactivar) para no dejar la suite roja —*una suite
+  que vive roja no distingue un fallo nuevo del conocido*—.
+- **F3 · El rastreador de imports ve los de EFECTO LATERAL** (`939535a`). El regex de `importaciones()`
+  exigía `from`, así que `import '@/generated';` (sin binding) se le escapaba pese a arrastrar el grafo igual.
+  Segunda pasada que los caza, sin doble-contar los de `from`. El hueco estaba **copiado en los dos**
+  guardianes de grafo → arreglados los dos. **Rojo de mutación demostrado en ambos** (`error.tsx` +
+  `import '@/generated'` → cazado; `desvios.ts` + `import '@/engine/llegadas'` → cazado), restaurados.
+  Reportado, NO arreglado: `dynamic(() => import('./MapaParada'))` en `LlegadasVivas.tsx:43` — el regex
+  tampoco ve el `import()` dinámico ni `require()` (no hay `require` en `src/`).
+- **F5/F6 · Saltar en vez de reventar en un clon limpio** (`f50a024`). Dos tests leían un artefacto que **no
+  viaja en el repo** y petaban al importar en un clon limpio —la misma clase de fallo que la Fase 33: un
+  verde que depende de que alguien descargara/compilara antes—. F5 `tranvia`: leía el zip del GTFS a nivel de
+  módulo (reventaba el fichero entero, incluido el test del núcleo que ni lo toca). F6 `readme-no-miente`: la
+  contraprueba del «cambio de universo» LANZABA si faltaba un PNG gitignored. Los dos con `skipIf` (patrón que
+  `readme-no-miente:483` ya usaba). **Dos direcciones demostradas en ambos:** con el artefacto se ejecutan,
+  sin él se SALTAN (y ya no revientan).
+- **F7 · Las vistas de línea/parada fingen, ya no le pegan a Avanza real** (`d394078`). Varios e2e cargaban
+  `/linea/*` y `/parada/744` **sin `?fingir=`** → en cada corrida le pedían el recorrido/horario/llegadas a
+  Avanza REAL, y pasaban con Avanza arriba o abajo (el repo tiene promesa escrita de no abusar de Avanza).
+  Cada uno recibe el fingido que **no cambia lo que mide**: vistas de línea (sentido, recorrido-y-terminal,
+  interaccion, revision) → `?fingir=horario` (línea sana, ruta oficial tal cual; NO `desviada`, que cambiaría
+  el recorrido medido); `/parada/744` (acuse-de-toque, rutas-basura) → `?fingir=solo-oficiales`. En acuse, el
+  `test.skip(sin llegadas)` —el «verde/skip según lo que Avanza tenga ahora»— pasa a **aserción** de que las
+  llegadas están. **Prueba discriminante** contra la API en modo demo: `/api/llegadas/744?fingir=solo-oficiales`
+  devuelve el fixture (035 PARQUE GOYA); **sin fingir** devuelve las líneas REALES del 744 (29, 39). 45
+  passed / 1 skipped en los seis specs.
+- **F8 · Guarda antes del `if`** (`84e2271`). Tres tests de `motor.test.ts` metían sus aserciones dentro de
+  `if (estado === 'ok')` / `if (tipo === 'comparado')` sin afirmar antes el estado: si cambiara, el `if` se
+  saltaría y el test pasaría con CERO comprobaciones. `expect(...).toBe(...)` antes del `if` (que se queda
+  para el narrowing), al modo que el fichero ya usaba (línea 258).
+- **F9 · Fuera los dos `expect(true).toBe(true)`** (`a59e5c2`). Dos `it(...)` de `horas-malas.test.ts` eran
+  prosa + `expect(true)`. Su contenido real está cubierto en `motor.test.ts` (el paso del ETA, «poste mudo →
+  ok vacío»); afirmarlo aquí duplicaría, y no hay nada nuevo comprobable sin arrastrar esa maquinaria. Se
+  quitan los tests huecos y su razonamiento se conserva como comentario donde aporta (nota del `describe`).
+- **Verde tras la tanda:** tsc 0 · vitest **563** (−2 de F9, +las guardas de F8) · lint (0 err, 3 warnings
+  previos, ninguno en ficheros tocados) · playwright **175 passed / 10 skipped** en 1280px · el `fixme` del
+  F1 a la vista. **README revisado** (tarea de cierre): sus recuentos de pruebas son *suelos* explícitos
+  («más de 470» / «más de 800»), no los desmiente nada; **no se toca**. Siete commits atómicos. NO push.
