@@ -19,6 +19,7 @@ import { AcuseDeToque } from '@/components/AcuseDeToque';
 import { RecorridoVivo } from '@/components/RecorridoVivo';
 import type { Line, LineId, StopId } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
+import { migasJsonLd } from '@/migas';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,7 +143,17 @@ export default async function LineaPage({ params, searchParams }: Props) {
   //    su suelo medido). Las piezas entran APLANADAS como hijas directas de la rejilla:
   //    `Recorrido` devuelve un fragmento (desvíos + recorrido) y `Terminal` es la de al lado.
   return (
-    <div className="rejilla-linea" data-tiene-desvio={hayCajaDesvios ? 'si' : 'no'}>
+    <>
+      {/* ⭐ SCHEMA.ORG · la ÚNICA pieza de datos estructurados de ZetaBus: las migas
+          de navegación (Inicio › Línea XX). Va como `<script>` nativo —JSON-LD es dato,
+          no código (doc de Next `json-ld.md`)—, ESCAPADO en `@/migas`. Fuera del grid
+          (fragmento) por higiene, aunque un ld+json no se pinta. Por qué solo esto y no
+          `BusStop`/`BusTrip`: ver la cabecera de `@/migas`. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: migasJsonLd(l.shortName) }}
+      />
+      <div className="rejilla-linea" data-tiene-desvio={hayCajaDesvios ? 'si' : 'no'}>
       {/* R1 · LA LÍNEA (chip + nombre). Arriba del corte va centrada (globals.css). */}
       <div className="zona-titulo-linea">
         {/* ⛔ AQUÍ HABÍA UNA FLECHA "←" DE VUELTA A LA HOME. Se retira: la marca
@@ -263,7 +274,8 @@ export default async function LineaPage({ params, searchParams }: Props) {
           <InfoAdicional info={horario.info} />
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -723,3 +723,49 @@ sobre-ingeniería: los dos comentarios, y el silencio. **NO se construye la jera
   **intacto**.
 - **Verde:** tsc 0 · vitest **547** · lint (0 err) · playwright **831** · vigía-README. Dos commits atómicos
   (el comentario del `.gitignore`; y el script: comentario argv + anuncio).
+
+### Fase 28 · schema.org — el `BreadcrumbList` (y por qué NADA más)
+
+Último cabo. La auditoría del 27/07 midió *"no se ha detectado ningún elemento"*: ZetaBus no tenía datos
+estructurados. Se propuso como "beneficio tangible". El diseño en papel lo midió y **tumbó la propuesta
+grande**, que es tan valioso como lo que se implementa:
+
+- **Por qué NO `BusStop`/`BusTrip`/`Place`/`GeoCoordinates`:** (1) **no están en el catálogo de rich
+  results de Google** → marcar las 934 paradas no dibujaría NADA en los resultados, es peso muerto; (2)
+  vivirían en `/parada/*`, que `robots.ts` **bloquea a propósito** —indexar unos minutos que caducan en 15 s
+  sería "publicar una mentira", lo dice el propio comentario—; (3) la **tabla de honestidad** lo prohíbe: 16
+  nombres «sin confirmar» (`gtfs-marcado`), 9 paradas provisionales de desvío, correspondencias con fecha de
+  caducidad, y sobre todo las **llegadas** —marcar una estimación volátil como `Schedule`/`departureTime`
+  sería la peor mentira posible—. En JSON-LD no hay sitio para el matiz que la pantalla sí pone al lado.
+- **Descartados también** (decisión de Antonio): `WebSite`/`Organization` (invisible en un subdominio
+  personal), `FAQPage` (inventar una FAQ para una ficha bonita es la trampa que este proyecto no hace, y
+  además Google solo las muestra de sitios gov/salud), `SearchAction` (deprecado por Google, y el buscador de
+  ZetaBus es de cliente: no hay endpoint GET al que apuntar → declararlo sería mentir).
+- **Sobrevive UNA pieza y es la que se implementa: `BreadcrumbList` en `/linea/[linea]`.** Cumple las cuatro
+  a la vez: es VERDAD (Inicio › Línea 35), Google lo DIBUJA (está en el catálogo), va en una página que
+  `robots.ts` SÍ permite indexar, y NO ENVEJECE (se deriva de `l.shortName` en cada render, no se cablea).
+- **Cómo, al modo del repo:** builder puro en **`src/migas.ts`** (fuente única, peer de `sitio.ts`) →
+  `migasDeLinea` (objeto) + `migasJsonLd` (string ya escapado). Se inyecta con un `<script
+  type="application/ld+json">` NATIVO (no `next/script`: JSON-LD es dato, no código — doc oficial de Next
+  `json-ld.md`), en un fragmento fuera del grid. El último ítem (la página actual) va **sin `item`**, como
+  pide schema.org.
+- **Escape anti-XSS (aunque el dato sea controlado):** `JSON.stringify` NO sanea → `.replace(/</g,
+  '\\u003c')`. Hoy el único dato es `shortName` del GTFS («35», «Ci3», «N1»); el escape va igual por
+  disciplina. Contraprueba con entrada sintética `a</script><b` → sale `a</script><b`: **cero `<`
+  crudos**, imposible cerrar el `<script>`.
+- **HTML SERVIDO verificado** (`build` + `next start`, no el código): `/linea/35`, `/linea/Ci3`, `/linea/N1`
+  emiten el `BreadcrumbList` correcto, con `item2.name` = «Línea 35/Ci3/N1» y sin `item` en el último. El
+  render `force-dynamic` no cambió (el breadcrumb es puro).
+- **Guardián `tests/migas-no-miente.test.ts` (rojo antes de verde):** cruza el marcado con `l.shortName` de
+  las **44 líneas** (incluidos los casos raros 35/Ci3/N1), más estructura y escape. **ROJO demostrado:**
+  cableé `name: 'Línea 999'` → *«NO MIENTE · C1: expected 'Línea 999' to be 'Línea C1'»* (5/7 en rojo).
+  Restaurado → verde. Un JSON-LD que diga una línea y la página otra sería una mentira invisible para el
+  humano y visible para la máquina; el guardián la hace imposible.
+- **Validación externa (pendiente para Antonio):** pegar el fragmento servido en `validator.schema.org`
+  (estándar) y en `search.google.com/test/rich-results` (que Google lo dibuje). No tengo salida a esas
+  herramientas desde aquí; el fragmento es un `BreadcrumbList` de manual y `BreadcrumbList` es tipo de rich
+  result soportado.
+- **No se solapa con nada:** OG/Twitter del layout conviven (mecanismos distintos); no había ningún JSON-LD
+  previo en `src` (verificado). No se tocó `robots.ts`, ni el sitemap, ni `/parada`.
+- **Verde:** tsc 0 · vitest **554** (+7 del guardián) · lint (0 err) · playwright **831** · vigía-README.
+  Commit atómico.
