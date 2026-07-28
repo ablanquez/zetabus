@@ -838,3 +838,36 @@ mañana y el `TTL_RECORRIDO_MS` de ayer). Se arreglan uno por commit, sin tocar 
   hay más** (barridas todas).
 - **Verde tras cada uno:** tsc 0 · vitest **558** (+4 del test de fecha) · lint (0 err, 3 warnings previos) ·
   playwright **831** · vigía. Cuatro commits atómicos. NO push.
+
+### Fase 31 · El guardián que faltaba: `tests/desvios-no-miran-lo-vivo.test.ts`
+
+El segundo fantasma de la Fase 30, resuelto por diagnóstico primero y creación después. El comentario de
+`desvios.ts:56-59` prometía **desde siempre** que este test existía —«la disciplina se olvida. Un test,
+no.»— y **nunca existió**. La garantía que protege es la tesis del proyecto: un poste callado puede ser un
+desvío, las 4 de la mañana, o un poste sin dar de alta; la API devuelve lo mismo en los tres. **Deducir un
+desvío de un silencio es inventárselo.** Estaba protegida solo por que nadie se equivocara.
+
+- **Diagnóstico (solo lectura) antes de tocar nada.** Veredicto **(b) protección inexistente**: (a) ningún
+  test vigila los imports de `desvios.ts` —barrido por CONTENIDO, no por nombre—; (b) no lo cubre ningún
+  guardián genérico, y se cazó el **falso amigo**: `horas-malas.test.ts` **sí lee** `desvios.ts` (está en su
+  `CAMINO_VIVO`) pero comprueba OTRA garantía (que no razone con el calendario); (c) `git log --diff-filter=D/A`
+  sin rastro: no fue una promesa que fue cierta, **no lo fue jamás**; (d) ✅ la garantía **es cierta hoy**,
+  verificado el cierre INDIRECTO (ni `desvios.ts` ni nada de lo que importa alcanza `llegadas`/`poste`);
+  (e) de 12 citas a tests en comentarios de `src/`, **11 resuelven** — este es el único fantasma, la racha
+  del patrón «declarado que no corresponde» termina aquí.
+- **El guardián.** Reutiliza la maquinaria probada de `nada-de-gtfs-en-el-cliente.test.ts` (`resolver`,
+  `importaciones` que salta `import type`, BFS) — **copiada, no compartida por import**: duplicar un rastreador
+  probado es menos malo que tocar un guardián que funciona en un proyecto que cierra. **BFS y no regex** porque
+  el peligro es el import indirecto (la cicatriz de los 1,9 MB al cliente). **Diana PRECISA**
+  (`engine/llegadas.ts`, `sources/avanza/poste.ts`, `parse-poste.ts`) y no «todo `sources/`»: `desvios` importa
+  `recorrido` (la ruta de hoy) legítimamente, y un falso rojo enseña a no mirar el guardián.
+- **Las DOS contrapruebas.** (1) **Que caza:** import DIRECTO temporal de `llegadas` en `desvios.ts` → ROJO
+  con ruta `desvios.ts → llegadas.ts`; import INDIRECTO (puente intermedio) → ROJO con ruta de 3 nodos
+  `desvios.ts → _puente-vivo.ts → llegadas.ts` (el caso que un regex NO vería). Restaurado; `git diff` de
+  `desvios.ts` vacío. (2) **Que el rastreador anda** (contraprueba del instrumento, como la del test hermano):
+  desde la página de parada, que sí pinta llegadas, DEBE encontrar el camino — un `null` roto daría falso verde.
+  Más un tercer test: la diana apunta a ficheros que existen (si no, «verde en vacío»).
+- **La cita del comentario de `desvios.ts` pasa a ser verdad sin haberlo tocado.** No se toca el comentario ni
+  el código: con el guard creado, la promesa deja de mentir sola.
+- **Verde:** tsc 0 · vitest **561** (+3 del guardián) · lint (0 err, 3 warnings previos) · playwright **831**
+  (94 skipped). Commit atómico (test + bitácora). NO push.
