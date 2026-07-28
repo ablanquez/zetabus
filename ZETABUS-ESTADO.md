@@ -133,6 +133,34 @@ hallazgos priorizado**; los arreglos van después, en tandas. Informes en `docs/
 > repetir la ronda de escáneres del §10 como **comprobación de regresión**.
 > ⬜ **Quedan los bloques B, C, D, E y F** de la auditoría.
 
+> ✅ **TODO DESPLEGADO Y VERIFICADO EN VIVO** (incluida la regresión del build, ver abajo).
+> ✅ **Breadcrumb VALIDADO en producción:** `validator.schema.org` 0 errores/0 advertencias, y
+> `rich-results` detecta **1 elemento válido ("Rutas de exploración")** → Google lo lee y puede
+> dibujarlo. **L82** cerrada del todo.
+> ✅ **Ronda de regresión pasada:** PageSpeed 100·96·100·100 y securityheaders A+ **sin moverse** tras un
+> día entero de cambios. Detalle en §10.
+> ⬜ **Quedan los bloques B, C, D, E y F** de la auditoría. `build-version.ts` (nuevo) va al **bloque E**.
+
+### ⚠️ REGRESIÓN DEL BUILD, cazada y arreglada el mismo día (`6967c02`)
+El deploy dejó **las 934 paradas** como "nombre sin confirmar" (`/sobre-los-datos` llegó a decir *"0 de
+0"*). Causa: **orden del build.** `transporte.ts` importa `@/generated/version`, que generaba
+`data:build`… pero `nombres:ensure` corre **ANTES** → pedía un fichero inexistente y el fail-safe lo
+confundió con "Avanza caída". (`correspondencias:ensure` no falló: va **después**.)
+- **Arreglo:** `version.ts` pasa a generarse en **su propio paso, el primero** del build. Se quitó la
+  copia de `data:build` (nunca llegaba a tiempo: era la "copia a mano" en versión script).
+- ⚠️⚠️ **DOS lecciones, y las dos ya estaban escritas en este documento:**
+  1. **El aviso EXISTÍA** — al unificar la versión se anotó *"`version.ts` es artefacto de build: en un
+     clon limpio, `transporte.ts` no compila hasta correr `data:build`"*. **Nadie lo cruzó con que
+     `nombres:ensure` va antes.** La lección estaba escrita y no llegó al sitio donde mordía (ley 7).
+  2. ⭐ **En LOCAL pasó en verde porque `version.ts` YA EXISTÍA** de builds anteriores. Es literal la ley
+     del proyecto: *"un test cuyo resultado depende de si alguien compiló antes NO PRUEBA NADA"*. **Solo
+     falla en build limpio** → la contraprueba tuvo que ser borrar `src/generated/` y compilar desde
+     cero (rojo reproducido con el orden viejo, verde con el nuevo: 918/934).
+- ✅ **El fail-safe hizo su trabajo:** el build no murió, avisó a gritos, y la app arrancó honesta
+  ("sin confirmar" era verdad). Se conservó tal cual.
+- ⬜ Guardián propuesto y NO construido: rastrear qué `@/generated/*` consume cada paso y verificar que
+  lo genera uno anterior. Dificultad: los `ensure` **spawnean** en vez de importar. Casi tanda propia.
+
 **Última actualización:** 28/07/2026
 
 ---
@@ -2449,6 +2477,22 @@ capturas que nunca viajaron. Detalle en §7.
   se consulta levantándolo en la máquina). Se llevó con él los dos procesos zombis.
 
 **⬜ CABOS NUEVOS (28/07):**
+- ⚠️ **`aria-label` en `<span>` sin `role` — 10 errores de HTML, y la etiqueta NO se oye.** Detectado al
+  validar `/linea/35` en `validator.w3.org` (28/07). Elementos tipo
+  `<span aria-label="04:40, sale de P. MINA, no de SEMINARIO">`. El validador da **Error**: *"`aria-label`
+  no debe especificarse en un `span` salvo que tenga un `role` distinto de generic"*.
+  > ⭐ **Lo grave no es la invalidez: es que NO FUNCIONA.** Un `<span>` sin `role` es genérico, y los
+  > lectores de pantalla **ignoran** el `aria-label` en genéricos. Alguien puso esa etiqueta para que un
+  > usuario ciego oyera "sale de P. Mina, no de Seminario" — **y no la oye.** La etiqueta existe, parece
+  > cumplir, y no llega a nadie. **Es la tesis del proyecto aplicada a la accesibilidad: un instrumento
+  > que parece informar y no informa** — y del tipo peor, silencioso.
+  · **NO lo causó el breadcrumb** (es preexistente; se ve ahora porque validamos `/linea` y no la home).
+  · ⬜ **Va al bloque B.** El arreglo NO es mecánico: hay que decidir **qué debería oír** un lector de
+    pantalla ahí (¿el texto completo? ¿solo la anomalía?). Es decisión de diseño, no cambio de atributo.
+- ⚠️ **VALIDAR UNA SOLA PÁGINA NO VALE** *(lección de método, para el maestro)*. El 27/07 se validó solo
+  la home → **cero errores**. El 28/07, `/linea/35` → **10 errores**. Cada tipo de página tiene su
+  marcado. ⬜ Falta pasar el validador por `/parada/…`, `/estado` y `/sobre-los-datos`.
+
 - ✅ **PROCESOS ZOMBIS — eran de RADAR, no de ZetaBus (resuelto 28/07).** Las gráficas del hosting daban
   un salto sostenido (memoria ~300→900 MB, procesos ~25→100 de 120, con picos tocando el techo) desde que
   ZetaBus entró en producción, así que la sospecha apuntaba a él. **Falsa.** `ps aux` destapó tres
@@ -2562,8 +2606,18 @@ miente aquí** — es el mismo principio del resto del documento aplicado a herr
 | **Hostinger → Rendimiento** (Lighthouse) | Velocidad | **98** escritorio · **99** móvil | ⚠️ **Google dio 100/100 el MISMO día.** Mismo motor, números distintos → el caveat de arriba, en vivo |
 | **securityheaders.com** (Snyk) | Cabeceras HTTP | **C → A+** tras añadirlas | ⭐ A+ **sin CSP estricta**: la mínima del hosting (`upgrade-insecure-requests`) cuenta como presente |
 | **SSL Labs** (Qualys) | Configuración TLS | **A+** en los **4** servidores (2 IPv4 + 2 IPv6 del CDN) | Mérito de Hostinger (gestiona el SSL), no accionable. Consistente en todos los nodos |
-| **validator.w3.org** | HTML válido | ✅ **Cero errores y cero warnings** | ⚠️ Muestra **28 bloques amarillos "Info"** que NO son errores (el validador los excluye del recuento): son la barra final de `<meta …/>`, que **React/Next genera al estilo JSX**. No es tuyo ni arreglable. *Quedarse con la impresión visual en vez del veredicto = susto falso* |
-| **rich-results** (Google) | Datos estructurados | ❌ **Ninguno detectado** | No es fallo: nunca se puso. Ver candidatos abajo |
+| **validator.w3.org** | HTML válido | ✅ **Cero errores** en la HOME (27/07) · ❌ **10 errores** en `/linea/35` (28/07) | ⚠️⚠️ **VALIDAR UNA SOLA PÁGINA NO VALE.** La home salió limpia; la de línea tiene 10 `aria-label` en `<span>` sin `role` (que además **no se oyen**). Cada tipo de página tiene su marcado → hay que pasar el validador por TODAS. ⬜ Faltan `/parada/…`, `/estado`, `/sobre-los-datos`. *(Los bloques amarillos "Info" siguen sin ser errores: es la barra final de `<meta …/>` que genera React.)* |
+| **rich-results** (Google) | Datos estructurados | ❌ **Ninguno** (27/07) → ✅ **1 elemento válido: "Rutas de exploración"** (28/07) | El `BreadcrumbList` de `/linea/*` **Google lo lee y puede dibujarlo**. Es la única pieza de schema.org que sobrevivió al análisis (**L82**) |
+| **validator.schema.org** | Validez del estándar | ✅ **0 errores, 0 advertencias** (28/07, `/linea/35`) | Estructura correcta: `Inicio` con `item`, y `Línea 35` como último **sin `item`** (es la página actual, como pide el estándar) |
+
+### ⭐ RONDA DE REGRESIÓN (28/07) — tras un día entero de cambios
+Se repitió la batería como **comprobación de regresión**, no como foto inicial. Cambios del día: TTL del
+recorrido a 1 h, día civil en Madrid, JSON-LD nuevo, el sobre de desvíos, la tabla de nombres, las
+cabeceras. **Resultado: ni una nota se movió** (PageSpeed 100·96·100·100 en móvil y escritorio;
+securityheaders A+). Lo único nuevo lo destapó validar **otra página** (ver la fila del W3C).
+> ⭐ *Valor de hacerlo el MISMO día: si una nota hubiera bajado, se sabría cuál de los ~20 commits fue.
+> Una semana después, no.*
+
 | **WAVE** (extensión) | Accesibilidad | 0 errores · 0 alertas · **21 errores de contraste** | ⚠️ Ver abajo el fallo de la versión WEB |
 | **axe DevTools** (extensión) | Accesibilidad | **16 incidencias, TODAS de contraste** (cero de otro tipo) | Tiene botón **"Exportación"** (la extensión de WAVE no exporta) |
 
