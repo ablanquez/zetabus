@@ -124,9 +124,14 @@ test.describe('⭐ el acuse PERSISTE después de soltar', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⚠️ el acuse va donde SE NAVEGA, y solo ahí', () => {
   test('las tarjetas de llegada NO lo llevan: no navegan, seleccionan', async ({ page }) => {
-    await page.goto('/parada/744', { waitUntil: 'networkidle' });
+    // ⚠️ `?fingir=solo-oficiales`: buses GARANTIZADOS, sin pedirle a Avanza REAL. Antes
+    //    esto iba a `/parada/744` a pelo y se SALTABA si Avanza no daba buses en ese
+    //    instante — un test que pasaba o se saltaba según la hora. Con el fingido hay
+    //    llegadas siempre, así que en vez de saltar se AFIRMA que las hay: si faltan, es
+    //    un fallo de verdad, no un "ahora mismo no toca".
+    await page.goto('/parada/744?fingir=solo-oficiales', { waitUntil: 'networkidle' });
     const llegada = page.locator('[data-papel="llegada"]').first();
-    if ((await llegada.count()) === 0) test.skip(true, 'sin llegadas ahora mismo');
+    await expect(llegada, 'el fingido garantiza llegadas: si no hay, es un fallo').toBeVisible();
 
     // Es un <button> que resalta el bus en el mapa. No hay navegación que acusar,
     // y marcarlo mentiría: su acuse ES la selección (`aria-pressed`).

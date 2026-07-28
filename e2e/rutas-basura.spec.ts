@@ -109,7 +109,9 @@ test.describe('⛔ RUTAS BASURA · ninguna revienta, ninguna enseña nada', () =
     }
 
     // …y la de verdad sí, para que no estemos aprobando un 404 universal.
-    const buena = await page.goto('/parada/744', { waitUntil: 'domcontentloaded' });
+    // `?fingir=solo-oficiales`: el 200 no depende de Avanza (un poste válido responde 200
+    // esté Avanza como esté), pero el fingido evita pegarle de verdad en cada corrida.
+    const buena = await page.goto('/parada/744?fingir=solo-oficiales', { waitUntil: 'domcontentloaded' });
     expect(buena?.status()).toBe(200);
   });
 });

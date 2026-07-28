@@ -38,7 +38,12 @@ test.describe('⭐ C6/C7 · LAS CUATRO FORMAS DEL NODO SE DISTINGUEN A SIMPLE VI
     // La 21 tiene cabecera, final, y muchas paradas con transbordo. Buscamos además
     // una parada SIN transbordo para el punto simple; si en la 21 no hubiera, se
     // dice y se mide lo que haya (no se inventa un caso).
-    await page.goto('/linea/21', { waitUntil: 'networkidle' });
+    // ⚠️ `?fingir=horario`: línea SANA, ruta OFICIAL tal cual (sin desvío). Sin él, la
+    //    página le pide el recorrido a Avanza REAL en cada corrida. Se usa `horario` y NO
+    //    `desviada` a propósito: `desviada` metería paradas caídas y una provisional, y
+    //    este test MIDE el itinerario oficial (formas de nodo, densidad) — cambiarlo sería
+    //    medir otra cosa. `horario` deja el recorrido idéntico al caso sano.
+    await page.goto('/linea/21?fingir=horario', { waitUntil: 'networkidle' });
     await expect(page.locator('[data-papel="itinerario"]')).toBeVisible();
 
     const cabecera = page.locator('[data-papel="nodo-cabecera"]').first();
@@ -95,7 +100,7 @@ test.describe('⭐ C6/C7 · LAS CUATRO FORMAS DEL NODO SE DISTINGUEN A SIMPLE VI
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {
   test('el alto por parada es compacto y estable', async ({ page }, info) => {
-    await page.goto('/linea/21', { waitUntil: 'networkidle' });
+    await page.goto('/linea/21?fingir=horario', { waitUntil: 'networkidle' }); // recorrido oficial, sin pegarle a Avanza (ver arriba)
     const nodos = page.locator('[data-papel="nodo"]');
     const n = await nodos.count();
     expect(n).toBeGreaterThan(20);
@@ -124,7 +129,7 @@ test.describe('⭐ C9 · DENSIDAD DE LA LISTA (medida y reportada)', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ BACKTEST · UNA CIRCULAR DE BUCLE (Ci3)', () => {
   test('empieza y acaba en la misma parada: cabecera + final, sin reventar', async ({ page }, info) => {
-    await page.goto('/linea/Ci3', { waitUntil: 'networkidle' });
+    await page.goto('/linea/Ci3?fingir=horario', { waitUntil: 'networkidle' }); // recorrido oficial, sin pegarle a Avanza (ver arriba)
     await expect(page.locator('[data-papel="itinerario"]')).toBeVisible();
 
     const cabecera = page.locator('[data-papel="nodo-cabecera"]');

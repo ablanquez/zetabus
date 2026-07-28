@@ -216,7 +216,12 @@ test('la portada aguanta a este tamaño', async ({ page }, info) => {
 });
 
 test('la pantalla de línea aguanta a este tamaño (y ya no tiene botón)', async ({ page }, info) => {
-  await page.goto('/linea/35', { waitUntil: 'networkidle' });
+  // ⚠️ `?fingir=horario`: línea SANA con su recorrido oficial, para no pedirle a Avanza
+  //    REAL el recorrido/horario en cada corrida. El resto de este fichero ya audita
+  //    pantallas con fingir (las de parada), así que el banner de demo está probado
+  //    limpio aquí. `horario` deja el recorrido igual al caso sano — que es lo que la
+  //    auditoría de layout mira.
+  await page.goto('/linea/35?fingir=horario', { waitUntil: 'networkidle' });
   await capturar(page, `capturas/zetabus/linea-${info.project.name}.png`);
 
   // ⛔ EL BARRIDO ESTÁ APARCADO. Y no se deja un botón desactivado ni un

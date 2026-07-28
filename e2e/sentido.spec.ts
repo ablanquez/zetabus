@@ -54,7 +54,13 @@ async function lumaFondo(page: Page, selector: string): Promise<number> {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ EL TÍTULO REFLEJA EL SENTIDO ACTIVO (flecha, no guion)', () => {
   test('la 35: "origen → destino", y al cambiar de sentido se invierte', async ({ page }, info) => {
-    await page.goto('/linea/35', { waitUntil: 'networkidle' });
+    // ⚠️ `?fingir=horario`: línea SANA (ruta oficial tal cual, sin desvío). Sin él, la
+    //    página le pide a Avanza REAL el recorrido y el horario en cada corrida —y esta
+    //    prueba mira el TÍTULO y el SENTIDO, que salen de la topología: da igual lo que
+    //    Avanza conteste—. El fingido corta esa petición y NO toca lo que se mide. NO se
+    //    usa `desviada`: ese cambiaría el recorrido, y aquí no lo tocamos. El `fingir` se
+    //    conserva al pulsar la pestaña de sentido (page.tsx lo arrastra en el href).
+    await page.goto('/linea/35?fingir=horario', { waitUntil: 'networkidle' });
     const titulo = page.locator('[data-papel="titulo-linea"]');
     await expect(titulo).toBeVisible();
 
@@ -81,7 +87,7 @@ test.describe('⭐ EL TÍTULO REFLEJA EL SENTIDO ACTIVO (flecha, no guion)', () 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ EL BOTÓN ACTIVO SE VE ACTIVO, TAMBIÉN EN GRIS', () => {
   test('la 35: "Hacia X", activo ≠ inactivo por VALOR y peso (no por color)', async ({ page }, info) => {
-    await page.goto('/linea/35', { waitUntil: 'networkidle' });
+    await page.goto('/linea/35?fingir=horario', { waitUntil: 'networkidle' }); // línea sana, sin pegarle a Avanza (ver arriba)
     const botones = page.locator('[data-papel="sentido"]');
     expect(await botones.count(), 'la 35 tiene dos botones de sentido').toBe(2);
 
@@ -123,7 +129,7 @@ test.describe('⭐ EL BOTÓN ACTIVO SE VE ACTIVO, TAMBIÉN EN GRIS', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ LA N2: dos sentidos con el MISMO headsign, y aun así distinguibles', () => {
   test('los dos botones "Hacia X" NO dicen lo mismo', async ({ page }, info) => {
-    await page.goto('/linea/N2', { waitUntil: 'networkidle' });
+    await page.goto('/linea/N2?fingir=horario', { waitUntil: 'networkidle' }); // línea sana, sin pegarle a Avanza
     const botones = page.locator('[data-papel="sentido"]');
     expect(await botones.count(), 'la N2 tiene dos sentidos').toBe(2);
     const a = (await botones.nth(0).innerText()).trim();
@@ -137,7 +143,7 @@ test.describe('⭐ LA N2: dos sentidos con el MISMO headsign, y aun así disting
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('⭐ BUCLES: jamás una flecha que mienta', () => {
   test('Ci3 (circular) → "Circular por ...", sin flecha', async ({ page }, info) => {
-    await page.goto('/linea/Ci3', { waitUntil: 'networkidle' });
+    await page.goto('/linea/Ci3?fingir=horario', { waitUntil: 'networkidle' }); // línea sana, sin pegarle a Avanza
     const titulo = page.locator('[data-papel="titulo-linea"]');
     const t = (await titulo.innerText()).trim();
     console.log(`\n  [${info.project.name}] título Ci3: "${t}"`);
@@ -148,7 +154,7 @@ test.describe('⭐ BUCLES: jamás una flecha que mienta', () => {
   });
 
   test('N1 (búho de bucle) → su nombre, sin flecha ni "Circular"', async ({ page }, info) => {
-    await page.goto('/linea/N1', { waitUntil: 'networkidle' });
+    await page.goto('/linea/N1?fingir=horario', { waitUntil: 'networkidle' }); // línea sana, sin pegarle a Avanza
     const t = (await page.locator('[data-papel="titulo-linea"]').innerText()).trim();
     console.log(`\n  [${info.project.name}] título N1: "${t}"`);
     expect(t, 'un búho de bucle no dibuja flecha').not.toContain('→');

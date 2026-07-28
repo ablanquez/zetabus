@@ -136,7 +136,11 @@ test.describe('⭐ EL FILTRO DE LÍNEAS (clonado de la referencia)', () => {
 
 test.describe('⭐ EL ITINERARIO (clonado: nodos + transbordos)', () => {
   test('tiene nodos, transbordos, y se puede pulsar una parada', async ({ page }, info) => {
-    await page.goto('/linea/21', { waitUntil: 'networkidle' });
+    // ⚠️ `?fingir=horario`: recorrido OFICIAL (sin desvío), para no pedirle a Avanza REAL
+    //    el itinerario en cada corrida. NO `desviada`: cambiaría los nodos/transbordos que
+    //    este test cuenta. El `fingir` se conserva al pulsar una parada (Itinerario lo
+    //    arrastra en el href), así que la navegación a /parada tampoco pega a Avanza.
+    await page.goto('/linea/21?fingir=horario', { waitUntil: 'networkidle' });
     await page.waitForTimeout(1_500);
     await capturar(page, `capturas/zetabus/itinerario-${info.project.name}.png`);
 
@@ -166,7 +170,7 @@ test.describe('⭐ EL ITINERARIO (clonado: nodos + transbordos)', () => {
   test('el SENTIDO se puede compartir por URL (la referencia no podía)', async ({ page }) => {
     // Su `?sentido=` se leía y NUNCA se generaba: no se podía enlazar al sentido 2.
     // Lo comprobé pulsando: la lista cambiaba y la URL no.
-    await page.goto('/linea/21', { waitUntil: 'networkidle' });
+    await page.goto('/linea/21?fingir=horario', { waitUntil: 'networkidle' }); // recorrido oficial, sin pegarle a Avanza (ver arriba)
     const primera0 = await page.locator('[data-papel="nodo"]').first().innerText();
 
     const pestanas = page.locator('nav[aria-label="Sentido"] a');
