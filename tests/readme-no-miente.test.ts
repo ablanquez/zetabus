@@ -568,3 +568,39 @@ describe('⛔ LO QUE ESTE REGISTRO **NO** PUEDE VERIFICAR (y por tanto sigue sie
     expect(Object.keys(NO_CONSTA)).toHaveLength(6);
   });
 });
+
+describe('⭐ LA VERSIÓN NO SE DESFASA: el badge y el User-Agent cuadran con package.json', () => {
+  // ⚠️ El REGISTRO numérico de arriba NO los caza: `aNumero` no sabe leer un semver de
+  //    dos puntos («1.0.0» → NaN). Por eso van como comparación de CADENA, aparte.
+  //
+  // El CÓDIGO ya no puede desfasar —`transporte.ts` compone el UA desde
+  // `@/generated/version`, horneado de package.json (`data:build`)—. Lo que queda a mano
+  // es la PROSA: el badge y el UA citado en los .md, que markdown no puede calcular. Eso
+  // es lo que se vigila aquí. Si se pone rojo, se corrige el DOCUMENTO, no este test.
+  const version = (): string => {
+    const p = JSON.parse(leer('package.json')) as { version?: string };
+    if (!p.version) throw new Error('package.json no tiene `version`');
+    return p.version;
+  };
+
+  it('README.md · el badge de versión = la de package.json', () => {
+    const m = leer('README.md').match(/badge\/versi%C3%B3n-([\d.]+)-/);
+    expect(m, 'no encuentro el badge de versión en README.md — ¿se reescribió? Re-ancla el patrón.')
+      .not.toBeNull();
+    expect(m![1], `el badge dice ${m?.[1]} y package.json es ${version()}. Corrige el README.`)
+      .toBe(version());
+  });
+
+  it('el User-Agent (README y THIRD-PARTY) = major.minor de package.json', () => {
+    const mayorMenor = version().split('.').slice(0, 2).join('.'); // 1.0.0 → 1.0
+    for (const doc of ['README.md', 'THIRD-PARTY-NOTICES.md']) {
+      const hallazgos = [...leer(doc).matchAll(/ZetaBus\/([\d.]+)/g)];
+      expect(hallazgos.length, `no encuentro "ZetaBus/<versión>" en ${doc} — ¿se reescribió?`)
+        .toBeGreaterThan(0);
+      for (const h of hallazgos) {
+        expect(h[1], `${doc} dice ZetaBus/${h[1]} y major.minor de package.json es ${mayorMenor}. Corrige el documento.`)
+          .toBe(mayorMenor);
+      }
+    }
+  });
+});

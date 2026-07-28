@@ -13,6 +13,7 @@
 
 import { IngestError } from '@/core';
 import { unicoPorProceso } from '@/core/proceso';
+import { VERSION } from '@/generated/version';
 
 export interface RespuestaCruda {
   readonly status: number;
@@ -53,7 +54,14 @@ export type Transporte = (
  *    prosa y el código se separaron y nadie se enteró, porque **ningún test mira la
  *    prosa**. Ver docs/auditoria/11-codigo-y-arquitectura.md · A-F2.
  */
-export const AGENTE = 'ZetaBus/1.0 (+https://github.com/ablanquez/zetabus)';
+/**
+ * ⭐ LA VERSIÓN NO SE CABLEA: sale de `package.json`, horneada en `@/generated/version`
+ * por `data:build`. Sube el `package.json` a 1.1 y el UA dice `ZetaBus/1.1` solo. Se usa
+ * **major.minor** (`1.0`, no `1.0.0`): el patch no le aporta nada a Avanza. Las COPIAS en
+ * prosa (README, THIRD-PARTY) no pueden leer de aquí —markdown no ejecuta— y por eso las
+ * cruza con `package.json` el guardián `readme-no-miente` (badge = semver; UA = major.minor).
+ */
+export const AGENTE = `ZetaBus/${VERSION.split('.').slice(0, 2).join('.')} (+https://github.com/ablanquez/zetabus)`;
 
 export const transporteReal: Transporte = async (url, { cuerpo, cabeceras, senal }) => {
   const res = await fetch(url, {

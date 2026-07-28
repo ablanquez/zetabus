@@ -653,3 +653,18 @@ código, y pararse era lo correcto.
   5»* de ZetaBus. La decisión es otra: la geolocalización va al **proyecto 004 (Desplázame)** y, si procede,
   se trae hecha. Se ACTUALIZA el estado (no se borra: lo que cuentan de la referencia sigue siendo cierto y
   útil). Solo comentarios; cero runtime. Guardián `readme-no-miente` verde.
+- **Cabo 3 · la versión, de una fuente única (código) y vigilada (docs).** Vivía cableada en 6+ sitios, en
+  dos formas: semver `1.0.0` (package.json, badge, CHANGELOG) y `1.0` del User-Agent (transporte.ts, README,
+  THIRD-PARTY). Nadie la leía desde código.
+  - **Código → fuente única:** `data:build` hornea `src/generated/version.ts` (`export const VERSION`) desde
+    `package.json`; `transporte.ts` compone el `AGENTE` con `VERSION.split('.').slice(0,2)` (major.minor). Se
+    HORNEA a un fichero propio —no se importa `package.json` en el código— para que la lista de dependencias
+    no viaje a ningún bundle (`version.ts` = solo la versión, y gitignorado). Contraprueba del UA REAL: bump
+    temporal de `package.json` a 1.1.0 → el UA pasa a `ZetaBus/1.1`; restaurado → `ZetaBus/1.0`. Se mide el
+    UA, no el código.
+  - **Docs → vigilados:** markdown no ejecuta, así que el badge y el UA citado se **cruzan** con
+    `package.json` en `readme-no-miente` (dos `it` nuevos, comparación de CADENA: el REGISTRO numérico no
+    sabe leer un semver de dos puntos). **Contraprueba en ROJO demostrada las dos:** badge 1.0.0→1.1.0 →
+    *«el badge dice 1.1.0 y package.json es 1.0.0»*; UA de THIRD-PARTY →9.9 → *«dice ZetaBus/9.9 y major.minor
+    es 1.0»*. Restaurados, verde. (No se sube la versión: sigue 1.0.0; esto unifica de dónde se lee.)
+- **Verde en los tres:** tsc · vitest **547** (+2 del guardián) · lint (0 err) · playwright **831**.
