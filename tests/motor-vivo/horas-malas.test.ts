@@ -103,15 +103,12 @@ describe('⏳ EL CAMBIO DE HORA (25/10/2026, 03:00 → 02:00 en España)', () =>
 });
 
 describe('⏳ LA MEDIANOCHE', () => {
-  it('un autobús que cruza el día no tiene nada que cruzar: el ETA son MINUTOS', () => {
-    // Aquí no hay bug posible, y merece decirse por qué: la fuente da "3 mins",
-    // no "las 00:02". No hay fecha que sumar, ni día que desbordar, ni un
-    // "23:58 + 5 min = 24:03" que haya que normalizar a mano.
-    //
-    // El bug de medianoche clásico nace de convertir un ETA a una hora del
-    // reloj. Nosotros NO lo convertimos: lo enseñamos tal cual viene.
-    expect(true).toBe(true); // el test es el comentario; el riesgo no existe
-  });
+  // ⚠️ EL BUG DE MEDIANOCHE CLÁSICO NO PUEDE DARSE CON EL ETA, y merece decirse por qué:
+  //    la fuente da "3 mins", no "las 00:02". No hay fecha que sumar, ni día que desbordar,
+  //    ni un "23:58 + 5 min = 24:03" que normalizar a mano. Ese bug nace de convertir un
+  //    ETA a hora de reloj, y nosotros NO lo convertimos: lo enseñamos tal cual viene (el
+  //    paso del ETA por el motor está cubierto en motor.test.ts). Lo que SÍ tiene lógica de
+  //    medianoche —y por eso se prueba de verdad aquí— es la CADUCIDAD del feed:
 
   it('⭐ EL BUG QUE CAZÓ ESTE TEST: la caducidad se medía en UTC, no en Zaragoza', () => {
     // El feed vence el 05/10/2026. Se usa TAL CUAL sale del artefacto: si me
@@ -184,14 +181,10 @@ describe('⏳ EL DOMINGO, EL FESTIVO Y LAS CUATRO DE LA MAÑANA', () => {
     }
   });
 
-  it('a las 4 a.m. todos los postes están mudos, y eso NO es una anomalía', () => {
-    // Cubierto en motor.test.ts: un poste mudo devuelve `ok` con lista vacía.
-    // Aquí se afirma la consecuencia de diseño: NO existe un estado que diga
-    // "esto está raro". Si existiera, saltaría 44 veces cada noche.
-    //
-    // El único estado que se parece —`rancio`— NO se dispara por silencio: se
-    // dispara porque la FUENTE FALLÓ. Silencio y fallo son cosas distintas, y
-    // el motor las distingue.
-    expect(true).toBe(true);
-  });
+  // ⚠️ CONSECUENCIA DE DISEÑO (cubierta en motor.test.ts, no se re-prueba aquí para no
+  //    dar un verde vacío): a las 4 a.m. todos los postes están mudos, y eso NO es una
+  //    anomalía — un poste mudo devuelve `ok` con lista vacía. NO existe un estado que
+  //    diga "esto está raro"; si existiera, saltaría 44 veces cada noche. El único que se
+  //    le parece —`rancio`— NO se dispara por silencio, sino porque la FUENTE FALLÓ.
+  //    Silencio y fallo son cosas distintas, y el motor las distingue.
 });
