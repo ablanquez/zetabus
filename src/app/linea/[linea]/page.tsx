@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { esBuho, idLinea, idParada, lineas, parada, paradaDelPoste, posteDe, sentidosDe, sentidosParaRumbo } from '@/engine/topologia';
 import { destinoDeSentido, rumboDe, type Rumbo } from '@/engine/rumbo';
 import { fingimientoDe, transporteDe } from '@/engine/fingir';
-import { motor, motorHorario } from '@/engine/motor';
+import { motorRecorrido, motorHorario } from '@/engine/motor';
 import { desviosDeLinea, type Veredicto } from '@/engine/desvios';
 import { horarioDeLinea } from '@/engine/horario';
 import { Itinerario, type ParadaDelItinerario } from '@/components/Itinerario';
@@ -111,7 +111,7 @@ export default async function LineaPage({ params, searchParams }: Props) {
   };
 
   // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
-  const desvios = await desviosDeLinea(id, motor(transporteDe(fingir), fingir));
+  const desvios = await desviosDeLinea(id, motorRecorrido(transporteDe(fingir), fingir));
 
   const veredicto: Veredicto | null =
     desvios.estado === 'ok'

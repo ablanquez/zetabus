@@ -22,6 +22,21 @@ const DIR_HORARIO = process.env.ZETABUS_HORARIO_DIR ?? '.cache/horario';
 const TTL_HORARIO_MS = 24 * 60 * 60_000;
 
 /**
+ * ⭐ EL RECORRIDO (desvíos) TIENE SU PROPIA CACHÉ, Y NO ES CAPRICHO. Un desvío no se
+ * pone y se quita cada minuto —una obra de calle dura días—, así que releerlo cada
+ * 15 s (el TTL del vivo) sería pedirle `get_stops_list` a Avanza ~240 veces por hora
+ * y sentido para nada. 1 h corta ~99 % de esas peticiones y sigue cazando un corte de
+ * calle que Avanza meta a media mañana (el índice de correspondencias se regenera de
+ * noche: sin esta lectura, un desvío de las 9:00 no se vería hasta el día siguiente).
+ *
+ * ⚠️ VA EN SU PROPIA INSTANCIA (`motorRecorrido`), NO en la del vivo: si este TTL de
+ *    1 h tocara la caché de las LLEGADAS, la pantalla diría «llega en 2 min» con datos
+ *    de hace una hora. Se separa por CONSTRUCCIÓN, igual que el horario.
+ */
+const DIR_RECORRIDO = process.env.ZETABUS_RECORRIDO_DIR ?? '.cache/recorrido';
+export const TTL_RECORRIDO_MS = 60 * 60_000;
+
+/**
  * ⚠️⚠️ ESTO ERAN CUATRO `let`/`const` A NIVEL DE MÓDULO, Y NO ERAN UNO POR PROCESO.
  *
  * La cabecera de este fichero dice —y con razón— que si cada petición se creara su
@@ -40,6 +55,7 @@ const TTL_HORARIO_MS = 24 * 60 * 60_000;
  */
 const cachesFingidas = unicoPorProceso('motor.cachesFingidas', () => new Map<string, CacheDosPisos>());
 const cachesHorarioFingidas = unicoPorProceso('motor.cachesHorarioFingidas', () => new Map<string, CacheDosPisos>());
+const cachesRecorridoFingidas = unicoPorProceso('motor.cachesRecorridoFingidas', () => new Map<string, CacheDosPisos>());
 
 /**
  * @param transporte Solo se pasa para FINGIR (modo demo). Por defecto, el real.
@@ -119,6 +135,38 @@ export function motorHorario(
   const cache = unicoPorProceso(
     'motor.cacheHorario',
     () => new CacheDosPisos({ dir: DIR_HORARIO, ttlMs: TTL_HORARIO_MS }),
+  );
+  return { cache, transporte };
+}
+
+/**
+ * La caché del RECORRIDO (desvíos): mismo patrón que `motorHorario()` —instancia
+ * aparte, TTL propio (1 h, ver `TTL_RECORRIDO_MS`)—. Se separa del vivo porque un
+ * desvío no cambia cada 15 s, y sobre todo para que su TTL largo NO pueda tocar jamás
+ * la caché de las llegadas. La usa `desviosDeLinea` a través de su `dep.cache`.
+ */
+export function motorRecorrido(
+  transporte: Transporte = transporteReal,
+  fingiendo: string | null = null,
+): { cache: CacheDosPisos; transporte: Transporte } {
+  if (fingiendo) {
+    let c = cachesRecorridoFingidas.get(fingiendo);
+    if (!c) {
+      c = new CacheDosPisos({
+        dir: `${DIR_CACHE}/_demo/${fingiendo}/recorrido`,
+        // En la demo, el TTL corto de `motor()` (2 s): el fingimiento es determinista
+        // y así responde al instante al cambiar de `?fingir=`, como el resto del demo.
+        ttlMs: 2_000,
+        // Sin Avanza no hay techo que respetar (igual que en `motor()`).
+        limitador: new Limitador(`${DIR_CACHE}/_demo/${fingiendo}/recorrido/_techo`, 1e9, 1e9),
+      });
+      cachesRecorridoFingidas.set(fingiendo, c);
+    }
+    return { cache: c, transporte };
+  }
+  const cache = unicoPorProceso(
+    'motor.cacheRecorrido',
+    () => new CacheDosPisos({ dir: DIR_RECORRIDO, ttlMs: TTL_RECORRIDO_MS }),
   );
   return { cache, transporte };
 }

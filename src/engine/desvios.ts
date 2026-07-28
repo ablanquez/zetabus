@@ -200,9 +200,6 @@ export function compararRecorrido(
  */
 const SENTIDO_AVANZA: Record<0 | 1, SentidoAvanza> = { 0: -1, 1: -2 };
 
-/** La caché del recorrido: 30 min. Un desvío no se pone y se quita cada minuto. */
-export const TTL_RECORRIDO_MS = 30 * 60_000;
-
 export interface DependenciasDesvio {
   readonly cache: CacheDosPisos;
   readonly transporte: Transporte;

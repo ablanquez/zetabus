@@ -29,6 +29,7 @@
  * ═════════════════════════════════════════════════════════════════════════════
  */
 import { desviosDeLinea } from '@/engine/desvios';
+import { TTL_RECORRIDO_MS } from '@/engine/motor';
 import { canonLinea, idLinea, idParada, lineas, posteDe, sentidosDe } from '@/engine/topologia';
 import { leerPoste } from '@/sources/avanza/poste';
 import { contador, transporteReal } from '@/sources/avanza/transporte';
@@ -124,7 +125,10 @@ async function main() {
   // ═══ 2 · DESVÍOS ══════════════════════════════════════════════════════════
   console.log(`━━ 2 · DIFF DE DESVÍOS ${'━'.repeat(55)}\n`);
   const dir = mkdtempSync(join(tmpdir(), 'zetabus-campo-'));
-  const dep = { cache: new CacheDosPisos({ dir }), transporte: transporteReal };
+  // La caché del recorrido va a 1 h como en producción (`motorRecorrido`). En un
+  // script de una sola pasada el TTL no llega a disparar, pero no dejamos un
+  // recorrido a 15 s suelto que alguien copie luego.
+  const dep = { cache: new CacheDosPisos({ dir, ttlMs: TTL_RECORRIDO_MS }), transporte: transporteReal };
 
   for (const etiqueta of LINEAS_DESVIO) {
     const li = lineas().find((x) => x.shortName === etiqueta);

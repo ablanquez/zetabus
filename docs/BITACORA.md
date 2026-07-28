@@ -606,3 +606,36 @@ código, y pararse era lo correcto.
   cosmético (borrar const + test), o había intención de cachear recorridos 30 min que nunca se cableó
   (cabo de eficiencia: hoy se pide `get_stops_list` cada 15 s por sentido)? Lo decide Antonio.
 - **Diagnóstico de la versión:** entregado aparte, solo lectura, sin implementar.
+
+### Fase 24 · El TTL del recorrido, cableado de verdad a 1 h (caché dedicada, patrón `motorHorario`)
+
+- **El hallazgo (Fase 23):** `TTL_RECORRIDO_MS` estaba **declarada (30 min) y nunca cableada** → la caché
+  del recorrido caía al TTL por defecto (15 s), y un test afirmaba en verde que eran 30 min. Un cartel
+  correcto sobre una tubería inexistente. Consecuencia real: `get_stops_list` cada 15 s por sentido en la
+  vista de línea. Un desvío no cambia en 15 s.
+- **Decisión A vs B (con mandato de rebatir):** (A) TTL por llamada en `CacheDosPisos.obtener` —toca la
+  clase que sirve el vivo en producción—; (B) caché dedicada `motorRecorrido()`, patrón `motorHorario`.
+  **Rebatida hecha** (5 puntos, fichero+línea): `motorHorario` es buen precedente; la 3ª caché es acotada
+  (≤74 claves, sin rotación, `.cache/` gitignorado); **el techo YA es por instancia** ([dos-pisos.ts:110])
+  —`motorHorario` ya tiene su cubo separado en prod—; **tres** llamantes de `desviosDeLinea` (page, campo,
+  y un test que inyecta su caché); y nada NECESITA compartir instancia (dedup es por-clave, `/api/diag` ya
+  omite el horario). **B se sostiene** → adelante con B.
+- **Cableado:** `motorRecorrido()` en `motor.ts` (instancia aparte, `DIR_RECORRIDO`, `TTL_RECORRIDO_MS =
+  60*60_000`, rama `fingir` a 2 s como `motor()`). La constante se **movió** de `desvios.ts` a `motor.ts`,
+  junto a `TTL_HORARIO_MS` (su hermana; el TTL es asunto de la construcción de la caché, no del dominio).
+  Hilados los dos llamantes reales: la vista de línea (`motor`→`motorRecorrido`) y `scripts/campo.ts`.
+- **El vivo, a salvo por CONSTRUCCIÓN:** las llegadas siguen en `motor().cache` (15 s). Otra instancia: el
+  TTL de 1 h no puede tocarlas. `/api/diag` lo confirma (`ttlSegundos: 15`).
+- **El test que mentía, corregido:** `pantalla-no-miente.test.ts` ya no grepea la constante
+  (`TTL_RECORRIDO_MS = 30*60_000`); verifica el **cableado** (que la vista use `motorRecorrido`). Y se
+  ajustó el patrón `motor\(`→`motor\w*\(` de otro test que, al renombrar, dejaba de reconocer la vista de
+  línea. Comentarios «30 min» corregidos a «1 h».
+- **Las cuatro contrapruebas (reloj inyectado):** (a) ANTES: con 15 s el recorrido caduca a los 20 s. (b)
+  DESPUÉS: con 1 h, fresco a los 30 min, caduca pasada la hora. (c) MUTACIÓN: descablado `motorRecorrido`
+  (sin `ttlMs`) → el test se pone **ROJO** (`expected 15 to be 3600`), restaurado. (d) LLEGADAS: `motor().
+  cache` a 15 s (test + `/api/diag`). Nuevo `tests/motor-vivo/ttl-recorrido.test.ts` (6 tests).
+- **Verde:** tsc · vitest **545** (+6) · lint (0 err) · playwright **831** (`desvio-acordeon` y `mapa`
+  incluidos). Páginas abiertas: `/linea/35`, demo `?fingir=desviada`, `/parada/744`.
+- **Por descubrimiento:** al separar, el recorrido sale de `/api/diag` (que solo lee `motor().cache`) —
+  igual que ya pasaba con `motorHorario`. Si se quiere ver su salud, es un follow-up pequeño (añadir su
+  `instantanea()` a diag). No entra en esta tanda.

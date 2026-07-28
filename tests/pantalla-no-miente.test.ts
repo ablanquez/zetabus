@@ -398,7 +398,7 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
    *
    * La promesa de "cero peticiones" era contra el BARRIDO: 67 peticiones y hasta
    * 66 segundos de espera, por pulsación, para una pregunta que nadie se hace.
-   * Esto son 2, cacheadas 30 minutos, y son la diferencia entre decir la verdad y
+   * Esto son 2, cacheadas 1 h, y son la diferencia entre decir la verdad y
    * mandar a alguien a esperar a una calle cortada.
    *
    * ⚠️ Y para que "2" no se convierta en "20" el día que alguien añada algo, el
@@ -406,13 +406,16 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
    */
   it('⭐ solo PARADA y LÍNEA tocan Avanza al renderizarse. Y ninguna barre.', () => {
     const paginas = ficheros('src/app', ['.tsx']).filter((f) => f.endsWith('page.tsx'));
+    // `motor\w*\(` caza a toda la familia: `motor(` (llegadas), `motorRecorrido(`
+    // (desvíos, caché de 1 h) y `motorHorario(` (horario). Antes solo `motor(`, y al
+    // separar el recorrido en su propia caché la vista de línea se salía de la lista.
     const queLlaman = paginas
-      .filter((f) => /leerPoste|motor\(/.test(sinComentarios(readFileSync(f, 'utf8'))))
+      .filter((f) => /leerPoste|motor\w*\(/.test(sinComentarios(readFileSync(f, 'utf8'))))
       .map((f) => f.replace(/\\/g, '/'))
       .sort();
 
     expect(queLlaman).toEqual([
-      'src/app/linea/[linea]/page.tsx', // ← la RUTA REAL. 2 peticiones, 30 min de caché.
+      'src/app/linea/[linea]/page.tsx', // ← la RUTA REAL. 2 peticiones, 1 h de caché (motorRecorrido).
       'src/app/parada/[poste]/page.tsx', // ← las llegadas. 1 petición, 15 s de caché.
     ]);
 
@@ -434,10 +437,15 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
     const llamadas = (c.match(/await (desviosDeLinea|llegadasDePoste|barrerLinea)/g) ?? []).length;
     expect(llamadas, 'una sola llamada al motor por render').toBe(1);
 
-    // Y la caché del recorrido son 30 minutos: un desvío no se pone y se quita
-    // cada minuto. Si esto bajara a 15 s, multiplicaríamos por 120 el tráfico.
-    const d = sinComentarios(readFileSync('src/engine/desvios.ts', 'utf8'));
-    expect(d).toMatch(/TTL_RECORRIDO_MS\s*=\s*30 \* 60_000/);
+    // Y el recorrido se pide a su PROPIA caché (`motorRecorrido`, TTL 1 h), no a la
+    // del vivo (15 s): un desvío no se pone y se quita cada minuto. Se verifica el
+    // CABLEADO —que la vista use `motorRecorrido`—, no una constante: una constante
+    // correcta pero NO conectada era exactamente el bug original (la caché caía al
+    // TTL por defecto). El TTL real (1 h) y que las llegadas sigan a 15 s se prueban,
+    // con reloj inyectado, en `tests/motor-vivo/ttl-recorrido.test.ts`.
+    expect(c, 'la vista de línea pide el recorrido a su caché dedicada de 1 h').toMatch(
+      /desviosDeLinea\([^)]*motorRecorrido/,
+    );
   });
 
   it('⛔ la vista de línea NO tiene botón. Ni apagado, ni con un "próximamente".', () => {
