@@ -161,6 +161,21 @@ confundió con "Avanza caída". (`correspondencias:ensure` no falló: va **despu
 - ⬜ Guardián propuesto y NO construido: rastrear qué `@/generated/*` consume cada paso y verificar que
   lo genera uno anterior. Dificultad: los `ensure` **spawnean** en vez de importar. Casi tanda propia.
 
+### Parte 3 · ⭐ AUDITORÍA DE CIERRE · BLOQUE C (TESTS Y GUARDIANES) — auditado y arreglado
+Se audita **rompiendo, no leyendo**: 8 mutaciones (5 CAZADO · 2 ESCAPADO · 1 control) + 7 guardianes
+declarados `NO CONSTA`. **L85 · L86.**
+- `f51a990` — **el informe** `C-tests.md`. Veredicto: *"el conjunto es inusualmente riguroso; los
+  hallazgos son huecos concretos, no tests malos"*.
+- `a360aba` — **F1**: el test del suelo táctil **medía y no afirmaba**. Al ponerle el `expect`: **401
+  infracciones reales**, todas en `/linea/*` → `test.fixme` con nota, **esperan al bloque B**.
+- `939535a` — **F3**: los dos guardianes de grafo eran ciegos a los **imports de efecto lateral**. Rojo
+  demostrado en ambos.
+- `f50a024` — **F5+F6**: dos tests **erroraban en un clon limpio** (la clase que mordió con `version.ts`).
+- `d394078` — **F7**: e2e que llamaban a **Avanza real** y pasaban igual con Avanza caída. Discriminante
+  enseñado: con `fingir` → 035; sin `fingir` → 29/39 (datos reales).
+- `84e2271` · `a59e5c2` — **F8/F9**: aserciones dentro de `if` sin guarda, y dos `expect(true).toBe(true)`.
+> ⬜ **F2 y F4 sin decidir** (necesitan diseño). ⬜ Quedan los bloques **B, D, E y F**.
+
 **Última actualización:** 28/07/2026
 
 ---
@@ -1210,6 +1225,43 @@ mismo — el peor sitio posible.*
 `caido`, había que comprobar si algún consumidor asumía `ok`. `campo.ts` ya hacía
 `if (r.estado !== 'ok')` → no rompe, y ahora imprime el motivo. **Cambiar un contrato obliga a revisar a
 todos los que lo consumen, no solo al que lo emite.***
+
+⭐⭐⭐ **L85 · UN TEST VERDE NO PRUEBA NADA POR ESTAR VERDE — el Bloque C se auditó ROMPIENDO, no leyendo.**
+La auditoría de tests no se hizo leyéndolos: se hizo **rompiendo lo que dicen proteger** y midiendo si
+saltaban. **8 mutaciones: 5 CAZADO · 2 ESCAPADO · 1 de control.** Y lo honesto: se declararon **7
+guardianes como `NO CONSTA`** — leídos y aparentemente sólidos, *"pero no se ha visto su rojo"*.
+> ⭐⭐ **El hallazgo estrella (F1):** un test llamado **"EL SUELO TÁCTIL son 44"** recorría 3 viewports × 3
+> URLs, acumulaba en un array **cada zona táctil menor de 44 px**… y terminaba en un **`console.log`, sin
+> un solo `expect`**. **No podía fallar nunca**, y corría en la suite por defecto. **Medía las
+> infracciones y las tiraba a la consola.** Es exactamente el patrón que el resto del repo persigue,
+> dentro del propio repo.
+⚠️ *Al ponerle el `expect` que le faltaba: **401 infracciones reales**, todas en `/linea/*` (338 filas de
+parada de 24 px de alto + 63 chips de 24×24). Ni una en la home ni en `/parada`. **El test empezó a
+funcionar y destapó lo que llevaba tapando.** Matiz de calibración: 24×24 **cumple el mínimo AA**; los 44
+son criterio **AAA que el proyecto se puso a sí mismo**. No es "tiene un fallo de accesibilidad": es "se
+puso una vara más alta y no llega en una página".*
+✅ *Otros huecos cazados por mutación: guardianes que **erroran en un clon limpio** (la misma clase que
+mordió con `version.ts`), e2e que llamaban a **Avanza real** y pasaban igual con Avanza arriba o abajo,
+aserciones dentro de un `if` sin guarda (verde vacío), y dos `expect(true).toBe(true)` con el comentario
+admitiendo que "el test es el comentario".*
+
+⭐⭐⭐ **L86 · UN GUARDIÁN QUE COMPARA VALORES GARANTIZA "TODOS DAN LO MISMO HOY", NO "HAY UNA SOLA FUENTE".**
+El guardián `contraste-una-sola-formula` promete en su cabecera: *"si alguien vuelve a escribir la
+fórmula a mano en un componente, esto se pone rojo"*. **Es falso, y se demostró con dos mutaciones:**
+· Copia **divergente** (`×1.05`) → **CAZADO** (`3.355 ≠ 3.195`).
+· Copia **CORRECTA reescrita a mano** → **ESCAPADO** (9 verdes).
+Compara por **valor numérico** (`toBeCloseTo(…,12)`), así que solo caza divergencias — no la **existencia
+de una copia**.
+> ⭐⭐ **Y ahí está la trampa temporal: una copia correcta HOY es la copia divergente de MAÑANA** (se edita
+> una y no la otra). Que es **el bug original de ese mismo fichero** — el que se cazó contando `0.03928`
+> a mano porque *"ninguna prueba automática podía verlo"*. **Sigue sin poder verlo.**
+⚠️ *La regla general: **un guardián de fuente única tiene que vigilar la FORMA (que no exista otra copia),
+no el RESULTADO (que todas coincidan).** Comparar resultados solo detecta el síntoma cuando ya divergió.*
+⚠️ *Y el hueco hermano (F3): el regex de los dos guardianes de grafo de imports exigía `\bfrom\b`, así que
+un **import de efecto lateral** (`import '@/generado';`) **evadía el BFS**. Uno de esos guardianes se
+construyó ayer reutilizando la maquinaria del otro — **reutilizar código probado reutiliza también sus
+agujeros**. Arreglado en los dos, con su rojo. (Sigue ciego a `import()` dinámico: `next/dynamic` parte
+en chunk aparte, riesgo bajo, anotado.)*
 
 ---
 
@@ -2475,6 +2527,31 @@ capturas que nunca viajaron. Detalle en §7.
   y `rich-results` tras el deploy (con la URL real).*
 - ✅ **RADAR eliminado del servidor** — proyecto caduco, verificado antes (nadie lo enlaza, todo en local,
   se consulta levantándolo en la máquina). Se llevó con él los dos procesos zombis.
+
+**⬜ CABOS DEL BLOQUE C (28/07):**
+- ⚠️⚠️ **401 INFRACCIONES DEL SUELO TÁCTIL — declaradas, no ocultas. → BLOQUE B.** Al arreglar el test
+  que las medía sin afirmarlas (**L85**), salieron: **338 filas de parada** del recorrido (ancho completo
+  × **24 px de alto**; 39 px cuando el nombre envuelve) + **63 chips de correspondencia** (24×24).
+  **Todas en `/linea/*`** — ni una en la home ni en `/parada`. El defecto está **acotado a un sitio**.
+  · El test quedó `test.fixme` **con nota completa** (cuántas, de qué tipo, dónde, y cómo reactivarlo):
+    **declara, no oculta**. Motivo de no dejar la suite roja: *un rojo que vive días destruye el valor de
+    señal — no distingues un fallo NUEVO del conocido, y todo lo que rompas después queda camuflado.*
+    Primo de la ley *"un instrumento desactualizado da falso rojo, y eso enseña a NO MIRARLO"*.
+  · ⚠️ **Decisión de producto para el bloque B:** 24×24 **cumple el mínimo AA**; los 44 px son criterio
+    **AAA que el proyecto se puso a sí mismo**. Hay que decidir con criterio: **subir el tamaño** o
+    **ajustar el listón** — pero no por comodidad, y dejando escrito el porqué.
+- ⬜ **F2 y F4, sin decidir** (acotados, necesitan diseño):
+  · **F2** — `barrido-fino`/`barrido-total` escriben sus hallazgos a `e2e/.barrido/*.json` y **nadie los
+    agrega**: son **informes, no tests**. Falta el agregador que cierre el lazo. ⚠️ Su arreglo tiene el
+    mismo riesgo que el F1: puede destapar más hallazgos.
+  · **F4** — el guardián del contraste: hay que cambiarlo de comparar **valores** a buscar la **forma**
+    (un grep de la fórmula sobre `src/` y `e2e/`), que es como se cazó el bug original. Ver **L86**.
+- **Los guardianes de grafo siguen ciegos a `import()` dinámico** (`next/dynamic` en
+  `LlegadasVivas.tsx:43`). Riesgo bajo (parte en chunk aparte, no arrastra al bundle síncrono), pero el
+  BFS no ve lo que solo se alcance por ahí. Anotado, no arreglado.
+- **7 guardianes con `NO CONSTA`**: leídos y aparentemente sólidos, pero **sin ver su rojo**
+  (`sistema-visual`, `marca-z-unica`, `sitemap`, `migas-no-miente`, `cita-guardian`,
+  `coords-propagacion`, `regeneracion-cerrada`). Si se quiere certeza, se mutan.
 
 **⬜ CABOS NUEVOS (28/07):**
 - ⚠️ **`aria-label` en `<span>` sin `role` — 10 errores de HTML, y la etiqueta NO se oye.** Detectado al
