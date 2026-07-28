@@ -21,7 +21,7 @@
  * enseña son cuentas nuestras, no secretos.
  */
 
-import { motor, contador } from '@/engine/motor';
+import { motor, motorRecorrido, contador } from '@/engine/motor';
 import { generadoEn, validez, lineas, paradas } from '@/engine/topologia';
 import { estadoIndice } from '@/engine/correspondencias';
 import { feedStatus, feedWarning } from '@/core';
@@ -86,7 +86,14 @@ export async function GET() {
             : null,
       },
 
-      cache: cache.instantanea(),
+      // ⭐ DOS cachés, CON NOMBRE. La del VIVO (llegadas, TTL 15 s) y la del RECORRIDO
+      //    (desvíos, TTL 1 h — instancia aparte, ver `motorRecorrido`). Sin nombre
+      //    serían dos bloques idénticos y no se sabría cuál se está moviendo. Cada una
+      //    tiene su `ttlSegundos`, su contador y su techo propios.
+      cache: {
+        llegadas: cache.instantanea(),
+        recorrido: motorRecorrido().cache.instantanea(),
+      },
 
       // ⭐ EL ÍNDICE DE CORRESPONDENCIAS. AQUÍ es donde se nota si va en modo degradado
       //    (sin fichero → normales del GTFS, sin provisionales) y cuántos días lleva el

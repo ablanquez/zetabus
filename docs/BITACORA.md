@@ -639,3 +639,12 @@ código, y pararse era lo correcto.
 - **Por descubrimiento:** al separar, el recorrido sale de `/api/diag` (que solo lee `motor().cache`) —
   igual que ya pasaba con `motorHorario`. Si se quiere ver su salud, es un follow-up pequeño (añadir su
   `instantanea()` a diag). No entra en esta tanda.
+
+### Fase 25 · Cierre B — tres cabos pequeños (diag, comentarios «Cerca de mí», versión)
+
+- **Cabo 1 · `/api/diag` vuelve a ver la caché del recorrido.** Al separarla en `motorRecorrido()` (Fase
+  24) el diag dejó de verla: solo leía `motor().cache`. Ahora el bloque `cache` tiene DOS entradas CON
+  NOMBRE: `llegadas` (TTL 15 s) y `recorrido` (TTL 3600 s) — sin nombre serían dos bloques idénticos.
+  Contraprueba en vivo: recién arrancado, `recorrido` a cero; tras abrir `/linea/35`, sus contadores se
+  mueven (`clavesEnMemoria: 2`, `llamadasAlOrigen: 2`, `techo.concedidas: 2`) → lee la caché correcta. Solo
+  `route.ts`; `motorHorario` NO se metió (sigue igual de invisible, a propósito, pendiente de decisión).
