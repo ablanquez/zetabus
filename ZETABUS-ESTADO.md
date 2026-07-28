@@ -84,15 +84,16 @@ verdad, no solo escritas) en `/`, `/parada/744` y `/linea/35`.
   subiría a A, pero puede dejar sin mapa (Leaflet carga teselas de OSM). Tanda aparte, con pruebas.
 - Mapa verificado tras el cambio: 16 teselas OSM 200/0 fallidas, consola sin errores.
 
-## ⏳ EN LOCAL, PENDIENTE DE PUSH (28/07) — 3 commits + este estado
+## ✅ DESPLEGADO Y VERIFICADO EN VIVO (28/07) — 3 commits + estado
 - `b471605` **cabeceras de seguridad** (X-Frame-Options, HSTS, Permissions-Policy) → llevó
   `securityheaders.com` de **C a A+**. §10.
 - `97fc897` **puntero de lecciones del README** — ahora dice la verdad: `docs/LECCIONES.md` tiene L1-L9 y
   de L10 en adelante viven aquí.
 - `c5dab60` **TTL del recorrido cableado a 1 h** (`motorRecorrido()`, caché dedicada como
   `motorHorario`). Antes: declarado 30 min, cableado ninguno, real 15 s. **L79.**
-> ⚠️ Al desplegar: **purgar el CDN a mano** (README → Desplegar). Build ~6 min si faltan las tablas.
-> Verificar en vivo: `/linea/35` (desvíos se ven), `/parada/744` (llegadas vivas, TTL 15 s intacto).
+> ✅ **Verificado en producción:** `/parada/744` → llegadas vivas y actualizándose (**el canal en vivo
+> intacto**, que era el riesgo grande de separar cachés); `/linea/35` → recorrido bien. Web con estilos
+> en normal e incógnito (esta vez el CDN sirvió fresco sin purgar).
 
 **Última actualización:** 28/07/2026
 
@@ -2287,6 +2288,22 @@ capturas que nunca viajaron. Detalle en §7.
   falta.
 
 **⬜ CABOS NUEVOS (28/07):**
+- ✅ **PROCESOS ZOMBIS — eran de RADAR, no de ZetaBus (resuelto 28/07).** Las gráficas del hosting daban
+  un salto sostenido (memoria ~300→900 MB, procesos ~25→100 de 120, con picos tocando el techo) desde que
+  ZetaBus entró en producción, así que la sospecha apuntaba a él. **Falsa.** `ps aux` destapó tres
+  `next-server`: uno de ZetaBus (v16.2.10, del día, correcto) y **dos de `radar.antonioblanquez.es`
+  (v16.2.4, vivos desde el 23 y el 24 de julio, ~190 MB entre los dos)** — deploys viejos cuyo proceso
+  nunca murió. Se pararon con "Detener procesos en ejecución" (panel → Uso de recursos) y **radar quedó
+  parado** (proyecto caduco; verificado antes: nadie lo enlaza, todo está en local, y para consultarlo se
+  levanta en la máquina). ⬜ **Sin decidir:** borrarlo del servidor del todo o dejarlo parado.
+  > ⚠️ **Lo que enseñó el panel:** la migaja decía `zetabus… → Hosting → Uso de recursos`, pero la página
+  > mide **la cuenta entera** ("Business Web Hosting · 6 Sitios web"). En hosting compartido **no hay
+  > contadores por dominio**: CPU, memoria y procesos son del PLAN. Atribuir el consumo al sitio desde el
+  > que navegaste es el error que casi cometemos. **El instrumento medía otra cosa de la que su ruta
+  > sugería.**
+  ✅ *Y de paso quedó verificado: **ZetaBus arranca solo** tras matarle el proceso (Node levanta al primer
+  visitante), y levanta **3 `next-server` en frío** — comportamiento normal aquí (ya se veía en los logs:
+  varios `▲ Next.js` al arrancar), no un síntoma.*
 - **`/api/diag` se quedó COJO tras separar la caché del recorrido.** El diag solo lee `motor().cache`, y
   el recorrido vive ahora en `motorRecorrido()` → **su caché ya no se ve en el panel**. No es un fallo
   (funciona), es **pérdida de observabilidad**: si mañana cachea mal, el diag no lo diría. Le pasa lo
