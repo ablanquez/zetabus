@@ -3,7 +3,7 @@ import type { Line } from '@/core';
 // ⚠️ Import PROFUNDO a propósito, no `@/core`: este es un componente de cliente y
 //    `contraste.ts` no importa nada de nadie. Tirar del barril metería el núcleo
 //    entero en el bundle del navegador para usar una función de veinte líneas.
-import { contrasteRgb, deHex } from '@/core/contraste';
+import { contrasteRgb, deHex, AA_TEXTO } from '@/core/contraste';
 // ⚠️ De `@/engine/grupos`, NO de `@/engine/topologia`. `topologia` importa el GTFS
 //    horneado (1,9 MB) y este componente lo usan DOS componentes `'use client'`:
 //    importarlo de allí metía la red de Zaragoza entera en el navegador para
@@ -63,8 +63,6 @@ export function contraste(a: string, b: string): number {
   return contrasteRgb(deHex(a), deHex(b));
 }
 
-/** AA para texto pequeño. Un número de línea ilegible no identifica nada. */
-export const AA = 4.5;
 
 /**
  * ⭐⭐ D1 · EL COLOR DEL TEXTO **SE CALCULA**. NO SE ELIGE A MANO.
@@ -103,7 +101,9 @@ export const AA = 4.5;
  */
 export function textoLegible(fondo: string, preferido: string): { texto: string; contraste: number; forzado: boolean } {
   const suyo = contraste(fondo, preferido);
-  if (suyo >= AA) return { texto: preferido, contraste: suyo, forzado: false };
+  // AA para texto pequeño (`AA_TEXTO`, fuente única en `@/core/contraste`): un número
+  // de línea ilegible no identifica nada. No se reteclea el 4,5 aquí.
+  if (suyo >= AA_TEXTO) return { texto: preferido, contraste: suyo, forzado: false };
 
   const blanco = contraste(fondo, '#FFFFFF');
   const negro = contraste(fondo, '#000000');

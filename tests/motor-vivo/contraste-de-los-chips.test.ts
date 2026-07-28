@@ -19,7 +19,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { lineas } from '@/engine/topologia';
-import { AA, NOCHE, contraste, textoLegible, tonosDeChip, llevaContorno } from '@/components/ChipLinea';
+import { NOCHE, contraste, textoLegible, tonosDeChip, llevaContorno } from '@/components/ChipLinea';
+// El umbral AA sale de su fuente única (`@/core/contraste`), no de una copia en ChipLinea.
+import { AA_TEXTO as AA } from '@/core/contraste';
 
 const TODAS = lineas();
 const DIURNAS = TODAS.filter((l) => !tonosDeChip(l).buho);

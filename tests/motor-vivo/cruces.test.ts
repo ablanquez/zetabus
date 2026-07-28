@@ -18,7 +18,8 @@ import { CacheDosPisos } from '@/cache/dos-pisos';
 import { llegadasDePoste } from '@/engine/llegadas';
 import { compararRecorrido, UMBRAL_ABSURDO } from '@/engine/desvios';
 import { canonLinea, lineaDeEtiqueta, lineas, esBuho } from '@/engine/topologia';
-import { tonosDeChip, contraste, AA, NOCHE } from '@/components/ChipLinea';
+import { tonosDeChip, contraste, NOCHE } from '@/components/ChipLinea';
+import { AA_TEXTO as AA } from '@/core/contraste';
 import { POSTE_MUDO, respuestaPoste, siempre, transporteFalso } from './dobles';
 
 let dir: string;

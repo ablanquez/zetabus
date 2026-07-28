@@ -24,7 +24,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { capturar, contraste, TACTIL_MINIMO } from './lib/medir';
+import { capturar, contraste, TACTIL_MINIMO, AA_TEXTO } from './lib/medir';
 
 /**
  * El fingimiento `mapa` trae los tres casos feos a la vez:
@@ -219,7 +219,7 @@ test.describe('⭐ B4 · el marcador de autobús: icono + número + punta', () =
       console.log(`  [${info.project.name}] «${t.etiqueta}» ${t.fondo}/${t.texto} relleno ${cRelleno.toFixed(2)} · trazo ${t.trazo}px ${cTrazo.toFixed(2)} → ${c.toFixed(2)}:1`);
       // ⚠️ Un número BLANCO sin trazo sería el bug original (blanco por costumbre).
       if (esBlanco(t.texto) && t.trazo <= 0) malos.push(`«${t.etiqueta}» blanco SIN contorno`);
-      if (c < 4.5) malos.push(`«${t.etiqueta}» a ${c.toFixed(2)}:1`);
+      if (c < AA_TEXTO) malos.push(`«${t.etiqueta}» a ${c.toFixed(2)}:1`);
     }
     expect(tonos.length, 'no hay marcadores que medir').toBeGreaterThan(0);
     expect(malos, `números ilegibles en el mapa: ${malos.join(' · ')}`).toEqual([]);
