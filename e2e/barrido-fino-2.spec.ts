@@ -66,7 +66,28 @@ test.describe('⭐ CAPA 2 · las reglas', () => {
     }
   });
 
-  test('⭐ EL SUELO TÁCTIL DEL PROYECTO son 44, no los 24 de WCAG — medido', async ({ page }) => {
+  /**
+   * ⚠️⚠️ ROJO REAL, APARCADO A PROPÓSITO — NO es un test roto, es un DEFECTO conocido.
+   *
+   * Este test estuvo mudo (medía y tiraba a consola, sin `expect`). Al ponerle la
+   * aserción destapó **401 zonas táctiles por debajo de 44 px**, TODAS en la lista de
+   * recorrido de `/linea/*`:
+   *   · 338 filas de parada (ancho completo × 24 px de alto)
+   *   · 63 chips de correspondencia (24×24)
+   * Ni una en la home ni en `/parada/*`: el defecto está acotado a la vista de línea.
+   *
+   * ⚠️ El suelo de 44 px es un criterio **AAA que el proyecto se puso a sí mismo** — los
+   *    24×24 CUMPLEN el mínimo AA de WCAG (2.5.8). No es un incumplimiento de norma: es
+   *    una vara más alta, propia, que hoy no se alcanza en el recorrido.
+   *
+   * ⇒ El arreglo es de INTERFAZ → BLOQUE B. La aserción se queda puesta (mide y afirma),
+   *   pero va en `fixme` para NO tumbar la suite: una suite que vive roja no distingue un
+   *   fallo nuevo del conocido, y enseña a no mirarla. Registrado como cabo en el estado.
+   *
+   * 🔧 CÓMO SE REACTIVA: cuando el bloque B suba las zonas táctiles del recorrido a 44 px,
+   *    quitar el `.fixme` (dejar `test(...)`) y comprobar que pasa en verde.
+   */
+  test.fixme('⭐ EL SUELO TÁCTIL DEL PROYECTO son 44, no los 24 de WCAG — medido', async ({ page }) => {
     soloUnaVez();
     await sinRed(page);
     const flojos: string[] = [];
@@ -95,8 +116,13 @@ test.describe('⭐ CAPA 2 · las reglas', () => {
         for (const m of malos) flojos.push(`[${w}×${h}] ${url.split('?')[0]} → ${m}`);
       }
     }
+    const unicos = [...new Set(flojos)];
     console.log(`\n   zonas táctiles por debajo de 44: ${flojos.length}`);
-    for (const f of [...new Set(flojos)].slice(0, 20)) console.log(`     ${f}`);
+    for (const f of unicos.slice(0, 20)) console.log(`     ${f}`);
+    // ⚠️ MIDE Y AFIRMA. Sin esta línea el test recogía las infracciones y las tiraba a
+    //    la consola: medía el suelo táctil y no lo vigilaba. Si esto se pone rojo, hay
+    //    zonas <44px — se reportan, NO se tapa el umbral (el suelo son 44 a propósito).
+    expect(unicos, `${unicos.length} zonas táctiles por debajo de 44px:\n${unicos.join('\n')}`).toEqual([]);
   });
 
   test('⭐ "Información adicional": UNA sola copia anunciada, en cada ancho', async ({ page }) => {
