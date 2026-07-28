@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadGtfs, readGtfsZip } from '@/sources/gtfs-nap';
 
@@ -14,14 +14,21 @@ import { loadGtfs, readGtfsZip } from '@/sources/gtfs-nap';
  * pequeño y no cirugía.
  */
 
-const files = readGtfsZip('data/gtfs/zaragoza-gtfs.zip');
+// ⚠️ El zip del GTFS NO viaja en el repo (`data/gtfs/README.md` explica por qué): lo
+//    descarga `npm run gtfs:fetch`. En un clon limpio no está, y leerlo A NIVEL DE MÓDULO
+//    reventaba el fichero ENTERO al importar — incluido el test del núcleo, que ni lo toca.
+//    Se lee SOLO si existe; si no, los dos tests que lo necesitan se SALTAN a la vista
+//    (skipIf, mismo patrón que `readme-no-miente`), y un `skipped` en la salida avisa de
+//    que aquí no se ha verificado nada. El tercer test lee `src/core` y corre siempre.
+const GTFS_ZIP = 'data/gtfs/zaragoza-gtfs.zip';
+const files = existsSync(GTFS_ZIP) ? readGtfsZip(GTFS_ZIP) : null;
 const now = new Date('2026-07-13T12:00:00Z');
 
 describe('el motor no sabe que es un bus', () => {
-  it('la MISMA función carga bus, tranvía, o los dos — solo cambia `modes`', () => {
-    const soloBus = loadGtfs(files, { modes: ['bus'], now });
-    const soloTranvia = loadGtfs(files, { modes: ['tram'], now });
-    const ambos = loadGtfs(files, { modes: ['bus', 'tram'], now });
+  it.skipIf(files === null)('la MISMA función carga bus, tranvía, o los dos — solo cambia `modes`', () => {
+    const soloBus = loadGtfs(files!, { modes: ['bus'], now });
+    const soloTranvia = loadGtfs(files!, { modes: ['tram'], now });
+    const ambos = loadGtfs(files!, { modes: ['bus', 'tram'], now });
 
     // El tranvía SALE, con el mismo código, sin una sola rama especial.
     expect(soloTranvia.lines).toHaveLength(1);
@@ -44,9 +51,9 @@ describe('el motor no sabe que es un bus', () => {
     );
   });
 
-  it('el puente de identidad de Avanza NO se aplica al tranvía, y no revienta', () => {
-    const tranvia = loadGtfs(files, { modes: ['tram'], now });
-    const bus = loadGtfs(files, { modes: ['bus'], now });
+  it.skipIf(files === null)('el puente de identidad de Avanza NO se aplica al tranvía, y no revienta', () => {
+    const tranvia = loadGtfs(files!, { modes: ['tram'], now });
+    const bus = loadGtfs(files!, { modes: ['bus'], now });
 
     // El bus: 934 de 934 paradas tienen poste. Cobertura total.
     expect(Object.keys(bus.posteByStopId)).toHaveLength(bus.stops.length);

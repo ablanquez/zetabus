@@ -458,22 +458,23 @@ describe('⭐⭐ EL README NO MIENTE: las cifras escritas son las que dice el re
     expect(enlacesDe('docs/README.md', '[x](auditoria/)')).toEqual([]);
   });
 
-  it('⭐⭐ CONTRAPRUEBA: lo que existe en el DISCO pero no en el repositorio es ROJO', () => {
-    // ⚠️ Esta es la que prueba el cambio de universo, y no vale con texto
-    // sintético: se busca un fichero REAL que esté en el disco y que el
-    // `.gitignore` deje fuera. Si no hubiera ninguno, la comprobación no
-    // probaría nada y hay que decirlo en vez de dar verde.
-    const ignorado = 'capturas/zetabus/ZOOM-14-poste47.png';
-    if (!existsSync(ignorado)) {
-      throw new Error(
-        `esta contraprueba necesita un fichero presente en el disco y fuera de git.\n` +
-          `   ${ignorado} no está: regenera las capturas (npm run visual) o cambia el ejemplo.`,
+  // ⚠️ Esta es la que prueba el cambio de universo, y no vale con texto sintético: se
+  //    busca un fichero REAL que esté en el disco y que el `.gitignore` deje fuera. Lo
+  //    genera `npm run visual` y está gitignored, así que en un clon limpio NO está —y ahí
+  //    reventaba al lanzar—. Se SALTA a la vista (skipIf, mismo patrón que el GTFS de abajo)
+  //    en vez de erroar: un `skipped` dice que aquí no se ha comprobado nada, que es
+  //    honesto; lo que NO se hace es dar verde en silencio.
+  const ignoradoEnDisco = 'capturas/zetabus/ZOOM-14-poste47.png';
+  it.skipIf(!existsSync(ignoradoEnDisco))(
+    '⭐⭐ CONTRAPRUEBA: lo que existe en el DISCO pero no en el repositorio es ROJO',
+    () => {
+      expect(REPOSITORIO.ficheros.has(ignoradoEnDisco), `${ignoradoEnDisco} NO debe estar seguido`).toBe(
+        false,
       );
-    }
-    expect(REPOSITORIO.ficheros.has(ignorado), `${ignorado} NO debe estar seguido`).toBe(false);
-    // El comprobador viejo (existsSync) lo habría dado por bueno. El nuevo, no:
-    expect(enlacesDe('docs/x.md', `[x](../${ignorado})`)).toEqual([`../${ignorado}`]);
-  });
+      // El comprobador viejo (existsSync) lo habría dado por bueno. El nuevo, no:
+      expect(enlacesDe('docs/x.md', `[x](../${ignoradoEnDisco})`)).toEqual([`../${ignoradoEnDisco}`]);
+    },
+  );
 
   // El zip del GTFS NO viaja en el repositorio (`data/gtfs/README.md` explica por qué),
   // así que esta comprobación solo puede correr donde esté descargado. Se SALTA a la
