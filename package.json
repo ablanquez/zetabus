@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run gtfs:fetch && npm run nombres:ensure && npm run data:build && npm run correspondencias:ensure && next build",
+    "build": "npm run version:build && npm run gtfs:fetch && npm run nombres:ensure && npm run data:build && npm run correspondencias:ensure && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -14,6 +14,7 @@
     "posttest": "node scripts/vigia-readme.mjs",
     "test:watch": "vitest",
     "vigia": "node scripts/vigia-readme.mjs",
+    "version:build": "tsx scripts/build-version.ts",
     "gtfs:fetch": "tsx scripts/fetch-gtfs.ts",
     "data:build": "tsx scripts/build-data.ts",
     "canario": "tsx scripts/canario.ts",

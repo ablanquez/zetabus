@@ -127,16 +127,10 @@ writeFileSync(
     `import data from './gtfs.json';\nexport default data;\n`,
 );
 
-// ⭐ LA VERSIÓN, HORNEADA DESDE package.json. La lee `transporte.ts` para el
-//    User-Agent, así el número vive en UN sitio (package.json) y no cableado a mano.
-//    Se HORNEA a un fichero propio —no se importa `package.json` en el código— para
-//    que la lista de dependencias NO viaje a ningún bundle del cliente. Los DOCUMENTOS
-//    (badge del README, THIRD-PARTY) no pueden beber de aquí; los vigila `readme-no-miente`.
-const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
-writeFileSync(
-  `${OUT}/version.ts`,
-  `// GENERADO POR scripts/build-data.ts. NO EDITAR A MANO.\nexport const VERSION = ${JSON.stringify(pkg.version)};\n`,
-);
+// ⚠️ LA VERSIÓN (`src/generated/version.ts`) NO se hornea aquí: la genera
+//    `scripts/build-version.ts`, que corre EL PRIMERO del build. Tiene que existir
+//    ANTES de `nombres:ensure` (arrastra `transporte.ts`, que la importa), y este
+//    paso va DESPUÉS. Generarla aquí no llegaba a tiempo. Ver build-version.ts.
 
 const posteCount = Object.keys(gtfs.posteByStopId).length;
 console.log('RESUMEN\n');

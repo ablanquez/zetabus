@@ -929,3 +929,58 @@ el #8 se diseña aparte (cambia un contrato) y se decide antes de tocar código.
 Con esto, **el Bloque A del informe `A-codigo.md` queda cerrado**: los 4 🟠 + el guardián fantasma + estos
 tres (#10, #5, #8). Lo deliberadamente dejado (`kml.ts`, `noUncheckedIndexedAccess`, los 🔵) sigue
 documentado en el informe, sin tocar.
+
+### Fase 33 · El orden del build: `version.ts` se generaba tarde (regresión en producción)
+
+**El fallo.** Desde la unificación de versión (`e7614a6`), `transporte.ts` importa `@/generated/version`.
+Ese fichero lo generaba `data:build` — pero **`nombres:ensure` corre ANTES** de `data:build` y lanza
+`build-nombres`, que arrastra `transporte.ts`. En un clon limpio (el servidor), `version.ts` aún no
+existe → `build-nombres` no compila (`Cannot find module '@/generated/version'`), el fail-safe de
+`ensure-nombres` lo toma por «Avanza caída», y la app arranca con **las 934 paradas «sin confirmar»**.
+`correspondencias:ensure` no falló porque va DESPUÉS de `data:build`.
+
+**El arreglo** (`fix(build)`). Se extrae la generación de `version.ts` a su propio script
+[`scripts/build-version.ts`](../scripts/build-version.ts), que corre **EL PRIMERO** del `build` (antes
+incluso de `gtfs:fetch`; solo depende de `package.json`, que siempre está). `nombres:ensure` **se queda
+donde está** (tiene que ir antes de `data:build`, que LEE la tabla y hornea los nombres).
+
+- **Decisión sobre la generación que hacía `data:build`: se QUITA (un solo generador), no se deja
+  redundante.** Motivos: (1) `version.ts` es un sello de `package.json`, no dato GTFS — no pertenece a la
+  «ingesta de datos»; (2) dejarla sería **dos scripts horneando el mismo fichero** desde `package.json`, la
+  «copia a mano» que el proyecto persigue; (3) el orden del build ya garantiza que existe antes de que nadie
+  la importe; (4) la copia en `data:build` **no protegía de nada**: `data:build` corre DESPUÉS de
+  `nombres:ensure`, así que su copia nunca llegaba a tiempo al sitio que mordía. Se deja una nota en
+  `build-data.ts` apuntando al nuevo script, para que nadie la re-añada.
+- **¿Más casos del patrón? NO.** Barrido de `@/generated/*`: el único que un paso anterior a `data:build`
+  importa es `version.ts` (vía `transporte`). Los otros dos importadores (`topologia`, `sobre-los-datos`)
+  usan el `gtfs.json` y solo corren en `next build`, después. Reportado; no había nada que arreglar.
+
+**Las dos lecciones** (por las que esto se registra):
+1. ⚠️ **El aviso EXISTÍA y no se cruzó.** Al unificar la versión ya se anotó que «en un clon limpio,
+   `transporte.ts` no compila hasta correr `data:build`». Lo que no se cruzó fue con que `nombres:ensure`
+   va ANTES. La lección estaba escrita y no llegó al sitio donde mordía.
+2. ⚠️⚠️ **En local pasó en verde porque `version.ts` ya existía** de builds anteriores. Es la ley del
+   proyecto: *un verde que depende de si alguien compiló antes NO prueba nada*. El fallo **solo aparece en
+   un build limpio** — o sea, en el servidor. Por eso la contraprueba de esta tanda **fue un build desde
+   cero** (`src/generated/` borrado), no un `npm run build` normal.
+
+**Contrapruebas (build limpio, `src/generated/` borrado):**
+- 🔴 **Orden VIEJO:** `nombres:ensure` → `Error: Cannot find module '@/generated/version'`
+  (`requireStack: build-nombres → nombres → recorrido → transporte`), fail-safe «NO SE PUDO GENERAR LA
+  TABLA», y `data:build` → «⚠️ NO hay tabla de nombres · 934/934 sin confirmar».
+- 🟢 **Orden NUEVO:** `version:build` primero («✅ Versión horneada: 1.0.0»), `build-nombres` compila y
+  barre (74/74 respondieron), y `data:build` → «✅ **918/934** paradas con nombre de Avanza (98%)». El
+  build llega al final (`next build` ✓ Compiled). ~4-6 min con los dos barridos.
+
+**El fail-safe NO se toca:** siguió funcionando (avisó a gritos, el build no murió). Solo dejó de
+dispararse por la causa equivocada.
+
+**Guardián — PROPUESTO, no implementado** (decide Antonio). Un test decorativo («`version:build` va antes
+que `nombres:ensure`») no vale: hardcodea este caso y no generaliza. El honesto sería un test que, por
+cada paso del `build`, **rastree el grafo de imports** (reutilizando el resolver de
+`nada-de-gtfs-en-el-cliente` / `desvios-no-miran-lo-vivo`) **siguiendo también los `spawnSync('tsx',
+['scripts/…'])`** (aquí está la dificultad: `ensure-nombres` no importa `transporte`, lo SPAWNea vía
+`build-nombres`), y compruebe que todo `@/generated/*` consumido por un paso lo genera un paso ANTERIOR.
+Habría cazado esto. Coste: **acotado, no trivial** (por el spawn) — casi una tanda propia. La alternativa
+—un build limpio en CI— es la prueba de verdad pero es cara y depende de Avanza. No lo construyo: lo dejo
+para que se decida si compensa.
