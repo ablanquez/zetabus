@@ -39,11 +39,11 @@ function destinosParaBuscar(id: string): string {
  * DOS TOQUES hasta ver tu autobús: tocar la caja, teclear, tocar el resultado.
  * Eso lo resolvió bien la referencia y es conocimiento pagado.
  *
- * ⚠️ LO QUE FALTA, Y SE DICE: "cerca de mí". Para alguien que está DE PIE EN LA
- * MARQUESINA el camino correcto son CERO toques: abres y ves tu parada. La
+ * ⚠️ "cerca de mí": NO ESTÁ, Y NO ES UN CABO PENDIENTE. Para alguien de pie en la
+ * MARQUESINA el camino más corto son CERO toques: abres y ves tu parada. La
  * referencia nunca lo construyó (su chip "Cerca de mí" es decorativo, sin
- * `onClick`), y ZetaBus TAMPOCO lo tiene todavía. No lo escondo: es el primer
- * cabo de la Tanda 5.
+ * `onClick`), y ZetaBus tampoco lo tiene — a propósito: la geolocalización se
+ * desarrollará en el proyecto 004 (Desplázame) y, si procede, se traerá hecha.
  */
 export default function Home() {
   const entradas: Entrada[] = [

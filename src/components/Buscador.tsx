@@ -26,8 +26,10 @@ export type { Entrada };
  * `navigator.geolocation` NO SE USA NI UNA VEZ en todo su repositorio; su chip
  * "Cerca de mí" es un `<span aria-hidden>` decorativo, con el comentario
  * "placeholder visual, sin lógica real". Para alguien que está DE PIE EN LA
- * MARQUESINA, el camino correcto son CERO toques. NO ESTÁ HECHO AQUÍ TAMPOCO, y
- * queda anotado como el primer cabo de la Tanda 5.
+ * MARQUESINA, el camino correcto son CERO toques. ZetaBus TAMPOCO lo tiene, y
+ * NO es un cabo pendiente: la geolocalización se desarrollará en el proyecto 004
+ * (Desplázame) y, si procede, se traerá hecha. Mejor no prometer aquí un botón
+ * decorativo que no hace nada.
  */
 
 export function Buscador({ entradas }: { entradas: Entrada[] }) {

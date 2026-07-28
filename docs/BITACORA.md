@@ -648,3 +648,8 @@ código, y pararse era lo correcto.
   Contraprueba en vivo: recién arrancado, `recorrido` a cero; tras abrir `/linea/35`, sus contadores se
   mueven (`clavesEnMemoria: 2`, `llamadasAlOrigen: 2`, `techo.concedidas: 2`) → lee la caché correcta. Solo
   `route.ts`; `motorHorario` NO se metió (sigue igual de invisible, a propósito, pendiente de decisión).
+- **Cabo 2 · los comentarios «Cerca de mí» dicen la verdad de la decisión.** `Buscador.tsx` y `page.tsx`
+  describían el chip decorativo de la app de REFERENCIA y lo presentaban como *«el primer cabo de la Tanda
+  5»* de ZetaBus. La decisión es otra: la geolocalización va al **proyecto 004 (Desplázame)** y, si procede,
+  se trae hecha. Se ACTUALIZA el estado (no se borra: lo que cuentan de la referencia sigue siendo cierto y
+  útil). Solo comentarios; cero runtime. Guardián `readme-no-miente` verde.
