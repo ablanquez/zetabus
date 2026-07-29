@@ -345,6 +345,31 @@ proyecto cerrado que se despliega poquísimo no compensa:** el `revalidate` met�
 prefetch de fondo a todos los visitantes, y una API de purga es un token y un *action* que
 mantener. La purga a mano es el procedimiento oficial.
 
+### El cron nocturno
+
+El índice de correspondencias (arriba) se regenera de madrugada. En un hosting **sin SSH** un cron
+no puede lanzar `npm run …`: solo puede pedir una URL. Por eso el barrido —el mismo código, no una
+copia— se dispara con `POST /api/regenerar`, y el cron es literalmente esto:
+
+```bash
+curl -X POST -H "Authorization: Bearer <TOKEN>" https://zetabus.antonioblanquez.es/api/regenerar
+```
+
+- **`<TOKEN>`** es el valor de `ZETABUS_REGEN_TOKEN`, el mismo que hay en el servidor. Va en la
+  **cabecera**, nunca en la URL —que se queda en los logs—. Sin él, o con uno de menos de 32
+  caracteres, el endpoint responde `503` y **no ejecuta nada** (falla cerrado); con uno equivocado,
+  `401`.
+- **Dónde se configura:** en el panel de Hostinger (la cuenta de Linaje), en su programador de
+  tareas. **No vive en el repo**: es configuración del hosting, no del código.
+- **Horario:** `0 2 * * *` (a las 02:00). Es un valor operativo del panel, no derivable de aquí.
+- **Responde `202` al instante y trabaja de fondo** (~2 min): el cron no espera a que termine, así
+  que no lo mata ningún timeout intermedio. Si dos peticiones se solapan, la segunda recibe `409` y
+  no lanza un segundo barrido.
+- **Cómo saber que corrió:** el barrido **no deja recibo** —un cron mal puesto no deja rastro en el
+  endpoint—. El resultado se mira donde vive el dato: **`/api/diag` → `correspondencias`**, que trae
+  `edadSegundos` (la edad del índice) y `degradado`. Si la edad no se reinicia cada madrugada, el
+  cron no está corriendo.
+
 ---
 
 ## Cómo está construido
