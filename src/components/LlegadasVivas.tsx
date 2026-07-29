@@ -46,6 +46,7 @@ const MapaParada = dynamic(() => import('./MapaParada').then((m) => m.MapaParada
     <div
       className="mb-4 h-72 w-full animate-pulse rounded-panel border border-[var(--color-borde)] bg-[var(--color-fondo)]"
       data-papel="mapa-cargando"
+      role="status"
       aria-label="Cargando el mapa"
     />
   ),

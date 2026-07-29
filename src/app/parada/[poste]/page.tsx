@@ -120,6 +120,7 @@ export default async function ParadaPage({ params, searchParams }: Props) {
         <span
           className="chip-poste-cabecera"
           data-papel="chip-poste-cabecera"
+          role="img"
           aria-label={`poste ${numero}`}
         >
           {numero}

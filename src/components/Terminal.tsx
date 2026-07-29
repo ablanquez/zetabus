@@ -91,7 +91,7 @@ function Flujo({ salidas, notaPorMarca }: { salidas: readonly SalidaMarcada[]; n
     <p className="text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar" data-papel="flujo-salidas">
       <Cita>
         {salidas.map((x, i) => (
-          <span key={i} aria-label={x.marca ? `${x.hora}, ${notaPorMarca.get(x.marca) ?? ''}` : undefined}>
+          <span key={i} role={x.marca ? 'img' : undefined} aria-label={x.marca ? `${x.hora}, ${notaPorMarca.get(x.marca) ?? ''}` : undefined}>
             {i > 0 && (
               <span aria-hidden className="text-[var(--color-tinta-tenue)]">
                 {' · '}
