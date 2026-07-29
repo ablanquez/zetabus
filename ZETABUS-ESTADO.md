@@ -200,6 +200,27 @@ sin JavaScript.
 > (`?fingir=error` para ver la pantalla de error), B-07 (las táctiles), B-09 (el rótulo "de hoy").
 > ⬜ Quedan los bloques **D, E y F**.
 
+### Parte 5 · ⭐ AUDITORÍA DE CIERRE · BLOQUE E (OPERACIÓN Y DATOS) — auditado y arreglado en parte
+Se audita **cómo se EJECUTA y se DESPLIEGA**, simulando el **clon limpio** (*"el entorno de trabajo
+miente"*). Tres simulaciones reales + el mapa de dependencias del build. **Ningún 🔴.**
+> ✅ **El 🔴 potencial, descartado con evidencia ANTES de pedir permiso:** ¿puede el cron nocturno pisar
+> el fichero curado de coordenadas? **No.** El barrido solo lo LEE (`barrido.ts:324-326`, `readFileSync`);
+> lo único que escribe es el índice, atómico y con `.bak`.
+- `8cd8473` — **el informe** `E-operacion.md`, con el **mapa de dependencias del build** (qué produce y
+  qué consume cada paso, **incluido lo indirecto por la cadena de imports** — que es lo que falló).
+- `b90a6fb` — ⭐ **E-01, el hallazgo padre**: el fail-safe **no distinguía "Avanza caída" de "fallo
+  nuestro"**. Arregla la **CLASE**, no la instancia. **L88.** Ante fallo interno, **el build PARA**.
+- `ba9cc2a` — **E-03**: el cron nocturno **documentado en el repo** (README → Desplegar). Antes vivía solo
+  en el panel de Hostinger: el deploy documentaba hasta la purga del CDN, pero **armar el cron no era
+  reproducible**.
+- `5db195c` — **E-06**: las tres `ZETABUS_*_DIR` en el `.env.example`. ⭐ *Y de paso se cazó que el default
+  usa `??` (nullish): una variable **declarada y vacía** rompería el fallback — por eso van comentadas,
+  no vacías.*
+> ⬜ **Sin decidir:** **E-02** (el cron **falla en silencio**: solo la edad en `/api/diag` lo delata, y
+> nadie la mira de noche → ¿alerta o se acepta documentado?) y **E-04** (`flota-avanza-zaragoza.json` es
+> un **derivado versionado viviendo entre los curados**: ¿excepción declarada o se reclasifica?).
+> ⬜ Quedan los bloques **F** (recorrido de usuario nuevo) y **D** (documentación).
+
 **Última actualización:** 29/07/2026
 
 ---
@@ -1305,6 +1326,32 @@ entiende. Los dos `react-hooks` quedan **reportados como cabo, no arreglados** (
 comportamiento: bloque A, no una tanda de "baratos").*
 > ⭐ **Para el maestro:** *cuando una herramienta de análisis pase de golpe a reportar cosas nuevas tras
 > un cambio pequeño, la pregunta no es "¿qué he roto?" sino **"¿qué llevaba sin ver?"***
+
+⭐⭐⭐ **L88 · UN FAIL-SAFE QUE NO DISTINGUE EL FALLO AJENO DEL PROPIO ACABA CULPANDO AL TERCERO.**
+Los `ensure` del build hacían `spawnSync(build-*)` y, ante **CUALQUIER** `status !== 0`, pintaban el mismo
+recuadro: *"Avanza caída → arranca degradado"*. **Es exactamente cómo el `MODULE_NOT_FOUND` del 28/07 se
+disfrazó de "Avanza caída"** y desplegó las 934 paradas como "sin confirmar".
+> ⭐⭐ **Y lo grave, en un proyecto cuya tesis es "cuando no sé, lo digo": no es que callara — es que
+> DECÍA ALGO FALSO sobre por qué no sabía.** Atribuía a un tercero un fallo propio.
+⚠️ **Se arregló el DISPARADOR, no la CLASE.** El orden del build cerró *ese* caso; la confusión seguía
+viva **esperando otro detonante** — cualquier fallo interno de un hijo habría vuelto a desplegarse en
+degradado silencioso culpando a Avanza.
+> ⭐⭐⭐ **EL DISEÑO, y es lo generalizable:** *el error interno **NO SE DETECTA, SE DEDUCE POR
+> COMPLEMENTO**.* No se puede etiquetar en positivo — un `MODULE_NOT_FOUND`, un error de sintaxis o una
+> excepción **matan al hijo antes de que corra una línea nuestra**, así que nunca podría elegir un
+> código. ⇒ Se marca **solo el ÚNICO fallo benigno** (`CODIGO_FUENTE_CAIDA = 3`, la rama deliberada de
+> nuestro código) y **todo lo demás es, por descarte, un fallo NUESTRO**.
+> *(Se descartó parsear la salida de texto: sería el instrumento frágil que este repo rechaza.)*
+✅ *Y ante un fallo interno, **el build PARA.** Precedente que lo sella: `fetch-gtfs` ya mata el build si
+falta `NAP_API_KEY` — *"una configuración a medias es un build mal configurado; seguir dejaría el
+despliegue congelado para siempre sin que nadie se entere"*. Misma familia: fallo **propio y
+permanente**, no ajeno y pasajero. **Sin válvula de escape** (un `FORZAR_DEPLOY=1` sería el silenciador
+que alguien usaría el día que tuviera prisa).*
+⚠️ *El coste, escrito en el propio mensaje: **bloquea CUALQUIER deploy hasta arreglarlo**, aunque el
+cambio fuera un typo. Es el punto, pero quien se lo encuentre a las 02:00 tiene que entenderlo.*
+⚠️ *Y un **SUPUESTO NO VERIFICADO**, declarado como tal: que un build fallido deja la versión anterior
+sirviendo en Hostinger. Es lo razonable, pero **nunca se ha comprobado** (todos los builds llegaron al
+final, incluso los que fallaron por dentro). No se verificará provocando un build roto en producción.*
 
 ---
 
