@@ -1107,3 +1107,63 @@ apertura de comentario de bloque y **se comió el código real** hasta el siguie
 **Verde tras la tanda:** tsc 0 · vitest **563** / 1 skip · lint (0 err, 3 warnings previos) · playwright
 **175 passed / 10 skipped** en 1280px · W3C `/parada` **10→8**. Tres commits atómicos. NO push. B-01, B-03,
 B-05, B-07, B-09 y los dos `react-hooks` **fuera** (reportados).
+
+---
+
+### Fase 36 · Arreglar E-01, E-03 y E-06 del Bloque E
+
+Tres hallazgos de la auditoría de operación (`docs/auditoriafinal/E-operacion.md`), en commits atómicos.
+E-02 (¿alerta del cron o se acepta documentado?) y E-04 (un derivado versionado entre los curados) quedan
+**fuera**: son decisiones de Antonio.
+
+⭐⭐ **E-01 arregla la CLASE, no la instancia.** Ayer se arregló el ORDEN del build —`version:build` el
+primero— y eso cerró **ese** disparador: el `MODULE_NOT_FOUND` de `version.ts` que desplegó las 934
+paradas «sin confirmar». Pero la **confusión seguía viva**: los `ensure-*` hacían `spawnSync(build-*)` y,
+ante **cualquier** `status != 0`, pintaban el mismo recuadro *"Avanza caída → arranca degradado"*. El
+próximo fallo interno —otro módulo que no resuelve, un error de sintaxis, una excepción— habría vuelto a
+desplegarse degradado en silencio, **culpando a Avanza de algo nuestro**. Y en un proyecto cuya tesis es
+*"cuando no sabe, lo dice"*, eso es peor que callar: es **decir algo falso sobre por qué no sabe**.
+
+> El arreglo distingue los dos casos. Y lo hace por una asimetría que lo vuelve robusto: **el error
+> interno no se detecta, se DEDUCE por complemento.** Un `MODULE_NOT_FOUND` mata al hijo antes de que
+> corra una línea nuestra —nunca podría elegir un código de salida—, así que se marca en positivo solo la
+> ÚNICA caída benigna (Avanza no llegó al suelo → `CODIGO_FUENTE_CAIDA = 3`, una rama deliberada de
+> nuestro código) y **todo lo demás es, por descarte, fallo propio.** Parsear la salida de texto habría
+> sido el instrumento frágil que este repo rechaza.
+
+**La decisión: ante un error interno, el build PARA.** No es obvia —sin nombres SÍ hay app (degradada)—,
+pero lo que se despliega no es «la capa de nombres coja»: es **un fallo que no entendemos, de radio
+desconocido, disfrazado de caída de Avanza**. El precedente lo sella: **`fetch-gtfs` ya mata el build si
+falta `NAP_API_KEY`**, *"porque una configuración a medias es un build mal configurado; seguir dejaría el
+despliegue congelado para siempre sin que nadie se entere"*. Misma familia: fallo **propio y permanente**,
+no ajeno y pasajero. Continuar sería el *"congelado para siempre"* que `fetch-gtfs` rechaza —y «continuar
+pero ruidoso» ya es el status quo que falló, porque un aviso de build a las 02:00 en un panel remoto **no
+se lee**—. Sin válvula de escape (nada de un `FORZAR_DEPLOY=1`): sería el silenciador de siempre. Si está
+roto, se arregla. El mensaje nuevo lo dice entero: qué pasó, que por eso para, que bloquea **cualquier**
+deploy hasta arreglarlo (ése es el punto), y qué hacer.
+
+⚠️ **Un supuesto que sostiene todo esto, y que NO está verificado:** que **un build fallido en Hostinger
+deja la versión anterior sirviendo**. Es lo razonable (el proceso corre desde `~/nodejs` con el build
+previo), pero **nunca se ha comprobado**: todos los builds han llegado al final, incluso los que fallaron
+por dentro. No se verifica provocando un build roto en producción; se deja **escrito como supuesto** en el
+propio mensaje del `ensure` y aquí. Si algún día se confirma, se anota.
+
+**Contraprueba, los dos casos en los dos `ensure`:** error interno reproducido borrando `version.ts` (la
+SIM-1) → sale el recuadro **NUEVO** y el `ensure` **sale 1 (build PARA)**; fuente caída simulada con el
+hijo saliendo `exit 3` → sale el recuadro **de hoy, idéntico** (verificado md5, ni una coma cambia) y el
+`ensure` **sale 0 (build CONTINÚA)**. Restaurado todo, `git status` limpio.
+
+⚠️ **Piedra propia, cazada leyendo `git status`:** para restaurar el hijo tras stubbearlo usé
+`git checkout scripts/build-nombres.ts` — y eso **también borró mi edición de E-01 sin commitear** de ese
+mismo fichero. Lo pilló que `git status` dejó de listarlo como modificado, no la fe. Lección: **commitea
+antes de stubbear, o restaura desde un backup, no con `git checkout` sobre un fichero con cambios vivos.**
+
+**E-03** — el cron nocturno, en `README → Desplegar`: el `curl` con el token como marcador `<TOKEN>` (jamás
+el valor), el horario `0 2 * * *` marcado como operativo no derivable, dónde se configura (panel de
+Hostinger, cuenta de Linaje) y cómo saber que corrió (`/api/diag → correspondencias`, `edadSegundos`). Cada
+dato verificado en el repo; `readme-no-miente` verde (26 tests). **E-06** — las tres `ZETABUS_*_DIR` en
+`.env.example`, avanzadas, con nombres leídos de `motor.ts`; **comentadas, no vacías**, porque el código cae
+al default con `?? '.cache/…'` (nullish) y una var declarada-y-vacía no es nullish.
+
+**Verde:** tsc 0 · lint 0 err · vitest **563** / 1 skip · `readme-no-miente` 26/26. Cuatro commits atómicos
+(E-01 / E-03 / E-06 / esta bitácora). NO push.
