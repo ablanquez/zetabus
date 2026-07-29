@@ -1037,3 +1037,73 @@ caza copias divergentes pero no una copia correcta reescrita) quedan **fuera**, 
   previos, ninguno en ficheros tocados) · playwright **175 passed / 10 skipped** en 1280px · el `fixme` del
   F1 a la vista. **README revisado** (tarea de cierre): sus recuentos de pruebas son *suelos* explícitos
   («más de 470» / «más de 800»), no los desmiente nada; **no se toca**. Siete commits atómicos. NO push.
+
+### Fase 35 · Arreglar los cuatro hallazgos baratos del Bloque B (tres commits atómicos)
+
+El Bloque B (`docs/auditoriafinal/B-interfaz.md`, commit `f61b45a`) auditó la interfaz ABRIENDO las 9
+rutas × 5 anchos × estados. Nueve hallazgos, **ningún 🔴**. Antonio aprueba arreglar los **cuatro baratos**;
+los gordos (B-01 `div`-en-`button`, B-03 404 sin JS, B-05 error boundary, B-07 las 401 táctiles, B-09) se
+deciden aparte.
+
+- **B-02 + B-08 · `aria-label` que el lector SÍ oye** (`767ab56`). Un `aria-label` en un `<span>`/`<div>`
+  genérico lo **ignora** el lector: parecía informar y no informaba. Se aplica el patrón que YA existe en
+  el repo (los chips de giro de la home son `role="img"`): `Terminal.tsx` (salidas marcadas, `role` solo
+  cuando hay marca), el chip de poste (`role="img"`), y el placeholder del mapa (`role="status"`, que es
+  un estado de carga, no una imagen). **Contraprueba W3C: `/parada` pasa de 10 a 8 errores** (los 2 de
+  `aria-label` fuera; los 8 restantes son `div`-en-`button`, que es B-01). Los 10 de `/linea` vienen de
+  `Terminal` con datos REALES de Avanza y no se reproducen en demo: el `role` los mata por la misma regla,
+  pero queda **sin verificar en vivo** —se dice, no se da por bueno—.
+- **B-04 · fuera la jerga de los estados "no lo sé"** (`383c66f`). Caído / ilegible / desvío-no-comprobable
+  tenían un titular humano impecable y luego un paréntesis que volcaba crudo la URL de Avanza, el
+  `ECONNREFUSED` o el HTML `<h1>502 Bad Gateway</h1>`. El titular ya lleva el "por qué" en lenguaje humano,
+  así que el paréntesis solo repetía eso y añadía jerga → se quita (Opción A). El detalle técnico NO se
+  pierde: en la parada sigue en el JSON de `/api/llegadas` (superficie de diagnóstico legítima); en la
+  línea, que no tiene JSON, va a `console.error` en el servidor (verificado en el log: la URL sigue ahí,
+  fuera de pantalla). Abiertas las tres pantallas y leídas: **siguen honestas** —dicen qué Y por qué— sin
+  una URL a la vista.
+  - ⚠️ **CORRECCIÓN DE LA PREMISA, y es importante: esto es UX, NO seguridad.** El informe B decía que la
+    jerga "publica el endpoint interno de Avanza" y que era incoherente con `robots.ts`. **Falso.** El
+    repositorio es PÚBLICO: esa URL ya está en el código, en los comentarios y en el estado. No se revela
+    nada oculto, y `robots.ts` bloquea `/parada` y `/api` para que no se **indexe un dato que caduca en
+    15 s**, no por secreto. Sigue mereciendo arreglo (nadie entiende `ECONNREFUSED`), pero el argumento de
+    seguridad **no vale y no se usa**. Se traza el flujo antes de afirmar.
+  - El **refresco-fallido se deja como está**, con nota en el código: su motivo es del NAVEGADOR («Failed
+    to fetch»), nunca de Avanza (solo salta cuando falla el fetch a nuestra propia API). Y limpiarlo
+    «bien» chocaba con el hallazgo de abajo.
+- **B-06 · `<meta description>` propia donde faltaba** (`de9f64b`→`f82d182`). Era la misma genérica en
+  home, línea, parada, 404 y sistema-visual; solo estado y sobre tenían la suya (los `<title>` sí eran
+  propios). Se le da descripción a las dos INDEXABLES: `/linea` (por línea, veraz y ESTABLE —recorrido,
+  paradas, correspondencias, origen→destino—; **nada de tiempos ni de "en vivo"**) y la home. Verificado
+  en el HTML servido.
+  - ⚠️ **`/parada` se deja con la genérica A PROPÓSITO, y esto se registra porque alguien podría
+    "corregirlo" sin entenderlo:** está en `robots` disallow porque su valor (los minutos) caduca en 15 s.
+    Una descripción tipo *"Llegadas en tiempo real a Plaza San Miguel"*, cacheada o compartida, **sería la
+    misma mentira que `robots.ts` evita** en cuanto pasan 15 segundos. Dejarla genérica es coherencia con
+    la tesis, no pereza.
+
+⭐⭐ **EL HALLAZGO QUE VALE MÁS QUE LOS CUATRO ARREGLOS: el lint estaba en verde por la razón equivocada.**
+Al ir a quitar el paréntesis del refresco-fallido «bien» —simplificando la unión de tipos `Estado` de
+`LlegadasVivas`— el analizador de `react-hooks` empezó a marcar **dos problemas PREEXISTENTES** que no
+había tocado nadie: `:94` lee un `ref` durante el render, `:239` hace `setState` dentro de un efecto.
+Llevaban ahí desde siempre, y el analizador **no los veía porque la complejidad de la unión le hacía
+rendirse antes de llegar a ellos**.
+
+> **El verde no significaba "esto está bien": significaba "no he podido mirarlo".**
+
+Es lo mismo que llevamos cazando —un instrumento que se calla en vez de avisar— en una forma **nueva**: no
+un test que no prueba nada, sino **un analizador que se rinde en silencio**. Y lo revelador: **solo se
+destapó al intentar simplificar**; cualquier limpieza futura de ese componente los habría sacado igual. Se
+**reportan como cabo de código (bloque A), no se arreglan** aquí (`:239`, `setState` en efecto, es un
+refactor de comportamiento con riesgo, fuera de una tanda de "baratos"). Se descartó de plano el atajo de
+dejar un campo en el estado que nadie lee solo para que el analizador se rinda: eso sería **silenciar el
+instrumento a propósito** y dejar una trampa cargada para el que lo quite mañana.
+
+⚠️ **Y una piedra propia, cazada por un guardián:** el comentario de B-06 que escribí decía `` `/linea/*` ``
+y `` `/parada/*` ``. El `sinComentarios` de `pantalla-no-miente` interpreta esas secuencias `/*` como
+apertura de comentario de bloque y **se comió el código real** hasta el siguiente `*/` —incluida la llamada
+`await desviosDeLinea`—, y dos tests se pusieron rojos. Es EXACTAMENTE la trampa que ya mordió con
+`Date.now()` y `truncate` dentro de comentarios que los prohíben. Reescrito sin el `*`.
+
+**Verde tras la tanda:** tsc 0 · vitest **563** / 1 skip · lint (0 err, 3 warnings previos) · playwright
+**175 passed / 10 skipped** en 1280px · W3C `/parada` **10→8**. Tres commits atómicos. NO push. B-01, B-03,
+B-05, B-07, B-09 y los dos `react-hooks` **fuera** (reportados).
