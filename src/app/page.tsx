@@ -20,7 +20,14 @@ const LO_QUE_ES = 'Listado de líneas de transporte de Zaragoza';
 // ⚠️ La home es el segmento RAÍZ, el mismo que declara la plantilla → la plantilla NO se
 //    le aplica (Next: `template` solo envuelve a los HIJOS). Por eso el título se escribe
 //    entero aquí, pero el nombre se LEE de la fuente única (no se teclea "ZetaBus").
-export const metadata = { title: `${NOMBRE_MARCA} | ${LO_QUE_ES}` };
+// ⚠️ DESCRIPCIÓN PROPIA (B-06): la home es indexable y es la portada. En vez de heredar
+//    la genérica del layout, dice qué es el servicio. Estable, sin cifras que se pudran.
+export const metadata = {
+  title: `${NOMBRE_MARCA} | ${LO_QUE_ES}`,
+  description:
+    'El autobús urbano de Zaragoza, línea a línea: recorrido, paradas y correspondencias. ' +
+    'Y los que llegan ahora mismo a tu parada, con la edad del dato a la vista.',
+};
 
 /**
  * Los destinos de una línea, en una cadena, para INDEXARLOS en el buscador (no se

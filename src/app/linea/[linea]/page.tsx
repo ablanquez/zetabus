@@ -83,9 +83,18 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const sents = sentidosParaRumbo(idLinea(String(l.id)));
   const pedido = Array.isArray(sp.sentido) ? sp.sentido[0] : sp.sentido;
   const activo = sents.find((s) => String(s.directionId) === pedido) ?? sents[0];
-  return sents.length > 1 && activo
-    ? { title: `Línea ${l.shortName} | Sentido ${destinoDeSentido(activo, sents)}` }
-    : { title: `Línea ${l.shortName}` };
+  // ⚠️ DESCRIPCIÓN PROPIA (B-06). La vista de línea es la superficie INDEXABLE (ver `robots.ts`):
+  //    si heredara la genérica, saldría a Google con una descripción que no habla de esta
+  //    línea. Se dice lo que la página tiene y es ESTABLE —recorrido, paradas,
+  //    correspondencias, nombre—. NADA de tiempos ni de "en vivo": eso caduca, y una
+  //    descripción cacheada que prometa tiempo real mentiría, como en las paradas.
+  const description =
+    `Recorrido, paradas y correspondencias de la línea ${l.shortName} de autobús urbano de ` +
+    `Zaragoza (${l.longName}). Y te decimos si hoy lleva algún desvío.`;
+  const title = sents.length > 1 && activo
+    ? `Línea ${l.shortName} | Sentido ${destinoDeSentido(activo, sents)}`
+    : `Línea ${l.shortName}`;
+  return { title, description };
 }
 
 export default async function LineaPage({ params, searchParams }: Props) {
