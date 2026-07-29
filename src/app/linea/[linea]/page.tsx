@@ -127,6 +127,14 @@ export default async function LineaPage({ params, searchParams }: Props) {
         ? { tipo: 'indeterminado', motivo: desvios.motivo }
         : null;
 
+  // El detalle técnico del "no lo sé" (la URL de la fuente, el errno) NO va a la
+  // pantalla (Bloque B · B-04): el usuario ve el «no lo sabemos» humano de abajo. Se
+  // registra AQUÍ, en el servidor, para quien lo tenga que depurar — a diferencia de
+  // las llegadas, la línea no tiene un JSON de diagnóstico (`/api/llegadas`) donde mirar.
+  if (veredicto?.tipo === 'indeterminado') {
+    console.error(`[zetabus] línea ${l.shortName}: no se ha podido comprobar el desvío —`, veredicto.motivo);
+  }
+
   // ⭐ ¿HAY CAJA DE DESVÍOS? (un desvío de hoy, un "no lo sé", o una línea sin trazado).
   //    Un día normal la MAYORÍA de líneas NO la tienen. Se calcula aquí para dos cosas:
   //    marcar la rejilla (`data-tiene-desvio`) —sin caja, la columna derecha es solo el
@@ -377,7 +385,6 @@ function Recorrido({
               <p className="mt-1 text-nota leading-snug not-italic text-[var(--color-tinta-suave)] sin-recortar">
                 Abajo va <strong>el recorrido oficial</strong>. Si hoy hay un desvío,{' '}
                 <strong>no lo sabemos</strong> — y eso no es lo mismo que decir que no lo hay.
-                ({veredicto.motivo})
               </p>
             </div>
           )}

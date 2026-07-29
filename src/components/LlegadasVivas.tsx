@@ -126,6 +126,16 @@ export function LlegadasVivas({
     } catch (e) {
       // ⭐ NO se resetea `llegoEn`: el contador SIGUE SUBIENDO desde el último
       //    dato bueno. Y se guarda el motivo, y se ENSEÑA.
+      //
+      // ⚠️ EL PARÉNTESIS DE AQUÍ SOBREVIVE A LA LIMPIEZA DEL Bloque B (B-04), Y ES A
+      //    PROPÓSITO. Los `(${motivo})` de los OTROS estados (caído / ilegible / desvío)
+      //    volcaban la URL de Avanza o su HTML crudo, y se quitaron. Éste NO: este `catch`
+      //    solo salta cuando falla el fetch a NUESTRA propia API, así que el motivo es
+      //    jerga del NAVEGADOR («Failed to fetch»), nunca un dato de Avanza. Y quitarlo
+      //    «bien» —simplificando esta unión de tipos— destapa dos avisos de `react-hooks`
+      //    PREEXISTENTES (un ref leído en render, un `setState` en un efecto) que hoy el
+      //    analizador no ve porque la unión le hace rendirse: son cabos de CÓDIGO (bloque
+      //    A), no de interfaz. Se deja como está y se reporta. No es un olvido.
       setEstado((prev) => ({
         tipo: 'refresco-fallido',
         obs: prev.obs,
@@ -502,7 +512,7 @@ function Cuerpo({
     return (
       <Aviso
         titulo="Avanza no responde"
-        cuerpo={`No hemos podido preguntar. Esto NO significa que no haya autobuses: significa que no lo sabemos. (${obs.motivo})`}
+        cuerpo="No hemos podido preguntar. Esto NO significa que no haya autobuses: significa que no lo sabemos."
         papel="caido"
       />
     );
@@ -511,7 +521,7 @@ function Cuerpo({
     return (
       <Aviso
         titulo="No entendemos lo que ha contestado Avanza"
-        cuerpo={`Ha respondido, pero su respuesta no cuadra consigo misma y no nos la creemos. Preferimos decir esto a enseñarte una lista incompleta con cara de estar completa. (${obs.motivo})`}
+        cuerpo="Ha respondido, pero su respuesta no cuadra consigo misma y no nos la creemos. Preferimos decir esto a enseñarte una lista incompleta con cara de estar completa."
         papel="ilegible"
       />
     );
