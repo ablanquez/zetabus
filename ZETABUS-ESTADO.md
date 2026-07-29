@@ -176,7 +176,31 @@ declarados `NO CONSTA`. **L85 · L86.**
 - `84e2271` · `a59e5c2` — **F8/F9**: aserciones dentro de `if` sin guarda, y dos `expect(true).toBe(true)`.
 > ⬜ **F2 y F4 sin decidir** (necesitan diseño). ⬜ Quedan los bloques **B, D, E y F**.
 
-**Última actualización:** 28/07/2026
+### Parte 4 · ⭐ AUDITORÍA DE CIERRE · BLOQUE B (INTERFAZ Y TEXTOS) — auditado y arreglado en parte
+Se audita **ABRIENDO las páginas**, no leyendo el JSX: **9 rutas × 5 anchos × estados**, capturas leídas
+una a una, HTML servido parseado, validación W3C **por página**, píxel resultante medido, y comprobación
+sin JavaScript.
+> ⭐⭐ **TITULAR: ningún 🔴.** *"No se encontró ni un texto ni un estado que mienta al usuario, ni un vacío
+> que rompa el camino principal."* **Para un proyecto cuya tesis es no mentir, ése es el hallazgo más
+> importante — y es en positivo.**
+- `f61b45a` — **el informe** `B-interfaz.md`. Nueve hallazgos 🟠/🔵.
+- `767ab56` — **B-02/B-08**: `aria-label` en `<span>` sin `role` → el lector **los ignoraba**. Alguien
+  puso "sale de P. Mina, no de Seminario" para que un ciego lo oyera, **y no lo oía**. Arreglado con el
+  patrón que ya existía en el repo (`role="img"`; `role="status"` en el placeholder del mapa).
+- `383c66f` — **B-04**: los estados de "no lo sé" volcaban **jerga cruda** al usuario (`ECONNREFUSED`,
+  `<h1>502 Bad Gateway</h1>`, la URL interna). Titular intacto, paréntesis fuera; el detalle técnico va
+  al log del servidor y al JSON de `/api` (superficie de diagnóstico legítima).
+- `f82d182` — **B-06**: `<meta description>` propia en `/linea/*` (por línea, veraz y estable) y home.
+  ⭐ **`/parada` se deja genérica A PROPÓSITO**: una descripción tipo *"llegadas en tiempo real a X"*
+  sería **la misma mentira que `robots.ts` evita** — cacheada o compartida, miente a los 15 s.
+> ⚠️ **CORRECCIÓN de una premisa mía:** enmarqué el B-04 como *"publica el endpoint interno, incoherente
+> con robots.ts"*. **Falso: el repo es PÚBLICO y esa URL ya está en el código.** Es UX, no seguridad.
+> *(Si no se hubiera trazado el flujo, habría entrado una afirmación falsa en el registro.)*
+> ⬜ **Fuera, para decidir:** B-01 (8× `<div>` en `<button>`), B-03 (404 en blanco sin JS), B-05
+> (`?fingir=error` para ver la pantalla de error), B-07 (las táctiles), B-09 (el rótulo "de hoy").
+> ⬜ Quedan los bloques **D, E y F**.
+
+**Última actualización:** 29/07/2026
 
 ---
 
@@ -1262,6 +1286,25 @@ un **import de efecto lateral** (`import '@/generado';`) **evadía el BFS**. Uno
 construyó ayer reutilizando la maquinaria del otro — **reutilizar código probado reutiliza también sus
 agujeros**. Arreglado en los dos, con su rojo. (Sigue ciego a `import()` dinámico: `next/dynamic` parte
 en chunk aparte, riesgo bajo, anotado.)*
+
+⭐⭐⭐ **L87 · UN LINTER EN VERDE PUEDE ESTARLO POR INCAPACIDAD, NO POR CORRECCIÓN.**
+Al ir a limpiar un mensaje de `LlegadasVivas.tsx`, había que simplificar una unión de tipos. Al hacerlo,
+el analizador de `react-hooks` —**que ante la unión compleja se rendía antes de llegar**— destapó **dos
+problemas preexistentes**: leer un `ref` durante el render (`:94`) y un `setState` dentro de un efecto
+(`:239`). Llevaban ahí **desde siempre**.
+> ⭐⭐⭐ **El verde no significaba "esto está bien": significaba "NO HE PODIDO MIRARLO".**
+Es la misma clase de silencio que este proyecto lleva días cazando, **en una forma nueva**: no un test que
+no prueba nada (L85), ni un guardián que vigila el resultado en vez de la forma (L86), sino **una
+herramienta de análisis que abandona en silencio y reporta verde**.
+⚠️ *Y lo revelador: **solo se destapó al intentar SIMPLIFICAR.** Cualquier limpieza futura de ese
+componente los habría sacado igual — estaban esperando a que alguien tocara.*
+⛔ *Se descartó de plano el atajo de **dejar un campo muerto en el estado solo para que el analizador
+siguiera rindiéndose**. Sería **silenciar el instrumento a sabiendas**, y peor: deja una trampa cargada —
+el día que alguien quitara ese campo (con razón, porque nadie lo lee) le explotarían dos errores que no
+entiende. Los dos `react-hooks` quedan **reportados como cabo, no arreglados** (son refactor de
+comportamiento: bloque A, no una tanda de "baratos").*
+> ⭐ **Para el maestro:** *cuando una herramienta de análisis pase de golpe a reportar cosas nuevas tras
+> un cambio pequeño, la pregunta no es "¿qué he roto?" sino **"¿qué llevaba sin ver?"***
 
 ---
 
@@ -2527,6 +2570,30 @@ capturas que nunca viajaron. Detalle en §7.
   y `rich-results` tras el deploy (con la URL real).*
 - ✅ **RADAR eliminado del servidor** — proyecto caduco, verificado antes (nadie lo enlaza, todo en local,
   se consulta levantándolo en la máquina). Se llevó con él los dos procesos zombis.
+
+**⬜ CABOS DEL BLOQUE B (29/07) — sin decidir:**
+- **B-01 · 8× `<div>` dentro de `<button>`** en las tarjetas de llegada (`/parada`). HTML no conforme: un
+  `<button>` solo admite contenido de frase. Funciona, pero algunas tecnologías de asistencia lo tratan
+  raro. **Coste medio** (reestructurar la tarjeta, o `role="button"` sobre un `<div>`). Son los 8 errores
+  W3C que quedan en `/parada` (eran 10; los 2 de `aria-label` ya se cerraron).
+- **B-03 · el 404 sale EN BLANCO sin JavaScript.** Se sirve como shell `__next_error__` con el body
+  vacío; el contenido va solo en el payload RSC. **Es la única página así** — home, línea y parada sí
+  renderizan en servidor. Un bot o un navegador de texto ve una página vacía con estado 404. **(P)**
+- **B-05 · la pantalla de error que NADIE ha visto.** `error.tsx` / `global-error.tsx` no se pueden
+  disparar sin romper algo → **NO CONSTA**, y *ese hecho es el hallazgo*: es la pantalla que se ve cuando
+  de verdad algo revienta, y nunca se ha abierto. Propuesta (no implementada): un `?fingir=error`.
+- **B-07 · las zonas táctiles.** Re-medidas: `/linea/N7` a 360 px da **361** (120 filas de 24 px de alto +
+  241 chips de 24×24). *(El "401" heredado era el total deduplicado de tres URLs × tres anchos; el número
+  depende de la línea, las dos clases coinciden.)* ⚠️ **24×24 CUMPLE el mínimo AA**; los 44 px son
+  **AAA autoimpuesto**. **(P)** Cuatro opciones en el informe: A subir filas a 44 (+2.400 px de scroll en
+  N7) · B agrandar chips (fuerza *wrap* a 360) · **C área táctil ≥44 sin agrandar lo visible** (la vía
+  estándar; ⚠️ ojo al solape entre chips juntos) · D no tocar y documentar la renuncia al AAA.
+- **B-09 · el rótulo "DESVÍOS Y CORRESPONDENCIAS DE HOY"** del panel, cuando el índice puede tener ~2
+  días. Lo cubre el banner ámbar de "datos desactualizados", pero el "de hoy" literal podría condicionarse
+  al aviso de rancio. 🔵
+- ⚠️ **Dos `react-hooks` latentes** (`LlegadasVivas.tsx:94` ref en render · `:239` `setState` en efecto):
+  preexistentes, **el lint no los veía por incapacidad del analizador** (**L87**). Son refactor de
+  comportamiento → **bloque A**, no "baratos". Reportados, no arreglados.
 
 **⬜ CABOS DEL BLOQUE C (28/07):**
 - ⚠️⚠️ **401 INFRACCIONES DEL SUELO TÁCTIL — declaradas, no ocultas. → BLOQUE B.** Al arreglar el test
