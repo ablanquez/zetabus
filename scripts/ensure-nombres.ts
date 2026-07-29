@@ -32,13 +32,20 @@
  *    que pasa con los avisos de build que se leen como ruido: no se leen.)
  *
  * ⚠️ Se lanza `build-nombres` como PROCESO HIJO (no se importa: importarlo dispararía
- *    su barrido al cargar). El código de salida del hijo decide: 0 = tabla escrita;
- *    ≠0 = no se pudo (Avanza caída o suelo del 80% no alcanzado), y AQUÍ se convierte
- *    en aviso no-fatal (salimos 0). El propio `build-nombres` ya protege la tabla buena
- *    que hubiera: por debajo del suelo NO la sobrescribe.
+ *    su barrido al cargar). Y el CÓDIGO DE SALIDA del hijo decide, en TRES vías:
+ *      · 0                    → tabla escrita. Seguimos.
+ *      · CODIGO_FUENTE_CAIDA  → Avanza no respondió al suelo: caída BENIGNA. Aviso
+ *                               honesto y el build CONTINÚA (app en degradado). Salimos 0.
+ *      · cualquier OTRO       → fallo NUESTRO (el hijo ni arrancó, o reventó por su
+ *                               cuenta). El build PARA. No se despliega un fallo que no
+ *                               entendemos disfrazado de caída de Avanza. Salimos 1.
+ *    Antes, un `≠0` cualquiera se tomaba por «Avanza caída» y seguía SIEMPRE: por eso el
+ *    `MODULE_NOT_FOUND` de `version.ts` desplegó las 934 paradas «sin confirmar» sin que
+ *    nadie lo notara. Ver scripts/codigos-salida.ts.
  */
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { CODIGO_FUENTE_CAIDA } from './codigos-salida';
 
 const OUT = 'src/generated/nombres.json';
 
@@ -58,9 +65,11 @@ if (r.status === 0 && existsSync(OUT)) {
   process.exit(0);
 }
 
-// ── No se pudo (Avanza caída, suelo no alcanzado, o el hijo murió). NO se cae el build ──
 const linea = '═'.repeat(70);
-console.error(`
+
+// ── FUENTE CAÍDA (Avanza no llegó al suelo). Caída benigna: el build CONTINÚA ──────
+if (r.status === CODIGO_FUENTE_CAIDA) {
+  console.error(`
 ⛔${linea}⛔
 ⛔
 ⛔   NO SE PUDO GENERAR LA TABLA DE NOMBRES.
@@ -76,5 +85,35 @@ console.error(`
 ⛔
 ⛔${linea}⛔
 `);
-// Salimos 0 a propósito: el build NO debe fallar por esto.
-process.exit(0);
+  // Salimos 0 a propósito: el build NO debe fallar por esto.
+  process.exit(0);
+}
+
+// ── FALLO INTERNO (cualquier otro código: no arrancó, crash, invariante roto). PARA ──
+console.error(`
+⛔${linea}⛔
+⛔
+⛔   FALLO INTERNO GENERANDO LA TABLA DE NOMBRES — Y NO ES DE AVANZA.
+⛔
+⛔   El hijo terminó con ${r.status === null ? `señal ${r.signal}` : `código ${r.status}`}, no con el ${CODIGO_FUENTE_CAIDA}
+⛔   que reservamos para "la fuente no respondió". Es decir: build-nombres ni
+⛔   llegó a preguntarle a Avanza, o reventó por su cuenta —un módulo que no
+⛔   resuelve, un error de sintaxis, un invariante roto—.
+⛔
+⛔   ⚠️  Esto es un fallo NUESTRO. El stack o el mensaje que lo explica va AQUÍ
+⛔       ARRIBA (el hijo hereda stdio).
+⛔
+⛔   ⛔  POR ESO EL BUILD PARA. Un error interno es propio y permanente, no ajeno
+⛔       y pasajero: continuar desplegaría el mismo degradado-en-silencio en cada
+⛔       build hasta que alguien lo note, culpando a Avanza de algo nuestro. (Se
+⛔       ASUME que un build fallido deja la versión anterior sirviendo en
+⛔       Hostinger; NO verificado a día de hoy.)
+⛔
+⛔   ⚠️  SÍ, esto bloquea CUALQUIER deploy —aunque solo quisieras subir un typo—
+⛔       hasta arreglar la causa. Es el punto: si está roto, se arregla.
+⛔
+⛔   QUÉ HACER: lee el stack de arriba, arregla la causa y vuelve a desplegar.
+⛔
+⛔${linea}⛔
+`);
+process.exit(1);

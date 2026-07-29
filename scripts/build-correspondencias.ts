@@ -28,6 +28,7 @@
  *    no está». Esta ejecución a mano es UN intento: escribe, o mantiene el de ayer.
  */
 import { barrerCorrespondencias, RATIO_SUELO } from '@/engine/barrido';
+import { CODIGO_FUENTE_CAIDA } from './codigos-salida';
 
 async function main(): Promise<void> {
   console.log('\n╔══════════════════════════════════════════════════════════════╗');
@@ -98,7 +99,10 @@ async function main(): Promise<void> {
           ? '   NO se toca el índice bueno que ya hay. Se mantiene el de ayer. Reintenta más tarde.\n'
           : '   No hay índice previo. El lector funcionará en MODO DEGRADADO (normales del GTFS, sin provisionales).\n'),
     );
-    process.exit(1);
+    // ⭐ Código PROPIO: «la fuente no respondió», la única caída benigna. `ensure-correspondencias`
+    //    la distingue de un fallo interno (que sale con otro código) y solo esta deja continuar
+    //    el build. Ver scripts/codigos-salida.ts.
+    process.exit(CODIGO_FUENTE_CAIDA);
   }
 
   if (r.sinCoordenadas > 0) {

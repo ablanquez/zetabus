@@ -40,6 +40,7 @@ import { loadGtfs, readGtfsZip } from '@/sources/gtfs-nap';
 import { fundirNombres, pedirNombres, type PeticionDeSentido } from '@/sources/avanza/nombres';
 import { transporteReal } from '@/sources/avanza/transporte';
 import type { SentidoAvanza } from '@/sources/avanza/recorrido';
+import { CODIGO_FUENTE_CAIDA } from './codigos-salida';
 
 const GTFS = 'data/gtfs/zaragoza-gtfs.zip';
 const OUT = 'src/generated/nombres.json';
@@ -135,7 +136,10 @@ if (ratio < MIN_RESPONDIDAS) {
           '   o despliega con la última buena (build-data usará esa).\n'
         : `   No hay tabla previa. build-data usará el GTFS entero MARCADO, y lo dirá.\n`),
   );
-  process.exit(1);
+  // ⭐ Código PROPIO: «la fuente no respondió», la única caída benigna. `ensure-nombres`
+  //    la distingue de un fallo interno (que sale con otro código) y solo esta deja
+  //    continuar el build. Ver scripts/codigos-salida.ts.
+  process.exit(CODIGO_FUENTE_CAIDA);
 }
 
 // ── Se escribe. Con su fecha y sus contadores dentro ─────────────────────────
