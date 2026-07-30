@@ -112,14 +112,17 @@ export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusPro
   //    lo más común sería inventarse el dato justo donde no lo tenemos.
   if (perfil === null) {
     return (
-      <div className="mt-2 flex flex-wrap items-center gap-1" data-papel="ficha" data-confianza="sin_ficha">
+      // ⚠️ <span>, no <div>: esta ficha se pinta DENTRO del `<button>` de la fila de
+      //    llegada, y un <button> solo admite contenido de frase (B-01). `flex` va
+      //    igual sobre un span, y como flex item se blockifica: mismo layout, cero cambio.
+      <span className="mt-2 flex flex-wrap items-center gap-1" data-papel="ficha" data-confianza="sin_ficha">
         <Chip papel="chip-coche" fuerte>
           Bus {coche}
         </Chip>
         <Chip papel="chip-sin-datos" discontinuo fuerte>
           Sin datos de este autobús
         </Chip>
-      </div>
+      </span>
     );
   }
 
@@ -132,7 +135,9 @@ export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusPro
   //    en /sobre-los-datos. `data-confianza` se queda —invisible— para poder probar
   //    que los cuatro niveles se pintan idénticos.
   return (
-    <div
+    // ⚠️ <span>, no <div>: va DENTRO del `<button>` de la fila (B-01). Ver la rama
+    //    `perfil === null` de arriba: mismo motivo, mismo layout.
+    <span
       className="mt-2 flex flex-wrap items-center gap-1"
       data-papel="ficha"
       data-confianza={perfil.confidence}
@@ -147,6 +152,6 @@ export function FichaVehiculo({ coche, perfil }: { coche: string; perfil: BusPro
       <Chip papel="chip-clase">{medida}</Chip>
 
       {combustible && <Chip papel="chip-combustible">{combustible}</Chip>}
-    </div>
+    </span>
   );
 }

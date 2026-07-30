@@ -699,8 +699,15 @@ function Llegada({
       data-coche={coche}
       data-seleccionado={seleccionado ? 'si' : 'no'}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+      {/* ⚠️ TODO EL CONTENIDO DEL <button> ES <span>, NO <div>/<p> (B-01): un
+          <button> solo admite contenido de FRASE. Las clases `flex`/`flex-col` van
+          igual sobre un span, y como flex items se blockifican → mismo layout, cero
+          cambio visual y cero cambio de comportamiento (sigue siendo un button nativo:
+          foco, Tab, Enter, Espacio). NO se usó `<div role="button">`: sería válido pero
+          MENOS accesible (perdería foco y teclado nativos) — mejorar la nota empeorando
+          lo que mide. */}
+      <span className="flex items-start justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-3">
           {/* ⭐ D1 · El color = IDENTIDAD. La inversión = CATEGORÍA (nocturna).
               Los tonos salen de `tonosDeChip`, el MISMO sitio que los calcula en
               el índice y en el itinerario. Si aquí se dedujeran otra vez, una N7
@@ -727,21 +734,21 @@ function Llegada({
           {/* ⚠️ AQUÍ NO SE TRUNCA. Ellos ponen `truncate` y "Vía Hispanidad N.º 73
               / Nuestra Señora De Los Ángeles" se queda en "Vía Hispanid…". Un dato
               recortado es un dato que miente. Preferimos que la fila crezca. */}
-          <p className="min-w-0 text-cuerpo font-bold leading-snug sin-recortar" data-papel="destino">
+          <span className="min-w-0 text-cuerpo font-bold leading-snug sin-recortar" data-papel="destino">
             {/* <Cita>: el destino lo publica Avanza; el traductor no lo reescribe. */}
             <Cita>{l.destino}</Cita>
-          </p>
-        </div>
+          </span>
+        </span>
 
         {/* ⭐ LOS MINUTOS. LO PRIMERO, LO MÁS GRANDE, ARRIBA A LA DERECHA. */}
-        <div className="flex shrink-0 flex-col items-end gap-0.5">
-          <p
+        <span className="flex shrink-0 flex-col items-end gap-0.5">
+          <span
             className={`text-dato font-black leading-none tabular-nums ${inminente ? 'es-inminente' : ''}`}
             data-papel="minutos"
           >
             {l.etaMinutos}
             <span className="ml-0.5 text-menor font-bold">min</span>
-          </p>
+          </span>
           {/* ⚠️ EL TERCER CANAL: LA PALABRA. Ni el color ni el latido van solos.
               (La referencia la esconde con `motion-reduce:hidden` — es decir, a
               quien pide menos animación le quita TAMBIÉN el texto. Eso no se
@@ -757,12 +764,12 @@ function Llegada({
               ya llega
             </span>
           )}
-        </div>
-      </div>
+        </span>
+      </span>
 
-      <div className="pl-[52px]">
+      <span className="pl-[52px]">
         <FichaVehiculo coche={coche} perfil={l.perfil} />
-      </div>
+      </span>
     </button>
   );
 }
