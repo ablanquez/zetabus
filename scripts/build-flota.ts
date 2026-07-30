@@ -306,6 +306,13 @@ const porConfianza = (c: string) => vehiculos.filter((v) => v.confianza === c).l
 const camposDe = (c: Confianza) =>
   [...ganador.values()].filter((a) => a.proc.confidence === c).length;
 
+// ⭐ E-04 · SE SOBRESCRIBE DIRECTO, A PROPÓSITO — sin `.bak` ni escritura atómica (temp +
+//    rename), y NO hace falta: SALIDA está VERSIONADO, así que GIT ES EL RESPALDO —`git diff`
+//    enseña qué cambió y `git checkout` lo restaura, con historial—. Un `.bak` duplicaría esa
+//    red y dejaría un fichero huérfano en el repo. Además este script corre A MANO, no en el
+//    pipeline, y lee solo fuentes curadas: nadie lo pisa por sorpresa.
+// ⛔ NO añadas atomicidad aquí: se valoró (E-04) y se descartó por innecesaria. El porqué de
+//    que este derivado vaya versionado, en .gitignore (§4 · DATOS).
 writeFileSync(SALIDA, JSON.stringify({
   _meta: {
     nombre: 'Maestro de flota · Avanza Zaragoza',

@@ -66,6 +66,13 @@
 
 #    El maestro de flota. GENERADO por scripts/build-flota.ts a partir de
 #    data/fuentes/ + data/flota-observada.json. No se edita a mano.
+#    ⭐ E-04 · ES LA EXCEPCIÓN DE data/, y se declara para que no se lea como descuido.
+#       Aquí conviven DOS clases: datos CURADOS —los escribió una decisión humana:
+#       fuentes/, flota-observada, postes-solo-barrido, referencia— y este, un DERIVADO
+#       caro de regenerar cacheado en el repo. Va versionado —y NO en src/generated/, que
+#       está ignorado— porque regenerarlo RASPA Avanza y cambia rarísimamente: en
+#       generated/ habría que rehacerlo en CADA build, con más peticiones a Avanza por
+#       deploy, justo lo que este proyecto evita. Es el único derivado así en data/.
 !/data/flota-avanza-zaragoza.json
 
 #    ⭐ LAS FUENTES, CONGELADAS Y CITADAS. Cada una con su _meta: quién la
