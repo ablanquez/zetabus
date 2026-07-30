@@ -1471,3 +1471,41 @@ limitación explicada en `/sobre-los-datos`), y que **NO se intente "arreglar" s
 Ningún test anclaba en "correspondencias vigentes" (grep); el texto "Hoy, por un desvío" no se tocó, así
 que su e2e sigue verde. Suite: tsc 0 · lint 0 · vitest **563/1 skip** · playwright **836/94 skip / 0
 fallos**. Sin push.
+
+---
+
+### Fase 44 · E-02: se acepta que el cron pueda fallar en silencio. No se monta alerta.
+
+El cron nocturno que regenera el índice de correspondencias **falla en silencio**: si no corre, nadie se
+entera automáticamente (la propia ruta ya lo admitía: *"un cron mal puesto no deja rastro aquí"*). Antonio
+decide **aceptarlo y documentarlo, sin montar alerta**.
+
+⭐ **PRIMERO, LA COMPROBACIÓN — que la documentación no sea teórica.** Se pidió
+`https://zetabus.antonioblanquez.es/api/diag` (**producción**, no el índice local que estaba a ~71 h
+porque aquí nadie lo regenera): `correspondencias.generadoEn = 2026-07-30T02:00:02Z`, **edad 11,3 h**. El
+`generadoEn` clavado en las 02:00:02 confirma que el `0 2 * * *` disparó esta madrugada. ⇒ **El cron
+funciona.** Documentar "aceptamos que pueda fallar" es honesto porque el mecanismo está vivo — no es
+tapar un fallo activo.
+
+**Los tres argumentos de la decisión:**
+1. **La señal YA EXISTE**, en dos sitios: `/api/diag → correspondencias.edadSegundos`, y el panel
+   `/estado`, que se pone **ámbar a las 26 h** (`FRESCURA_MAX_HORAS`). Lo que falta no es la señal, es que
+   alguien la mire — y para eso no hace falta una alerta, hace falta saber DÓNDE mirar (que es justo lo
+   que documenta esto).
+2. **La degradación es grácil:** si el cron no corre, se sirve el índice anterior; los desvíos van un día
+   por detrás —limitación ya explicada en `/sobre-los-datos`—. No se rompe nada.
+3. ⭐⭐ **Una alerta es, ella misma, una pieza que puede fallar en silencio.** ¿Quién avisa cuando el que
+   avisa deja de avisar? Montarla sería añadir **exactamente la clase de instrumento que estas tandas
+   llevan días cazando** —con la agravante de que su fallo es invisible por definición— y una pieza móvil
+   más (correo, webhook, monitor) en un proyecto que se quiere dejar quieto una temporada.
+
+**Documentado en dos sitios, con el DÓNDE SE MIRA bien visible** (que es lo más útil: que el día que se
+sospeche, no haya que reconstruirlo): un bullet nuevo en el README (§El cron nocturno, donde el E-03 ya
+documentó el cron) con la decisión durable y los tres motivos; y un puntero en el JSDoc de
+`api/regenerar/route.ts`, extendiendo la admisión que ya estaba ahí. Los dos dicen: qué puede pasar, por
+qué se acepta, y **dónde se mira** (`/estado` ámbar a las 26 h + `/api/diag`). La verificación fechada
+(11,3 h) vive aquí, no en el README —que envejecería—.
+
+⛔ No se montó nada: ni alerta, ni latido, ni un log "por si acaso". Solo texto. tsc 0 · lint 0 · vitest
+**563/1 skip** (`readme-no-miente` verde: el añadido no disparó ningún patrón ni el chequeo de enlaces) ·
+playwright **836/94 skip / 0 fallos**. Sin push.
