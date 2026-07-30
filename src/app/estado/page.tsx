@@ -211,8 +211,14 @@ export default function Estado() {
           </Tarjeta>
 
           {(modelo.veredicto === 'al-dia' || modelo.veredicto === 'desactualizado') && modelo.barrido && (
-            <Tarjeta titulo="Desvíos y correspondencias de hoy">
-              <Cifra valor={String(modelo.barrido.lineasDesviadas)} rotulo="líneas con desvío hoy" />
+            /* ⚠️ B-09 · SIN "de hoy" EN EL RÓTULO. Esta tarjeta se pinta también en
+               `desactualizado`, cuando el índice lleva más de 26 h sin renovarse (hasta ~2 días
+               si el barrido nocturno falló). Un título que prometiera "de hoy" mentiría JUSTO
+               debajo del banner ámbar "Datos desactualizados". La frescura la dice el banner y el
+               "actualizado hace X" de arriba; el rótulo solo nombra QUÉ es. Y NO se condiciona al
+               aviso (era la otra vía): un título que no promete tiempo no puede desincronizarse. */
+            <Tarjeta titulo="Desvíos y correspondencias">
+              <Cifra valor={String(modelo.barrido.lineasDesviadas)} rotulo="líneas con desvío" />
               <Cifra valor={formatearMillar(modelo.barrido.incidencias)} rotulo="correspondencias vigentes" />
               {modelo.barrido.postesSinCoordenadas > 0 && (
                 <p className="mt-1 text-menor text-[var(--color-tinta-suave)] sin-recortar">
