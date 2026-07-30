@@ -1253,3 +1253,42 @@ provocamos nosotros.
 **cero** marcador en el log. No se puede tumbar producción con él. **e2e visto en ROJO** (quitando el
 `dispararErrorFingido` → la página da 200, no aparece la pantalla, el test cae) **y en verde**. Suite:
 tsc 0 · vitest 563/1 skip · lint 0 err · playwright **835 passed / 95 skipped / 0 failed**.
+
+---
+
+### Fase 39 · `error.tsx` usa `unstable_retry`: el botón recupera de verdad
+
+Consecuencia directa del B-05: al hacer alcanzable la pantalla del 500, se vio **en vivo** (pulsando) que
+su botón «Volver a intentarlo» usaba `reset` —limpia estado y re-renderiza **sin re-fetch**—, y eso
+**recupera de un error de CLIENTE pero NO de uno de SERVIDOR** (re-renderiza lo que ya reventó → vuelve a
+reventar). La salida principal de la pantalla era **decorativa en el caso más probable**. Y peor por la
+asimetría: dos salidas ofrecidas, solo una funcionando, sin que nada lo dijera.
+
+Se adopta **`unstable_retry`** (Next 16.2.0), que re-FETCHEA y re-renderiza el segmento. Los dos props
+**conviven** (la doc no los enfrenta); se usa el que recupera. **Quitar el botón no era opción:** `reset`
+sí sirve para errores de cliente, así que borrarlo rompería el caso donde funciona.
+
+⚠️ **SE ADOPTA UNA API `unstable_`, A SABIENDAS, Y SE ESCRIBE POR QUÉ.** El riesgo de que una API con
+prefijo `unstable_` cambie bajo los pies está **acotado** porque `next` va **clavado a `16.2.10` en
+package.json, SIN `^`**: no se mueve hasta que alguien suba de versión a propósito. El coste de NO hacerlo
+(un botón que miente en el 500) es real y permanente; el riesgo es teórico mientras no se toque la
+versión. ⇒ **Qué revisar AL SUBIR NEXT** (está también en el comentario de `error.tsx`): que
+`unstable_retry` siga existiendo con esa firma; si se estabilizó (p. ej. pasó a `retry` sin prefijo),
+migrar; si desapareció, volver a la doc. La doc leída: `error.md` y `getting-started/error-handling.md`
+de esta versión.
+
+**Verificado PULSANDO, no leyendo el diff** (el arreglo no se puede probar de otra forma):
+- **(a) error que persiste** (`?fingir=error` sigue): pulsar hace **una petición nueva** a `/parada/744`
+  (1→2) → re-fetchea de verdad; y como la causa sigue, vuelve a fallar —**correcto**, lo que se verifica
+  es que reintentó, no que se arregló—. Se distingue de «no hizo nada» por la petición nueva en la red.
+- **(b) causa retirada** (el antes/después que importa): con la pantalla de error delante, se retira la
+  causa y se pulsa → **la página se recupera y pinta la parada** (2 tarjetas de llegada, error boundary
+  desaparecido). **Con `reset` esto NO pasaba.**
+- **(c) error de cliente:** **NO CONSTA** —no hay forma fácil de provocar un throw de render de cliente
+  (`?fingir=error` revienta en servidor)—. Pero **sin regresión posible**: `unstable_retry` re-renderiza
+  igual que `reset` y además re-fetchea, así que no puede ser peor para el caso de cliente.
+
+**No se rediseñó la pantalla:** identidad, titular, texto y las dos salidas siguen igual; solo cambió
+**qué hace el botón**. `global-error.tsx` no se tocó (sigue NO CONSTA, estructural). Suite: tsc 0 · vitest
+563/1 skip · lint 0 err · playwright **835 passed / 95 skipped / 0 failed** (el e2e del 500, verde en los
+5 viewports).
