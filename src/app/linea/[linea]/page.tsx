@@ -22,6 +22,8 @@ import { diaCivil } from '@/core';
 import type { Fingimiento } from '@/engine/fingir';
 import { migasJsonLd } from '@/migas';
 
+// ⚠️ NO lo quites para "arreglar" el 404 en blanco sin JS: no es la causa (lo es el
+//    notFound() de abajo servido en streaming; el porqué y las vías descartadas · B-03).
 export const dynamic = 'force-dynamic';
 
 /**
@@ -101,6 +103,11 @@ export default async function LineaPage({ params, searchParams }: Props) {
   const { linea: etiqueta } = await params;
   const sp = await searchParams;
   const l = lineas().find((x) => x.shortName.toLowerCase() === decodeURIComponent(etiqueta).toLowerCase());
+  // ⚠️ B-03 · ESTE notFound() SALE EN BLANCO SIN JS — mismo caso que `/parada`: ruta
+  //    `force-dynamic` + not-found servido por STREAMING. Se deja así (404 + noindex →
+  //    SEO intacto; solo afecta a JS-off en una URL equivocada). ⛔ NO quites
+  //    `force-dynamic` para "arreglarlo": NO es la causa (`/estado` lo prueba). El
+  //    razonamiento entero y las vías descartadas están en `parada/[poste]/page.tsx` · B-03.
   if (!l) notFound();
 
   const id = idLinea(String(l.id));

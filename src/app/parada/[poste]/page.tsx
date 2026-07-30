@@ -40,6 +40,8 @@ import { IconoParada } from '@/components/IconoParada';
  *    360 px. Si no cabe, la tanda no se cierra.
  */
 
+// ⚠️ NO lo quites para "arreglar" el 404 en blanco sin JS: no es la causa (lo es el
+//    notFound() de abajo servido en streaming; el porqué y las vías descartadas, ahí · B-03).
 export const dynamic = 'force-dynamic';
 
 interface Props {
@@ -83,6 +85,18 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   //    AQUÍ: contra el GTFS y, si no, contra las 9 solo-barrido del fichero estático.
   //    Un poste que no es de ninguna clase → notFound(); a Avanza ni se le pregunta.
   const pv = resolverParada(crudo);
+  // ⚠️ B-03 · ESTE notFound() SALE EN BLANCO SIN JS — Y SE DEJA ASÍ, A SABIENDAS.
+  //    Como la ruta es `force-dynamic`, Next sirve el not-found por STREAMING: el HTML
+  //    inicial es un shell vacío y "Aquí no hay nada" se pinta al hidratar. (El 404 de
+  //    una ruta INEXISTENTE —`not-found.tsx` a nivel de enrutado— sí renderiza en
+  //    servidor; el que falla es este, el de un poste que no existe.) Se acepta porque
+  //    el status es 404 + noindex (SEO intacto) y el único afectado es alguien con JS
+  //    desactivado en una URL de parada equivocada.
+  //    ⛔ NO lo "arregles": quitar `force-dynamic` NO es la causa —`/estado` es
+  //       force-dynamic SIN notFound() y renderiza bien— y además mata el dato en vivo;
+  //       un `loading.tsx` cambia el blanco por un spinner que sin JS no acaba nunca y
+  //       mete estado de carga en TODA la app; `global-not-found` es experimental y solo
+  //       cubre las rutas inexistentes, que YA funcionan. Diagnóstico completo: B-03.
   if (pv === null) notFound();
 
   const numero = pv.poste;
