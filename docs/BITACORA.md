@@ -1292,3 +1292,48 @@ de esta versión.
 **qué hace el botón**. `global-error.tsx` no se tocó (sigue NO CONSTA, estructural). Suite: tsc 0 · vitest
 563/1 skip · lint 0 err · playwright **835 passed / 95 skipped / 0 failed** (el e2e del 500, verde en los
 5 viewports).
+
+---
+
+### Fase 40 · B-03: se DECIDE no arreglar el 404 en blanco sin JS, y se escribe en el código
+
+Diagnóstico de solo lectura (build local + `curl` = sin JS) con veredicto **DOCUMENTAR, no arreglar**,
+aprobado por Antonio. No se arregla nada: solo comentarios donde alguien se lo va a encontrar.
+
+**El mecanismo, medido:** `notFound()` lanzado dentro de una página `force-dynamic` (`/parada/[poste]`,
+`/linea/[linea]`) sirve el not-found por **streaming** → el HTML inicial es un shell `__next_error__` y la
+UI («Aquí no hay nada») viaja en el payload RSC → **blanco hasta que hidrata**. La doc lo distingue:
+`not-found.md` dice que la respuesta *streamed* se comporta distinto de la *non-streamed*.
+
+⚠️ **DOS CORRECCIONES AL INFORME B-interfaz** (que se queda como está, describe su momento):
+1. **El 404 de una ruta INEXISTENTE (`/una-ruta-que-no-existe`) SÍ renderiza en servidor** —`Aquí no hay
+   nada` está en el DOM real, HTTP 404, con `noindex`—. El informe decía «el 404 sale en blanco» a secas,
+   y eso era **falso**: solo falla el `notFound()` de `/parada` y `/linea`, no el de ruta inexistente.
+2. **`error.tsx` (el 500) TAMBIÉN sale en blanco sin JS** (hallazgo nuevo) — pero es **inherente y no
+   arreglable**: una error boundary de React es cliente por definición, su contenido no está ni en el
+   payload RSC. No es incoherencia; es lo que es. Por eso NO se le pone comentario (su caso no invita a
+   ningún «arreglo» equivocado).
+
+⭐ **El factor de confusión, aislado y escrito:** `/estado` es `force-dynamic` **sin** `notFound()` y
+renderiza perfecto → **`force-dynamic` por sí solo NO causa el blanco**; hace falta la combinación. Ese
+dato es el que impide el diagnóstico equivocado de «quito el `force-dynamic` y arreglo el 404», y va
+escrito en los comentarios precisamente para eso.
+
+**Las cuatro vías, descartadas (y por qué):** quitar `force-dynamic` **rompe el dato en vivo** (y no es la
+causa) · `loading.tsx` cambia el blanco por un spinner que sin JS no acaba nunca y **mete estado de carga
+en toda la app** · `global-not-found` es **experimental** y solo cubre las rutas inexistentes (que ya
+funcionan) · pintar inline sin `notFound()` **no puede fijar el 404** (se perdería el estado que hoy sí
+está bien). Todas rompen el dato, degradan la app o se pelean con el framework.
+
+**Impacto real, dicho sin alarmismo:** status **404 + `noindex`** en los dos casos → **SEO intacto**; el
+único afectado es alguien con JS desactivado en una URL de parada o línea **equivocada**. Marginal de lo
+marginal.
+
+**Dónde quedan los comentarios (4):** el razonamiento completo, junto al `notFound()` de
+`parada/[poste]/page.tsx`; una versión compacta con puntero a ése, junto al de `linea/[linea]/page.tsx`
+(no se duplica el porqué entero); y una **miga de una línea** sobre cada `export const dynamic =
+'force-dynamic'` de ambas rutas —que es el sitio donde alguien iría a «arreglarlo» quitándolo— avisando de
+que no es la causa. `error.tsx` no se tocó.
+
+Solo comentarios: tsc 0 · lint 0 · vitest **563/1 skip** (los guardianes de comentarios, `sinComentarios`,
+no mordieron: comentarios `//` sin secuencias `/*`···`*/`). Sin push.
