@@ -67,27 +67,31 @@ test.describe('⭐ CAPA 2 · las reglas', () => {
   });
 
   /**
-   * ⚠️⚠️ ROJO REAL, APARCADO A PROPÓSITO — NO es un test roto, es un DEFECTO conocido.
+   * ⭐⭐ EL SUELO TÁCTIL: SE VIGILAN 24 px (AA), TRAS RENUNCIAR A LOS 44 (AAA · B-07).
    *
-   * Este test estuvo mudo (medía y tiraba a consola, sin `expect`). Al ponerle la
-   * aserción destapó **401 zonas táctiles por debajo de 44 px**, TODAS en la lista de
-   * recorrido de `/linea/*`:
-   *   · 338 filas de parada (ancho completo × 24 px de alto)
-   *   · 63 chips de correspondencia (24×24)
-   * Ni una en la home ni en `/parada/*`: el defecto está acotado a la vista de línea.
+   * Este test estuvo mudo (medía y tiraba a consola, sin `expect`), luego en `fixme` con
+   * la aserción a 44: destapó 361 zonas por debajo de 44 px, TODAS en la lista de recorrido
+   * de `/linea/*` (120 filas de parada de 24 px de alto + 241 chips de correspondencia de
+   * 24×24). Ni una en la home ni en `/parada/*`.
    *
-   * ⚠️ El suelo de 44 px es un criterio **AAA que el proyecto se puso a sí mismo** — los
-   *    24×24 CUMPLEN el mínimo AA de WCAG (2.5.8). No es un incumplimiento de norma: es
-   *    una vara más alta, propia, que hoy no se alcanza en el recorrido.
+   * ⚠️ DECISIÓN (B-07): se RENUNCIA al suelo de 44 px. Era AAA (WCAG 2.5.5) y una vara
+   *    PROPIA del proyecto, NO una norma; los 24×24 CUMPLEN el mínimo AA (2.5.8). Las tres
+   *    alternativas eran peores que la enfermedad:
+   *      · filas a 44 → +2.400 px de scroll en N7, en la lista que se recorre buscando parada;
+   *      · agrandar los chips → fuerza salto de línea a 360 px y rompe la composición donde más duele;
+   *      · área táctil ampliada sin agrandar lo visible → aquí NO aplica: filas y chips van
+   *        apilados y adyacentes, ampliar el área de uno invade la del vecino (no hay aire).
    *
-   * ⇒ El arreglo es de INTERFAZ → BLOQUE B. La aserción se queda puesta (mide y afirma),
-   *   pero va en `fixme` para NO tumbar la suite: una suite que vive roja no distingue un
-   *   fallo nuevo del conocido, y enseña a no mirarla. Registrado como cabo en el estado.
+   * ⚠️ EL MATIZ HONESTO, PARA NO VENDER HUMO: 24 px es el MÍNIMO, no lo cómodo. En un autobús
+   *    en marcha una fila de 24 px se falla. La renuncia es REAL, no un tecnicismo.
    *
-   * 🔧 CÓMO SE REACTIVA: cuando el bloque B suba las zonas táctiles del recorrido a 44 px,
-   *    quitar el `.fixme` (dejar `test(...)`) y comprobar que pasa en verde.
+   * ⇒ El umbral baja a 24 y SALE del `fixme`. Un `test.fixme` permanente es un instrumento
+   *   DORMIDO —justo lo que el Bloque C se dedicó a limpiar—; dejarlo así sería recrear lo que
+   *   acabábamos de quitar. Ahora vigila de verdad: el día que alguien meta un chip de 18 px,
+   *   salta. Si esto se pone rojo hay zonas <24 (se INCUMPLE el AA) → se reporta, NO se sube
+   *   el umbral para taparlo.
    */
-  test.fixme('⭐ EL SUELO TÁCTIL DEL PROYECTO son 44, no los 24 de WCAG — medido', async ({ page }) => {
+  test('⭐ EL SUELO TÁCTIL: se vigila el mínimo AA de 24 px (renunciado el AAA de 44) — medido', async ({ page }) => {
     soloUnaVez();
     await sinRed(page);
     const flojos: string[] = [];
@@ -107,7 +111,7 @@ test.describe('⭐ CAPA 2 · las reglas', () => {
               const p = n.parentElement;
               if (p && (p.textContent ?? '').trim().length > (n.textContent ?? '').trim().length) continue;
             }
-            if (r.width < 44 || r.height < 44) {
+            if (r.width < 24 || r.height < 24) {
               out.push(`${n.tagName.toLowerCase()} ${Math.round(r.width)}×${Math.round(r.height)} "${(n.innerText || n.getAttribute('aria-label') || '').trim().slice(0, 28)}"`);
             }
           }
@@ -117,12 +121,12 @@ test.describe('⭐ CAPA 2 · las reglas', () => {
       }
     }
     const unicos = [...new Set(flojos)];
-    console.log(`\n   zonas táctiles por debajo de 44: ${flojos.length}`);
+    console.log(`\n   zonas táctiles por debajo de 24: ${flojos.length}`);
     for (const f of unicos.slice(0, 20)) console.log(`     ${f}`);
-    // ⚠️ MIDE Y AFIRMA. Sin esta línea el test recogía las infracciones y las tiraba a
-    //    la consola: medía el suelo táctil y no lo vigilaba. Si esto se pone rojo, hay
-    //    zonas <44px — se reportan, NO se tapa el umbral (el suelo son 44 a propósito).
-    expect(unicos, `${unicos.length} zonas táctiles por debajo de 44px:\n${unicos.join('\n')}`).toEqual([]);
+    // ⚠️ MIDE Y AFIRMA — el compromiso es el mínimo AA (24 px, WCAG 2.5.8), tras renunciar
+    //    al AAA de 44 (ver la cabecera · B-07). Si esto se pone rojo hay zonas <24px: se
+    //    INCUMPLE el AA — se reportan, NO se sube el umbral para taparlo.
+    expect(unicos, `${unicos.length} zonas táctiles por debajo de 24px:\n${unicos.join('\n')}`).toEqual([]);
   });
 
   test('⭐ "Información adicional": UNA sola copia anunciada, en cada ancho', async ({ page }) => {
