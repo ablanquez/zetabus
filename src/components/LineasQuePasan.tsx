@@ -144,6 +144,16 @@ export function CajaProvisionales({
   if (provisionales.length === 0) return null;
   const href = hrefDe(fingir);
 
+  // ⚠️ B-09 (borderline, decidido a propósito) · el "Hoy" de esta caja sale del ÍNDICE
+  //    NOCTURNO y puede tener DÍAS. Se ACEPTA, no es un descuido: la edad NO se pinta en la
+  //    parada —sería ruido para quien espera el bus; vive en /api/diag y /estado—, así que
+  //    aquí no hay banner que contradiga (a diferencia del rótulo del panel, que sí lo tenía
+  //    debajo · ver B-09 en estado/page.tsx). Y la limitación está EXPLICADA con todas las
+  //    letras en /sobre-los-datos ("un desvío que empieza hoy puede no aparecer hasta esta
+  //    noche…, y uno que terminó de madrugada puede seguir listado hasta la siguiente
+  //    reconstrucción"). El "Hoy" es la abreviatura de eso, no una afirmación sin respaldo.
+  // ⛔ NO lo "arregles" sin releer /sobre-los-datos: tocar este texto afecta a la página
+  //    principal y a un e2e (lineas-que-pasan.spec.ts) por un matiz YA cubierto.
   return (
     <CajaPlegable
       punteado
@@ -204,6 +214,8 @@ export function CajaProvisionalesDePoste({
     );
   }
 
+  // ⚠️ Mismo "Hoy" del índice nocturno que en CajaProvisionales — decisión B-09: se acepta
+  //    (la limitación está en /sobre-los-datos). NO lo cambies sin releer eso; ver la nota allí.
   return (
     <CajaPlegable
       punteado
