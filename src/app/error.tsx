@@ -11,6 +11,11 @@ import { NOMBRE_MARCA } from '@/components/marca-fuente';
  * oficial (`node_modules/next/dist/docs/…/file-conventions/error.md`): es una
  * *error boundary* de React, y las boundaries solo existen en el cliente.
  *
+ * ⚠️ Y POR ESO SALE EN BLANCO SIN JS (B-07): el shell inicial va vacío y esto se pinta
+ * al hidratar. Es INHERENTE —una error boundary es cliente—, no arreglable, y NO es el
+ * caso del B-03 (aquél es el `notFound()` de /parada y /linea). Se anota para que no se
+ * redescubra como hallazgo.
+ *
  * ═══════════════════════════════════════════════════════════════════════════
  * ⛔ LO QUE **NO** SE ENSEÑA, Y ES LA MITAD DEL FICHERO:
  *
