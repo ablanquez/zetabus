@@ -1547,3 +1547,61 @@ Solo texto (ninguna reclasificación, ningún `.bak`, nada funcional): tsc 0 · 
 (la flota no se tocó: `procedencia-de-la-flota` y los recuentos de `/sobre-los-datos` verdes) · playwright
 **836/94 skip / 0 fallos**. Con esto quedan cerradas **todas las decisiones pendientes de los bloques B y
 E**. Sin push.
+
+---
+
+### Fase 46 · F4: el guardián del contraste vigila la FORMA, no el resultado
+
+⭐⭐ **LA REGLA GENERAL, que es lo que se lleva uno de aquí:** *un guardián de fuente única tiene que
+vigilar la **FORMA** (que no exista otra copia), no el **RESULTADO** (que todas coincidan). Comparar
+resultados solo detecta el síntoma **cuando ya divergió** — o sea, cuando el bug ya está en producción.*
+Y su corolario: **los límites del guardián van declarados en su cabecera** —un guardián que promete de más
+es peor que no tenerlo, porque quien lo lee confía en una red que no está—.
+
+**EL HALLAZGO.** `contraste-una-sola-formula` prometía en su cabecera *"si alguien vuelve a escribir la
+fórmula a mano en un componente, esto se pone rojo"*. Era **falso**: comparaba por VALOR
+(`toBeCloseTo(…, 12)`), así que solo cazaba **divergencias**, no la EXISTENCIA de una copia. Una copia
+**correcta reescrita a mano** escapaba —y es la copia divergente de mañana, cuando se edite una y no la
+otra: el bug ORIGINAL de ese mismo fichero, el que se cazó *contando `0.03928` a mano*—.
+
+**EL ARREGLO — se automatiza lo que funcionó a mano** (contar apariciones en el árbol):
+- **Vigila la FORMA:** grepea el código git-trackeado de `src/`+`e2e/`+`scripts/`+`tests/` (SIN
+  comentarios, con un `soloCodigo` que preserva el nº de línea) buscando la **firma** de la luminancia —el
+  coeficiente verde **`0.7152`** (lo lleva TODA implementación, correcta o ingenua → caza más) y el umbral
+  **`0.03928`** (el token exacto de la cicatriz)—. Debe aparecer SOLO en los **dos sitios sancionados**: el
+  núcleo `core/contraste.ts` y este guardián (que conserva la copia ingenua a propósito). El rojo dice
+  **qué firma y en qué fichero:línea**, para arreglarse solo con leerlo.
+- **Falsos positivos resueltos:** comentarios que citan la fórmula (cabecera del núcleo, nota histórica de
+  `sentido.spec`) → se quitan antes de grepear (verificado que están en JSDoc); los dos sancionados →
+  excluidos por nombre.
+- **Falsos negativos DECLARADOS en la cabecera** (es lo que hace honesto el arreglo): una copia con el
+  número en otra forma (`7152e-4`, tabla de lookup) o que duplique solo la razón `(max+.05)/(min+.05)`. La
+  firma tolera el cero de más (`.7152`), no reescrituras exóticas.
+- **El `toBeCloseTo` NO se elimina, se REENCUADRA** como *red de respaldo*: verifica que el número es el
+  correcto (núcleo vs WCAG, la ingenua diverge, `ChipLinea` == núcleo sobre 44 líneas). Cubre los huecos
+  declarados de la firma. Lo que se corrige es la **promesa**, no la comprobación.
+
+**Verificado con las CINCO mutaciones** (`git status` limpio tras cada una, restaurado desde backup, no con
+`git checkout`):
+1. ⭐ **Copia CORRECTA a mano en `ChipLinea`** (la que escapaba) → **ROJO** por la FORMA
+   (`ChipLinea.tsx:69 → coeficiente verde 0.7152`), y el value-check **siguió VERDE** —que es la prueba de
+   que la comparación de valores NO la veía y la forma SÍ—.
+2. **Copia DIVERGENTE** (ingenua sin linealizar) → **ROJO por las dos**: la forma (`0.7152`) y el valor
+   (`la línea C1 da distinto`: 1,77 vs 3,20).
+3. **Sin mutación** → verde (10 tests; nada de falsos rojos).
+4. Restaurado, `git status` solo el guardián.
+5. ⭐ **Copia correcta con `.7152`** (sin el cero inicial) → **cazada** igual (la tolerancia que promete la
+   cabecera, demostrada).
+
+⚠️ **La cabecera es parte del arreglo:** antes mentía; ahora dice **exactamente qué vigila y qué NO**. Y
+no se autodispara —lleva `0.7152`/`0.03928` en prosa, pero el guardián es sitio sancionado (excluido) y
+además se quitan comentarios—: comprobado que la suite entera sigue verde.
+
+**Otros guardianes con el mismo defecto:** no se hizo auditoría dedicada (fuera de alcance) y **no se
+tropezó con ninguno** —los que se han visto (`pantalla-no-miente`, `marca-z-unica`, `horas-malas`) ya
+vigilan FORMA por grep; `readme-no-miente` compara valores, pero ahí ES su trabajo (cotejar la cifra
+escrita con la calculada), no el defecto de este—.
+
+tsc 0 · lint 0 · vitest **564/1 skip** (+1: el nuevo test de la forma) · playwright **836/94 skip / 0
+fallos**. NO se tocó `core/contraste.ts` ni ningún consumidor (no hay copias hoy: esto es blindar). Sin
+push.
