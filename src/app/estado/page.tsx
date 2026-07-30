@@ -219,7 +219,7 @@ export default function Estado() {
                aviso (era la otra vía): un título que no promete tiempo no puede desincronizarse. */
             <Tarjeta titulo="Desvíos y correspondencias">
               <Cifra valor={String(modelo.barrido.lineasDesviadas)} rotulo="líneas con desvío" />
-              <Cifra valor={formatearMillar(modelo.barrido.incidencias)} rotulo="correspondencias vigentes" />
+              <Cifra valor={formatearMillar(modelo.barrido.incidencias)} rotulo="correspondencias" />
               {modelo.barrido.postesSinCoordenadas > 0 && (
                 <p className="mt-1 text-menor text-[var(--color-tinta-suave)] sin-recortar">
                   {modelo.barrido.postesSinCoordenadas} paradas pendientes de ubicar en el mapa.
