@@ -1167,3 +1167,46 @@ al default con `?? '.cache/…'` (nullish) y una var declarada-y-vacía no es nu
 
 **Verde:** tsc 0 · lint 0 err · vitest **563** / 1 skip · `readme-no-miente` 26/26. Cuatro commits atómicos
 (E-01 / E-03 / E-06 / esta bitácora). NO push.
+
+---
+
+### Fase 37 · B-01 · la tarjeta de llegada, HTML válido dentro del `<button>`
+
+Último pendiente de la auditoría que **mueve una nota externa** (el resto —táctiles, cron, react-hooks—
+son mejoras reales que ningún escáner ve). En `/parada`, la tarjeta de llegada metía `<div>` y `<p>`
+dentro de un `<button>`, que solo admite **contenido de frase**. HTML no conforme: un `<button>` con
+contenido de bloque **no está definido** por la especificación, así que cada navegador y cada lector
+decide por su cuenta. Funcionaba por convención, no por contrato.
+
+**El arreglo mínimo:** los `<div>`/`<p>` de dentro del botón pasan a `<span>`, con las mismas clases. Las
+clases `flex`/`flex-col` fijan `display` igual sobre un span, y como son *flex items* se blockifican →
+**mismo layout, cero cambio visual, cero cambio de comportamiento** (sigue siendo un `<button>` nativo).
+
+⭐⭐ **LA LECCIÓN TRANSFERIBLE: por qué se DESCARTÓ `<div role="button">`.** Es la vía que parece la fácil,
+y es una trampa. Un `<div role="button">` **pierde todo el comportamiento nativo**: deja de ser enfocable
+(haría falta `tabIndex`), deja de activarse con Enter y Espacio (hay que implementarlo a mano), no
+participa en formularios, pierde los defaults de móvil. Sería **cambiar HTML inválido por HTML válido y
+MENOS accesible** — mejorar la nota **empeorando justo lo que la nota intenta medir**. Eso es exactamente
+lo que este proyecto no hace: el `role` es para describir lo que un elemento ES, no para disfrazar un
+`<div>` de algo que el navegador ya te da gratis y mejor.
+
+⚠️ **Y un dato que el informe contaba de otra forma —ni bien ni mal, distinto—: el "8".** El informe B
+decía «8 `<div>` dentro de un `<button>`». Al validar salieron **4** en mi demo local. No era un
+descuadre: el validador reporta **un error por `<button>`** y *«suprime el resto del subárbol»*. O sea,
+no eran 8 div en un botón —eran **1 error por tarjeta de llegada**, y producción mostraba 8 tarjetas; mi
+demo `solo-oficiales`, 4—. La estructura que leí (5 `div` + 2 `p` por botón) era correcta; el validador
+solo cuenta el primero. Tras el arreglo cada botón da 0, sean las tarjetas que sean.
+
+**Contrapruebas:** W3C `/parada` **4 → 0**, y **home · `/linea` · `/estado` · `/sobre-los-datos` · 404
+siguen en 0** (ninguna regresión). Comportamiento verificado **abriendo la página** a 360 y 1280:
+`tagName === BUTTON`, foco visible, **Enter Y Espacio Y ratón** togglean `aria-pressed`, aspecto idéntico,
+y el **nombre accesible no cambia** ("35 PARQUE GOYA 1min YA LLEGA Bus 4889 Articulado · 18 m Híbrido" —
+se computa del texto, que div/p→span no toca). Suite: tsc 0 · vitest 563/1 skip · lint 0 err · playwright
+**830 passed / 95 skipped / 0 failed** (incluye `acuse-de-toque`, que exige `BUTTON` en la tarjeta).
+
+⚠️ **Los 10 de `/linea`, dicho honesto:** validé `/linea/35?fingir=horario` en vivo → **0 errores**, con el
+Terminal renderizado. Pero el elemento concreto que ayer se arregló (`Terminal.tsx:94`, el `aria-label`
+de la salida MARCADA) **no se ejercitó**: ningún modo `fingir` produce salidas marcadas (`data-marca: 0`
+en las 7 líneas probadas) —solo aparecen con datos reales de Avanza que traigan una salida desviada del
+par mayoritario—. Así que sigue **verificado por construcción** (`<span role="img" aria-label>` es HTML
+válido), no en vivo. Se dice, no se da por bueno.
