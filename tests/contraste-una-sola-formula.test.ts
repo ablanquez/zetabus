@@ -17,22 +17,118 @@
  *     porque cada copia era coherente consigo misma.**
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * ⚠️ QUÉ VIGILA ESTE FICHERO, y por qué así:
+ * ⚠️ QUÉ VIGILA ESTE FICHERO — son DOS cosas distintas:
  *
- *   1. Que la fórmula del núcleo es **la de la especificación**, clavada contra
- *      valores de referencia. Sin esto, «una sola fórmula» solo garantiza que
- *      todos se equivocan igual.
- *   2. Que la versión ingenua **NO da lo mismo** — con el número de la diferencia.
- *      Es la parte que convierte «había una copia distinta» en «había una copia
- *      distinta Y ESO IMPORTA».
- *   3. Que la aplicación (`ChipLinea.contraste`) y el núcleo dan **exactamente**
- *      el mismo resultado sobre las 44 líneas reales. Si alguien vuelve a
- *      escribir la fórmula a mano en un componente, esto se pone rojo.
+ *   ── LA FORMA (que no exista otra copia) ──────────────────────────────
+ *   El bug de la cicatriz no lo cazó comparar resultados —cada copia era coherente
+ *   consigo misma—: lo cazó CONTAR las apariciones de la fórmula en el árbol. Eso
+ *   es lo que se automatiza aquí. Se grepea el código (SIN comentarios) de `src/`,
+ *   `e2e/`, `scripts/` y `tests/` buscando la firma de la luminancia —el coeficiente
+ *   verde 0.7152 y el umbral de linealización 0.03928— y se exige que aparezca SOLO
+ *   en los dos sitios sancionados:
+ *     · src/core/contraste.ts — la fórmula canónica.
+ *     · este fichero — la copia INGENUA (`luminanciaIngenua`), a propósito, para
+ *       medir el daño de la que hubo.
+ *   ⭐ POR QUÉ LA FIRMA Y NO EL RESULTADO — y es la regla general de un guardián de
+ *      fuente única: una copia reescrita a mano HOY da el mismo número, así que
+ *      compararlos NO la ve; pero es la copia DIVERGENTE de mañana (se edita una y
+ *      no la otra). Vigilar el coeficiente la caza el día que se escribe, correcta o
+ *      no —toda luminancia WCAG lo lleva—, que es ANTES de que el bug exista. Vigila
+ *      la FORMA (que no haya otra copia), no el RESULTADO (que todas coincidan).
+ *   ⚠️ LO QUE ESTO NO CAZA, para no prometer de más: una copia con el número en OTRA
+ *      forma (7152e-4, tabla de lookup, aproximación) o que duplique solo la razón
+ *      (max+.05)/(min+.05). Tolera el cero de más (.7152), no reescrituras exóticas.
+ *      Un guardián con límites dichos es honesto; el problema era el que prometía de
+ *      más —que es justo lo que este fichero afirmaba antes y no cumplía—.
+ *
+ *   ── EL RESULTADO (que el número es correcto), COMO RED DE RESPALDO ────
+ *   Se sigue comprobando por VALOR: que el núcleo ES la WCAG (contra referencia),
+ *   que la ingenua NO da lo mismo (con el número del daño), y que `ChipLinea`
+ *   coincide con el núcleo sobre las 44 líneas reales. Esto NO caza la EXISTENCIA de
+ *   una copia —solo su divergencia—; para eso está la parte de arriba. Cubre los
+ *   huecos declarados de la firma: una copia que la firma no vea pero dé otro número.
  */
 import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { luminancia, contrasteRgb, deHex, deCss, AA_TEXTO } from '@/core/contraste';
 import { contraste as contrasteDelChip } from '@/components/ChipLinea';
 import { lineas } from '@/engine/topologia';
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ⭐⭐ LA FORMA. Que la fórmula no esté copiada fuera del núcleo. Ver la cabecera.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Los DOS únicos sitios donde la firma puede aparecer: el núcleo canónico y este
+ * guardián (que conserva la copia INGENUA a propósito). Cualquier otro es una copia.
+ */
+const SANCIONADOS = new Set([
+  'src/core/contraste.ts',
+  'tests/contraste-una-sola-formula.test.ts',
+]);
+
+/**
+ * Las firmas vigiladas, cada una con su NOMBRE para que el rojo diga CUÁL disparó y
+ * dónde —y se arregle solo con leerlo, sin investigar—. Toleran el cero de más
+ * (`.7152` ≡ `0.7152`) pero NO formas exóticas (`7152e-4`): declarado en la cabecera.
+ */
+const FIRMAS: readonly { nombre: string; re: RegExp }[] = [
+  { nombre: 'coeficiente verde 0.7152 (luminancia WCAG)', re: /(?<![\d.])0?\.7152(?![\d])/ },
+  { nombre: 'umbral de linealización 0.03928', re: /(?<![\d.])0?\.03928(?![\d])/ },
+];
+
+/**
+ * Como el `sinComentarios` del resto del repo, pero PRESERVA el nº de línea —sustituye
+ * el interior de cada comentario por espacios en vez de colapsarlo— para que el rojo
+ * diga fichero Y línea. Sin quitar comentarios, la fórmula CITADA en uno (la cabecera
+ * del núcleo, la nota histórica de `sentido.spec`) sería un falso rojo.
+ */
+const soloCodigo = (s: string): string =>
+  s
+    .replace(/\/\*[\s\S]*?\*\//g, (bloque) => bloque.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+/** Ficheros de código git-trackeados del ámbito, menos los dos sancionados. */
+const ficherosDeCodigo = (): string[] =>
+  execFileSync('git', ['ls-files', 'src', 'e2e', 'scripts', 'tests'], { encoding: 'utf8' })
+    .split('\n')
+    .map((f) => f.trim())
+    .filter((f) => /\.(ts|tsx|mjs|js)$/.test(f))
+    .filter((f) => !SANCIONADOS.has(f));
+
+describe('⭐⭐ LA FORMA: la fórmula de luminancia no está copiada fuera del núcleo', () => {
+  it('la firma (0.7152 / 0.03928) aparece SOLO en los dos ficheros sancionados', () => {
+    const ficheros = ficherosDeCodigo();
+    // Sanity: si `git ls-files` no devuelve el árbol (cwd mala, clon raro), el test
+    // daría VERDE sin mirar nada —justo el fallo que persigue—. Hoy hay ~193.
+    expect(ficheros.length, 'git ls-files no devolvió el árbol de código').toBeGreaterThan(100);
+
+    const copias: string[] = [];
+    for (const f of ficheros) {
+      soloCodigo(readFileSync(f, 'utf8'))
+        .split('\n')
+        .forEach((linea, i) => {
+          for (const firma of FIRMAS) {
+            if (firma.re.test(linea)) copias.push(`${f}:${i + 1} → ${firma.nombre}`);
+          }
+        });
+    }
+    expect(
+      copias,
+      copias.length
+        ? `\n   la fórmula de contraste está COPIADA fuera de src/core/contraste.ts:\n   ` +
+          copias.join('\n   ') +
+          `\n   Impórtala de @/core/contraste, no la reescribas (los dos sitios permitidos son\n` +
+          `   el núcleo y este guardián con su copia ingenua a propósito).`
+        : '',
+    ).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EL RESULTADO. Red de respaldo (ver cabecera): que el número es el correcto.
+// ─────────────────────────────────────────────────────────────────────────────
 
 /** La copia que había en `e2e/sentido.spec.ts`. Se conserva AQUÍ, y solo aquí, para medir el daño. */
 const luminanciaIngenua = ({ r, g, b }: { r: number; g: number; b: number }) =>
