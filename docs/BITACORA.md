@@ -1337,3 +1337,53 @@ que no es la causa. `error.tsx` no se tocó.
 
 Solo comentarios: tsc 0 · lint 0 · vitest **563/1 skip** (los guardianes de comentarios, `sinComentarios`,
 no mordieron: comentarios `//` sin secuencias `/*`···`*/`). Sin push.
+
+---
+
+### Fase 41 · B-07: se RENUNCIA al suelo táctil de 44 (AAA) y el guardián baja a 24 (AA) y VIGILA
+
+Al arreglar el test que medía el suelo táctil y no lo afirmaba (Bloque C · F1) salieron **361 zonas por
+debajo de 44 px** en `/linea/N7` a 360 px: **120 filas de parada** (24 px de alto) + **241 chips** de
+correspondencia (24×24), TODAS en la lista de recorrido de `/linea/*` (ni una en la home ni en
+`/parada/*`). El test quedó en `test.fixme` esperando esta decisión.
+
+**DECISIÓN DE ANTONIO — renunciar al AAA + bajar el guardián.** Los 44 px eran un objetivo **AAA (WCAG
+2.5.5) que el proyecto se autoimpuso**, no una norma; los 24×24 **CUMPLEN el mínimo AA (2.5.8)**. Las tres
+alternativas eran peores que la enfermedad:
+- **filas a 44** → **+2.400 px de scroll** en N7, en la lista que la gente recorre buscando su parada;
+- **agrandar los chips** → fuerza salto de línea a 360 px y **rompe la composición donde más importa**;
+- **área táctil ampliada sin agrandar lo visible** → **aquí NO aplica**: filas y chips van apilados y
+  adyacentes, así que ampliar el área de uno **invade la del vecino** (esa técnica pide aire alrededor, y
+  aquí no lo hay).
+
+Lo respalda la regla del propio proyecto: *"declara el techo en voz alta — cuando un límite es físico, hay
+que decirlo, para que no se lea como pereza"*.
+
+⚠️ **EL MATIZ HONESTO, ESCRITO PARA NO VENDER HUMO: 24 px es el MÍNIMO, no lo cómodo.** En un autobús en
+marcha una fila de 24 px se falla. La renuncia es **real**, no un tecnicismo — por eso se escribe el
+porqué, no solo la decisión.
+
+⭐⭐ **Por qué NO basta con documentar — el guardián BAJA a 24 y SALE del `fixme`.** Un `test.fixme`
+permanente es **un instrumento dormido en la suite**, justo lo que el Bloque C entero se dedicó a
+eliminar; dejarlo así sería recrear a sabiendas lo que acabábamos de limpiar. Con el umbral en 24 la
+afirmación pasa de *"nos pusimos una meta y no llegamos"* a **"nos comprometemos con el AA y lo
+vigilamos"**: el día que alguien meta un chip de 18 px, **salta**.
+
+**Verificado como manda el método** (un guardián que nunca se ha visto rojo no vigila nada):
+- **Verde a 24, y ninguna zona por debajo:** el test recorre 3 anchos (360/881/1280) × 3 URLs (`/`,
+  `/parada/1228?fingir=solo-oficiales`, `/linea/N7?sentido=0&fingir=desviada`) → *"zonas táctiles por
+  debajo de 24: **0**"*. Las 361 eran <44, no <24: **no se incumple el AA**.
+- ⭐ **ROJO de la mutación, visto:** inyectando temporalmente un `<button>` de 10×10 px en cada página, el
+  test **falla** y lo reporta en las 9 cargas (3 anchos × 3 URLs). Restaurado (sin rastro, `git status`
+  limpio). El guardián vigila de verdad.
+
+**NO se tocó ni CSS ni diseño:** la decisión es **no** cambiar la interfaz. El informe `B-interfaz.md`
+sigue diciendo 361 (describe su momento). El delta de la suite es el esperado: el test salió del `fixme`
+→ **playwright 836 passed / 94 skipped** (antes 835/95: +1 passed, −1 skipped).
+
+**Y de paso, el cabo menor en `error.tsx`:** una línea junto a donde ya se explica que es un client
+component, diciendo que **esa pantalla también sale en blanco sin JS** pero es **INHERENTE** (una error
+boundary de React es cliente por definición), **no arreglable**, y **NO es el caso del B-03** (aquél es el
+`notFound()` de `/parada` y `/linea`). Es para que el siguiente que audite no lo redescubra como hallazgo.
+
+Suite: tsc 0 · lint 0 · vitest 563/1 skip · playwright **836/94 skip / 0 fallos**. Sin push.
