@@ -5,7 +5,7 @@ import { motor } from '@/engine/motor';
 import { parada } from '@/engine/topologia';
 import { nombreDePoste } from '@/engine/correspondencias';
 import { nombreSoloBarrido, resolverParada } from '@/engine/paradas';
-import { fingimientoDe, transporteDe } from '@/engine/fingir';
+import { dispararErrorFingido, fingimientoDe, transporteDe } from '@/engine/fingir';
 import { Fingiendo } from '@/components/Fingiendo';
 import { LlegadasVivas } from '@/components/LlegadasVivas';
 import { CajaLineas, CajaProvisionales, CajaProvisionalesDePoste } from '@/components/LineasQuePasan';
@@ -72,6 +72,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ParadaPage({ params, searchParams }: Props) {
   const { poste: crudo } = await params;
   const sp = await searchParams;
+
+  // ⭐ B-05 · `?fingir=error` (solo en demo) revienta AQUÍ, en el render del servidor,
+  //    para poder VER `error.tsx`. Va lo primero: el fallo que simula es de render, no
+  //    de datos, así que no espera a pedir nada. Ver `dispararErrorFingido`.
+  dispararErrorFingido(sp);
 
   // ⭐ EL GUARDIA (L4). La fuente NO distingue un poste inexistente de uno sin
   //    autobuses: devuelve `{"tablatiempos":""}` para los dos. Así que se valida

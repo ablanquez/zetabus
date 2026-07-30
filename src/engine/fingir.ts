@@ -121,6 +121,38 @@ export function fingimientoDe(sp: Record<string, string | string[] | undefined>)
   return FINGIMIENTOS.includes(v as Fingimiento) ? (v as Fingimiento) : null;
 }
 
+/**
+ * ⭐ `?fingir=error` · PARA PODER VER `error.tsx`, LA PANTALLA DEL 500.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  El hallazgo B-05 era que esa pantalla —la que se ve cuando algo revienta de
+ *  verdad— NO LA HABÍA VISTO NADIE. Esto la hace alcanzable: llamado en el RENDER
+ *  del servidor de una página, lanza un error que ESCAPA hasta el error boundary.
+ *
+ *  ⚠️ POR QUÉ NO ES UN `Fingimiento` MÁS. Los otros fingir son TRANSPORTES falsos
+ *     (devuelven datos). Un throw en el transporte lo captura la ingesta → sale la
+ *     pantalla de «Avanza caído», que NO es el boundary. Esto simula un fallo
+ *     NUESTRO (de render), no de la fuente, así que vive fuera de la unión y de su
+ *     switch exhaustivo —donde no le corresponde—, pero bajo LA MISMA guarda.
+ *
+ *  ⚠️ SIN BANDA DE DEMO, Y A PROPÓSITO. El resto de fingir pintan `<Fingiendo>`
+ *     DENTRO de la página; aquí la página revienta antes de renderizar nada, y
+ *     `error.tsx` no pinta `error.message` (Next además lo redacta en un server-
+ *     throw). El objetivo es ver el 500 REAL —el que ve el usuario—; una banda haría
+ *     la captura no representativa. La honestidad se traslada: (a) lo disparas tú a
+ *     propósito, (b) queda `[ZETABUS DEMO] error fingido` en el LOG del servidor.
+ *     ⚠️ Cualquier captura de esta pantalla que acabe en documentación/portfolio
+ *        DEBE declararse simulada en su pie (como el GIF del momento oro).
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+export function dispararErrorFingido(sp: Record<string, string | string[] | undefined>): void {
+  if (!demoEncendido()) return;
+  const v = Array.isArray(sp.fingir) ? sp.fingir[0] : sp.fingir;
+  if (v === 'error') {
+    throw new Error('[ZETABUS DEMO] error fingido con ?fingir=error — no es un fallo real, lo disparó el modo demo.');
+  }
+}
+
 // ── Las respuestas falsas. Estructura calcada de la real. ────────────────────
 
 const bloque = (linea: string, destino: string, filas: { coche: string; eta: number }[]) => `<li>
