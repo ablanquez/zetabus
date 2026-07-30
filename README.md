@@ -369,6 +369,14 @@ curl -X POST -H "Authorization: Bearer <TOKEN>" https://zetabus.antonioblanquez.
   endpoint—. El resultado se mira donde vive el dato: **`/api/diag` → `correspondencias`**, que trae
   `edadSegundos` (la edad del índice) y `degradado`. Si la edad no se reinicia cada madrugada, el
   cron no está corriendo.
+- **Y si un día NO corre — la decisión (E-02):** se acepta que pueda fallar **en silencio**, y **no se
+  monta alerta**. Por tres motivos: (1) **la señal ya existe** —además de `/api/diag`, el panel `/estado`
+  se pone **ámbar a las 26 h** (el umbral `FRESCURA_MAX_HORAS`), así que un despiste de una noche se ve
+  solo—; (2) la degradación es **grácil**: si no corre, se sirve el índice anterior y los desvíos van un
+  día por detrás —limitación ya explicada en `/sobre-los-datos`—; y (3) **una alerta es, ella misma, una
+  pieza que puede fallar en silencio** —¿quién avisa cuando el que avisa deja de avisar?— y una pieza
+  móvil más en un proyecto que se quiere dejar quieto una temporada. ⇒ **Si un día sospechas, míralo
+  aquí:** `/estado` (el ámbar) y `/api/diag` → `correspondencias.edadSegundos`.
 
 ---
 

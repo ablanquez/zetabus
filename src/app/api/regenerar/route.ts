@@ -54,7 +54,11 @@
  *         mira donde se ha mirado siempre: `/api/diag` → `correspondencias`.
  *
  * ⚠️ LO QUE ESTE FICHERO **NO** GARANTIZA, dicho para que nadie lo dé por hecho:
- *    · Que el cron se haya lanzado. Un cron mal puesto no deja rastro aquí.
+ *    · Que el cron se haya lanzado. Un cron mal puesto no deja rastro aquí. Y se
+ *      ACEPTA que pueda fallar en silencio (E-02): NO se monta alerta —sería otra
+ *      pieza que falla en silencio, y una móvil más—. La señal ya existe: `/estado`
+ *      se pone ámbar a las 26 h y `/api/diag` → `correspondencias` trae la edad. Ahí
+ *      se mira el día que se sospeche. El porqué entero, en el README (§El cron nocturno).
  *    · Que un segundo PROCESO de Node no barra a la vez (el cerrojo es por
  *      proceso; ver `@/engine/barrido`). Lo que sí está garantizado es que el
  *      fichero nunca queda a medias.
