@@ -1387,3 +1387,49 @@ boundary de React es cliente por definición), **no arreglable**, y **NO es el c
 `notFound()` de `/parada` y `/linea`). Es para que el siguiente que audite no lo redescubra como hallazgo.
 
 Suite: tsc 0 · lint 0 · vitest 563/1 skip · playwright **836/94 skip / 0 fallos**. Sin push.
+
+---
+
+### Fase 42 · B-09: fuera la promesa temporal del rótulo del panel
+
+El panel `/estado` titulaba una tarjeta **"Desvíos y correspondencias DE HOY"**, pero el índice se
+regenera de noche y puede llevar **más de 26 h** (hasta ~2 días si el barrido falló). Cuando eso pasa, el
+banner ámbar **"Datos desactualizados"** de arriba y ese rótulo **"de hoy"** **conviven en la misma
+pantalla, contradiciéndose literalmente** — un aviso que dice "esto es de hace días" debajo... no, ENCIMA
+de un título que dice "de hoy".
+
+**DECISIÓN DE ANTONIO: quitar la promesa temporal del rótulo.** Se cambian las dos cadenas de esa tarjeta
+(que se pinta en `al-dia` **y** en `desactualizado`): título *"Desvíos y correspondencias de hoy"* →
+**"Desvíos y correspondencias"**, y la cifra *"líneas con desvío hoy"* → **"líneas con desvío"**. Sigue
+diciendo QUÉ es; deja de afirmar CUÁNDO.
+
+⭐⭐ **Por qué NO se condicionó al aviso de rancio** (era la otra vía, y la que sugería el informe): **el
+título no es donde vive la frescura.** El banner ámbar ya la comunica —y bien—, con su *"actualizado hace
+X"* al lado. Un título dinámico añadiría **una pieza más que puede desincronizarse** con el dato real; uno
+que no promete nada temporal **no puede mentir nunca**. Menos código y menos superficie para equivocarse.
+Es la misma lógica que en `/parada`: la `description` se dejó genérica a propósito porque prometer "tiempo
+real" era justo la mentira que `robots.ts` evita.
+
+⭐ **El barrido de otras promesas temporales, hecho** (distinguiendo canal vivo de índice nocturno):
+- **Dejado, porque es CIERTO:** el resumen `al-dia` *"los recorridos y los desvíos que ves son los de
+  hoy"* solo se pinta cuando la edad ≤ 26 h (es la definición de `al-dia`), así que es honesto —no es un
+  título fijo, es una frase condicionada a la frescura real—.
+- **Dejado, porque es NEUTRO a propósito:** el rótulo *"Líneas que pasan por aquí"* de `LineasQuePasan`
+  (su propio comentario ya razona que no promete "ahora" ni "siempre").
+- ⚠️ **REPORTADO, NO tocado** (borderline · pido antes de cambiar):
+  · *"correspondencias vigentes"* (misma tarjeta): *"vigentes"* es una afirmación de validez actual más
+    suave que "de hoy", pero bajo el banner de rancio también roza. No la toqué solo.
+  · el pie *"los desvíos de hoy, de un barrido nocturno automático"*: prosa que describe la FUENTE,
+    siempre presente; suaviza menos que un título, pero es la misma promesa.
+  · *"Hoy, por un desvío"* (la caja punteada de `/parada`): **es índice y dice "Hoy"**, pero es un caso
+    distinto —diseño deliberado (el recuadro no aparece en degradado), sin banner de frescura al lado, y
+    con un e2e que ancla en ese texto exacto (`lineas-que-pasan.spec.ts`)—. Cambiarlo es más grande y
+    afecta a la página principal: se reporta para decidir aparte, no se toca por inercia.
+
+**Verificado ABRIENDO el panel** (el índice estaba a ~70 h → veredicto `desactualizado`, así que se pudo
+ver el banner ámbar Y el rótulo nuevo a la vez): a **360 y 1280**, el título dice "Desvíos y
+correspondencias" (sin "de hoy") justo debajo del *"Datos desactualizados · actualizado hace 2 días y
+22 h"*, la rejilla 2×2 intacta, nada desbordado. Ningún test anclaba en las cadenas viejas (grep). Un
+comentario junto a la tarjeta deja escrito el porqué para que nadie re-añada "de hoy" ni lo condicione.
+
+Suite: tsc 0 · lint 0 · vitest **563/1 skip** · playwright **836/94 skip / 0 fallos**. Sin push.
