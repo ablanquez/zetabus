@@ -1509,3 +1509,41 @@ qué se acepta, y **dónde se mira** (`/estado` ámbar a las 26 h + `/api/diag`)
 ⛔ No se montó nada: ni alerta, ni latido, ni un log "por si acaso". Solo texto. tsc 0 · lint 0 · vitest
 **563/1 skip** (`readme-no-miente` verde: el añadido no disparó ningún patrón ni el chequeo de enlaces) ·
 playwright **836/94 skip / 0 fallos**. Sin push.
+
+---
+
+### Fase 45 · E-04: declarada la excepción de clasificación, y cerrado el 🔵 de la atomicidad
+
+`data/flota-avanza-zaragoza.json` está **versionado** en `data/` (junto a los curados) pero **es un
+derivado** —lo genera `build-flota.ts`, y su `_meta.generadoPor` ya se autodeclara "⛔ NO EDITAR A MANO"—.
+La convención implícita *"`data/` = curado, `src/generated/` = derivado"* tenía aquí una **excepción sin
+declarar**. Antonio decide **declararla (no reclasificar)** y **cerrar el 🔵 hermano de la atomicidad
+documentándolo**.
+
+⭐ **EL BARRIDO PEDIDO — ¿hay más derivados versionados en `data/`?** Se comprobó `git ls-files data/` +
+el `_meta` de cada JSON + qué scripts escriben ahí. Resultado: **este es el ÚNICO.** `writeFileSync` a
+`data/` **solo** lo hace `build-flota.ts` (grep). Los demás no son derivados sin declarar: `flota-observada`
+y `referencia/` son **curados** (observación humana / material de auditoría), y `postes-solo-barrido-
+coordenadas` **ya está declarado** en el `.gitignore` como "se fija una vez, no se deriva cada noche". ⇒ La
+nota puede ser específica de este fichero, presentando el concepto de las dos clases en general.
+
+**(a) La excepción, declarada donde ya se explica que el fichero entra al repo** (`.gitignore` §4, la nota
+que decía "GENERADO por build-flota… No se edita a mano" — se **amplía**, no se duplica el `_meta`):
+`data/` alberga **dos clases** —datos **curados** (los escribió una decisión humana) y **derivados caros de
+regenerar** cacheados en el repo— y este es de la segunda. Por qué versionado y no en `src/generated/`:
+regenerarlo **raspa Avanza** y cambia rarísimamente; en `generated/` estaría ignorado → habría que
+rehacerlo en **cada build**, más peticiones a Avanza por deploy, justo lo que el proyecto evita por ética
+escrita. **No es una violación de la convención: es una TERCERA categoría que la convención no contemplaba.**
+
+**(b) La atomicidad, cerrada documentándola** (comentario junto al `writeFileSync` de `build-flota.ts`,
+que es donde alguien la "arreglaría"): se sobrescribe **directo, a propósito**, sin `.bak` ni escritura
+atómica. ⭐ **Al estar versionado, GIT ES EL RESPALDO** —`git diff` enseña qué cambió, `git checkout` lo
+restaura, con historial—. Un `.bak` **duplicaría** una protección que ya existe y dejaría un fichero
+huérfano en el repo. Y el script corre **a mano**, fuera del pipeline, leyendo solo fuentes curadas: nadie
+lo pisa por sorpresa (por eso E-04 se dio por inofensivo). ⛔ Escrito para que nadie añada esa atomicidad
+innecesaria dentro de seis meses.
+
+Solo texto (ninguna reclasificación, ningún `.bak`, nada funcional): tsc 0 · lint 0 · vitest **563/1 skip**
+(la flota no se tocó: `procedencia-de-la-flota` y los recuentos de `/sobre-los-datos` verdes) · playwright
+**836/94 skip / 0 fallos**. Con esto quedan cerradas **todas las decisiones pendientes de los bloques B y
+E**. Sin push.
