@@ -28,12 +28,32 @@ import { NOMBRE_MARCA } from '@/components/marca-fuente';
  * caído" —eso tiene su propio aviso, con su edad y su contador—. Aquí no se
  * diagnostica nada que no se sepa.
  */
+/**
+ * ⚠️ `unstable_retry`, NO `reset`. Y es una decisión con riesgo asumido, escrita
+ *    para el que venga.
+ *
+ *    `reset()` limpia el estado y re-renderiza los MISMOS hijos SIN volver a
+ *    pedir datos. Para un fallo de render de CLIENTE recupera; para uno de
+ *    SERVIDOR (el caso más probable aquí) NO —re-renderiza lo que ya reventó y
+ *    vuelve a reventar—. Se comprobó EN VIVO con `?fingir=error`: el botón no
+ *    hacía nada. `unstable_retry()` re-FETCHEA y re-renderiza el segmento, que es
+ *    lo que un "Volver a intentarlo" promete. Los dos props CONVIVEN (la doc no
+ *    los enfrenta); aquí se usa el que de verdad recupera.
+ *
+ *    ⚠️ ES API `unstable_` (llegó en Next 16.2.0). El riesgo de que cambie bajo los
+ *       pies está ACOTADO porque `next` va CLAVADO a `16.2.10` en package.json, SIN
+ *       `^`: no se mueve hasta que alguien suba de versión a propósito.
+ *    ⇒ AL SUBIR NEXT, revisar aquí: que `unstable_retry` siga existiendo y con esta
+ *       firma; si se estabilizó (p. ej. pasó a `retry` sin prefijo), migrar; si
+ *       desapareció, volver a mirar la doc. Ver `node_modules/next/dist/docs/.../
+ *       file-conventions/error.md` y `.../getting-started/error-handling.md`.
+ */
 export default function Error({
   error,
-  reset,
+  unstable_retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  unstable_retry: () => void;
 }) {
   useEffect(() => {
     // El detalle va a la consola del SERVIDOR/navegador, no a la pantalla.
@@ -63,7 +83,9 @@ export default function Error({
       <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={reset}
+          // ⭐ RE-FETCH + re-render del segmento. Ver la nota de arriba: `reset` no
+          //    recuperaba de un fallo de servidor; esto sí.
+          onClick={() => unstable_retry()}
           className="inline-flex min-h-[var(--control-fuerte)] items-center justify-center rounded-tarjeta bg-[var(--color-tinta)] px-4 text-cuerpo font-bold text-[var(--color-papel)]"
           data-papel="reintentar"
         >
