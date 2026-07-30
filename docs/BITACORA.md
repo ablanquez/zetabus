@@ -1433,3 +1433,41 @@ correspondencias" (sin "de hoy") justo debajo del *"Datos desactualizados · act
 comentario junto a la tarjeta deja escrito el porqué para que nadie re-añada "de hoy" ni lo condicione.
 
 Suite: tsc 0 · lint 0 · vitest **563/1 skip** · playwright **836/94 skip / 0 fallos**. Sin push.
+
+---
+
+### Fase 43 · B-09: cerrados los tres borderline (uno se toca, uno se deja, uno se documenta)
+
+Los tres casos que la Fase 42 reportó sin tocar, decididos por Antonio:
+
+**(1) "correspondencias vigentes" → SE CIERRA (era el mismo caso).** Se trazó de dónde sale la cifra: es
+`modelo.barrido.incidencias`, que viene de `fundirCorrespondencias` (`sources/avanza/correspondencias.ts`)
+y cuenta **cada par (poste, línea, sentido) del ÍNDICE NOCTURNO** (`incidencias += normales.length +
+provisionales.length`). **NO es la vigencia del feed GTFS** —ésa es OTRA tarjeta, "Datos oficiales de
+recorrido · Vigentes hasta 2026-10-05", que sí tiene fechas de validez declaradas—. O sea: "vigentes"
+aquí era sinónimo de "las de ahora" sobre un índice que puede tener días → **el mismo caso que "de hoy",
+en la misma tarjeta**. Se cierra igual: *"correspondencias vigentes"* → **"correspondencias"** (dice QUÉ,
+no CUÁNDO). Verificado con el banner ámbar delante (índice a ~71 h): la tarjeta lee "14 líneas con desvío
+/ 2.034 correspondencias", sin promesa temporal.
+
+**(2) El pie "los desvíos de hoy, de un barrido nocturno automático" → SE DEJA.** Describe la FUENTE (qué
+va a buscar el barrido, y que es nocturno y automático), no la frescura de lo que hay en pantalla. Es
+prosa sobre el mecanismo, no una etiqueta sobre el dato. No contradice nada. No se toca.
+
+**(3) "Hoy, por un desvío" (caja punteada de `/parada`) → SE DOCUMENTA, no se toca. Y es "se valoró y se
+acepta", no "se olvidó".** Es distinto del rótulo del panel: aquél contradecía un banner que tenía JUSTO
+debajo; éste no tiene banner al lado **porque el proyecto decidió a propósito** no pintar la edad del
+índice en la parada (*"sería ruido para quien espera el autobús; vive en /api/diag y en el panel"*). Y —lo
+que sostiene la decisión— **la limitación YA ESTÁ DECLARADA con todas las letras en `/sobre-los-datos`**
+(verificado, líneas 310-326): *"un desvío que empieza hoy puede no aparecer hasta esta noche, y uno que
+terminó de madrugada puede seguir listado hasta la siguiente reconstrucción"*. El "Hoy" de esa caja es la
+**abreviatura de algo ya explicado**, no una afirmación sin respaldo. Cambiarlo tocaría la página
+principal y un e2e (`lineas-que-pasan.spec.ts:81`) por un matiz **ya cubierto**. ⇒ Se deja un comentario
+`//` junto a la caja (full en `CajaProvisionales`, puntero en `CajaProvisionalesDePoste`) que dice: que el
+"Hoy" viene del índice nocturno y puede tener días, que se acepta a propósito (edad no pintada aquí + la
+limitación explicada en `/sobre-los-datos`), y que **NO se intente "arreglar" sin releer eso**. Comentario
+`//`, sin secuencias de bloque, para no despertar al guardián.
+
+Ningún test anclaba en "correspondencias vigentes" (grep); el texto "Hoy, por un desvío" no se tocó, así
+que su e2e sigue verde. Suite: tsc 0 · lint 0 · vitest **563/1 skip** · playwright **836/94 skip / 0
+fallos**. Sin push.
