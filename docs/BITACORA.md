@@ -1210,3 +1210,46 @@ de la salida MARCADA) **no se ejercitó**: ningún modo `fingir` produce salidas
 en las 7 líneas probadas) —solo aparecen con datos reales de Avanza que traigan una salida desviada del
 par mayoritario—. Así que sigue **verificado por construcción** (`<span role="img" aria-label>` es HTML
 válido), no en vivo. Se dice, no se da por bueno.
+
+---
+
+### Fase 38 · B-05 · `?fingir=error`: por fin se ve la pantalla del 500
+
+El hallazgo no era que `error.tsx` estuviera mal: era que **nadie la había visto nunca**. Existía,
+estaba escrita, y no había forma de provocarla → NO CONSTA. `?fingir=error` (solo en demo) lanza un error
+en el **render del servidor** que escapa hasta el boundary. No es un modo de transporte —un throw en el
+transporte lo captura la ingesta y sale la pantalla de «Avanza caído», que NO es el boundary—, así que
+vive en un helper aparte (`dispararErrorFingido`), fuera de la unión `Fingimiento`, bajo la misma guarda.
+
+⭐ **QUÉ SE VIO AL ABRIRLA POR PRIMERA VEZ (el valor de la tanda).** Una pantalla **buena**, a 360 y 1280:
+cabecera y pie de ZetaBus (identidad, no la pantalla pelada de Next), un titular rojo honesto —«ALGO SE
+HA ROTO» / «No hemos podido pintar esta pantalla»—, un texto que **tranquiliza sin mentir** («el fallo es
+nuestro, no tuyo, y no tiene nada que ver con los autobuses: puede que estén llegando con normalidad»),
+**dos salidas** (botón «Volver a intentarlo» + enlace «Ver todas las líneas») y una «Referencia del
+fallo» (el digest, sin filtrar nada). Impresión honesta: **ayuda**, no es un callejón.
+
+⚠️ **PERO UN DEFECTO REAL, CONFIRMADO EN VIVO (se reporta, NO se arregla — no se toca `error.tsx`):** el
+botón «Volver a intentarlo» **no recupera** de un error de render de servidor. Usa `reset` (sin
+re-fetch): re-renderiza los mismos hijos que ya reventaron → vuelve a reventar. Lo comprobé pulsándolo:
+la pantalla de error **se queda**. La doc de esta versión (v16.2.0) añade `unstable_retry` (re-fetch +
+re-render) justo para esto y deja `reset` «para casos específicos». O sea: la salida que de verdad
+funciona hoy es **el enlace a la home**, no el botón. Por eso el e2e exige el enlace, no solo el botón.
+
+⚠️ **SIN BANDA DE DEMO, Y A PROPÓSITO (me lo corrigió Antonio y tiene razón).** El GIF del momento oro
+llevaba banda porque enseñaba un estado **de producto** (la app diciendo «no lo sé»). Aquí se quiere ver
+el **500 real** —el que ve un usuario cuando algo revienta—; una banda haría que estuviéramos mirando una
+pantalla **que no existe en producción**, y eso invalida el propósito. La página además revienta antes de
+pintar `<Fingiendo>`, y `error.tsx` no pinta `error.message` (Next lo redacta en un server-throw). La
+honestidad se **traslada**: (a) lo disparas tú a propósito, (b) queda `[ZETABUS DEMO] error fingido` en el
+log del servidor. ⚠️ **Y cualquier captura de esta pantalla que acabe en documentación, README o
+portfolio DEBE declararse simulada en su pie** —como el GIF—: la pantalla es real, pero el fallo lo
+provocamos nosotros.
+
+**`global-error.tsx` SIGUE NO CONSTA, y ahora se sabe POR QUÉ es estructural:** solo salta si revienta el
+**root layout**, y en App Router los layouts **no reciben `searchParams`** → no hay forma de que vean el
+`?fingir=`. No se fuerza; queda escrito que sigue sin verificarse y por qué.
+
+**Guarda verificada:** sin `ZETABUS_DEMO=1`, `/parada/744?fingir=error` → **HTTP 200** (no revienta) y
+**cero** marcador en el log. No se puede tumbar producción con él. **e2e visto en ROJO** (quitando el
+`dispararErrorFingido` → la página da 200, no aparece la pantalla, el test cae) **y en verde**. Suite:
+tsc 0 · vitest 563/1 skip · lint 0 err · playwright **835 passed / 95 skipped / 0 failed**.
