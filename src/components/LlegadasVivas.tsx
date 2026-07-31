@@ -89,9 +89,15 @@ export function LlegadasVivas({
 }) {
   const [estado, setEstado] = useState<Estado>({ tipo: 'ok', obs: inicial });
 
-  const edadAlLlegar = useRef<number>('edadSegundos' in inicial ? inicial.edadSegundos : 0);
+  // ⚠️ UNA SOLA expresión alimenta el ref Y el estado. Antes, el `useState` se
+  //    inicializaba con `edadAlLlegar.current` — leer un ref EN RENDER, que es
+  //    regla dura de React (rompe con render concurrente). Era inofensivo (el
+  //    inicializador solo corre en el primer render, y ahí el ref acaba de nacer
+  //    con este mismo valor), pero la extracción cuesta cero y quita el patrón.
+  const edadInicial = 'edadSegundos' in inicial ? inicial.edadSegundos : 0;
+  const edadAlLlegar = useRef<number>(edadInicial);
   const llegoEn = useRef<number>(0);
-  const [edad, setEdad] = useState<number>(edadAlLlegar.current);
+  const [edad, setEdad] = useState<number>(edadInicial);
 
   useEffect(() => {
     llegoEn.current = performance.now();
