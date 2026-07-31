@@ -221,7 +221,67 @@ miente"*). Tres simulaciones reales + el mapa de dependencias del build. **Ning�
 > un **derivado versionado viviendo entre los curados**: ¿excepción declarada o se reclasifica?).
 > ⬜ Quedan los bloques **F** (recorrido de usuario nuevo) y **D** (documentación).
 
-**Última actualización:** 29/07/2026
+### Parte 6 · ⭐⭐ TODOS LOS PENDIENTES DE CÓDIGO Y DECISIONES, CERRADOS (30-31/07)
+Dos jornadas bajando la lista que dejaron los cuatro bloques de auditoría. **Objetivo: producto estable
+una temporada larga** — no "no tocarlo nunca", sino que lo que quede esté **decidido y escrito**.
+
+**Código arreglado:**
+- **B-01** (`W3C limpio`) — 8 `<div>` dentro de `<button>` en las tarjetas de llegada → `<span>` con las
+  mismas clases. ⭐ **`/parada` de 8 errores a 0**, y **todas las páginas re-validadas**. Se descartó
+  `<div role="button">`: sería **HTML válido y MENOS accesible** (pierde foco nativo, Enter/Espacio,
+  formularios). *"El `role` describe lo que un elemento ES, no disfraza un `<div>` de lo que el navegador
+  ya te da mejor."* Verificado pulsando: Enter, Espacio y clic togglean `aria-pressed`; nombre accesible
+  idéntico.
+  · *El "8 vs 7" resuelto: el validador reporta **1 error por `<button>`** y suprime el subárbol. Los 8
+    eran **8 tarjetas**, no 8 `div`. Ni el informe ni la lectura se equivocaban: contaban cosas
+    distintas.*
+- **B-05** (`?fingir=error` + `unstable_retry`) — **L89.**
+- **B-03** (404 en blanco sin JS) — **documentado, NO arreglado.** ⭐ Y el diagnóstico **corrigió el
+  informe en las dos direcciones**: el 404 de **ruta inexistente SÍ funciona** sin JS (el informe decía
+  "el 404 sale en blanco" a secas: falso); y **`error.tsx` también sale en blanco**, pero es
+  **inherente** (una error boundary de React es cliente por definición). Lo que falla es `notFound()` en
+  ruta `force-dynamic`: interrumpe el stream → shell `__next_error__`. **Factor de confusión aislado:**
+  `/estado` es `force-dynamic` **sin** `notFound()` y renderiza bien → `force-dynamic` **no** es la causa.
+  Las cuatro vías descartadas (romper el live · `loading.tsx` que cambia blanco por *spinner que sin JS no
+  termina nunca* · API experimental · forzar al framework). Comentarios puestos **donde está la
+  tentación** (junto al `notFound()` y sobre cada `force-dynamic`).
+- **F4** — el guardián del contraste ahora vigila **la FORMA** (grep de la firma `0.7152`/`0.03928` fuera
+  de los dos sitios sancionados), no el resultado. ⭐ **El rojo lo demostró en una sola corrida: falló por
+  FORMA mientras el `toBeCloseTo` seguía VERDE.** Límites declarados en la cabecera (`7152e-4`, tablas de
+  lookup, solo la razón). **L86** cerrada.
+- **F2** — las sondas de `barrido-fino` reclasificadas a opt-in. **L90.**
+- **`react-hooks`** — el `:94` (leer un `ref` en render) arreglado con una sustitución algebraica,
+  **verificado en el navegador** (la edad arranca igual, sube 1/s, el ↻ la resetea). El `:250` (`setState`
+  en efecto) **documentado como correcto**: guardado contra bucle, y las dos alternativas son peores —
+  derivar **cambiaría el comportamiento** (el foco reaparecería al reencender la línea). ⚠️ **El lint
+  sigue ciego en ese fichero** (L87): la verificación buena fue la página, no el lint.
+
+**Decisiones zanjadas (las cuatro):**
+- **B-07 · las táctiles** → **renuncia al AAA por escrito + guardián bajado a 24 px (AA)**, fuera del
+  `fixme` y **vigilando de verdad** (rojo demostrado con un botón de 10×10). **L90.** ⚠️ Con el matiz
+  honesto escrito: **24 es el mínimo, no lo cómodo** — una fila de 24 px se falla en un autobús en marcha.
+- **B-09 · el rótulo "DE HOY"** → **quitada la promesa temporal** (y también "correspondencias
+  vigentes", que resultó contar pares del índice nocturno, no la vigencia del feed). ⭐ Verificado **con
+  el banner ámbar delante** (índice a ~71 h). *No se condicionó: el título no es donde vive la frescura —
+  el banner ya la comunica, y un título dinámico añade una pieza que puede desincronizarse.*
+  · **Borderline resueltos:** el pie **se deja** (describe la fuente, no la frescura). El *"Hoy, por un
+    desvío"* de `/parada` **se documenta como decisión consciente**: la edad no se pinta ahí **a
+    propósito**, y la limitación **está declarada** en `/sobre-los-datos` — verificado antes de aceptarlo.
+- **E-02 · el cron falla en silencio** → **aceptado y documentado**, con el **dónde se mira** bien
+  visible. ⭐ Comprobado antes en producción que **el cron funciona** (disparó a las 02:00:02, edad
+  11,3 h): documentar "aceptamos que pueda fallar" solo es honesto si el mecanismo está vivo.
+  ⚠️ *Argumento decisivo: **una alerta es, ella misma, una pieza que puede fallar en silencio.** ¿Quién
+  avisa cuando el que avisa deja de avisar?*
+- **E-04 · el derivado versionado** → **excepción declarada**, no reclasificada. `data/` alberga **dos
+  clases**: curados y **derivados caros de regenerar cacheados en el repo**. Moverlo a `src/generated/`
+  sería peor (ahí está gitignorado → se regeneraría en cada build → más peticiones a Avanza).
+  ⭐ Y el 🔵 hermano cerrado: **Git ES el respaldo** de un derivado versionado (`git diff` / `git
+  checkout`) — un `.bak` duplicaría una red que ya existe.
+
+> ⬜ **Quedan solo los bloques F y D** de la auditoría. Y el cierre: **pushear (~49 commits)**, purgar el
+> CDN, verificar en vivo, y repetir la ronda de escáneres.
+
+**Última actualización:** 31/07/2026
 
 ---
 
@@ -1352,6 +1412,47 @@ cambio fuera un typo. Es el punto, pero quien se lo encuentre a las 02:00 tiene 
 ⚠️ *Y un **SUPUESTO NO VERIFICADO**, declarado como tal: que un build fallido deja la versión anterior
 sirviendo en Hostinger. Es lo razonable, pero **nunca se ha comprobado** (todos los builds llegaron al
 final, incluso los que fallaron por dentro). No se verificará provocando un build roto en producción.*
+
+⭐⭐⭐ **L89 · LO QUE NO SE PUEDE PROVOCAR NO SE PUEDE VERIFICAR — y lo que no se verifica, se rompe en silencio.**
+`error.tsx` (la pantalla del 500) llevaba desde siempre escrita y **NADIE la había visto nunca**: no había
+forma de dispararla. La auditoría la dejó en **NO CONSTA**, y *ese hecho era el hallazgo* — **la pantalla
+que se ve cuando algo revienta de verdad, sin una sola prueba de que funcione.**
+Se añadió un `?fingir=error` (bajo la guarda de demo) **solo para poder abrirla**. No añade producto:
+**añade la capacidad de VERIFICAR una función que ya existía.**
+> ⭐⭐ **Y al abrirla, un defecto real que llevaba ahí desde siempre:** la pantalla es buena (identidad,
+> titular honesto, dos salidas, referencia del fallo)… pero **el botón "Volver a intentarlo" NO
+> recuperaba** de un error de render de servidor. Usaba `reset` (sin re-fetch) → re-renderiza lo mismo →
+> vuelve a reventar. **Una de las dos salidas era decorativa** — y nada lo indicaba.
+✅ *Arreglado con `unstable_retry` (API `unstable_`, riesgo asumido y acotado porque Next va **clavado a
+16.2.10 sin `^`**; el porqué y qué revisar al subir, escritos en el código). **Verificado PULSANDO**, no
+leyendo: con la causa retirada, el botón repinta la parada. Con `reset` eso no pasaba.*
+⚠️ *El detalle que hizo válida la prueba: distinguir **"reintentó y la causa sigue"** de **"no hizo
+nada"** — por la **petición nueva** (1→2). Sin esa señal, los dos casos se ven igual.*
+> ⭐ **Para el maestro:** *toda pantalla de excepción (error, 404, degradado, vacío) necesita una forma
+> deliberada de provocarla. Si no la tiene, no está verificada — está escrita.*
+
+⭐⭐⭐ **L90 · UN INSTRUMENTO QUE NO VIGILA TIENE TRES ARREGLOS POSIBLES, Y "PONERLE UN `expect`" ES SOLO UNO.**
+Dos casos del mismo bloque, resueltos de forma **opuesta**, y ahí está la lección:
+· **F1 (suelo táctil)** — medía las infracciones y las tiraba a un `console.log`. Al afirmarlas: **401
+  reales**. ⇒ Pero **tampoco se arregló afirmando y ya**: se comprobó que **24 px cumple el mínimo AA** y
+  que los 44 eran **AAA autoimpuesto**. Las tres vías de arreglo eran peores que la enfermedad (**A**
+  +2.400 px de scroll en una lista de 120 paradas · **B** rompe la composición a 360 · **C** no aplica:
+  filas y chips están **apilados**, ampliar el área de uno invade la del vecino). ⇒ **Se renunció al AAA
+  por escrito y se bajó el guardián a 24** — que era **el compromiso real**. Del `fixme` dormido a
+  vigilar de verdad, con su rojo demostrado.
+· **F2 (los barridos)** — recogían hallazgos que nadie agregaba. **Aquí NO había defectos que destapar**:
+  0 reales, y los 2 que salieron eran **flaky** (SVG del mapa de Leaflet a medio montar; al re-correr,
+  0). ⇒ **Afirmar habría FABRICADO un guardián flaky** — el problema que se estaba quitando. Se
+  **reclasificaron** como sondas exploratorias opt-in: dejan de parecer test, y su JSON **por fin tiene
+  dueño**. La suite baja de ~50 s a ~14 s en ese fichero, por **cero señal perdida**.
+> ⭐⭐⭐ **La regla:** *ante un instrumento dormido, la pregunta no es "¿le pongo un `expect`?" sino
+> **"¿esto quiere ser un guardián, o quiere ser un informe?"** — y si quiere ser guardián, **¿vigilando
+> qué umbral: el que soñamos o el que cumplimos?** Las tres respuestas (afirmar · reclasificar · rebajar
+> al compromiso real) cierran el hallazgo igual de bien. La que NO vale es dejarlo pareciendo lo que no
+> es.*
+⚠️ *Y el corolario que costó dinero entenderlo: **un `test.fixme` permanente es un instrumento dormido en
+la suite** — exactamente lo que la auditoría se dedicaba a eliminar. Dejarlo así habría sido **crear a
+sabiendas lo que se estaba limpiando**.*
 
 ---
 
@@ -2618,54 +2719,22 @@ capturas que nunca viajaron. Detalle en §7.
 - ✅ **RADAR eliminado del servidor** — proyecto caduco, verificado antes (nadie lo enlaza, todo en local,
   se consulta levantándolo en la máquina). Se llevó con él los dos procesos zombis.
 
-**⬜ CABOS DEL BLOQUE B (29/07) — sin decidir:**
-- **B-01 · 8× `<div>` dentro de `<button>`** en las tarjetas de llegada (`/parada`). HTML no conforme: un
-  `<button>` solo admite contenido de frase. Funciona, pero algunas tecnologías de asistencia lo tratan
-  raro. **Coste medio** (reestructurar la tarjeta, o `role="button"` sobre un `<div>`). Son los 8 errores
-  W3C que quedan en `/parada` (eran 10; los 2 de `aria-label` ya se cerraron).
-- **B-03 · el 404 sale EN BLANCO sin JavaScript.** Se sirve como shell `__next_error__` con el body
-  vacío; el contenido va solo en el payload RSC. **Es la única página así** — home, línea y parada sí
-  renderizan en servidor. Un bot o un navegador de texto ve una página vacía con estado 404. **(P)**
-- **B-05 · la pantalla de error que NADIE ha visto.** `error.tsx` / `global-error.tsx` no se pueden
-  disparar sin romper algo → **NO CONSTA**, y *ese hecho es el hallazgo*: es la pantalla que se ve cuando
-  de verdad algo revienta, y nunca se ha abierto. Propuesta (no implementada): un `?fingir=error`.
-- **B-07 · las zonas táctiles.** Re-medidas: `/linea/N7` a 360 px da **361** (120 filas de 24 px de alto +
-  241 chips de 24×24). *(El "401" heredado era el total deduplicado de tres URLs × tres anchos; el número
-  depende de la línea, las dos clases coinciden.)* ⚠️ **24×24 CUMPLE el mínimo AA**; los 44 px son
-  **AAA autoimpuesto**. **(P)** Cuatro opciones en el informe: A subir filas a 44 (+2.400 px de scroll en
-  N7) · B agrandar chips (fuerza *wrap* a 360) · **C área táctil ≥44 sin agrandar lo visible** (la vía
-  estándar; ⚠️ ojo al solape entre chips juntos) · D no tocar y documentar la renuncia al AAA.
-- **B-09 · el rótulo "DESVÍOS Y CORRESPONDENCIAS DE HOY"** del panel, cuando el índice puede tener ~2
-  días. Lo cubre el banner ámbar de "datos desactualizados", pero el "de hoy" literal podría condicionarse
-  al aviso de rancio. 🔵
-- ⚠️ **Dos `react-hooks` latentes** (`LlegadasVivas.tsx:94` ref en render · `:239` `setState` en efecto):
-  preexistentes, **el lint no los veía por incapacidad del analizador** (**L87**). Son refactor de
-  comportamiento → **bloque A**, no "baratos". Reportados, no arreglados.
-
-**⬜ CABOS DEL BLOQUE C (28/07):**
-- ⚠️⚠️ **401 INFRACCIONES DEL SUELO TÁCTIL — declaradas, no ocultas. → BLOQUE B.** Al arreglar el test
-  que las medía sin afirmarlas (**L85**), salieron: **338 filas de parada** del recorrido (ancho completo
-  × **24 px de alto**; 39 px cuando el nombre envuelve) + **63 chips de correspondencia** (24×24).
-  **Todas en `/linea/*`** — ni una en la home ni en `/parada`. El defecto está **acotado a un sitio**.
-  · El test quedó `test.fixme` **con nota completa** (cuántas, de qué tipo, dónde, y cómo reactivarlo):
-    **declara, no oculta**. Motivo de no dejar la suite roja: *un rojo que vive días destruye el valor de
-    señal — no distingues un fallo NUEVO del conocido, y todo lo que rompas después queda camuflado.*
-    Primo de la ley *"un instrumento desactualizado da falso rojo, y eso enseña a NO MIRARLO"*.
-  · ⚠️ **Decisión de producto para el bloque B:** 24×24 **cumple el mínimo AA**; los 44 px son criterio
-    **AAA que el proyecto se puso a sí mismo**. Hay que decidir con criterio: **subir el tamaño** o
-    **ajustar el listón** — pero no por comodidad, y dejando escrito el porqué.
-- ⬜ **F2 y F4, sin decidir** (acotados, necesitan diseño):
-  · **F2** — `barrido-fino`/`barrido-total` escriben sus hallazgos a `e2e/.barrido/*.json` y **nadie los
-    agrega**: son **informes, no tests**. Falta el agregador que cierre el lazo. ⚠️ Su arreglo tiene el
-    mismo riesgo que el F1: puede destapar más hallazgos.
-  · **F4** — el guardián del contraste: hay que cambiarlo de comparar **valores** a buscar la **forma**
-    (un grep de la fórmula sobre `src/` y `e2e/`), que es como se cazó el bug original. Ver **L86**.
-- **Los guardianes de grafo siguen ciegos a `import()` dinámico** (`next/dynamic` en
-  `LlegadasVivas.tsx:43`). Riesgo bajo (parte en chunk aparte, no arrastra al bundle síncrono), pero el
-  BFS no ve lo que solo se alcance por ahí. Anotado, no arreglado.
-- **7 guardianes con `NO CONSTA`**: leídos y aparentemente sólidos, pero **sin ver su rojo**
-  (`sistema-visual`, `marca-z-unica`, `sitemap`, `migas-no-miente`, `cita-guardian`,
-  `coords-propagacion`, `regeneracion-cerrada`). Si se quiere certeza, se mutan.
+**✅ CABOS DE LOS BLOQUES B, C y E — TODOS CERRADOS (30-31/07).** Detalle en la Parte 6 de la cabecera.
+Lo único que sigue abierto de ellos:
+- **`global-error.tsx` sigue NO CONSTA** — y ahora se sabe **por qué es estructural**: en App Router los
+  layouts **no reciben `searchParams`**, así que el root layout no puede ver un `?fingir=` para reventar.
+  No se fuerza.
+- **Los 10 errores W3C de `/linea`** (los `aria-label` de `Terminal.tsx`) quedaron **arreglados por
+  construcción pero NO verificados en vivo**: ningún `fingir` produce salidas marcadas — solo salen con
+  datos reales de Avanza. Se dice, no se da por bueno.
+- ⚠️ **El lint sigue ciego en `LlegadasVivas.tsx`** (L87): el analizador se rinde con la unión de
+  `Estado`. No hay vía barata sin simplificarla — y eso se descartó en el B-04.
+- **`linea-sin-barrido.spec.ts:69` es flaky** (`networkidle` + contención de 6 workers; el propio test
+  admite que su contador global está "contaminado por los otros workers"). Preexistente, reportado.
+- **La cabecera de `barrido-fino`** menciona comprobaciones que viven en `barrido-fino-2`. Imprecisión
+  menor, reportada.
+- **`barrido-total`** promete en un comentario que *"el veredicto se da al agregar"* — y **ese agregador
+  no existe**. Reportado; no se decidió tocarlo.
 
 **⬜ CABOS NUEVOS (28/07):**
 - ⚠️ **`aria-label` en `<span>` sin `role` — 10 errores de HTML, y la etiqueta NO se oye.** Detectado al
