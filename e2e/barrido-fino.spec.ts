@@ -21,6 +21,25 @@
  *
  * ⚠️ Este spec corre bajo UN SOLO proyecto y mueve él la ventana. Si corriera bajo los
  *    cinco, mediría cinco veces lo mismo y tardaría cinco veces más.
+ *
+ * ⚠️⚠️ QUÉ AFIRMA Y QUÉ SOLO SONDEA (F2) — porque no todo lo de aquí es un guardián:
+ *
+ *   · `EL CORTE de 880` es un GUARDIÁN: afirma (`expect`) y corre en la suite por
+ *     defecto. Si la frontera del layout se rompe, la suite se pone roja.
+ *   · `geometría`, `títulos` y `capturas` son SONDAS EXPLORATORIAS: recogen y escriben
+ *     su JSON/PNG, pero NO afirman. Un test que recoge y no afirma es un informe
+ *     disfrazado —cuesta tiempo, da sensación de cobertura y no puede fallar nunca—, así
+ *     que van OPT-IN con `BARRIDO=1` (el MISMO interruptor que `barrido-total`, no otro).
+ *     Su salida vive en `e2e/.barrido/` (gitignored). Se lanzan cuando alguien quiere
+ *     MIRAR, no en cada corrida:
+ *
+ *       BARRIDO=1 npx playwright test e2e/barrido-fino.spec.ts --project=1280px
+ *
+ *   ⚠️ Y NO se les puso `expect` (F2 NO era el F1): hoy `geometría` da 0 hallazgos
+ *      REALES, y los que aparecen son el mapa de Leaflet A MEDIO MONTAR —`rect`/`path`
+ *      fuera de pantalla, texto vacío—. `barrido-total` remide a 250 ms para descartar ese
+ *      transitorio; ésta NO. Afirmar sobre eso sería un guardián FLAKY, el falso rojo que
+ *      enseña a no mirar la suite. Quien lea el JSON tiene que saberlo o perseguirá fantasmas.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -74,8 +93,19 @@ test.describe('⭐ CAPA 2 · barrido fino', () => {
   test.setTimeout(20 * 60_000);
   /** Corre UNA vez: los anchos los mueve el propio test, no los proyectos. */
   const soloUnaVez = () => test.skip(test.info().project.name !== '1280px', 'corre una vez; los anchos los mueve el test');
+  /**
+   * ⭐ F2 · GATE DE SONDA. Las que RECOGEN y no afirman van opt-in con `BARRIDO=1`
+   *    —el mismo interruptor que `barrido-total`, no uno nuevo—. El guardián del corte
+   *    880 NO lo lleva: sigue en la suite por defecto. Ver la cabecera.
+   */
+  const soloSonda = () => test.skip(process.env.BARRIDO !== '1', 'sonda exploratoria (F2): opt-in con BARRIDO=1 · recoge, no afirma');
 
   test('geometría en los OCHO encuadres, sobre los peores casos reales', async ({ page }) => {
+    // ⚠️ F2 · SONDA, no guardián: recoge la geometría en `fino-geometria.json` y NO afirma
+    //    (ver cabecera). ⚠️ Puede recoger el transitorio del mapa de Leaflet a medio montar
+    //    (`rect`/`path` fuera de pantalla, texto vacío); `barrido-total` remide 250 ms para
+    //    descartarlo, ésta NO. No persigas esos fantasmas.
+    soloSonda();
     soloUnaVez();
     await sinRed(page);
     mkdirSync(CAPTURAS, { recursive: true });
@@ -152,6 +182,9 @@ test.describe('⭐ CAPA 2 · barrido fino', () => {
   });
 
   test('⭐ LOS TÍTULOS, leídos del navegador (no del código)', async ({ page }) => {
+    // ⚠️ F2 · SONDA opt-in (BARRIDO=1): recoge los títulos en `fino-titulos.json`, NO
+    //    afirma. Que empiecen por "ZetaBus" ya lo garantiza la plantilla del layout. Ver cabecera.
+    soloSonda();
     soloUnaVez();
     await sinRed(page);
     const vistos: { url: string; titulo: string }[] = [];
@@ -168,6 +201,9 @@ test.describe('⭐ CAPA 2 · barrido fino', () => {
   });
 
   test('⭐ CAPTURAS de página entera (viewport), para MIRARLAS con los ojos', async ({ page }) => {
+    // ⚠️ F2 · SONDA opt-in (BARRIDO=1): produce PNGs para mirarlas con los ojos, no es un
+    //    test (no afirma nada). Su salida son las capturas en `e2e/.capturas/`. Ver cabecera.
+    soloSonda();
     soloUnaVez();
     await sinRed(page);
     mkdirSync(CAPTURAS, { recursive: true });
