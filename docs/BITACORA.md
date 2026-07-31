@@ -1651,3 +1651,49 @@ C (borrarlas): la sonda tiene valor exploratorio real —12 casos curados × 8 a
 tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos**. NO se tocó el corte 880, ni
 `barrido-total`, ni `barrido-contraprueba`, ni `barrido-fino-2`. No se escribió ningún agregador ni
 aserción. Sin push.
+
+### Fase 48 · react-hooks: `:94` arreglado (ref en render), `:250` documentado (setState en efecto)
+
+⭐⭐ **LO IMPORTANTE, Y LO QUE DEJO ESCRITO PARA EL FUTURO:** **el lint sigue CIEGO en este fichero.** El
+analizador de `react-hooks` se rinde con la unión de tipos de `Estado` (`LlegadasVivas.tsx:65-69`) antes de
+llegar a estos dos avisos —por eso llevaban ahí desde siempre en verde—. **El verde aquí no significa "está
+bien": significa "no he podido mirar".** La verificación buena de esta tanda **no fue el lint**, fue abrir
+la página. Y seguirá ciego mientras la unión no se simplifique (lo que se descartó en el **B-04**, decisión
+de Antonio): no hay vía barata para recuperar la vigilancia.
+
+**Los dos hallazgos venían del Bloque A (vía B-04), invisibles por lo de arriba. Diagnóstico del turno
+anterior, con evidencia, y el veredicto: uno se arregla y el otro no.**
+
+**`:94` — se ARREGLA (`56b6f9a`).** El `useState` del contador de edad se inicializaba con
+`edadAlLlegar.current`: leer un ref **en render**, que es regla dura de React (rompe con render
+concurrente). Hoy era inofensivo —el inicializador de `useState` solo corre en el primer render, y ahí el
+ref acaba de nacer una línea antes con ese mismo valor—, pero la cura es una **sustitución algebraica** de
+riesgo cero: una constante `edadInicial` alimenta el `useRef` **y** el `useState`, y nadie lee `.current`
+en render. Beneficio a futuro: el día que la unión se simplifique y el analizador despierte, ya solo
+levantará el `:250` —y ese estará documentado como aceptado, no como cabo suelto—.
+
+⭐ **Verificado ABRIENDO LA PÁGINA** (`next dev` con el código nuevo, navegador de verdad, `/parada/744?
+fingir=sin-verificar`), que es lo único que vale aquí: la barra de edad **arranca en la edad del dato**
+(«ahora mismo»), **sube 1/s** (Δ=3 en 3 s), y el **botón ↻ la resetea** a una edad fresca que vuelve a
+subir. El valor de arranque baila un segundo entre corridas porque la edad del fixture demo se calcula de
+un timestamp —exactamente lo que `edadInicial` refleja—.
+
+**`:250` — NO se toca, se DOCUMENTA (`3e24b19`).** Es un `setState` dentro de un efecto (soltar la
+selección cuando el coche caduca de la lista). `react-hooks` lo marca por costumbre, pero **aquí es el
+patrón correcto**: (1) está **guardado contra bucle** —al soltar pone `seleccionado = null` y el `return`
+corta en seco al render siguiente—; (2) el render extra ocurre **una vez** y solo al caducar una selección.
+Las dos alternativas «idiomáticas» son **peores**: ajustar el estado en el cuerpo del render obliga a
+setters crudos —sutil y frágil en la pantalla estrella—; y derivar un `seleccionadoEfectivo` **cambia el
+comportamiento observable** —hoy, al apagar la línea del coche seleccionado el foco se suelta **para
+siempre**; derivándolo, **reaparecería** al reencender la línea—. Se documenta **para que el día que el
+lint despierte ese aviso no parezca un cabo suelto** y nadie lo "arregle" con la peor de las dos.
+
+⭐ **La regla:** *un `setState` en un efecto no es un error por sí mismo: es un patrón sospechoso. Cuando
+está guardado y expresa una intención que no se puede derivar sin cambiar el comportamiento, el arreglo no
+es tocarlo —es dejar escrito por qué es el bueno, antes de que un guardián dormido lo despierte y otro lo
+"corrija".*
+
+tsc 0 · lint 0 (3 warnings preexistentes, ninguno en este fichero) · vitest **564/1 skip** · playwright
+**833/97 skip / 0 fallos** (build reconstruido para que el e2e probara el código nuevo, no el del 30-jul).
+NO se tocó el contador (`:101`), el refresco (`:147`), `edadAlLlegar`, `llegoEn`, el cálculo de la edad, la
+unión de `Estado`, ni el `:250` en lo funcional. **Último pendiente de código de la lista.** Sin push.
