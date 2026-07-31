@@ -251,6 +251,16 @@ export function LlegadasVivas({
    *    marcador sin fila, o ni siquiera un marcador. **Si el que estabas mirando ya no
    *    está, el foco se suelta.**
    */
+  // ⚠️ ESTO ES UN `setState` DENTRO DE UN EFECTO, Y AQUÍ ES EL PATRÓN CORRECTO.
+  //    `react-hooks` lo marca por costumbre (hoy no lo ve: se rinde antes con la
+  //    unión de `Estado`). Está bien porque: (1) está GUARDADO contra bucle —al
+  //    soltar pone `seleccionado = null` y el `return` de arriba corta en seco al
+  //    render siguiente; (2) el render extra ocurre UNA vez y solo cuando una
+  //    selección CADUCA. Las dos alternativas «idiomáticas» son peores: ajustar el
+  //    estado en el cuerpo del render obliga a los setters crudos —sutil y frágil en
+  //    la pantalla estrella—; y derivar un `seleccionadoEfectivo` CAMBIA EL
+  //    COMPORTAMIENTO —hoy, al apagar la línea del coche el foco se suelta para
+  //    siempre; derivándolo, reaparecería al reencender la línea—. No se toca.
   useEffect(() => {
     if (seleccionado === null) return;
     if (!visibles.some((l) => String(l.coche) === seleccionado)) seleccionar(null, 'lista');
