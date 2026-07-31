@@ -1605,3 +1605,49 @@ escrita con la calculada), no el defecto de este—.
 tsc 0 · lint 0 · vitest **564/1 skip** (+1: el nuevo test de la forma) · playwright **836/94 skip / 0
 fallos**. NO se tocó `core/contraste.ts` ni ningún consumidor (no hay copias hoy: esto es blindar). Sin
 push.
+
+---
+
+### Fase 47 · F2: las sondas de `barrido-fino` dejan de fingir ser test (opt-in)
+
+⭐⭐ **LA REGLA:** *un test que recoge y no afirma es un informe disfrazado —cuesta tiempo, da sensación de
+cobertura y no puede fallar nunca—. Y el arreglo NO siempre es ponerle un `expect`: a veces es
+**reclasificarlo como lo que es**.* Aquí lo era: el F2 **NO era el F1**. En el F1 el `expect` que faltaba
+destapó 401 infracciones reales; aquí no había defectos que destapar (**0 hallazgos reales** hoy), así que
+afirmar habría **fabricado un guardián flaky** —el falso rojo que enseña a no mirar la suite—.
+
+**EL DIAGNÓSTICO (turno anterior), con datos:** `barrido-fino` tiene cuatro sub-pruebas. `EL CORTE de 880`
+**afirma** (`expect(fallos).toEqual([])`) → es un guardián. `geometría`, `títulos` y `capturas`
+**recogen** (escriben `e2e/.barrido/*.json` y PNGs) y **NO afirman**. Verificado que geometría da 0
+hallazgos reales —los 2 que salieron una vez eran el mapa de Leaflet a medio montar (`rect`/`path` fuera
+de pantalla, texto vacío), y al re-correr, 0—; `barrido-total` remide a 250 ms para descartar ese
+transitorio, `barrido-fino` no.
+
+**EL ARREGLO (opción D apoyada en B):** las tres sondas van **opt-in con `BARRIDO=1`** —el **mismo
+interruptor** que `barrido-total`, no uno nuevo (dos formas de gatear lo mismo sería la copia a mano en
+versión configuración)—, con un `soloSonda()` por-test. El corte 880 **NO** lo lleva: sigue en la suite
+por defecto. La cabecera se reescribe para decir qué afirma y qué solo sondea, cómo se lanzan, dónde dejan
+su salida, y **el transitorio del mapa** (para que quien lea el JSON no persiga fantasmas). Por qué B y no
+C (borrarlas): la sonda tiene valor exploratorio real —12 casos curados × 8 anchos, incluida la frontera
+879/881 y 1280×720, que `barrido-total` no cubre—; lo que sobra no es la sonda, es que finja ser guardián.
+
+**Verificado con las tres contrapruebas:**
+- **Sin `BARRIDO`** → las 3 sondas se saltan, el corte 880 corre: `barrido-fino` pasa de **4 tests a 1**
+  (el guardián), ~50 s → ~14 s. En la suite entera: playwright **833 passed / 97 skipped** (antes 836/94:
+  los 3 se mueven de passed a skipped).
+- **Con `BARRIDO=1`** (solo el fichero fino) → las 4 corren y **producen su salida**: `fino-geometria.json`
+  (0 hallazgos), `fino-titulos.json`, 24 PNGs en `e2e/.capturas/`. No quedan muertas.
+- **El corte 880 intacto** en la suite por defecto (verde a 1280px).
+
+⚠️ **Dos cosas que me tropecé y NO arreglé (fuera de alcance), reportadas:**
+1. **Un test flaky ajeno:** `linea-sin-barrido.spec.ts:69` ("CERO peticiones a Avanza") **falló una vez**
+   en el run completo y **pasó al re-correr** (aislado 15/15, y el full siguiente 833/0 fallos). Es
+   `networkidle` + espera de 20 s bajo contención de 6 workers —el propio test avisa de que el contador
+   global está "contaminado por los otros workers"—. Pre-existente, no lo toca esta tanda.
+2. **La cabecera de `barrido-fino`** describe "la regla del alto, el árbol de accesibilidad, el recorrido
+   con TAB" como si vivieran aquí, pero viven en `barrido-fino-2`. Imprecisión menor; no se arregla en
+   esta tanda (no era el encargo).
+
+tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos**. NO se tocó el corte 880, ni
+`barrido-total`, ni `barrido-contraprueba`, ni `barrido-fino-2`. No se escribió ningún agregador ni
+aserción. Sin push.
