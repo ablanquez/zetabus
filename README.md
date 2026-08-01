@@ -388,7 +388,7 @@ curl -X POST -H "Authorization: Bearer <TOKEN>" https://zetabus.antonioblanquez.
 
 ## Cómo está construido
 
-Tres cosas que no se ven en las capturas y explican el resto:
+Cuatro cosas que no se ven en las capturas y explican el resto:
 
 **1 · La auditoría vino antes que el código.** Siete fases de investigación de fuentes, con sus
 informes en [`docs/auditoria/`](docs/auditoria/), **antes** de escribir la aplicación. Tres de
@@ -405,6 +405,11 @@ mirado la pantalla»*.
 lo que **no** se pudo comprobar, y las lecciones de método están en
 [`docs/LECCIONES.md`](docs/LECCIONES.md) (L1–L9) y, de la L10 en adelante, en el registro vivo de
 [`ZETABUS-ESTADO.md`](ZETABUS-ESTADO.md) — incluidas las que se aprendieron equivocándose.
+
+**4 · Y se verificó desde fuera.** Ya desplegada, el 01/08/2026 (commit `ae14ea9`) pasó una batería de
+herramientas de terceros —PageSpeed, el validador del W3C, securityheaders, Rich Results—: ninguna nota
+bajó y dos páginas pasaron de tener errores a cero. El registro completo, con las capturas y con lo que
+esas pruebas **no** cubren, en [`docs/auditoriafinal/VERIFICACION-EXTERNA.md`](docs/auditoriafinal/VERIFICACION-EXTERNA.md).
 
 ---
 
