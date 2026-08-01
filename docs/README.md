@@ -58,6 +58,13 @@ fechados, no se reescriben.
 | [F · La experiencia completa](auditoriafinal/F-experiencia.md) | El recorrido de usuario **usando el producto**, no leyéndolo. Cero 🔴. |
 | [D · Documentación](auditoriafinal/D-documentacion.md) | Cada afirmación de la doc **contrastada** contra el código, los datos y el producto. ⭐ El 🔴: **el clon limpio no arrancaba siguiendo el README.** |
 
+Y, tras desplegar los 69 commits, la comprobación de que nada se rompió **en producción** —con
+herramientas de terceros, que no comparten los supuestos del código—:
+
+| Registro | Qué recoge |
+|---|---|
+| [Verificación externa](auditoriafinal/VERIFICACION-EXTERNA.md) | Siete herramientas ajenas el día del despliegue (PageSpeed escritorio y móvil, W3C en cuatro páginas, securityheaders, Rich Results). Ninguna nota bajó; `/parada/744` y `/linea/35` pasaron de errores a cero. **Con las ocho capturas como prueba.** |
+
 ---
 
 ## El cuaderno de campo

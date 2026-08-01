@@ -38,6 +38,15 @@
 #    de que se investigó la fuente antes de improvisar.
 !/docs/
 
+#    ⭐ Y LA EVIDENCIA DE LA VERIFICACIÓN EXTERNA. Las ocho capturas de
+#    docs/auditoriafinal/capturas/ (PageSpeed, W3C, securityheaders, Rich Results)
+#    son la PRUEBA de un registro fechado: un documento de evidencia sin la evidencia
+#    no vale. `!/docs/` de arriba YA las incluye —no nacen ignoradas—; se declaran
+#    aquí a propósito, como el cinturón sobre los tirantes de abajo, para que nadie
+#    las confunda con las capturas REGENERABLES de `/capturas/` (raíz, ignoradas) y
+#    las saque creyéndolas basura. NO se regeneran: un registro fechado no se rehace.
+!/docs/auditoriafinal/capturas/
+
 # ── 3b. CÓDIGO Y CONFIGURACIÓN ─────────────────────────────────────
 !/package.json
 !/package-lock.json
