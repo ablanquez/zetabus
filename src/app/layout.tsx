@@ -185,6 +185,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             >
               Sobre los datos
             </Link>
+            {/* ⭐ F·#3 · El panel de salud, ALCANZABLE. Estaba solo por URL a mano —la
+                pantalla que mejor enseña la tesis del proyecto, invisible—. Mismo trato de
+                enlace que los demás. Nombre ACTUAL ("Estado del servicio"): renombrarlo o
+                no lo decide Antonio (ver bitácora · Fase 49). Su indexación (robots) queda
+                abierta: hoy está en el sitemap, así que meterla en `disallow` sin tocar el
+                sitemap se contradice —decisión de Antonio, no de esta tanda—. */}
+            <Link
+              href="/estado"
+              className="inline-flex min-h-[var(--control)] items-center font-semibold underline underline-offset-2"
+              data-papel="enlace-estado"
+            >
+              Estado del servicio
+            </Link>
             {/* ⭐ F·#2 · EL CAMINO DEL SITIO AL CÓDIGO, que no existía. Repo público; la URL
                 es la MISMA que va en el User-Agent (`+https://github.com/ablanquez/zetabus`,
                 ver README). Externo, como el de MITRAMS. "Código" en llano: que sea GitHub se
