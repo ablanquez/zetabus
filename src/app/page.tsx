@@ -100,6 +100,21 @@ export default function Home() {
           los grupos colgando de él en vez de arrancar la jerarquía en el nivel 2. */}
       <h1 className="sr-only">{LO_QUE_ES}</h1>
 
+      {/* ⭐ F·#1 · LA CIUDAD, VISIBLE. El <h1 sr-only> de arriba ya la nombra para el
+          lector de pantalla, pero el OJO no la veía: un visitante frío —o quien llega por
+          un enlace— no tenía forma de saber de qué ciudad es hasta el pie (el dominio
+          tampoco lo dice). Esta línea lo resuelve arriba, la primera que se lee.
+          ⚠️ `aria-hidden`: es la MISMA idea que el h1, para el ojo; sin esto el lector la
+          oiría dos veces. Y el texto es verbatim el arranque de la `description` de la
+          home (una sola voz). NO es un rediseño: una línea discreta, no un hero. */}
+      <p
+        className="mb-3 text-cuerpo leading-snug text-[var(--color-tinta-suave)] sin-recortar"
+        data-papel="lo-que-es"
+        aria-hidden="true"
+      >
+        El autobús urbano de Zaragoza, línea a línea.
+      </p>
+
       <Buscador entradas={entradas} />
 
       {/* ⭐ EL ÍNDICE AGRUPADO. Clonado de la referencia: DIURNAS / CIRCULARES /
