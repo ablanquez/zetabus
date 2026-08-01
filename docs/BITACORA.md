@@ -1697,3 +1697,50 @@ tsc 0 · lint 0 (3 warnings preexistentes, ninguno en este fichero) · vitest **
 **833/97 skip / 0 fallos** (build reconstruido para que el e2e probara el código nuevo, no el del 30-jul).
 NO se tocó el contador (`:101`), el refresco (`:147`), `edadAlLlegar`, `llegoEn`, el cálculo de la edad, la
 unión de `Estado`, ni el `:250` en lo funcional. **Último pendiente de código de la lista.** Sin push.
+
+### Fase 49 · Bloque F: tres arreglos puestos (#1, #2, #3-enlace) y dos frenados por conflicto
+
+De los cuatro arreglos aprobados del Bloque F, **tres se ponen enteros y dos se frenan** — porque al abrir
+el código aparecieron dos conflictos que la aprobación no conocía. ⭐ **La regla de la tanda:** *cuando lo
+aprobado choca con una decisión ya documentada o con un guardián, el arreglo no es hacerlo igual: es
+pararse y devolver la decisión con la información que faltaba.*
+
+**PUESTOS (con la página abierta y mirada a 360 y 1280):**
+- **#1 · la ciudad, visible (`10b60d3`).** Un `<p aria-hidden>` bajo el `<h1 sr-only>` y antes del
+  buscador: *"El autobús urbano de Zaragoza, línea a línea."* —verbatim el arranque de la `description`—.
+  Verificado a 360: **no empuja el buscador** fuera de la primera pantalla; el `<h1>` oculto no se toca; el
+  `aria-hidden` evita que el lector lo oiga dos veces.
+- **#2 · enlace "Código" (`64df23c`)** y **#3 · enlace "Estado del servicio" (`c4f85c0`)**, los dos en el
+  pie, patrón exacto de los que ya había. A 360 el pie **envuelve limpio** a dos filas; ≥44 px de zona
+  táctil (sobre el suelo de 24 del B-07). Antes no había **ningún** camino del sitio al código, y `/estado`
+  —la pantalla que mejor enseña la tesis— solo se alcanzaba tecleando la URL.
+
+**FRENADOS Y DEVUELTOS A ANTONIO (no se tocan):**
+- **#5 · "← volver" en parada/línea → PARADO.** [parada/[poste]/page.tsx:121](../src/app/parada/[poste]/page.tsx)
+  lleva una decisión **explícita**: *"⛔ NO hay flecha «←» de volver … sería ruido con la llegada arriba."*
+  Y esa pantalla tiene un principio medido —lo primero es CUÁNDO llega el bus— **vigilado por
+  `e2e/flotacion.spec.ts`** (el primer tiempo tiene que caber sin scroll a 360). Un "← volver" arriba
+  empuja la llegada hacia abajo: es justo lo que el ⛔ evita. La aprobación del #5 salió de una propuesta
+  que **no advertía de ese ⛔** (aún no se había leído el fichero). Como el #5 es un hallazgo único ("sin
+  volver en parada **y** línea"), se frena **entero** —no media parte— y se devuelve para que se decida con
+  esto delante: ¿solo en línea (que no tiene ese conflicto), otra colocación en la parada, o se respeta el
+  ⛔?
+- **#3 · `/estado` en el `disallow` de robots → PARADO.** La decisión aprobada era *"enlazar pero no
+  indexar"*. Pero `/estado` **está hoy en el sitemap a propósito** ([sitemap.ts:49](../src/app/sitemap.ts)),
+  y `tests/sitemap.test.ts:42` afirma que **ninguna URL del sitemap cae bajo un `disallow`**: meter
+  `/estado` en `disallow` **rompería ese test y contradiría el sitemap**. Arreglarlo pide **tocar el
+  sitemap**, que no entra en esta tanda. ⇒ **Por qué se enlaza pero NO se mete en el `disallow` todavía:**
+  el enlace arregla el hallazgo real (era inalcanzable); la indexación es una segunda decisión que hoy se
+  contradice consigo misma y la resuelve Antonio (disallow **y** quitarla del sitemap **y** ajustar su
+  test, o dejarla indexable). El `robots.txt` servido se comprobó: `/estado` **sigue fuera** del `disallow`.
+
+**REPORTES (medidos, sin tocar nada):**
+- **(A) Radio de "Estado del servicio":** pequeño. Solo dos sitios de cara al usuario —el `title`
+  ([estado/page.tsx:39](../src/app/estado/page.tsx)) y el `<h1>` (`:142`)—, más una frase de error interna
+  (`:105`). **Ningún e2e** afirma esa cadena. Si se renombrara, está contenido; de momento se usa el nombre
+  actual en el pie. **No se renombra** (decisión de Antonio).
+- **(B) `/estado` en el sitemap:** sí, y a propósito (ver arriba). Es la contradicción que frena el
+  `disallow`. No se ha encontrado ninguna otra ruta con choque sitemap↔robots.
+
+tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos** (build reconstruido). NO se
+tocó robots, sitemap, el `<h1 sr-only>`, la parada ni la línea. Commits atómicos, uno por arreglo. Sin push.
