@@ -1789,3 +1789,38 @@ están en un grid. **NO se arregla aquí: es diagnóstico.** Queda para que Anto
 
 tsc 0 · lint 0 · vitest **564/1 skip** (el cambio es un comentario). NO se tocó robots, sitemap,
 `sitemap.test.ts`, el nombre de `/estado`, la línea, ni el ancho de ninguna página. Sin push.
+
+### Fase 51 · Bloque F: `/estado` rompe la columna de lectura en escritorio (el único encajonado)
+
+El diagnóstico de la Fase 50 dijo que `/estado` era **la única de cinco páginas** que se quedaba en los
+672 px del `main` —a 1920, una isla de móvil con dos tercios de pantalla vacíos— y encima es **un panel de
+datos**, no prosa. Antonio aprueba arreglarlo. `44078d1`.
+
+⭐ **La regla:** *desaprovechar el ancho solo es defecto cuando el contenido lo pide. Y el arreglo no es
+inventar una forma de ensanchar: es reutilizar la que ya existe.*
+
+**QUÉ SE HIZO — reutilizar, no inventar.** Se aplica al **grid de tarjetas** el MISMO patrón que la rejilla
+de la home: `ml-[50%] w-[min(72rem,calc(100vw_-_2rem))] -translate-x-1/2` (rompe la columna hasta **1152 px**,
+el mismo ancho que la home) + `grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))]` (reorganiza las
+tarjetas según el ancho). No se inventó un segundo mecanismo —este proyecto acaba de limpiar dos copias a
+mano; una tercera en versión CSS habría sido lo mismo con otro traje—.
+
+**LAS DOS ZONAS, separadas a propósito.** Solo el **grid** rompe. El **título**, el **banner del
+veredicto** y el **pie** son PROSA y se quedan en su medida de lectura (quedan concéntricos con el grid, el
+mismo patrón «entrada estrecha + contenido ancho» que la home con su buscador). ⚠️ **Y por eso
+`/sobre-los-datos` NO se tocó:** es prosa entera, y una columna de ~640 px es **la medida de línea
+correcta** —ensancharla la empeoraría—. Las dos páginas parecían el mismo problema; solo una lo era. Que no
+la "arregle" nadie después por simetría.
+
+**Verificado abriendo la página a los cuatro anchos (mirada como imagen, no asumida):**
+| ancho | grid | columnas | scroll-H |
+|---|---|---|---|
+| 360 | 328 px | **1** (idéntico a antes) | no |
+| 768 | 736 px | 2 (2×2 limpio) | no |
+| 1280 | **1152 px** | 4 (fila) | no |
+| 1920 | **1152 px** | 4 (fila) | no |
+
+360 idéntico al de antes; el ancho nuevo (1152) coherente con la home; las tarjetas se reorganizan
+(1→2→4), no se estiran. tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos**
+(guardián de scroll horizontal y guardián táctil de 24 px, verdes). NO se tocó `/sobre-los-datos`, el
+móvil, robots, sitemap ni el nombre. Commit atómico. Sin push.
