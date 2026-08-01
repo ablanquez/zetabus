@@ -4,7 +4,7 @@
  * La primera parte mide geometría bruta (desbordes, truncados, táctiles) en los ocho
  * encuadres. Aquí van las reglas CONCRETAS del encargo, que exigen medir una relación
  * —no un elemento—: la regla del alto, el scroll interno anunciado, la copia única en el
- * árbol de accesibilidad, el suelo táctil de 44 (no el 24 de WCAG), y el recorrido con TAB.
+ * árbol de accesibilidad, el suelo táctil de 24 (AA · renunciado el 44 AAA · B-07), y el recorrido con TAB.
  *
  * ⚠️ Todo se le pregunta AL NAVEGADOR sobre la página ya pintada. Ninguna de estas
  *    comprobaciones lee CSS ni clases: leen cajas, `scrollHeight` y el árbol de a11y.

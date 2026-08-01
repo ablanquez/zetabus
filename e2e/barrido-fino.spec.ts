@@ -121,8 +121,9 @@ test.describe('⭐ CAPA 2 · barrido fino', () => {
         if (scroll > 0) anota(caso.que, v.n, 'scroll horizontal', `${scroll} px`);
         for (const c of fuera) anota(caso.que, v.n, 'se sale de la pantalla', `${c.etiqueta} ${c.detalle} "${c.texto}"`);
         for (const c of cortados) anota(caso.que, v.n, 'texto cortado', `${c.etiqueta} ${c.detalle} "${c.texto}"`);
-        // ⚠️ El suelo táctil del proyecto es 44, pero `tactilesPequenos` usa el mínimo
-        //    WCAG 2.5.8 (24). Se reportan los <24 como FALLO y los 24-43 aparte.
+        // ⚠️ El suelo táctil vigilado es 24 px (AA · WCAG 2.5.8), tras RENUNCIAR al de 44
+        //    (AAA · 2.5.5 · B-07; el porqué, en `barrido-fino-2.spec.ts`). `tactilesPequenos`
+        //    reporta las zonas <24 como FALLO.
         for (const c of tactil) anota(caso.que, v.n, 'zona táctil < 24 (WCAG 2.5.8)', `${c.etiqueta} ${c.detalle} "${c.texto}"`);
       }
     }
