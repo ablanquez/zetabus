@@ -1895,3 +1895,45 @@ tsc **0** · lint **0** · vitest **564/1 skip** (incluye `readme-no-miente`: en
 cifras verdes) · vigía del README **ok**. Playwright NO se corrió: las ediciones en `e2e/` son **solo
 comentarios**, ninguna lógica de test tocada. Seis commits atómicos. NO se tocó `ZETABUS-ESTADO.md`,
 `GUIA-BUENAS-PRACTICAS.md`, ni los informes de `docs/auditoria*/`. Sin push.
+
+### Fase 53 · La evidencia de la verificación externa: incrustar, versionar, enlazar
+
+Tras desplegar los 69 commits del cierre, Antonio pasó una batería de verificación **externa**
+(herramientas de terceros) y dejó el registro `docs/auditoriafinal/VERIFICACION-EXTERNA.md` con ocho
+marcadores `<!-- CAPTURA -->` y las ocho capturas en `capturas/`. Esta tanda coloca la evidencia:
+incrustar, versionar y enlazar. `ecf6920` (11 ficheros: 8 imágenes + documento + índice +
+`.gitignore`; ni uno más — comprobado con `git show --stat`).
+
+**POR QUÉ SE VERSIONAN las capturas (4 MB).** *Un documento de evidencia sin la evidencia no vale.*
+El registro afirma «PageSpeed 100·96·100·100», «A+», «0 errores en las cuatro páginas»; la captura es
+lo que lo respalda. Si vivieran solo en el disco de Antonio, quien clone encuentra ocho huecos y una
+afirmación sin prueba — justo lo que este proyecto no hace. Y no cambian nunca: un registro fechado no
+se regenera.
+
+⭐ **EL HALLAZGO DEL `.gitignore` — la premisa no se cumplió, y se dice.** El encargo avisaba de que el
+`.gitignore` de lista blanca (deny-all) dejaría las capturas fuera por omisión, como pasó con
+`CHANGELOG.md` y `SECURITY.md`. **No fue el caso:** `git check-ignore` confirmó que **NO estaban
+ignoradas** — la regla `!/docs/` (que ya trae README-capturas versionadas) incluye todo `docs/`, y no
+hay ningún deny de `*.png` ni de `docs/**/capturas/` que las recorte. La `/capturas/` denegada es la de
+**raíz**, anclada, que son las regenerables de `npm run visual`. ⇒ El `git status` ya las listaba como
+nuevas antes de tocar el `.gitignore`. **Aun así se añadió la declaración explícita** —`!/docs/auditoriafinal/capturas/`
+con su comentario— pero **honesta**: dice que `!/docs/` ya las incluía y que la línea es
+cinturón-sobre-tirantes (el propio patrón del `.gitignore`), para que nadie las confunda con las
+regenerables de raíz y las borre. **No se disfrazó de arreglo de una omisión que no existía.**
+
+**POR QUÉ SE ENLAZA desde `docs/README.md`.** Es exactamente lo que cazó el bloque D: los seis informes
+de cierre no estaban indexados —la mejor evidencia, invisible— y se arregló (`4cd2a8a`). Si este
+registro no se enlaza, cae en el mismo hueco el día que se crea. Va en esa misma sección, con su
+formato, como registro aparte (verificación externa post-despliegue, no un bloque de auditoría).
+Barrido de `auditoriafinal/`: **no queda ningún otro documento sin indexar.**
+
+**Las capturas, miradas como imagen (no asumidas) para escribir el `alt`.** Es un documento sobre
+accesibilidad: sus propias imágenes no pueden tener un `alt` vacío. Las ocho vistas confirmaron el
+texto del registro (100·96·100·100 y 99·96·100·100 con 2/2 agéntica; A+ con las seis cabeceras; las
+cuatro bandas verdes «No errors or warnings to show»; «1 elemento válido · Rutas de exploración»); el
+`alt` de cada una describe lo que se ve. **El contenido del documento, intacto salvo los marcadores.**
+
+tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (la prueba «ningún enlace
+roto» resuelve las ocho imágenes y el enlace al registro contra `git ls-files` — por eso se hizo
+`git add` antes de correrla) · vigía **ok**. Commit atómico (evidencia) + éste (bitácora). NO se tocó
+`ZETABUS-ESTADO.md`, `GUIA-BUENAS-PRACTICAS.md`, ni los seis informes de bloque. Sin push.
