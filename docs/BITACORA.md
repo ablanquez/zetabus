@@ -1977,3 +1977,36 @@ tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (l
 resuelven contra `git ls-files` — `git add` antes de la suite) · vigía **ok**. Commit atómico (evidencia)
 + éste (bitácora). NO se tocó `ZETABUS-ESTADO.md`, `GUIA-BUENAS-PRACTICAS.md`, ni los seis informes de
 bloque, ni las ocho originales. Sin push.
+
+### Fase 55 · La verificación externa, al escaparate (README raíz)
+
+`VERIFICACION-EXTERNA.md` estaba enlazado desde `docs/README.md`, pero solo se encontraba entrando en
+`docs/` — el mismo hueco que el bloque D destapó con los seis informes: *la mejor evidencia, invisible*.
+Antonio: una mención **breve** en el README raíz. `66bd69b` (un fichero).
+
+**DÓNDE Y POR QUÉ.** En «Cómo está construido», como **punto 4** de la lista de método (auditoría antes
+del código · las pruebas miran la pantalla · lo que se descubre se escribe · **y se verificó desde
+fuera**). Verificar desde fuera **es método**: va numerado, no como nota suelta al final. Cambió la
+entradilla *«Tres cosas…»* → *«Cuatro cosas…»*.
+
+**EL PRINCIPIO — el README apunta, el informe cuenta.** Una sola frase de resultado global (la cabecera
+del propio informe: *ninguna nota bajó, dos páginas de errores a cero*), **sin duplicar ni una cifra**
+—nada de «100·96·100·100 / A+ / 0 errores»— porque un dato en dos sitios es lo que se desincroniza (el
+bloque D encontró la procedencia de la flota desfasada en tres documentos). Sin badges (el proyecto ya
+renunció a las insignias de métricas). **Fechado** (01/08/2026 + commit `ae14ea9`): un «verificado» sin
+fecha se pudre. Y con el alcance dicho, no inflado: remite a *«lo que esas pruebas no cubren»*, no promete
+«es seguro y accesible».
+
+⭐ **COTEJADO CONTRA EL INFORME, no afirmado a ciegas.** El punto dice «dos páginas pasaron de tener
+errores a cero»: el informe lo confirma literal (`/parada/744` 8→0, `/linea/35` 10→0). Meter en el
+escaparate una cifra que el propio repo desmiente es justo lo que este proyecto persigue no hacer.
+
+**Y el «Tres → Cuatro», comprobado que no se propaga:** barrí README y `docs/` — los otros «tres cosas»
+(`AUDITORIA_FLOTA_COMPLETA`, `BARRIDO_APARCADO`, `BITACORA`, `docs/README` «tres cosas viven aquí») son
+**listas distintas**, no esta. Solo había un sitio que cambiar. (El patrón del bloque D: un puntero que no
+se propagó al gemelo; aquí no había gemelo.)
+
+tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (el enlace nuevo resuelve; no
+se añadió ninguna cifra que el guardián vigile) · vigía **ok**. Commit atómico (README) + éste (bitácora).
+NO se tocó `VERIFICACION-EXTERNA.md`, ni `docs/README.md`, ni `ZETABUS-ESTADO.md`, ni los informes de
+bloque. Sin push.
