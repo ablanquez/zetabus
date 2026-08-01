@@ -345,8 +345,16 @@ experiencia completa · **D** documentación. Cada uno **solo lectura**, con su 
 > ⬜ **Fuera, documentados:** las capturas de la home (desfasadas tras el `<p>` de la ciudad y el pie
 > nuevo), la cifra volátil de nombres, el `[Unreleased]` del CHANGELOG, la demo sin documentar del todo,
 > `ZETABUS_DEMO` en el `.env.example`, el rancio del 44 en `globals.css`, y la propuesta del `predev`.
-> ⬜ **QUEDA EL CIERRE:** pushear (**~68 commits**), purgar el CDN, verificar en vivo y la ronda de
-> escáneres como comprobación de regresión.
+> ✅ **CIERRE COMPLETADO (01/08):** **69 commits desplegados** (`6967c02..ae14ea9`), CDN purgado,
+> verificado en vivo y **ronda de escáneres pasada sin una sola regresión** (detalle en §10).
+> · **El build confirmó el arreglo del orden:** `version:build` corrió el primero → `nombres:ensure`
+>   encontró lo que necesitaba y generó los **927 nombres** sin caer en el fail-safe. **918/934 con
+>   nombre de Avanza (98%)**, el aviso solo en las 16 de siempre.
+> · **Verificado en producción:** el `<p>` de la ciudad en la home · el pie con "Código" y "Estado del
+>   servicio" · **`/estado` usando el ancho** (era una columna estrecha) · `/parada/744` con nombre
+>   confirmado y llegadas vivas · `/linea/35` bien.
+> · *Dato de paso: las vulnerabilidades de npm han bajado de **12 a 4** (parche aguas arriba). El
+>   `SECURITY.md` habla de 12 → **queda desfasado**, a revisar cuando toque.*
 
 **Última actualización:** 01/08/2026
 
@@ -2997,7 +3005,26 @@ miente aquí** — es el mismo principio del resto del documento aplicado a herr
 | **rich-results** (Google) | Datos estructurados | ❌ **Ninguno** (27/07) → ✅ **1 elemento válido: "Rutas de exploración"** (28/07) | El `BreadcrumbList` de `/linea/*` **Google lo lee y puede dibujarlo**. Es la única pieza de schema.org que sobrevivió al análisis (**L82**) |
 | **validator.schema.org** | Validez del estándar | ✅ **0 errores, 0 advertencias** (28/07, `/linea/35`) | Estructura correcta: `Inicio` con `item`, y `Línea 35` como último **sin `item`** (es la página actual, como pide el estándar) |
 
-### ⭐ RONDA DE REGRESIÓN (28/07) — tras un día entero de cambios
+### ⭐⭐ RONDA DE CIERRE (01/08) — tras desplegar los 69 commits de la auditoría
+Batería completa **como comprobación de regresión final**, sobre el commit `ae14ea9` en producción.
+**Ni una nota se movió, y dos páginas pasaron de tener errores a cero.**
+
+| Herramienta | Resultado | Nota |
+|---|---|---|
+| **PageSpeed · escritorio** | **100 · 96 · 100 · 100** | Idéntico. FCP 0,3 s · TBT 0 ms · CLS 0 |
+| **PageSpeed · móvil** | **99 · 96 · 100 · 100** | El punto de Rendimiento es **ruido de medición**: las métricas siguen todas en verde (FCP 1,1 s · TBT 0 ms · CLS 0) |
+| ⭐ **Navegación agéntica** | **2/2** | **Categoría NUEVA de Google** (evalúa si un agente de IA puede navegar el sitio). Se pasa de largo — y encaja: HTML semántico, un solo `h1`, landmarks y datos estructurados es justo lo que un agente sabe leer |
+| **securityheaders** | **A+** | Seis cabeceras en verde |
+| **W3C · home** | ✅ cero errores | |
+| ⭐ **W3C · `/parada/744`** | ✅ **de 8 errores a CERO** | Los `<div>` dentro de `<button>` (B-01) |
+| ⭐ **W3C · `/linea/35`** | ✅ **de 10 a CERO** | Los `aria-label` sin `role`. ⭐ **Y esta vez con DATOS REALES** — quedaban "arreglados por construcción, sin verificar en vivo" porque ningún `fingir` producía salidas marcadas. **Ahora verificado.** |
+| **W3C · `/estado`** | ✅ cero errores | |
+| **rich-results** | ✅ **1 elemento válido** | El `BreadcrumbList` sigue en pie |
+
+> ⭐ **Y la lección de "validar una sola página no vale", aplicada:** esta vez se pasaron **cuatro**
+> páginas por el validador, no una. Fue lo que destapó los 8 de `/parada` en su día.
+
+
 Se repitió la batería como **comprobación de regresión**, no como foto inicial. Cambios del día: TTL del
 recorrido a 1 h, día civil en Madrid, JSON-LD nuevo, el sobre de desvíos, la tabla de nombres, las
 cabeceras. **Resultado: ni una nota se movió** (PageSpeed 100·96·100·100 en móvil y escritorio;
