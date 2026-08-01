@@ -1824,3 +1824,74 @@ la "arregle" nadie después por simetría.
 (1→2→4), no se estiran. tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos**
 (guardián de scroll horizontal y guardián táctil de 24 px, verdes). NO se tocó `/sobre-los-datos`, el
 móvil, robots, sitemap ni el nombre. Commit atómico. Sin push.
+
+### Fase 52 · Bloque D: arreglado el 🔴 y los 🟠 (el clon limpio no arrancaba)
+
+El sexto y último bloque de la auditoría de cierre (`3c5d2dd`) contrastó ~55 afirmaciones de la
+documentación y halló 1 🔴 y 8 🟠. Antonio aprueba arreglar el 🔴 y los 🟠; las capturas y el
+pulido 🔵 quedan fuera. Seis commits atómicos, sin push.
+
+**🔴 EL CLON LIMPIO NO ARRANCABA — el hallazgo más grave de los seis bloques.** El quick-start del
+README terminaba en `npm run dev` tras solo `gtfs:fetch`, pero la app importa `@/generated`
+(gitignored; lo hornea `data:build`, dentro de `npm run build`, no la descarga del GTFS; `dev` no
+tiene `predev`). **Reproducido siguiendo el README al pie en un clon simulado (aparté
+`src/generated/`): la home daba HTTP 500 — «Module not found: Can't resolve '@/generated'» en
+`topologia.ts:44`.** Arreglo doc-only: el quick-start pasa por `npm run build` antes de `dev` (el
+resto del README ya se apoyaba en `build` como comando de puesta en marcha). **Verde demostrado
+corriendo el comando exacto: `npm run build` regeneró `src/generated` completo y compiló las 9
+rutas; `npm run dev` → home 200 y `/sobre-los-datos` 200.** `39dd479`.
+⚠️ El mismo agujero afecta a `npm run test` (17 tests importan topologia → `@/generated`); lo tapa
+el mismo paso. **PROPUESTA (no hecha, es código):** un `predev`/`prepare` que hornee `src/generated`
+sin `next build`, para que `npm run dev` a secas «solo funcione». Queda para que Antonio decida.
+
+**🟠 LA FLOTA — y me corregí a mí mismo.** El informe D señalaba tres documentos; **contando el
+JSON resultó que uno de ellos estaba bien**. El maestro (403) se reparte **350 oficial + 36
+observacion_propia + 14 fuente_secundaria + 3 sin_verificar** (verificado: los 53 no-oficiales son
+EXACTAMENTE los que no están en el pliego, 0 excepciones). `data/README.md` decía «53 con confianza
+sin_verificar del heredado» (falso: son 3) → reescrito al reparto real. THIRD-PARTY decía «los 43
+de busesmadrid nacen fuente_secundaria» → de esos 43, **29 los vimos circular nosotros
+(observacion_propia manda), 14 quedan fuente_secundaria**. `1035614`.
+⭐ **`referencia/README.md:18` y `.gitignore:99` dicen «53 que el pliego no tiene» — CONTADO Y
+CORRECTO (el heredado tiene 369 entradas, 53 fuera del pliego). NO se tocan.** Era el «53» de otro
+sentido; copiar mi propia cifra del informe sin contar habría roto un dato cierto.
+
+**🟠 SHARP — el comando que se autodesmiente.** `SECURITY.md` afirmaba «postcss y sharp no están en
+package.json: transitivas», con un comando de auto-verificación (`grep '"(postcss|sharp)"'
+package.json` → vacío) que **se contradice: sharp SÍ está** (devDep). Corridos TODOS los comandos de
+auto-verificación del documento: solo ese fallaba. Corregido el encabezado y el pasaje; **la
+conclusión de seguridad no cambia** (sharp sigue dev/local, sin `next/image`, fuera del bundle) y se
+dice explícitamente. THIRD-PARTY listaba 22 dependencias diciendo 23: **faltaba sharp** (Apache-2.0)
+en la tabla → añadida, 23 filas, «22 de las 23 permisivas» cuadra. `794835a`.
+
+**🟠 CITAS ROTAS (van seis en todo el proyecto).** `ChipLinea.tsx` citaba `tests/chip-linea` (real:
+`tests/motor-vivo/contraste-de-los-chips.test.ts`); `Cita.tsx` citaba `tests/cita-traduccion` (real:
+`e2e/cita-traduccion.spec.ts`). **Verificado que ambos existen Y vigilan lo que el comentario
+promete** (L83). Barrido completo de `src/`, `scripts/`, `tests/`, `e2e/`: **no quedan más rotas.**
+`14023ae`.
+
+**🟠 EL SUELO TÁCTIL RANCIO.** `barrido-fino.spec.ts:124` decía «el suelo del proyecto es 44» y que
+se reportan «los 24-43 aparte» (doble mentira: `tactilesPequenos` solo devuelve <24). Y
+`barrido-fino-2.spec.ts:7` **se contradecía con su propio cuerpo** (:70/:77 documentan la renuncia
+B-07 al 44 AAA en favor del 24 AA). Ambos alineados con la redacción canónica. `ecd1e9a`.
+
+**🟠 LOS DOS PUNTEROS.** `docs/README.md` no enlazaba los seis informes de la auditoría de cierre
+(no los encontraba nadie, ni este propio barrido) → sección «Auditoría de cierre» añadida, **sin
+filas numeradas** para no inflar el conteo del guardián de informes. Y el puntero de lecciones no
+decía que de la L10 en adelante viven en `ZETABUS-ESTADO.md` → completado con la redacción del README
+raíz; «Nueve» se mantiene (lo vigila `readme-no-miente` contra los encabezados de `LECCIONES.md`).
+`4cd2a8a`.
+
+**REPORTADO, NO ARREGLADO (fuera de alcance):** `globals.css:659` y `:705` llaman al 44 «el suelo
+táctil de todo el proyecto» —mismo rancio que el táctil, pero son comentarios de diseño sobre
+elementos concretos que SÍ miden 44 px; el dato es cierto, solo el marco «suelo del proyecto» está
+viejo, y pide edición fina—. Quedan para que Antonio decida.
+
+**MÉTODO — la contraprueba manda.** El 🔴 no se dio por bueno añadiendo la línea: se apartó
+`src/generated/`, se reprodujo el 500, se corrió el `npm run build` real (regeneró todo, raspó los
+nombres de Avanza porque el build es «alguien mirando», compiló) y se comprobó el 200; luego se
+restauró el árbol. Las cifras de flota, contadas por mí sobre el JSON, no copiadas del informe.
+
+tsc **0** · lint **0** · vitest **564/1 skip** (incluye `readme-no-miente`: enlaces nuevos, versión y
+cifras verdes) · vigía del README **ok**. Playwright NO se corrió: las ediciones en `e2e/` son **solo
+comentarios**, ninguna lógica de test tocada. Seis commits atómicos. NO se tocó `ZETABUS-ESTADO.md`,
+`GUIA-BUENAS-PRACTICAS.md`, ni los informes de `docs/auditoria*/`. Sin push.
