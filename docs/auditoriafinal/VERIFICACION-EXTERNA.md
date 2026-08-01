@@ -34,6 +34,12 @@
 > 1,1 s · TBT 0 ms · CLS 0 · Speed Index 2,0 s. La puntuación de Rendimiento se calcula de esas métricas
 > y oscila un punto entre corridas con red emulada.
 
+> **Sobre las capturas.** Cada una se muestra recortada, para que se lea de un vistazo lo que la
+> herramienta dijo. La captura completa está en el desplegable de debajo, y los ficheros originales están
+> sin tocar en `capturas/`: son la prueba, y no se recortan ni se recomprimen. Las cuatro del validador
+> W3C son dos franjas unidas —la URL analizada arriba, el veredicto abajo— con un separador gris que lo
+> hace visible: no son un pantallazo continuo.
+
 ---
 
 ## 2 · La evidencia, herramienta por herramienta
@@ -42,7 +48,14 @@
 
 `https://zetabus.antonioblanquez.es/` · Informe del 1 ago 2026, 12:40:34 CEST · Lighthouse 13.4.1.
 
+![PageSpeed Insights (Ordenador), recorte: los cinco círculos —Rendimiento 100, Accesibilidad 96, Prácticas recomendadas 100, SEO 100 y Navegación agéntica 2/2— y las métricas FCP 0,3 s, LCP 0,3 s, TBT 0 ms, CLS 0 y Speed Index 0,8 s.](capturas/01-pagespeed-escritorio-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![PageSpeed Insights, pestaña Ordenador, para zetabus.antonioblanquez.es: cuatro círculos verdes — Rendimiento 100, Accesibilidad 96, Prácticas recomendadas 100 y SEO 100 — más Navegación agéntica 2/2. Métricas en verde: FCP 0,3 s, LCP 0,3 s, TBT 0 ms, CLS 0 y Speed Index 0,8 s.](capturas/01-pagespeed-escritorio.png)
+
+</details>
 
 **Qué cubre este ángulo:** velocidad de carga real medida sobre la página desplegada, accesibilidad
 automatizable, prácticas de seguridad del navegador y legibilidad para buscadores.
@@ -70,7 +83,14 @@ completo en el bloque B y en la lección L81 del estado del proyecto.*
 
 Mismo informe, pestaña Móvil · Moto G Power emulado · limitación de 4G lenta.
 
+![PageSpeed Insights (Móvil, Moto G Power con 4G lenta), recorte: los cinco círculos —Rendimiento 99, Accesibilidad 96, Prácticas recomendadas 100, SEO 100 y Navegación agéntica 2/2— y las métricas FCP 1,1 s, LCP 2,1 s, TBT 0 ms, CLS 0 y Speed Index 2,0 s.](capturas/02-pagespeed-movil-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![PageSpeed Insights, pestaña Móvil (Moto G Power emulado con 4G lenta): Rendimiento 99, Accesibilidad 96, Prácticas recomendadas 100, SEO 100 y Navegación agéntica 2/2. Métricas: FCP 1,1 s, LCP 2,1 s, TBT 0 ms, CLS 0 y Speed Index 2,0 s.](capturas/02-pagespeed-movil.png)
+
+</details>
 
 **99 · 96 · 100 · 100.** Métricas: FCP 1,1 s · LCP 2,1 s · TBT 0 ms · CLS 0 · Speed Index 2,0 s.
 
@@ -93,7 +113,14 @@ lo que hace el sitio legible para una máquina.
 
 `https://zetabus.antonioblanquez.es/` · 01 Aug 2026 10:42:16 UTC.
 
+![securityheaders.com (by Snyk), recorte de la caja «Security Report Summary»: nota A+ en grande, el sitio (zetabus.antonioblanquez.es), IP, hora del informe y las seis cabeceras marcadas con un check — Referrer-Policy, X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, Permissions-Policy y Content-Security-Policy.](capturas/03-securityheaders-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Informe de securityheaders.com (by Snyk) para zetabus.antonioblanquez.es: nota A+ en grande, con las seis cabeceras presentes marcadas con un check — Referrer-Policy, X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, Permissions-Policy y Content-Security-Policy.](capturas/03-securityheaders.png)
+
+</details>
 
 **Qué cubre este ángulo:** las cabeceras HTTP que el navegador usa para defender al usuario. **No** mira
 el código: mira lo que el servidor promete.
@@ -117,10 +144,41 @@ significa que las cabeceras que hay están bien puestas.**
 
 Validador oficial del W3C (`vnu 26.7.31`).
 
+![Recorte de dos franjas del validador W3C para la home: arriba la URL analizada (Showing results for zetabus.antonioblanquez.es, vnu 26.7.31), abajo la banda verde «Document checking completed. No errors or warnings to show.»; un separador gris marca que son dos trozos, no un pantallazo continuo.](capturas/04-w3c-home-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Validador W3C Nu Html Checker para la home (zetabus.antonioblanquez.es): banda verde «Document checking completed. No errors or warnings to show.». Los mensajes amarillos son avisos «Info» de barra final en elementos vacíos (trailing slash), que el validador excluye del recuento.](capturas/04-w3c-home.png)
+
+</details>
+
+![Recorte de dos franjas del validador W3C para /parada/744: arriba la URL analizada (Showing results for zetabus.antonioblanquez.es/parada/744, vnu 26.7.31), abajo la banda verde «Document checking completed. No errors or warnings to show.» (antes tenía 8 errores); un separador gris marca que son dos trozos.](capturas/05-w3c-parada-744-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Validador W3C Nu Html Checker para /parada/744: banda verde «No errors or warnings to show» (antes tenía 8 errores). Los mensajes amarillos son avisos «Info» de trailing slash, no errores.](capturas/05-w3c-parada-744.png)
+
+</details>
+
+![Recorte de dos franjas del validador W3C para /linea/35: arriba la URL analizada (Showing results for zetabus.antonioblanquez.es/linea/35, vnu 26.7.31), abajo la banda verde «Document checking completed. No errors or warnings to show.» (antes tenía 10 errores); un separador gris marca que son dos trozos.](capturas/06-w3c-linea-35-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Validador W3C Nu Html Checker para /linea/35: banda verde «No errors or warnings to show» (antes tenía 10 errores). Los mensajes amarillos son avisos «Info» de trailing slash, no errores.](capturas/06-w3c-linea-35.png)
+
+</details>
+
+![Recorte de dos franjas del validador W3C para /estado: arriba la URL analizada (Showing results for zetabus.antonioblanquez.es/estado, vnu 26.7.31), abajo la banda verde «Document checking completed. No errors or warnings to show.»; un separador gris marca que son dos trozos.](capturas/07-w3c-estado-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Validador W3C Nu Html Checker para /estado: banda verde «No errors or warnings to show», sin errores.](capturas/07-w3c-estado.png)
+
+</details>
 
 | Página | Antes | Ahora |
 |---|---|---|
@@ -161,7 +219,14 @@ amarillo asusta**, y quedarse con la impresión en vez del veredicto sería un s
 
 `https://zetabus.antonioblanquez.es/linea/35` · rastreado el 1 ago 2026, 12:44:57.
 
+![Rich Results Test de Google para /linea/35, recorte: la URL analizada, «Se ha detectado 1 elemento válido», el rastreo del 1 ago 2026 12:44:57 y «Rutas de exploración — Se ha detectado 1 elemento válido».](capturas/08-rich-results-recorte.png)
+
+<details>
+<summary>Ver la captura completa</summary>
+
 ![Rich Results Test de Google para /linea/35: «Se ha detectado 1 elemento válido», del tipo Rutas de exploración (BreadcrumbList), rastreado el 1 ago 2026 a las 12:44:57.](capturas/08-rich-results.png)
+
+</details>
 
 **Datos estructurados detectados: Rutas de exploración — 1 elemento válido.**
 
