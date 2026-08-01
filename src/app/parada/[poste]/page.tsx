@@ -120,6 +120,11 @@ export default async function ParadaPage({ params, searchParams }: Props) {
   //    es un píxel que le quita al primer minuto de llegada.
   // ⛔ NO hay flecha "←" de volver: la marca de la cabecera ya enlaza a `/` en toda
   //    pantalla. Tampoco hay enlace de vuelta al fondo — sería ruido con la llegada arriba.
+  //    ⭐ REVALIDADO: la auditoría de cierre (bloque F · #5) lo levantó como hallazgo sin
+  //    conocer esta decisión, y SE MANTIENE. El guardián `flotacion.spec.ts` exige que el
+  //    primer tiempo quepa sin scroll a 360, y una salida arriba lo empujaría; el logo ya da
+  //    salida, y una miga de pan tendría el MISMO problema físico (ocupa una línea arriba).
+  //    Quien llega por un enlace viene a ver su bus, no a navegar. Ver BITACORA · Fase 50.
   const nombre = (
     <div className="min-w-0">
       <h1
