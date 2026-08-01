@@ -1744,3 +1744,48 @@ pararse y devolver la decisión con la información que faltaba.*
 
 tsc 0 · lint 0 · vitest **564/1 skip** · playwright **833/97 skip / 0 fallos** (build reconstruido). NO se
 tocó robots, sitemap, el `<h1 sr-only>`, la parada ni la línea. Commits atómicos, uno por arreglo. Sin push.
+
+### Fase 50 · Bloque F: los dos frenados, decididos; y el diagnóstico de escritorio
+
+Antonio decide los dos que la Fase 49 frenó, y de paso pregunta algo que **ningún bloque había medido**:
+¿`/estado` y `/sobre-los-datos` están *aprovechadas* en escritorio, o solo *no se rompen*?
+
+**LAS TRES DECISIONES (dos eran de no hacer):**
+- **#5 · el "← volver" NO se pone (opción c).** La auditoría F redescubrió **la ausencia** sin ver **la
+  decisión**: ya estaba documentada y razonada en las DOS páginas —`parada:121` y, más completa,
+  `linea:194-198`, que hasta cita el enlace compartido—. Se **revalida y se mantiene**: el guardián
+  `flotacion.spec.ts` exige que el primer tiempo quepa sin scroll a 360, y una salida arriba lo empujaría;
+  el logo ya da salida, y una miga tendría el MISMO problema físico. Se amplió el ⛔ de la parada (`8543e31`)
+  para que no se vuelva a levantar. La línea ya lo explica de sobra; **no se toca** (se reporta).
+- **#3 · `/estado` queda ENLAZADA pero INDEXABLE. No entra en el `disallow`.** ⚠️ Antonio **se corrige a sí
+  mismo**: aprobó el `disallow` por analogía con `/parada`, sin recordar que `/estado` ya estaba en el
+  sitemap **a propósito**. Y la analogía era floja: lo que caduca en `/parada` son **los minutos (15 s)**;
+  el contenido de `/estado` (estado del feed, nº de líneas, vigencia) cambia despacio y **su valor es ser
+  público**. Verificado en el servido: `robots.txt` **sin** `/estado` en `disallow`, y el sitemap **con**
+  `/estado`. Cero cambios: robots, sitemap y `sitemap.test.ts` intactos.
+- **El nombre "Estado del servicio" NO se toca.** Radio pequeño (title + h1 + una frase de error; ningún
+  e2e), pero el nombre no está mal; cambiarlo por un matiz no compensa en un proyecto que se quiere dejar
+  quieto. Queda como opinable.
+
+**⭐ EL DIAGNÓSTICO DE ESCRITORIO (solo lectura, medido a 1280 y 1920, mirado como imagen):**
+Medido el ancho del bloque de contenido más ancho dentro de `<main>`:
+
+| Página | bloque más ancho | ¿aprovecha el ancho? |
+|---|---|---|
+| home · línea · parada | **1152 px** (rompen la columna) | Sí — diseñadas para escritorio |
+| **/sobre-los-datos** | 640 px (columna de lectura) | **Correcto** — es prosa |
+| **/estado** | 640 px (columna de lectura) | **NO** — es un panel de datos encajonado |
+
+⭐ **La regla, y la calibración que evita el falso hallazgo:** *desaprovechar el ancho solo es un defecto
+cuando el contenido lo pediría.* `/sobre-los-datos` es **prosa**, y una columna de ~640 px es la medida de
+línea correcta: los márgenes vacíos en escritorio son el resultado natural y **bueno** de una página de
+lectura. **No es hallazgo.** `/estado`, en cambio, es un **panel de 4 tarjetas** que a 1920 se ve como una
+**isla de móvil centrada** (~640 px vacíos a cada lado) y **no se reorganiza** al ensanchar — mientras que
+home, línea y parada **sí rompen** a 1152 px. Eso es lo significativo: **no es el ancho en sí, es la
+incoherencia** —cuatro de cinco páginas usan un ancho adecuado a su contenido; `/estado` es la única en el
+lado malo, y encima es la que más ganaría—. 🔵 severidad baja (funciona y se lee), **coste bajo** si se
+arregla: el patrón de romper el ancho ya existe (`ml-[50%] w-[min(72rem,…)]` en la home) y las tarjetas ya
+están en un grid. **NO se arregla aquí: es diagnóstico.** Queda para que Antonio decida.
+
+tsc 0 · lint 0 · vitest **564/1 skip** (el cambio es un comentario). NO se tocó robots, sitemap,
+`sitemap.test.ts`, el nombre de `/estado`, la línea, ni el ancho de ninguna página. Sin push.
