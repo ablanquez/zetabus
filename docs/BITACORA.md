@@ -1937,3 +1937,43 @@ tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (l
 roto» resuelve las ocho imágenes y el enlace al registro contra `git ls-files` — por eso se hizo
 `git add` antes de correrla) · vigía **ok**. Commit atómico (evidencia) + éste (bitácora). NO se tocó
 `ZETABUS-ESTADO.md`, `GUIA-BUENAS-PRACTICAS.md`, ni los seis informes de bloque. Sin push.
+
+### Fase 54 · Maquetar la evidencia: recorte para leer, completa para verificar
+
+Las ocho capturas de la Fase 53 estaban **a pelo**, y varias eran pantallazos larguísimos. Las cuatro
+del W3C, las peores: 26 bloques amarillos y el veredicto verde perdido al final — al abrirlas, la
+impresión era de pantalla llena de avisos cuando el resultado es limpio. Antonio: **recortada arriba,
+completa en un `<details>` debajo.** `e7a6e0e` (9 ficheros: 8 recortes + el documento; ni uno más).
+
+**LA CONVENCIÓN.** *Recorte para leer, completa para verificar — y las originales no se tocan porque son
+la prueba.* Cada bloque: el recorte legible + `<details>` «Ver la captura completa» con la original
+íntegra. Cero pérdida: el documento se ve bien al abrirlo y la evidencia entera está a un clic. Declarado
+una vez en una nota al final del apartado 1 (única frase añadida a un registro histórico, con el texto que
+aprobó Antonio).
+
+⭐ **LAS DEL W3C — DOS FRANJAS UNIDAS, Y SE DICE QUE LO SON.** El caso difícil: la URL analizada está
+arriba y el veredicto verde abajo, en extremos de una imagen de ~3.400 px. Un recorte con solo el
+veredicto **no identifica de qué página es** —evidencia que no nombra su objeto no es evidencia—; uno con
+solo la URL no prueba nada. Solución: **franja A (URL) + separador gris + franja B (veredicto)**, montadas
+con `sharp`. ⚠️ **El separador gris es lo que lo hace honesto:** deja ver que son dos trozos, no un
+pantallazo continuo que nunca existió. Y se declara **dos veces**: en el `alt` de cada una y en la nota
+del documento — una imagen compuesta que no se declara, en un registro de evidencia, es justo lo que no se
+hace.
+
+**LAS ORIGINALES, INTACTAS — Y COMPROBADO.** Los recortes son ficheros NUEVOS (`-recorte.png`, junto a
+sus originales, bajo el mismo `!/docs/auditoriafinal/capturas/`). Las ocho originales no se recortan, ni
+recomprimen, ni renombran, ni mueven: `git status` confirmado dos veces con 0 cambios en ellas. Miré los
+ocho recortes **como imagen** antes de darlos por buenos (es un documento sobre mirar las cosas): los
+cuatro W3C con su URL sin cortar (`/`, `/parada/744`, `/linea/35`, `/estado`) y su banda verde; PageSpeed
+con los 5 círculos + métricas + Lighthouse 13.4.1; A+ con las 6 cabeceras; rich-results con «1 elemento
+válido».
+
+⚠️ **El render de `<details>` tiene su trampa:** las líneas en blanco alrededor del `<summary>` y del
+`</details>` son obligatorias, y al montar los cuatro W3C seguidos quedaron tres `</details>` pegados al
+recorte siguiente — se arreglaron. Verificado estáticamente (no hay render de GitHub en vivo aquí, se
+dice).
+
+tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (los 8 enlaces de recorte
+resuelven contra `git ls-files` — `git add` antes de la suite) · vigía **ok**. Commit atómico (evidencia)
++ éste (bitácora). NO se tocó `ZETABUS-ESTADO.md`, `GUIA-BUENAS-PRACTICAS.md`, ni los seis informes de
+bloque, ni las ocho originales. Sin push.
