@@ -281,7 +281,42 @@ una temporada larga** — no "no tocarlo nunca", sino que lo que quede esté **d
 > ⬜ **Quedan solo los bloques F y D** de la auditoría. Y el cierre: **pushear (~49 commits)**, purgar el
 > CDN, verificar en vivo, y repetir la ronda de escáneres.
 
-**Última actualización:** 31/07/2026
+### Parte 7 · ⭐ AUDITORÍA DE CIERRE · BLOQUE F (LA EXPERIENCIA COMPLETA) — auditado y cerrado
+El único bloque que **no se audita leyendo: se audita USANDO el producto**. Recorridos completos en
+navegador real, capturas **miradas como imagen**, 360 y 1280, Avanza en vivo y `?fingir=` solo para los
+estados raros. **L91 · L92.**
+> ⭐⭐ **VEREDICTO: cero 🔴.** Ningún recorrido principal se rompe, ningún estado deja tirado, y **nada
+> engaña** — que era lo más grave posible aquí. Solo fricción y pulido.
+> ⭐ **Y lo que más valió del informe:** *"la tesis del producto LLEGA al usuario en palabras, no se queda
+> en el modelo de datos"* — *"Ahora mismo no viene ningún autobús… No es un error"* · *"NO significa que
+> no haya autobuses: significa que no lo sabemos"* · *"Preferimos decir esto a enseñarte una lista
+> incompleta con cara de estar completa"* · y con el desvío real de hoy: *"No lo decimos nosotros: lo dice
+> su ruta… Puede haber otras que no detectamos; hazle caso al cartel."*
+- `4941fe8` — **el informe** `F-experiencia.md`, con **la lista de sesgos** (L91).
+- `10b60d3` — **#1: la ciudad, visible.** *"El autobús urbano de Zaragoza, línea a línea."* — un `<p>`
+  con `aria-hidden` (el `<h1 sr-only>` ya lo dice al lector). Texto **verbatim del arranque de la
+  `description`**: una sola voz. *Honesto con ESTA pantalla: la home es un índice de líneas, no la vista
+  en vivo — "en directo" habría prometido lo que está a un clic, no delante.*
+- `64df23c` · `c4f85c0` — **#2 y #3: "Código" y "Estado del servicio" en el pie.** Ahora existe **camino
+  del sitio al código**, y la pantalla que mejor demuestra la tesis **deja de ser invisible**.
+- `8543e31` — **#5: el "← volver" NO se pone.** ⛔ Cazó una **decisión documentada** que ninguno de los dos
+  conocía (`parada:121`), **respaldada por un guardián** (el primer tiempo debe caber sin scroll a 360).
+  Y `/linea:194-198` **ya tenía su propio ⛔, más completo**, que cita el caso del enlace compartido.
+  ⇒ **La auditoría redescubrió algo ya razonado.** Se documenta la revalidación; **la miga de pan también
+  se descarta** (mismo problema físico: ocupa la línea de arriba).
+- `44078d1` — **el ancho de `/estado`** (L92).
+> ⚠️ **Y una corrección de Antonio a sí mismo:** aprobó meter `/estado` en el `disallow` **razonando por
+> analogía con `/parada`**, sin saber que **ya estaba en el sitemap a propósito**. Contradecía una
+> decisión previa sin verla. ⇒ **`/estado` queda enlazada e INDEXABLE.** La analogía era floja: lo que se
+> protege en `/parada` son **los minutos, que caducan en 15 s**; el contenido de `/estado` cambia despacio
+> y **su valor está en ser público**.
+> ⬜ **Quedan fuera, documentados:** **#4** (la N7: ~10.000 px de scroll a 360 — decisión real, mostrar la
+> ruta entera es honesto), **#6** (rótulo en los chips), **#7** (la referencia del fallo sin destino),
+> **#8** ("Bus 4265"), y el nombre *"Estado del servicio"* (radio pequeño, pero no está mal).
+> ⬜ **Queda el bloque D** y el cierre: **pushear (~59 commits)**, purgar CDN, verificar, ronda de
+> escáneres.
+
+**Última actualización:** 01/08/2026
 
 ---
 
@@ -1453,6 +1488,39 @@ Dos casos del mismo bloque, resueltos de forma **opuesta**, y ahí está la lecc
 ⚠️ *Y el corolario que costó dinero entenderlo: **un `test.fixme` permanente es un instrumento dormido en
 la suite** — exactamente lo que la auditoría se dedicaba a eliminar. Dejarlo así habría sido **crear a
 sabiendas lo que se estaba limpiando**.*
+
+⭐⭐⭐ **L91 · EL QUE LLEVA DÍAS DENTRO NO PUEDE AUDITAR LA EXPERIENCIA — salvo que audite su propio sesgo.**
+El Bloque F (la experiencia completa) es el único que **no se audita leyendo código: se audita USANDO el
+producto** como alguien que llega sin saber nada. Y ahí el auditor tiene un problema: **lleva días
+dentro, sabe dónde está todo.**
+> ⭐⭐ **La contramedida que lo hizo funcionar: una LISTA DE SESGOS como salida obligatoria del informe** —
+> cada momento en que se tiró de conocimiento previo, anotado. *"Cuando algo te resulte obvio, pregúntate
+> si lo es porque está bien diseñado o porque tú ya lo sabías."*
+✅ *Y los **dos hallazgos más limpios del bloque nacieron justo de ahí**:*
+· *"Sabía" que el `<h1>` de la home dice "…de Zaragoza" → al obligarse a **juzgar por la IMAGEN y no por
+  el DOM**, descubrió que **está visualmente oculto**: la ciudad no aparece por ningún sitio arriba.*
+· *Fue directo a `/estado` **porque sabía que existe** → al preguntarse cómo llegaría un usuario,
+  descubrió que **ninguna página la enlazaba**. La pantalla que mejor demuestra la tesis del proyecto era
+  invisible.*
+> ⭐ *Ninguno de los dos lo habrían visto los otros cinco bloques: no son fallos de código, ni de test, ni
+> de marcado. **Son fallos de CAMINO** — y solo aparecen recorriendo.*
+
+⭐⭐ **L92 · "NO SE ROMPE" Y "ESTÁ APROVECHADO" SON COSAS DISTINTAS — y ninguna auditoría preguntó la segunda.**
+Antonio preguntó si `/estado` y `/sobre-los-datos` estaban **adaptadas a escritorio o eran "móvil y a
+correr"**. Ni el bloque B (que midió 5 anchos y certificó *"cero scroll horizontal de 320 a 1920, sin
+truncados"*) ni el F lo respondían: **una página puede verse perfectamente en escritorio y ser una
+columna de móvil centrada con dos tercios de pantalla vacíos.** Eso **no sale como hallazgo** en una
+auditoría de marcado, porque técnicamente está bien.
+✅ *Medido: home, línea y parada rompen a **1152 px**; `/estado` y `/sobre-los-datos` se quedaban en
+**640 px**.*
+> ⭐⭐ **Y la calibración que evitó un falso hallazgo: las dos parecían el mismo problema y solo UNA lo
+> era.** `/sobre-los-datos` es **prosa**, y ~640 px es **la medida de línea correcta** — ensancharla la
+> empeoraría. `/estado` es **un panel de datos**: ahí el ancho se desaprovecha de verdad.
+⚠️ *Lo significativo no era el ancho: era **la INCOHERENCIA** — cuatro de cinco páginas usaban un ancho
+adecuado a su contenido, y `/estado` era la única en el lado malo.*
+✅ *Arreglado reutilizando **el patrón de break-out que ya existía en la home** (no un segundo mecanismo),
+con el resultado a **1152 px: el mismo ancho**, coherente con el resto. Móvil verificado **idéntico
+contra la imagen**, no asumido.*
 
 ---
 
