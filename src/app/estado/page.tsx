@@ -165,7 +165,15 @@ export default function Estado() {
 
       {/* EL DETALLE. Solo lo que el motor da en este estado; nada se rellena. */}
       {modelo.veredicto === 'ilegible' ? null : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        // ⭐ F · EL PANEL DE DATOS ROMPE LA COLUMNA DE LECTURA. Es un panel de tarjetas, no
+        //    prosa: gana con el ancho. Antes se quedaba en los 672 px del `main` y a 1920 era
+        //    una isla de móvil con dos tercios de pantalla vacíos —la única de las cinco
+        //    páginas en ese lado (auditoría F)—. Se usa EL MISMO patrón que la rejilla de la
+        //    home: `ml-[50%] w-[min(72rem,…)] -translate-x-1/2` rompe hasta 1152 px (coherente
+        //    con la home) y `auto-fill,minmax` reorganiza las tarjetas —una columna a 360
+        //    (idéntico a antes), hasta cuatro en fila arriba—, sin estirarlas. ⚠️ SOLO el grid:
+        //    el título, el banner del veredicto y el pie son PROSA y se quedan en su medida.
+        <div className="ml-[50%] grid w-[min(72rem,calc(100vw_-_2rem))] -translate-x-1/2 grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-3">
           {/* Barrido: solo cuando hubo índice (al-dia / desactualizado). */}
           {(modelo.veredicto === 'al-dia' || modelo.veredicto === 'desactualizado') && modelo.barrido && (
             <Tarjeta titulo="Último barrido nocturno">
