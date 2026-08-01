@@ -71,9 +71,11 @@ Ver [`docs/auditoria/07-contrato-de-explotacion.md`](docs/auditoria/07-contrato-
 > transposiciones de letras o dígitos** (`8948-MKF` / `8948 MFK`). Esa es la huella de una
 > transcripción **a mano**: **se equivoca ~1 de cada 70.**
 >
-> ⇒ Donde el pliego también la tiene, **manda el pliego**. Donde busesmadrid es la **única**
-> fuente —los 43—, ese error **no es detectable**, y por eso esos vehículos nacen con
-> `confianza: fuente_secundaria` y salen **marcados con un asterisco en la pantalla**.
+> ⇒ Donde el pliego también la tiene, **manda el pliego**. De los **43** que solo trae busesmadrid
+> (no están en el pliego), **29 los hemos visto circular nosotros** —la observación propia manda
+> sobre la fuente ajena, y quedan como `observacion_propia`—; los **14** restantes descansan solo
+> en busesmadrid: ese error **no es detectable**, y por eso nacen con `confianza: fuente_secundaria`
+> y salen **marcados con un asterisco en la pantalla**.
 >
 > **Una web de aficionados no se disfraza de pliego municipal, por buena que sea.**
 

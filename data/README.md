@@ -24,10 +24,13 @@ Regenerado el 13/07/2026 desde el **Anexo 5 del pliego de contratación municipa
   "fuente": "pliego-2025-anexo5", "confianza": "oficial" }
 ```
 
-- **350 vehículos** con `confianza: "oficial"` — del registro del pliego.
-- **53 vehículos** con `confianza: "sin_verificar"` — del fichero heredado. Son los que el
-  registro oficial no tiene (autobuses eléctricos entregados **después** de octubre de 2025).
-  **Se marcan, no se disimulan**, y en pantalla llevarán un asterisco.
+- **350 vehículos** con `confianza: "oficial"` — todos los del registro del pliego (Anexo 5).
+- Los **53 restantes** son los que el pliego no tiene (autobuses eléctricos entregados
+  **después** de octubre de 2025). **Se marcan, no se disimulan**, y en pantalla llevan un
+  asterisco. Su `confianza` dice en qué se apoya cada uno:
+  - **36** `observacion_propia` — vistos circular por nosotros.
+  - **14** `fuente_secundaria` — solo en busesmadrid.es, sin observación propia que los respalde.
+  - **3** `sin_verificar` — lo único que hoy descansa solo en el fichero heredado (`referencia/`).
 
 ### ⚠️ Dos advertencias que no se pueden ignorar
 
