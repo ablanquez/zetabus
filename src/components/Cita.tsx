@@ -22,7 +22,7 @@ import type { ReactNode } from 'react';
  *  (ni sus hijos: el flag se hereda). Y para que no se olvide en el SÉPTIMO sitio
  *  —la ley de las 26 copias a mano, el mismo patrón que la versión de forma en la
  *  caché— vive en UN componente. Se pinta un string de fuente externa ⇒ se pinta
- *  con <Cita>. Punto. Un guardián lo vigila (ver `tests/cita-traduccion`).
+ *  con <Cita>. Punto. Un guardián lo vigila (ver `e2e/cita-traduccion.spec.ts`).
  *
  *  ⚠️ NUESTRO texto (rótulos, "Hacia", "Primeras salidas", "Información adicional")
  *     NO va en <Cita>: ese SÍ queremos que el traductor lo traduzca. <Cita> es solo

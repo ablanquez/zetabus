@@ -43,7 +43,7 @@ import { AcuseDeToque } from './AcuseDeToque';
  *
  * Aquí el contraste se COMPRUEBA contra el fondo, y si no llega a 4.5:1 se cae a
  * blanco. La inversión (que es la señal de categoría) se mantiene igual: lo que
- * cambia es el tono del número, que es lo accesorio. Ver `tests/chip-linea`.
+ * cambia es el tono del número, que es lo accesorio. Ver `tests/motor-vivo/contraste-de-los-chips.test.ts`.
  */
 
 /** El azul noche de los búhos. Medido en la referencia: rgb(28, 26, 66). */
