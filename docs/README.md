@@ -43,6 +43,23 @@ Las tres primeras que **no miran los datos, sino el proyecto**: se hicieron ante
 
 ---
 
+## Auditoría de cierre
+
+Seis bloques que revisan **el producto entero antes del cierre**, cada uno con su mapa de
+hallazgos. Como los de arriba: **no arreglan** — descubren, y se decide después. Registros
+fechados, no se reescriben.
+
+| Bloque | Qué revisó |
+|---|---|
+| [A · Código](auditoriafinal/A-codigo.md) · [verificación](auditoriafinal/A-codigo-verificacion.md) | El código publicado: duplicación, cabos, tamaños reales — y una segunda pasada que **verifica adversarialmente cada hallazgo**. |
+| [C · Tests y guardianes](auditoriafinal/C-tests.md) | Qué vigila de verdad la red de pruebas, y dónde un guardián estaba dormido. |
+| [B · Interfaz y textos](auditoriafinal/B-interfaz.md) | Lo que se lee en pantalla, palabra por palabra, en los dos anchos. |
+| [E · Operación y datos](auditoriafinal/E-operacion.md) | El despliegue, el cron, la frescura y la procedencia de los datos. |
+| [F · La experiencia completa](auditoriafinal/F-experiencia.md) | El recorrido de usuario **usando el producto**, no leyéndolo. Cero 🔴. |
+| [D · Documentación](auditoriafinal/D-documentacion.md) | Cada afirmación de la doc **contrastada** contra el código, los datos y el producto. ⭐ El 🔴: **el clon limpio no arrancaba siguiendo el README.** |
+
+---
+
 ## El cuaderno de campo
 
 Las preguntas sueltas que hubo que resolver **mientras se construía**: una duda, una medición, un
@@ -120,7 +137,9 @@ de ZetaBus. Las tres primeras dan el tono:
    todos al mismo lado, **no los corrijas uno a uno: busca la causa.**
 
 De la L4 a la L9 están en el documento, y salen todas del mismo sitio: de haberse equivocado
-midiendo. Esta lista decía «Tres» cuando ya eran nueve — la cazó el guardián de este README.
+midiendo. **De la L10 en adelante viven en el registro vivo de
+[`ZETABUS-ESTADO.md`](../ZETABUS-ESTADO.md)** — `LECCIONES.md` guarda las nueve primeras. Esta
+lista decía «Tres» cuando ya eran nueve — la cazó el guardián de este README.
 
 ---
 
