@@ -268,10 +268,16 @@ cd zetabus
 npm install
 
 cp .env.example .env.local     # y pon dentro tu NAP_API_KEY
-npm run gtfs:fetch             # descarga el GTFS oficial (~6,6 MB)
+npm run build                  # descarga el GTFS oficial (~6,6 MB), hornea src/generated y compila (~6 min)
 
 npm run dev                    # http://localhost:3000
 ```
+
+⚠️ **El primer arranque pasa por `npm run build`, no por `npm run dev` a secas.** `dev` solo
+levanta el servidor; la aplicación importa los datos ya horneados en `src/generated/` —que **no
+se versiona**— y ese artefacto lo genera el *build* (`data:build`, dentro de él), no la descarga
+del GTFS. Sin ese paso, `dev` —y las pruebas— revientan al resolver `@/generated`. Después del
+primer *build* ya puedes iterar con `npm run dev` a secas.
 
 **El GTFS no viene en el repositorio.** El porqué —que no es legal, es de frescura— está en
 [`data/gtfs/README.md`](data/gtfs/README.md). Y **el *build* falla ruidosamente si no está**: no
