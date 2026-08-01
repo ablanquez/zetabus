@@ -316,6 +316,38 @@ estados raros. **L91 · L92.**
 > ⬜ **Queda el bloque D** y el cierre: **pushear (~59 commits)**, purgar CDN, verificar, ronda de
 > escáneres.
 
+### Parte 8 · ⭐⭐⭐ AUDITORÍA DE CIERRE COMPLETA — LOS SEIS BLOQUES HECHOS (28/07 – 01/08)
+Se estrenó un método nuevo —**auditoría de puesta a punto en seis bloques**— y **está terminado**:
+**A** código · **C** tests y guardianes · **B** interfaz y textos · **E** operación y datos · **F**
+experiencia completa · **D** documentación. Cada uno **solo lectura**, con su informe fechado en
+`docs/auditoriafinal/` (**registros históricos: no se reescriben**), y los arreglos después, en tandas.
+
+**BLOQUE D (el último) — `3c5d2dd`, y sus arreglos.** **L93.**
+- `39dd479` — 🔴 **el quick-start del README no arrancaba en un clon limpio.** Rojo y verde demostrados.
+- `1035614` — **la procedencia de la flota**, desfasada en dos documentos (la tesis del proyecto contada
+  con cifras falsas). ⭐ *Y dos "53" que parecían el mismo error resultaron **correctos**: eran "53 que el
+  pliego no tiene", no "53 sin_verificar". No se tocaron.*
+- `794835a` — **`sharp` se coló en el `SECURITY.md`**: el documento afirmaba *"no está en package.json"*
+  y **su propio comando de auto-verificación lo desmentía**. ⚠️ *Un documento que se autoverifica y falla
+  su propia prueba es peor que uno sin verificación: enseña a no fiarse del método.* Corridos **todos**
+  sus comandos; solo fallaba ése. Y THIRD-PARTY listaba 22 diciendo 23.
+- `14023ae` — **dos citas más a guardianes inexistentes** (van **seis** en total: el patrón más repetido
+  de toda la auditoría). Barrido completo: **no quedan más**.
+- `ecd1e9a` — **el comentario del suelo táctil** seguía diciendo 44 px, **contradiciendo el B-07** de hace
+  dos días.
+- `4cd2a8a` — **los seis informes de la auditoría no estaban enlazados desde ningún índice vivo** (la mejor
+  evidencia del proyecto, invisible), y el **puntero de las lecciones** estaba incompleto en `docs/README`
+  aunque el README raíz ya se había corregido: **el arreglo no se propagó al gemelo**.
+
+> **BALANCE DE LOS SEIS BLOQUES:** un solo 🔴 en toda la auditoría — **el quick-start**, encontrado en el
+> último bloque. Ni el código, ni los tests, ni la interfaz, ni la operación, ni la experiencia tenían
+> nada que rompiera o mintiera. *Y el 🔴 no estaba en el producto: estaba en la puerta de entrada.*
+> ⬜ **Fuera, documentados:** las capturas de la home (desfasadas tras el `<p>` de la ciudad y el pie
+> nuevo), la cifra volátil de nombres, el `[Unreleased]` del CHANGELOG, la demo sin documentar del todo,
+> `ZETABUS_DEMO` en el `.env.example`, el rancio del 44 en `globals.css`, y la propuesta del `predev`.
+> ⬜ **QUEDA EL CIERRE:** pushear (**~68 commits**), purgar el CDN, verificar en vivo y la ronda de
+> escáneres como comprobación de regresión.
+
 **Última actualización:** 01/08/2026
 
 ---
@@ -1521,6 +1553,33 @@ adecuado a su contenido, y `/estado` era la única en el lado malo.*
 ✅ *Arreglado reutilizando **el patrón de break-out que ya existía en la home** (no un segundo mecanismo),
 con el resultado a **1152 px: el mismo ancho**, coherente con el resto. Móvil verificado **idéntico
 contra la imagen**, no asumido.*
+
+⭐⭐⭐ **L93 · UN DOCUMENTO NO SE AUDITA LEYÉNDOLO — SE AUDITA CONTRASTÁNDOLO. Y el que se saltó era el primero que ejecuta cualquiera.**
+El Bloque D contrastó **~55 afirmaciones** contra el código, los datos y el producto (no las leyó): ~40
+correctas, **15 hallazgos**. *Un documento que miente **suena igual de bien** que uno que dice la verdad —
+ése es todo el problema.*
+> ⭐⭐⭐ **EL 🔴, y es el peor sitio posible: EL CLON LIMPIO NO ARRANCABA.** El quick-start del README
+> terminaba en `npm run dev` tras `gtfs:fetch`… pero la app importa `@/generated`, que **está gitignored y
+> lo genera `data:build`**, no `gtfs:fetch` — y `dev` **no tiene `predev`**.
+> ⇒ **Siguiendo el README al pie de la letra, la primera carga revienta:**
+> `Module not found: Can't resolve '@/generated'`.
+> **Es lo PRIMERO que hace quien llega al repositorio.** Y llevaba ahí sin que nadie lo notara **porque
+> nadie audita desde un clon limpio: se audita desde la máquina que ya tiene los artefactos.**
+⚠️ *Mismo agujero en `npm run test` (17 tests importan `topologia`). Propuesta anotada, no hecha: un
+`predev`/`prepare` que hornee `src/generated` sin `next build`, para que `npm run dev` "solo funcione".*
+
+⭐⭐ **Y LA AUTOCORRECCIÓN QUE EVITÓ META UN ERROR DONDE NO LO HABÍA.**
+El informe señalaba un "53" desfasado en varios documentos (la flota real es 350 oficial · 36
+`observacion_propia` · 14 `fuente_secundaria` · **3** `sin_verificar`). Al ir a corregirlos, se descubrió
+que **dos de esos "53" eran CORRECTOS**: no decían *"53 sin_verificar"* sino *"53 que el pliego no
+tiene"* — **el mismo número con otro sentido**. Se dejaron intactos.
+> ⭐ *Corregir un documento sin entender qué afirma es tan peligroso como no corregirlo. **Verificar antes
+> de tocar** aplica también a los arreglos de documentación.*
+
+⭐ *Y lo que salió LIMPIO, que era el peor hallazgo posible de este bloque: **nadie había corregido la
+historia.** Los seis informes de `auditoriafinal/` tienen **un solo commit** cada uno y declaran ser
+registro fechado; las ediciones de `auditoria/` son mecánicas (enlaces, rutas), con las conclusiones
+intactas. Y **ningún puntero VIVO se apoya en una foto vieja** como si fuera el estado actual.*
 
 ---
 
