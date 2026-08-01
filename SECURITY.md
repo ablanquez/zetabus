@@ -42,10 +42,14 @@ npm audit --json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',(
 
 ---
 
-## Grupo B — Next.js y sus transitivas `postcss` / `sharp` (3 avisos)
+## Grupo B — Next.js, `postcss` y `sharp` (3 avisos)
 
-`postcss` y `sharp` **no están en el `package.json`**: son transitivas de Next (y de Tailwind).
-Verifícalo: `grep -E '"(postcss|sharp)"' package.json` → vacío.
+`postcss` es **transitiva** (de Tailwind); **`sharp` sí es una `devDependency` declarada** —pero
+solo como herramienta local, no como código de producción (ver abajo)—. **Ninguna de las dos entra
+en el *bundle* ni corre en el servidor de producción**, así que ser directa o transitiva no cambia
+el análisis: la superficie sigue siendo build/local. Verifícalo:
+`grep -E '"(postcss|sharp)"' package.json` → solo `sharp`, bajo `devDependencies` (`postcss` no
+aparece: llega por `@tailwindcss/postcss`).
 
 ### `postcss` (path traversal / lectura de ficheros / XSS en el *stringify*)
 

@@ -193,6 +193,7 @@ arriba**.
 | `@tailwindcss/postcss` | 4.3.2 | MIT |
 | `fflate` | 0.8.3 | MIT |
 | `pngjs` | 7.0.0 | MIT |
+| `sharp` | 0.34.5 | **Apache-2.0** |
 | `@types/node` | 20.19.43 | MIT |
 | `@types/react` | 19.2.17 | MIT |
 | `@types/react-dom` | 19.2.3 | MIT |
