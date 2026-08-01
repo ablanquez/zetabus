@@ -185,6 +185,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             >
               Sobre los datos
             </Link>
+            {/* ⭐ F·#2 · EL CAMINO DEL SITIO AL CÓDIGO, que no existía. Repo público; la URL
+                es la MISMA que va en el User-Agent (`+https://github.com/ablanquez/zetabus`,
+                ver README). Externo, como el de MITRAMS. "Código" en llano: que sea GitHub se
+                ve al pulsar. El repo identifica y enlaza al autor, así que también se llega a él. */}
+            <a
+              href="https://github.com/ablanquez/zetabus"
+              className="inline-flex min-h-[var(--control)] items-center font-semibold underline underline-offset-2"
+              target="_blank"
+              rel="noreferrer"
+              data-papel="enlace-codigo"
+            >
+              Código
+            </a>
           </div>
         </footer>
       </body>
