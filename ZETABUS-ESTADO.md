@@ -356,7 +356,59 @@ experiencia completa · **D** documentación. Cada uno **solo lectura**, con su 
 > · *Dato de paso: las vulnerabilidades de npm han bajado de **12 a 4** (parche aguas arriba). El
 >   `SECURITY.md` habla de 12 → **queda desfasado**, a revisar cuando toque.*
 
-**Última actualización:** 01/08/2026
+## ⭐⭐ MANTENIMIENTO POST-CIERRE (09/09) — LAS 30 VULNERABILIDADES DEL PANEL, A CERO
+**El proyecto sigue CERRADO — esto inaugura la categoría de mantenimiento post-cierre**, con protocolo
+propio (heredable a 004): advisory de origen antes que la fila del panel · `npm explain` para la
+procedencia · `--dry-run` antes de `audit fix` · **jamás `--force`** · versión MÍNIMA segura (práctica
+documentada de Dependabot) · verificación EN VIVO tocando el servidor, no leyendo el log del deploy.
+
+**El aviso:** el panel de Hostinger (09/09) enseñó **30 vulnerabilidades** (2 críticas · 16 altas ·
+12 moderadas). Las 2 críticas, de `next` 16.2.10 (aviso oficial Next.js ago/26, sin backport a 16.2.x):
+- **GHSA-2xp9-vwfh-vxw4** — RCE **no autenticado** vía optimización de imágenes AVIF (el fallo vive en
+  libheif, que sharp usa por debajo). Aplicaba de verdad: autoalojado, `/_next/image` vivo.
+- **CVE-2026-75604** — RCE solo sobre filesystem **Windows** con Pages+App Router. No aplica en
+  producción Linux; se cubrió con la misma subida.
+> ⚠️ *La discrepancia de conteo NO era mentira del panel: Hostinger cuenta **advisories** (30), npm
+> cuenta **paquetes** (10). Las 2 críticas coincidían exactas en los dos instrumentos.*
+
+**TANDA 1 (`2e1930e`) — next + sharp. DESPLEGADA Y VERIFICADA EN VIVO.**
+- `next` 16.2.10 → **16.3.4** · `eslint-config-next` en lockstep · `sharp` ^0.34.5 → **^0.35.4**.
+- ⭐ **Dos vías de cierre, y hacían falta las dos (L94):** next 16.3.x solo **DESACTIVA** la
+  optimización AVIF (mitigación *"hasta que el fix upstream se propague"*, literal del aviso); el
+  arreglo real de libheif es **sharp 0.35.4** (GHSA-rgj7-g3m4-5g8c). Verificado en el registro que
+  next@16.3.4 sube su sharp optional a ^0.35.4 — las dos copias convergen.
+- El `postcss@8.4.31` **anidado** que next pineaba desapareció del árbol (era inarreglable sin subir
+  next). `npm audit fix` sin `--force` limpió las 6 transitivas + 5 extraneous wasm.
+- `next-env.d.ts` regenerado por `next build` viajó en el commit (versionado a propósito,
+  `.gitignore:55`; el ejecutor **paró antes de commitear** un fichero fuera de alcance — la costura
+  funcionó, y era un fallo del alcance del prompt, no del commit).
+- ✅ **VERIFICADO EN VIVO con curl** (los tres calcados a local): home **200** · `/_next/image` →
+  **400** *"url parameter is required"* · AVIF remoto → **400** *"url parameter is not allowed"*.
+  Sin `remotePatterns` ningún AVIF externo entra al optimizador: **el vector RCE, cerrado en
+  producción y comprobado materialmente**. (La app ni usa `next/image` — grep a cero — pero el
+  endpoint existe con `next start`; por eso se parcheó igual.)
+- El panel re-escaneó (09/09 20:47): **30 → 2** (solo la familia vitest, moderadas).
+
+**TANDA 2 (`ed55781`) — vitest 3 → 4.1.11. EL CERO.** *(en local al escribir esto; viaja con este estado)*
+- CVE-2026-84373 (path traversal / lectura arbitraria en `@vitest/mocker`): parche en **4.1.11, sin
+  backport a la rama 3**. Alerta de ámbito dev — la clase que el preset de GitHub auto-descarta —
+  pero "excluida de la tanda de seguridad" ≠ "perdonada": tanda propia.
+- ⭐ **Censo pre-migración primero:** la guía oficial de migración leída ENTERA, **27 breaking changes
+  cruzados contra config y suite → CERO afectan**. La migración quedó en **una línea** de
+  `package.json`; `vitest.config.ts` y los 47 tests, intactos. El `include` explícito
+  (`tests/**/*.test.ts`) resultó ser LA pieza de seguridad: sin él, la 4 (que ya no excluye casi nada
+  por defecto) se tragaría los 38 specs de Playwright de `e2e/` y los 2 de `parked/`.
+- Suite tras la subida: **47 ficheros · 564 pasados · 1 saltado — IDÉNTICA a la referencia**, en
+  16,29 s (−3 s, coherente con la arquitectura nueva). Contraste independiente: 47 en disco = 47
+  ejecutados. Typecheck verde (el fin de la inclusión accidental de `@types/node` no mordió).
+- ⚠️ **vite saltó solo de 7.3.6 a 8.2.2** (major, Rollup→Rolldown) como resolución automática dentro
+  del rango `^6||^7||^8` que vitest declara. **L95.** Vite 8 es estable oficial desde marzo/26,
+  dev-only (producción compila con Turbopack). El ejecutor paró antes de commitear porque el prompt
+  lo nombraba en NO ENTRA; se aprobó con doctrina (fijarlo con `overrides` habría sido sostener a
+  mano una restricción contra lo que la propia herramienta soporta, sin fallo que lo justifique).
+- ✅ **`npm audit`: 0-0-0-0-0.** El ciclo entero: 30 del panel → 10 paquetes npm → 2 → **cero**.
+
+**Última actualización:** 09/09/2026
 
 ---
 
@@ -1589,6 +1641,23 @@ historia.** Los seis informes de `auditoriafinal/` tienen **un solo commit** cad
 registro fechado; las ediciones de `auditoria/` son mecánicas (enlaces, rutas), con las conclusiones
 intactas. Y **ningún puntero VIVO se apoya en una foto vieja** como si fuera el estado actual.*
 
+⭐⭐ **L94 · EL PARCHE DEL FRAMEWORK PUEDE SER MITIGACIÓN, NO ARREGLO — y solo el advisory de origen lo dice.**
+La fila del panel decía "actualiza next". El aviso oficial decía más: next 16.3.x **desactiva** la
+optimización AVIF *"hasta que el fix upstream se propague"* — no arregla libheif. El arreglo real era
+**sharp 0.35.4** (otra subida, otro advisory). Quien lee solo el panel sube next, ve el escáner en
+verde, y se queda con la librería rota debajo esperando a que algo la reactive.
+> ⭐ *La fila del panel es el síntoma. El advisory de origen es el diagnóstico. Se parchea contra el
+> diagnóstico: **eran dos subidas distintas y hacían falta las dos.***
+
+⭐⭐ **L95 · UNA TRANSITIVA NO PINEADA NO SE QUEDA DONDE ESTÁ SOLO PORQUE SIGA SIENDO VÁLIDA.**
+El censo pre-migración afirmó *"no se sube vite: el 7.3.6 cumple el rango"*. Verdad como necesidad,
+falso como predicción: al rehacer el subárbol de vitest, npm **resuelve al máximo del rango**
+disponible en el registro — y ahí estaba vite 8.2.2 (major, Rollup→Rolldown). Todo salió verde, pero
+el commit llevaba un major que el censo no anunció.
+> ⭐ *Para predecir dónde acaba una transitiva no pineada se mira **el máximo del rango en el
+> registro**, no la versión instalada. Y la red que lo cazó no fue el censo: fue **el alcance
+> explícito del prompt** — vite estaba en NO ENTRA, y el ejecutor paró antes de commitear.*
+
 ---
 
 ## 5 · ⚠️ EL INSTRUMENTO HA MENTIDO ~45 VECES
@@ -2701,6 +2770,21 @@ Corregido a 1.0.0 (commit `afcb281`, diff de solo 2 líneas, sin tocar el árbol
 ---
 
 ## 8 · Cabos abiertos
+
+**⬜ MANTENIMIENTO POST-CIERRE (09/09) — cabos que dejó el ciclo de vulnerabilidades:**
+- ⬜ **`SECURITY.md` desfasado, ahora en sentido contrario.** Documenta 15 vulnerabilidades ACEPTADAS
+  con evidencia (L73·L74) y hoy `npm audit` da **CERO**: el análisis de aceptación ya no describe el
+  árbol. *(El propio estado lo avisó el 01/08 cuando bajaron a 4; el aviso sigue vivo y ha crecido.)*
+  Actualizarlo cuando toque — sin prisa: un documento que declara más riesgo del que hay no expone,
+  solo desentona.
+- ⬜ **El warning de vite 8 sobre `vitest.config.ts`** (`configLoader: 'native'`, aviso de un FUTURO
+  major de Vite): el fichero usa ESM y se carga como CJS porque el `package.json` no declara
+  `"type": "module"`. Las dos salidas que propone Vite (renombrar a `.mjs` o declarar el type) tienen
+  alcance mucho mayor que un warning — **tanda propia, cuando sea de hoy y no de mañana**.
+- ⚠️ **El GTFS caduca el 2026-10-05** (lo avisa el propio build: *"caduca-pronto"*). Misma fecha que
+  el feed de Desplázame (004): ese día toca renovar en los dos.
+- **Matiz de `engines`:** el `package.json` declara `node >=20.9` (admite los impares 21/23); vitest 4
+  exige `^20||^22||>=24`. En la práctica se construye con 24 — solo avisaría a quien use un impar.
 
 **Para cerrar la Tanda 7:**
 - ✅ **LOGO CERRADO** (`e987e29` · `4ab2d14` · `3b70c93`). Fuente única, favicon derivado,
