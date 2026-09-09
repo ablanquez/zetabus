@@ -57,7 +57,7 @@
     "tailwindcss": "^4",
     "tsx": "^4",
     "typescript": "^5",
-    "vitest": "^3"
+    "vitest": "^4.1.11"
   },
   "description": "Visor en vivo del autobús urbano de Zaragoza",
   "license": "Apache-2.0",
