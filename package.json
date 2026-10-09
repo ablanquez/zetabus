@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run version:build && npm run gtfs:fetch && npm run nombres:ensure && npm run data:build && npm run correspondencias:ensure && next build",
+    "build": "npm run version:build && npm run gtfs:fetch && npm run nombres:ensure && npm run data:build && npm run correspondencias:ensure && next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
