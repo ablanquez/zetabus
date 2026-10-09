@@ -2010,3 +2010,45 @@ tsc **0** · lint **0** · vitest **564/1 skip** · `readme-no-miente` **26** (e
 se añadió ninguna cifra que el guardián vigile) · vigía **ok**. Commit atómico (README) + éste (bitácora).
 NO se tocó `VERIFICACION-EXTERNA.md`, ni `docs/README.md`, ni `ZETABUS-ESTADO.md`, ni los informes de
 bloque. Sin push.
+
+### Fase 56 · El deploy de `74a2365` muere en Hostinger: Turbopack no levanta sus workers de PostCSS
+
+**El fallo.** El deploy de `74a2365` (ciclo 2 de seguridad: next 16.3.4 → 16.3.8, sharp 0.35.5) falló
+en el `next build` de Hostinger: `TurbopackInternalError` *«Failed to write app endpoint /page»*,
+originado en `leaflet.css` → PostCSS → *«node process exited before we could connect to it with exit
+status: 0»*. (Resumen del log de Hostinger tal como lo trae Antonio; el log completo no lo he visto.)
+Producción sigue sirviendo la versión anterior.
+
+- ⭐ **QUÉ DIO VERDE MIENTRAS EL FALLO ESTABA VIVO — el build local del MISMO commit, el MISMO día.**
+  `npm run build` de `74a2365` en local (Windows 10, Node v24.19.0, Turbopack por defecto), corrido
+  en la tanda del ciclo 2 antes de commitear, salida literal:
+  ```
+  ▲ Next.js 16.3.8 (Turbopack)
+  ✓ Compiled successfully in 14.0s
+  ✓ Generating static pages using 11 workers (9/9) in 835ms
+  ```
+  Y detrás, en verde también: `npm start` + 4 `curl` (`/` 200, `/opengraph-image` 200 `image/png`),
+  suite 47/564/1, typecheck y lint. Ninguno de esos verdes pasa por el contenedor de build de Hostinger.
+
+**La causa (documentada; no es de nuestro código).** Turbopack ejecuta PostCSS en procesos hijos de
+Node que conectan de vuelta al build por TCP loopback, y el worker hace `process.exit(0)` al cerrarse
+el socket. El contenedor de build de Hostinger mata o limita esos procesos y mueren antes de conectar.
+Fallo conocido, con casos públicos idénticos en Hostinger (sep–oct/26).
+⚠️ **Lo que NO consta: por qué ahora.** El script `build` siempre ha acabado en `next build`, y en
+Next 16 Turbopack va *«enabled by default»* (doc local, `06-cli/next.md`): todos los deploys
+anteriores ya compilaban con Turbopack en Hostinger y llegaron al final (Fase 36). Si lo cambió
+16.3.4 → 16.3.8 o lo cambió el contenedor, NO CONSTA.
+
+**El arreglo** — ⏳ PENDIENTE (commit siguiente): `next build --webpack` en el script `build`; webpack
+corre PostCSS dentro del proceso del build. `next dev` se queda con Turbopack. El flag existe en
+nuestra versión: `npx next build --help` → `--webpack   Builds using webpack.`
+⚠️ **El verde local del arreglo tampoco prueba Hostinger** (es justo esta lección). La prueba de
+verdad es el siguiente deploy allí: ⏳ PENDIENTE.
+
+**El supuesto de la Fase 36, confirmado por primera vez** («un build fallido en Hostinger deja la
+versión anterior sirviendo»): éste es el primer build que muere de verdad allí, y producción siguió
+con la anterior. Lo vio Antonio; desde aquí no se ha comprobado.
+
+*Lección viva: mismo commit, mismo comando, distinto entorno de procesos. Es la Fase 33 por otro
+lado: allí el verde local dependía de ficheros que ya existían; aquí, de una máquina sin límites de
+procesos. El build local no certifica el build de Hostinger.*
