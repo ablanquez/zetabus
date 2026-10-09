@@ -408,7 +408,55 @@ documentada de Dependabot) · verificación EN VIVO tocando el servidor, no leye
   mano una restricción contra lo que la propia herramienta soporta, sin fallo que lo justifique).
 - ✅ **`npm audit`: 0-0-0-0-0.** El ciclo entero: 30 del panel → 10 paquetes npm → 2 → **cero**.
 
-**Última actualización:** 09/09/2026
+## ⭐⭐ MANTENIMIENTO · CICLO 2 (09/10) — 15 VULNERABILIDADES, UN DEPLOY CAÍDO, Y TODO EN VIVO EL MISMO DÍA
+El protocolo del ciclo 1, aplicado tal cual — y estrenando su primera complicación de verdad.
+
+**El aviso:** el panel (escaneo 08/10) enseñó **15** (1 crítica · 6 altas · 8 moderadas). La crítica,
+**GHSA-vcvr-r3jv-pc5j**: RCE en el `ImageResponse` de `next/og` (upstream satori), vulnerable
+≥16.2.0 <16.3.6. Las 6 moderadas de next (07/10) pedían <16.3.8 → **objetivo 16.3.8**, no 16.3.6
+(mínima que cubre TODO, sin saltar al minor 16.4).
+- ⭐ **La exposición se evaluó leyendo el código, no asumiendo:** `opengraph-image.tsx` usa
+  `ImageResponse` solo con constantes del repo y dos enteros del build, generada EN BUILD, nada de la
+  petición; `icon.tsx` ni usa satori. Superficie reducida — se parchea igual (L94).
+
+**TANDA (`74a2365`):** next y eslint-config-next 16.3.4 → **16.3.8** · sharp con suelo a **^0.35.5**
+(cierra librsvg, GHSA-wq5f-xc86-pv6w) · transitivas por audit fix (source-map-js 1.2.2,
+brace-expansion 1.1.21/5.0.12). Binarios `@img/*` verificados en TODAS las plataformas, rsvg 2.63.2.
+- ⭐ **RESIDUAL ACEPTADO — `braces` 3.0.3 (GHSA-vfj7-8cjw-p6xm, alto): NO EXISTE parche publicado**
+  (first_patched_version: null, verificado contra el advisory; la cadena
+  eslint-config-next → fast-glob 3.3.1 exacta persiste también en 16.3.8). Dev-only, solo lint, los
+  globs que expande son patrones del repo. Documentado estilo L74, con criterio de salida: re-mirar
+  cuando publiquen >3.0.3. ⚠️ **`npm audit` ya no da 0 y eso es CORRECTO** — la referencia de verdad
+  es "residual solo-braces" (npm lo cuenta como 5 altos: braces + 4 dependientes sin advisory propio).
+- ⚠️ **Falso ROJO durante la tanda** (la categoría inversa a la bitácora): `coherencia.test.ts` cayó
+  en la 1ª pasada tras el install — test que usa el reloj REAL, máquina cargada. 5/5 aislado y 2
+  pasadas completas verdes con conteo exacto lo demostraron. El ejecutor paró por el conteo (bien) y
+  no tocó ni test ni bitácora (bien). Cabo: inyectar el reloj (ya existe en `limitador.ts:90`).
+
+**⭐⭐ EL DEPLOY DE 74a2365 MURIÓ EN HOSTINGER — Fase 56 de la bitácora, y el primer build caído de
+verdad del proyecto.** `TurbopackInternalError` sobre `leaflet.css` → PostCSS → "node process exited
+before we could connect". Causa documentada (no es nuestro código): Turbopack ejecuta PostCSS en
+procesos hijos de Node que conectan por TCP loopback, y el contenedor de build de Hostinger los mata
+antes de conectar — fallo conocido con casos públicos idénticos (sep-oct/26). **El build local del
+MISMO commit daba verde** (Node 24, Turbopack, sin límites de procesos): el falso verde de libro,
+grabado en la Fase 56 con la salida literal cotejada. **L96.**
+- **Arreglo (`ed9d6f8` bitácora + `a1be0ec` fix):** `next build --webpack` en el script de
+  producción — webpack corre PostCSS dentro del proceso. `next dev` sigue con Turbopack. Y la
+  sorpresa medida: webpack compiló MÁS RÁPIDO (12,2 s vs 14,0 s), con el PNG de la OG byte-idéntico.
+- ✅ **El supuesto de la Fase 36, confirmado por primera vez:** un build fallido en Hostinger deja
+  la versión anterior sirviendo. Producción nunca se cayó.
+- ✅ **DESPLEGADO Y VERIFICADO EN VIVO (16:49):** los 4 curl calcados a local — home 200,
+  `/_next/image` 400/400 (el vector AVIF sigue cerrado), `/opengraph-image` 200 image/png servida
+  por el árbol parcheado. Panel de Hostinger: **limpio** (braces no lo muestra — omite lo que no
+  tiene parche). Los ⏳ de la Fase 56 quedan resueltos por este deploy; anotar su cierre en la
+  bitácora es cabo.
+
+> ⚠️ **Y EL AVISO GORDO QUE DEJÓ EL BUILD: el GTFS CADUCÓ el 05/10** (hace 4 días) y el NAP sigue
+> sirviendo el mismo feed viejo. La app lo construye igual **y lo dice en pantalla** — la tesis del
+> proyecto operando. Pero `docs/README.md:20` ("El GTFS del NAP es fresco y correcto") ya no es
+> cierta hoy, y la misma fecha afecta al feed de Desplázame. Cabos en §8.
+
+**Última actualización:** 09/10/2026
 
 ---
 
@@ -1658,6 +1706,16 @@ el commit llevaba un major que el censo no anunció.
 > registro**, no la versión instalada. Y la red que lo cazó no fue el censo: fue **el alcance
 > explícito del prompt** — vite estaba en NO ENTRA, y el ejecutor paró antes de commitear.*
 
+⭐⭐⭐ **L96 · EL BUILD LOCAL NO CERTIFICA EL BUILD DE HOSTINGER — mismo commit, mismo comando, distinto entorno de procesos.**
+El deploy de `74a2365` murió en el `next build` de Hostinger (Turbopack no pudo levantar sus workers
+de PostCSS: el contenedor los mata antes de que conecten por loopback) **mientras el build local del
+mismo commit, el mismo día, daba verde** — Node 24, sin límites de procesos. Detalle con la salida
+literal cotejada en la **Fase 56** de la bitácora. Es la Fase 33 por otro lado: allí el verde local
+dependía de ficheros que ya existían; aquí, de una máquina que no mata procesos hijos.
+> ⭐ *La corrección (`next build --webpack` en producción) también salió verde en local — **y ese
+> verde tampoco probaba nada**: la prueba fue el deploy siguiente. Lo que certifica el entorno de
+> Hostinger es Hostinger.*
+
 ---
 
 ## 5 · ⚠️ EL INSTRUMENTO HA MENTIDO ~45 VECES
@@ -2770,6 +2828,24 @@ Corregido a 1.0.0 (commit `afcb281`, diff de solo 2 líneas, sin tocar el árbol
 ---
 
 ## 8 · Cabos abiertos
+
+**⬜ MANTENIMIENTO · CICLO 2 (09/10) — cabos nuevos:**
+- ⚠️ **El GTFS está CADUCADO desde el 05/10** y el NAP sigue sirviendo el mismo feed
+  (`20260623_AUZSA_Y_TRANVIA`). La app lo construye y lo comunica en pantalla — correcto por diseño —
+  pero `docs/README.md:20` *("El GTFS del NAP es fresco y correcto")* ya no es cierta hoy: es el
+  resumen fechado del informe 1, así que decidir si se rectifica sin reescribir (patrón del 28/07) o
+  se deja como registro. ⭐ Vigilar el NAP: cuando publiquen feed nuevo, build y verificación.
+  *(Supera al cabo del 09/09, que decía "caduca el 05/10".)* La misma fecha afecta a Desplázame (004).
+- ⬜ **Cerrar la Fase 56 en la bitácora:** sus dos ⏳ PENDIENTE (el arreglo `--webpack` y su prueba en
+  Hostinger) quedaron resueltos por el deploy verificado del 09/10 a las 16:49. Anotarlo sin
+  reescribir la entrada.
+- ⬜ **Inyectar el reloj en `coherencia.test.ts`:** depende del reloj real y da falso rojo con la
+  máquina cargada (visto en la tanda del ciclo 2). `Limitador` ya acepta reloj inyectable
+  (`limitador.ts:90`) y `CacheDosPisos` acepta limitador — es enchufar, no construir.
+- ⬜ **`braces` 3.0.3 — residual aceptado SIN parche posible** (GHSA-vfj7-8cjw-p6xm): re-mirar cuando
+  publiquen >3.0.3 o la cadena (`eslint-config-next → fast-glob → micromatch`) se mueva. Mientras,
+  la referencia del audit es "residual solo-braces", no cero. Candidato a entrar en `SECURITY.md`
+  cuando se actualice (cabo del 09/09, que sigue vivo).
 
 **⬜ MANTENIMIENTO POST-CIERRE (09/09) — cabos que dejó el ciclo de vulnerabilidades:**
 - ⬜ **`SECURITY.md` desfasado, ahora en sentido contrario.** Documenta 15 vulnerabilidades ACEPTADAS
