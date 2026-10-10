@@ -408,6 +408,78 @@ documentada de Dependabot) · verificación EN VIVO tocando el servidor, no leye
   mano una restricción contra lo que la propia herramienta soporta, sin fallo que lo justifique).
 - ✅ **`npm audit`: 0-0-0-0-0.** El ciclo entero: 30 del panel → 10 paquetes npm → 2 → **cero**.
 
+## ⭐⭐ MANTENIMIENTO · CICLO 3 (10/10) — EL AVISO DEL FEED SE VA A /estado, Y /estado DEJA DE DECIR «AL DÍA» SOBRE UN FEED CADUCADO · v1.1.0
+No es un ciclo de seguridad: es la primera pieza de producto tras el cierre, y nace de mirar
+producción con el feed caducado. Fase 57 de la bitácora.
+
+**Lo que destapó la pantalla (captura de Antonio, /estado, 14:44):** la banda roja del layout decía
+«CADUCARON el 2026-10-05 (hace **4** días)» y la tarjeta de la propia página «(hace **5** días)». Y
+la tarjeta grande decía «● Datos al día» justo encima de «CADUCADOS».
+- ⭐ **FALLO (1) — el aviso del feed se congelaba en el build.** `<AvisoFeed/>` vivía en el layout
+  y calculaba `new Date()` en servidor; la portada no es dinámica (`/linea`, `/parada` y `/estado`
+  sí), así que se prerrenderiza y el aviso quedaba grabado con la fecha del build. **Lo grave:**
+  entre el 06 y el 09/10 la portada servía el build del 09/09, que decía «caducan dentro de 26
+  días» — el ⛔ no se vio en la portada hasta el build del ciclo 2, por casualidad. **Verde que
+  mintió:** `romperlo.test.ts:167` («el 06/10 está CADUCADO — y la app lo DICE») inyecta `now`;
+  nadie pintó la página con el reloj real. Y el build, «○ /» estático, en verde. Ley 6 de Linaje:
+  la prueba simuló la condición en vez de provocarla. El 4 de la captura sale de llegar a /estado
+  navegando desde la portada (el layout raíz no se repinta); cargada directa decía 5.
+- ⭐ **FALLO (2) — /estado decía «al día» con el feed caducado.** `clasificarEstado` decidía SOLO
+  por la edad del índice; el feed iba aparte y no tocaba el veredicto. Contradice la carta del
+  módulo («¿me puedo fiar del dato que me enseña ZetaBus ahora mismo?»). Las 15 pruebas del
+  panel usaban feed vigente: ninguna le pasó uno caducado.
+
+**DECISIONES DE ANTONIO (10/10):** el aviso del feed **no va en el layout, ni arriba ni abajo**:
+vive en /estado, que para eso existe y es dinámica. Y /estado no puede decir «al día» con el feed
+caducado. *(Rechazado por Antonio el punto medio del estratega — línea ámbar en el pie: «entres
+donde entres sale ese banner arriba que acojona».)*
+
+**TANDA (7 commits, `3a753e0`…`e36860d`):**
+- `aae447a` **quinto veredicto `caducado`** en `panel-estado.ts`, con forma propia (borde doble,
+  ⚠) y texto de Antonio: «Horarios oficiales caducados — Avanza no ha publicado horarios
+  posteriores al DD/MM/AAAA. Los recorridos y horarios teóricos pueden no coincidir con el
+  servicio real. Las llegadas en tiempo real y los desvíos de hoy sí están al día.» ⭐
+  **Precedencia (opción A del ejecutor, aceptada):** ilegible > degradado > **desactualizado >
+  caducado** > al-dia — porque con el índice rancio la frase «los desvíos de hoy sí están al día»
+  mentiría (la noche en que falle el cron, Fase 44); `caducado` solo sustituye a «al día», que era
+  el fallo. `por-empezar` queda fuera del veredicto (sus textos no le sirven). Contraprueba en
+  ROJO antes del arreglo (`expected 'al-dia' not to be 'al-dia'`) y sabotaje de la precedencia
+  (dos rojos, 21/21 al restaurar). `d5af778`: el cuerpo sin «(fiestas del Pilar y horario de
+  invierno)» — era verdad hoy y falso en la próxima caducidad.
+- `544976f` **fuera `<AvisoFeed/>` del layout; `AvisoFeed.tsx` borrado** (poda; nadie más lo
+  importaba). El comentario del layout dice por qué no puede leer el reloj.
+- `99ae9f0` **el texto de `feedWarning` para CADUCADO** dice quién no ha publicado y qué sigue
+  al día (lo heredan `/api/diag` y el log de `build-data.ts:85`: misma fuente). `romperlo:173`
+  pasa de /CADUCARON/ al texto nuevo, rojo antes y verde después.
+- `922cb07` **v1.1.0** (cambio visible → minor): CHANGELOG en español, `[1.1.0]` al pie; el
+  guardián `readme-no-miente` obligó a mover la insignia y el User-Agent `ZetaBus/1.0 → 1.1`
+  (README:213, THIRD-PARTY-NOTICES:96) — el guardián manda sobre el alcance, y así se dice.
+- `e36860d` la Fase 57 cerrada con sus hashes, sin reescribir la entrada.
+
+**VERDE:** suite 47 ficheros · **570** pasados (564 + 6 nuevas) · 1 saltado · typecheck limpio ·
+lint con sus 3 avisos de siempre · build webpack, «Versión horneada: 1.1.0». Curl: `/` 200 sin
+«CADUCARON» ni `aviso-feed` · `/api/diag` con el aviso nuevo · `/estado` con índice fresco →
+«Horarios oficiales caducados» (0 «Datos al día») · con índice rancio → «Datos desactualizados».
+**L100 — un layout que lee el reloj en servidor se congela en las rutas estáticas: el reloj solo
+vale en rutas dinámicas o en cliente, y la prueba tiene que pintar la página, no inyectar la
+fecha.**
+
+**CABOS (de esta tanda, por descubrimiento del ejecutor):** la prueba de escala de grises de
+/estado **no existe** (hoy se comprueba a ojo; `panel-estado.ts` ya lo dice así) ·
+`contraste-una-sola-formula.test.ts` se cae con un borrado sin indexar (`git ls-files` sin
+comprobar existencia) · `docs/diseno/tanda1-modelo-de-datos.md:492` cita el texto viejo del feed
+(documento de su momento; decidir si se anota) · `tests/romperlo.test.ts`: en el repo LF como pide `.gitattributes`; la copia local en CRLF y
+git la normaliza — NO es cabo (el instrumento del ejecutor, `grep -c $'\r'` en Git Bash, contaba
+todas las líneas; corregido por él mismo antes de insertar) · la Fase 56 sigue abierta: la cierra el primer deploy con `--webpack`
+en Hostinger, que es ESTE push · ⭐ el NAP sigue en la publicación del 30/06 (verificado por
+Antonio en la web del NAP el 10/10; histórico: Avanza publica a rachas, once meses sin nada entre
+jul/25 y jun/26); el GTFS no tiene bus del 06/10 en adelante y solo tranvía desde el 19/10 —
+cuando publiquen: build, verificación, y las tres suites de bus de Desplázame.
+
+**Última actualización:** 10/10/2026
+
+---
+
 ## ⭐⭐ MANTENIMIENTO · CICLO 2 (09/10) — 15 VULNERABILIDADES, UN DEPLOY CAÍDO, Y TODO EN VIVO EL MISMO DÍA
 El protocolo del ciclo 1, aplicado tal cual — y estrenando su primera complicación de verdad.
 
