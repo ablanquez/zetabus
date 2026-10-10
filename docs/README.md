@@ -17,7 +17,7 @@ Léelos en orden si quieres la historia. Salta al que te interese si buscas un d
 
 | # | Informe | Qué respondió |
 |---|---|---|
-| 1 | [El cruce con el GTFS](auditoria/01-fase3-cruce-gtfs.md) | El GTFS del NAP es fresco y correcto. **El puente de identidad es gratis**: `poste = int(stop_code[2:])`, 934/934 paradas. Meses de curación manual eran, en su mayor parte, redundantes. |
+| 1 | [El cruce con el GTFS](auditoria/01-fase3-cruce-gtfs.md) | El GTFS del NAP es fresco y correcto. **El puente de identidad es gratis**: `poste = int(stop_code[2:])`, 934/934 paradas. Meses de curación manual eran, en su mayor parte, redundantes. *(Cierto el 13/07/2026. El feed `20260623` caducó el 05/10/2026 y el NAP no ha publicado otro a 10/10/2026: lo dice `/estado`, Fase 57.)* |
 | 2 | [Color y desvíos](auditoria/02-fase4-color-y-desvios.md) | Los colores de línea del GTFS. Y la prueba de que **el GTFS no modela los desvíos**: cero `exception_type=2`, y sus rutas siguen bajando por una avenida cortada. |
 | 3 | [¿Se puede repintar la ruta?](auditoria/03-fase5-desvios.md) | 🛑 **Informe retractado.** Concluyó que solo se podía tachar, no repintar. Era falso: evalué un solo método. |
 | 4 | [La vigencia de los avisos](auditoria/04-fase6-vigencia.md) | 🛑 **Informe invalidado.** Validé un «oráculo» sobre 16 postes que eran todos desvíos de ruta, y lo apliqué a supresiones de parada. El descubridor del error fue Antonio, andando por la calle. |
