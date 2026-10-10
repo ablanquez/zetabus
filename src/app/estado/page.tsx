@@ -118,13 +118,16 @@ const RESUMEN: Record<Exclude<Veredicto, 'caducado'>, string> = {
  * ⚠️ El texto de `caducado` es de Antonio (10/10), literal. Su última frase —«los
  *    desvíos de hoy sí están al día»— es verdad porque `caducado` solo sale con el
  *    índice FRESCO (ver la precedencia en `@/engine/panel-estado`).
+ * ⚠️ Y NO NOMBRA LA CAUSA DE HOY. Llevó «(fiestas del Pilar y horario de invierno)»:
+ *    cierto el 10/10, falso la próxima vez que un feed caduque por otro motivo. El
+ *    texto dice solo lo que es verdad siempre que se pinta.
  */
 function resumen(modelo: ModeloPanel): string {
   if (modelo.veredicto !== 'caducado') return RESUMEN[modelo.veredicto];
   return (
-    `Avanza no ha publicado horarios posteriores al ${formatearFecha(modelo.feed.endDate)} ` +
-    '(fiestas del Pilar y horario de invierno). Los recorridos y horarios teóricos pueden no ' +
-    'coincidir con el servicio real. Las llegadas en tiempo real y los desvíos de hoy sí están al día.'
+    `Avanza no ha publicado horarios posteriores al ${formatearFecha(modelo.feed.endDate)}. ` +
+    'Los recorridos y horarios teóricos pueden no coincidir con el servicio real. ' +
+    'Las llegadas en tiempo real y los desvíos de hoy sí están al día.'
   );
 }
 
