@@ -490,6 +490,7 @@ feed_end_date:   20261005      ← dentro de 84 días
 Requisito de diseño, no sugerencia:
 - El artefacto de build lleva grabado `feedEndDate`.
 - **Si `hoy > feedEndDate`, la aplicación lo dice en pantalla.** No falla, no se calla: lo dice. *"Los datos oficiales de recorrido caducaron el 05/10/2026. Lo que ves puede estar desfasado."*
+  *(10/10/2026, Fase 57: el texto en pantalla pasó a «Los horarios oficiales de Avanza caducaron el …; no hay publicación posterior…» y el aviso vive solo en `/estado`, por decisión de Antonio. Este documento se conserva como diseño de su momento.)*
 - El build **avisa** (warning, no error) cuando faltan menos de 30 días.
 - Hay que documentar el procedimiento de re-descarga del NAP (ficha 1176, ApiKey). En el README, no en tu cabeza.
 
