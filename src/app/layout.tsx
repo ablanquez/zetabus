@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Link from 'next/link';
 import './globals.css';
-import { AvisoFeed } from '@/components/AvisoFeed';
 import { Marca } from '@/components/Marca';
 import { NOMBRE_MARCA } from '@/components/marca-fuente';
 import { URL_SITIO } from '@/sitio';
@@ -79,9 +78,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="es" className={inter.variable}>
       {/* `font-sans` usa el token `--font-sans` (= Inter), fijado en globals.css. */}
       <body className="min-h-dvh font-sans">
-        {/* ⚠️ El feed caducado se anuncia ARRIBA DEL TODO, en todas las páginas.
-            Afecta a los recorridos de TODA la app, no a una parada concreta. */}
-        <AvisoFeed />
+        {/* ⛔ AQUÍ IBA LA BANDA DEL FEED CADUCADO, Y SE QUITÓ (decisión de Antonio, 10/10).
+            El aviso del feed vive en `/estado`, que para eso existe. Y este layout NO
+            puede leer el reloj: la portada es estática, se pinta una vez en el build, y
+            la banda se congelaba con la fecha del build — «hace 4 días» cuando eran 5, y
+            del 06 al 09/10 ni avisó de la caducidad (bitácora, Fase 57). */}
 
         {/* ⛔ AQUÍ HABÍA UNA BANDA ROJA — "MODO DEMO ENCENDIDO · LOS DATOS PUEDEN
             SER FINGIDOS"— Y AFIRMABA ALGO FALSO.
