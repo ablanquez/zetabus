@@ -12,6 +12,7 @@ import {
   clasificarEstado,
   construirModelo,
   formatearEdad,
+  formatearFecha,
   formatearMillar,
   modeloSeguro,
   FRESCURA_MAX_SEGUNDOS,
@@ -137,6 +138,42 @@ describe('Ley 3 · ilegible (no lo sé)', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  FASE 57 · EL FEED CADUCADO TAMBIÉN DECIDE. Con el índice fresco, `/estado` decía
+//  «Datos al día» encima de «CADUCADOS»: el clasificador solo miraba el índice.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Fase 57 · el feed caducado manda sobre «al día»', () => {
+  const FEED_CADUCADO = { estado: 'CADUCADO' as const, endDate: '2026-10-05', aviso: 'caducaron' };
+
+  it('⭐ índice FRESCO (1 h) y feed CADUCADO → el veredicto NO puede ser «al día»', () => {
+    // La contraprueba de la Fase 57: con el código de antes, esto daba 'al-dia'.
+    expect(construirModelo(presente(1 * H), FEED_CADUCADO, TOTALES).veredicto).not.toBe('al-dia');
+  });
+
+  it('…y es exactamente `caducado`, con edad y barrido (el índice está, y fresco)', () => {
+    const m = construirModelo(presente(1 * H), FEED_CADUCADO, TOTALES);
+    expect(m.veredicto).toBe('caducado');
+    if (m.veredicto !== 'caducado') return;
+    expect(m.edadSegundos).toBe(1 * H);
+    expect(m.barrido?.lineasDesviadas).toBe(14);
+    expect(m.feed.estado).toBe('CADUCADO');
+  });
+
+  it('⭐ índice RANCIO y feed CADUCADO → manda `desactualizado` (su frase «desvíos de hoy al día» mentiría)', () => {
+    expect(construirModelo(presente(3 * 24 * H), FEED_CADUCADO, TOTALES).veredicto).toBe('desactualizado');
+  });
+
+  it('sin índice, o sin poder fecharlo, mandan `degradado` e `ilegible` aunque el feed haya caducado', () => {
+    expect(construirModelo({ presente: false, degradado: true }, FEED_CADUCADO, TOTALES).veredicto).toBe('degradado');
+    expect(construirModelo(presente(undefined), FEED_CADUCADO, TOTALES).veredicto).toBe('ilegible');
+  });
+
+  it('`por-empezar` NO dispara `caducado`: lo que aún no ha entrado en vigor no ha caducado', () => {
+    const porEmpezar = { estado: 'por-empezar' as const, endDate: '2027-01-15', aviso: 'aún no' };
+    expect(construirModelo(presente(1 * H), porEmpezar, TOTALES).veredicto).toBe('al-dia');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  El modelo sano pinta el subconjunto seguro, y SOLO ese (Costura 3 / Ley 2).
 // ─────────────────────────────────────────────────────────────────────────────
 describe('lista blanca del modelo sano', () => {
@@ -174,5 +211,12 @@ describe('formatearMillar', () => {
     expect(formatearMillar(934)).toBe('934');
     expect(formatearMillar(1234567)).toBe('1.234.567');
     expect(formatearMillar(0)).toBe('0');
+  });
+});
+
+describe('formatearFecha', () => {
+  it('el día civil del feed, como se lee en España; lo que no casa, tal cual', () => {
+    expect(formatearFecha('2026-10-05')).toBe('05/10/2026');
+    expect(formatearFecha('basura')).toBe('basura');
   });
 });

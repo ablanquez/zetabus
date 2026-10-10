@@ -8,7 +8,7 @@
  *  VEREDICTO y el subconjunto seguro que se pinta. La página solo lo dibuja.
  *
  *  ⭐ POR QUÉ AQUÍ Y NO EN LA PÁGINA. Un `page.tsx` no se prueba sin renderizar.
- *     La decisión de «fresco vs rancio vs degradado vs ilegible» ES la parte que
+ *     La decisión de «fresco vs rancio vs caducado vs degradado vs ilegible» ES la parte que
  *     puede mentir —dar VERDE sobre un dato de anteayer es el peor fallo del
  *     proyecto—, así que vive en una función pura con test propio, igual que
  *     `estadoIndiceDesde` (la lógica) vive separada de `estadoIndice` (el disco).
@@ -46,8 +46,22 @@ export const FRESCURA_MAX_HORAS = 26;
 export const FRESCURA_MAX_SEGUNDOS = FRESCURA_MAX_HORAS * 60 * 60;
 
 /**
- * Los CUATRO estados del panel. La forma (no el color) dice cuál es; el color solo
- * acompaña. Ver la prueba de escala de grises en `/estado`.
+ * Los CINCO estados del panel. La forma (no el color) dice cuál es; el color solo
+ * acompaña. ⚠️ Que se distinguen en escala de grises se comprueba A OJO: hoy no hay
+ * test que lo vigile (la forma de cada uno está en la tabla de `estado/page.tsx`).
+ *
+ * ⭐ EL QUINTO, `caducado` (Fase 57). Con el índice fresco y el feed CADUCADO, el panel
+ *    decía «Datos al día» encima de «CADUCADOS»: el veredicto solo miraba el índice.
+ *    Ahora el feed caducado manda sobre «al día» —y SOLO sobre «al día»—. La
+ *    precedencia es ilegible > degradado > desactualizado > caducado > al día:
+ *      · `caducado` sale SOLO con el índice fresco, así que su frase «los desvíos de
+ *        hoy sí están al día» es verdad siempre que se pinta. Con el índice rancio
+ *        manda `desactualizado` (es lo urgente y lo arreglable), y la tarjeta del feed
+ *        sigue diciendo CADUCADOS debajo: nada se calla y nada miente.
+ *      · `degradado` e `ilegible` mandan sobre él por lo mismo que sobre los demás: sin
+ *        índice, o sin poder fecharlo, no hay «al día» que corregir.
+ *      · `por-empezar` NO lo dispara: un feed que aún no ha entrado en vigor no ha
+ *        caducado. Se queda en su tarjeta pequeña, con `feedWarning`, como siempre.
  *
  * ⚠️ LOS DISPARADORES CASAN CON EL MOTOR, NO CON LA INTUICIÓN. `estadoIndiceDesde`
  *    solo emite `degradado:true` JUNTO A `presente:false` (son el mismo evento: «no
@@ -59,14 +73,15 @@ export const FRESCURA_MAX_SEGUNDOS = FRESCURA_MAX_HORAS * 60 * 60;
  *    Mandar `!presente` a «ilegible» habría pintado «no lo sé» sobre un «índice
  *    falta» —plegar dos estados opuestos—, que es justo lo que NO se hace.
  */
-export type Veredicto = 'al-dia' | 'desactualizado' | 'degradado' | 'ilegible';
+export type Veredicto = 'al-dia' | 'desactualizado' | 'caducado' | 'degradado' | 'ilegible';
 
 /**
  * Clasifica SOLO a partir de `EstadoIndice`. No mira el reloj: la edad ya la
  * calculó el motor (`edadSegundos`), así que esto es determinista y se prueba
- * construyendo un `EstadoIndice` a mano.
+ * construyendo un `EstadoIndice` a mano. El feed NO entra aquí: lo suma
+ * `construirModelo`, que es quien lo recibe (por eso este nunca dice `caducado`).
  */
-export function clasificarEstado(estado: EstadoIndice): Veredicto {
+export function clasificarEstado(estado: EstadoIndice): Exclude<Veredicto, 'caducado'> {
   // Índice ausente/ilegible en disco → servicio reducido (oficiales sin desvíos).
   if (!estado.presente) return 'degradado';
   // Presente pero no se puede fechar → no podemos juzgar la frescura: se dice.
@@ -103,11 +118,11 @@ export interface Totales {
  * caso: en `degradado` NO hay `edadSegundos` ni `barrido` (el motor no los emite
  * sin índice) y NO se rellenan con placeholders; en `ilegible` no se pinta nada
  * más que el mensaje —si no podemos formar un veredicto, no fingimos medias
- * verdades—.
+ * verdades—. `caducado` trae lo mismo que `al-dia`: el índice está, y fresco.
  */
 export type ModeloPanel =
   | {
-      readonly veredicto: 'al-dia' | 'desactualizado';
+      readonly veredicto: 'al-dia' | 'desactualizado' | 'caducado';
       readonly edadSegundos: number;
       readonly barrido: SaludBarrido | null;
       readonly feed: SaludFeed;
@@ -131,13 +146,16 @@ export type ModeloPanel =
  *    importan.
  */
 export function construirModelo(estado: EstadoIndice, feed: SaludFeed, totales: Totales): ModeloPanel {
-  const veredicto = clasificarEstado(estado);
+  const delIndice = clasificarEstado(estado);
 
-  if (veredicto === 'ilegible') return { veredicto };
+  if (delIndice === 'ilegible') return { veredicto: delIndice };
 
-  if (veredicto === 'degradado') return { veredicto, feed, totales };
+  if (delIndice === 'degradado') return { veredicto: delIndice, feed, totales };
 
-  // al-dia | desactualizado — presente, con edad fechable (garantizado por el clasificador).
+  // ⭐ Fase 57: el feed caducado manda sobre «al día», y SOLO sobre «al día» (ver `Veredicto`).
+  const veredicto = delIndice === 'al-dia' && feed.estado === 'CADUCADO' ? 'caducado' : delIndice;
+
+  // al-dia | desactualizado | caducado — presente, con edad fechable (garantizado por el clasificador).
   const b = estado.barrido;
   return {
     veredicto,
@@ -187,6 +205,17 @@ export function modeloSeguro(leer: () => ModeloPanel): ModeloPanel {
  */
 export function formatearMillar(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * Una fecha civil del feed (`YYYY-MM-DD`) como se lee en España: `DD/MM/AAAA`. Se
+ * reordena el texto, sin pasar por `Date`: es un día civil, no un instante, y
+ * convertirlo arrastraría el huso del servidor (la lección de `feed-validity.ts`).
+ * Lo que no tenga esa forma se devuelve tal cual: mejor la fecha cruda que una inventada.
+ */
+export function formatearFecha(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
 /**

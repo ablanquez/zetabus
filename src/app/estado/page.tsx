@@ -4,6 +4,7 @@ import { feedStatus, feedWarning, type FeedStatus } from '@/core';
 import {
   construirModelo,
   formatearEdad,
+  formatearFecha,
   formatearMillar,
   modeloSeguro,
   FRESCURA_MAX_HORAS,
@@ -28,7 +29,7 @@ import {
  *     «hace X h» se congelaría en la hora del build y el panel MENTIRÍA sobre su
  *     propia frescura —el peor caso imaginable para un instrumento de salud—.
  *
- *  ⚠️ El veredicto (fresco/rancio/degradado/ilegible), el umbral y la lista blanca
+ *  ⚠️ El veredicto (fresco/rancio/caducado/degradado/ilegible), el umbral y la lista blanca
  *     viven en `@/engine/panel-estado` (núcleo puro, con test). Aquí SOLO se pinta.
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -56,9 +57,11 @@ function leerModelo(): ModeloPanel {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  LA PRESENTACIÓN DE CADA VEREDICTO. La FORMA (borde + glifo + palabra) dice cuál
-//  es; el color solo acompaña. Los cuatro se distinguen en escala de grises:
+//  es; el color solo acompaña. Los cinco se distinguen en escala de grises (a ojo:
+//  no hay test que lo vigile):
 //    · al-dia         borde sólido fino     ●   «Datos al día»
 //    · desactualizado borde DISCONTINUO     ◐   «Datos desactualizados»
+//    · caducado       borde DOBLE grueso    ⚠   «Horarios oficiales caducados»
 //    · degradado      RIEL izquierdo grueso  ▨   «Servicio reducido»
 //    · ilegible       borde PUNTEADO+cursiva ✕   «No podemos leer el estado»
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +86,12 @@ const CARA: Record<Veredicto, CaraVeredicto> = {
     caja: 'border-2 border-dashed border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)]',
     acento: 'text-[var(--color-aviso)]',
   },
+  caducado: {
+    glifo: '⚠',
+    titulo: 'Horarios oficiales caducados',
+    caja: 'border-4 border-double border-[var(--color-aviso)] bg-[var(--color-aviso-fondo)]',
+    acento: 'text-[var(--color-aviso)]',
+  },
   degradado: {
     glifo: '▨',
     titulo: 'Servicio reducido',
@@ -97,13 +106,32 @@ const CARA: Record<Veredicto, CaraVeredicto> = {
   },
 };
 
-/** La frase que responde a «¿me fío?», por veredicto. */
-const RESUMEN: Record<Veredicto, string> = {
+/** La frase que responde a «¿me fío?», por veredicto. `caducado` lleva la fecha: va en `resumen`. */
+const RESUMEN: Record<Exclude<Veredicto, 'caducado'>, string> = {
   'al-dia': 'Los recorridos y los desvíos que ves son los de hoy.',
   desactualizado: `La actualización automática nocturna puede haber fallado: los datos llevan más de ${FRESCURA_MAX_HORAS} h sin renovarse.`,
   degradado: 'Estamos mostrando los recorridos oficiales; los desvíos de hoy no están disponibles ahora mismo.',
   ilegible: 'No podemos comprobar el estado del servicio en este momento. Vuelve a intentarlo en un rato.',
 };
+
+/**
+ * ⚠️ El texto de `caducado` es de Antonio (10/10), literal. Su última frase —«los
+ *    desvíos de hoy sí están al día»— es verdad porque `caducado` solo sale con el
+ *    índice FRESCO (ver la precedencia en `@/engine/panel-estado`).
+ */
+function resumen(modelo: ModeloPanel): string {
+  if (modelo.veredicto !== 'caducado') return RESUMEN[modelo.veredicto];
+  return (
+    `Avanza no ha publicado horarios posteriores al ${formatearFecha(modelo.feed.endDate)} ` +
+    '(fiestas del Pilar y horario de invierno). Los recorridos y horarios teóricos pueden no ' +
+    'coincidir con el servicio real. Las llegadas en tiempo real y los desvíos de hoy sí están al día.'
+  );
+}
+
+/** Los veredictos con índice presente y fechable: traen edad y barrido. */
+function conIndice(m: ModeloPanel): m is Extract<ModeloPanel, { edadSegundos: number }> {
+  return m.veredicto === 'al-dia' || m.veredicto === 'desactualizado' || m.veredicto === 'caducado';
+}
 
 /** Etiqueta corta de la vigencia del feed (palabra, no solo tono). */
 const FEED_ETIQUETA: Record<FeedStatus['kind'], string> = {
@@ -154,9 +182,9 @@ export default function Estado() {
           <span className="sin-recortar">{cara.titulo}</span>
         </p>
         <p className="mt-2 text-cuerpo leading-relaxed text-[var(--color-tinta)] sin-recortar">
-          {RESUMEN[modelo.veredicto]}
+          {resumen(modelo)}
         </p>
-        {(modelo.veredicto === 'al-dia' || modelo.veredicto === 'desactualizado') && (
+        {conIndice(modelo) && (
           <p className="mt-1 text-menor text-[var(--color-tinta-suave)] sin-recortar">
             Índice de correspondencias, actualizado <strong>{formatearEdad(modelo.edadSegundos)}</strong>.
           </p>
@@ -174,8 +202,8 @@ export default function Estado() {
         //    (idéntico a antes), hasta cuatro en fila arriba—, sin estirarlas. ⚠️ SOLO el grid:
         //    el título, el banner del veredicto y el pie son PROSA y se quedan en su medida.
         <div className="ml-[50%] grid w-[min(72rem,calc(100vw_-_2rem))] -translate-x-1/2 grid-cols-[repeat(auto-fill,minmax(min(16rem,100%),1fr))] gap-3">
-          {/* Barrido: solo cuando hubo índice (al-dia / desactualizado). */}
-          {(modelo.veredicto === 'al-dia' || modelo.veredicto === 'desactualizado') && modelo.barrido && (
+          {/* Barrido: solo cuando hubo índice (al-dia / desactualizado / caducado). */}
+          {conIndice(modelo) && modelo.barrido && (
             <Tarjeta titulo="Último barrido nocturno">
               <Cifra
                 valor={`${modelo.barrido.sentidosRespondidos} de ${modelo.barrido.sentidosEsperados}`}
@@ -218,7 +246,7 @@ export default function Estado() {
             <Cifra valor={String(modelo.totales.paradas)} rotulo="paradas" />
           </Tarjeta>
 
-          {(modelo.veredicto === 'al-dia' || modelo.veredicto === 'desactualizado') && modelo.barrido && (
+          {conIndice(modelo) && modelo.barrido && (
             /* ⚠️ B-09 · SIN "de hoy" EN EL RÓTULO. Esta tarjeta se pinta también en
                `desactualizado`, cuando el índice lleva más de 26 h sin renovarse (hasta ~2 días
                si el barrido nocturno falló). Un título que prometiera "de hoy" mentiría JUSTO
