@@ -149,15 +149,23 @@ describe('⚠️ EL TECHO SIGUE EN PIE AUNQUE EL BARRIDO SE HAYA IDO', () => {
   });
 
   it('⭐ un rastreador pidiendo 200 postes seguidos NO sale de golpe', () => {
-    const c = new CacheDosPisos({ dir });
+    // ⚠️ RELOJ INYECTADO: avanza 0,01 ms POR LECTURA, no con la pared. Con el reloj de pared,
+    //    lo que el cubo reponía mientras corría el bucle dependía de la máquina (falso rojo
+    //    «48 ≤ 45» con la máquina cargada, ciclo 2): medía la máquina, no el techo. Las 200
+    //    caben en ~6 ms de este reloj y el cubo repone una ficha cada 250 ms: no repone nada.
+    // ⚠️ Y NO ESTÁ QUIETO DEL TODO, a propósito: el cerrojo del limitador mide su espera con
+    //    este mismo reloj (`hasta = ahora() + 25`). Parado, un cerrojo que tardara en borrarse
+    //    dejaría esa espera sin fin —un bucle síncrono que cuelga la suite—.
+    let t = Date.parse('2026-10-10T08:00:00Z');
+    const c = new CacheDosPisos({ dir, ahora: () => (t += 0.01) });
     let concedidas = 0;
     for (let n = 0; n < 200; n++) if (c.limitador.pedirFicha().concedida) concedidas++;
 
-    // Se vacía el cubo y a partir de ahí solo repone 4 fichas por segundo. Doscientas
-    // peticiones de golpe NO salen de golpe. Es la promesa del README, cumplida — y es
-    // la ÚNICA pieza que sigue de guardia ahora que el barrido no está.
+    // Se vacía el cubo y no se repone nada: salen EXACTAMENTE las de la capacidad.
+    // Doscientas peticiones de golpe NO salen de golpe. Es la promesa del README, cumplida
+    // — y es la ÚNICA pieza que sigue de guardia ahora que el barrido no está.
     expect(concedidas, 'el cubo tiene que denegar').toBeLessThan(200);
-    expect(concedidas).toBeLessThanOrEqual(CAPACIDAD + 5); // + lo poco que repone entretanto
+    expect(concedidas).toBe(CAPACIDAD);
   });
 
   it('⚠️ CONTRAPRUEBA: sin techo, los 200 saldrían todos', () => {
