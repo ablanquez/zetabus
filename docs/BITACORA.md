@@ -2052,3 +2052,70 @@ con la anterior. Lo vio Antonio; desde aquí no se ha comprobado.
 *Lección viva: mismo commit, mismo comando, distinto entorno de procesos. Es la Fase 33 por otro
 lado: allí el verde local dependía de ficheros que ya existían; aquí, de una máquina sin límites de
 procesos. El build local no certifica el build de Hostinger.*
+
+### Fase 57 · El aviso del feed se congelaba en el build, y `/estado` decía «al día» sobre un feed caducado
+
+Dos fallos, una fase. Los destapa la misma pantalla: captura de Antonio 10/10 14:44, `/estado` en
+producción.
+
+**El fallo (1) — el aviso del feed se congela en el build.** `layout.tsx:84` pinta `<AvisoFeed/>` en
+todas las páginas y `AvisoFeed.tsx:22` calcula `feedStatus(validez, new Date())` en el servidor. La
+portada (`src/app/page.tsx`) no declara `dynamic` —`/linea`, `/parada` y `/estado` llevan
+`force-dynamic`—, así que se prerrenderiza y el aviso queda grabado con la fecha del build. En la
+captura, la banda dice «CADUCARON el 2026-10-05 (hace 4 días)» y la tarjeta de la página «(hace 5
+días)»; hoy son 5. Medido hoy en local con el build del 09/10 (mismo código), mismo servidor, 14:49:
+```
+GET /        → CADUCARON el 2026-10-05 (hace 4 días)
+GET /estado  → CADUCARON el 2026-10-05 (hace 5 días)
+```
+Cargada directa, `/estado` dice 5 en la banda y en la tarjeta: el 4 de la banda en la captura solo
+cuadra con haber llegado navegando desde la portada (el layout raíz no se vuelve a pintar al navegar).
+Inferido, no reproducido en navegador.
+⚠️ **Y lo grave.** Deploys por `git log`: 09/09 (`2e1930e`…`c506bb4`, 20:36–21:17) y 09/10
+(`74a2365`…`7356881`), ninguno entre medias. Del 06 al 09/10 la portada servía el build del 09/09, que
+grabó (calculado con el código, no observado): «Los datos oficiales de recorrido caducan el
+2026-10-05 (dentro de 26 días).» **El ⛔ no se vio en la portada hasta el build del 09/10, y por
+casualidad**: hubo un deploy de seguridad.
+
+- ⭐ **QUÉ DIO VERDE MIENTRAS EL FALLO (1) ESTABA VIVO — el test del 06/10 y el build.**
+  `romperlo.test.ts:167` inyecta `now` y prueba `feedWarning`; ninguna prueba renderiza la página con
+  el reloj real. Corrido hoy, antes de tocar nada:
+  ```
+  ✓ tests/romperlo.test.ts > el 06/10/2026: el feed caducado > ⛔ el 06/10 está CADUCADO — y la app lo DICE, no se calla 1ms
+  ```
+  Y el build del 09/10, en verde, con la portada estática:
+  ```
+  ✓ Generating static pages using 11 workers (9/9) in 1452ms
+  ┌ ○ /
+  ```
+  En el HTML que dejó (`.next/server/app/index.html`): `data-estado="CADUCADO"` … `CADUCARON el
+  2026-10-05 (hace 4 días)`.
+
+**El fallo (2) — `/estado` dice «Datos al día» con el feed caducado.** En la captura: «● Datos al día —
+Los recorridos y los desvíos que ves son los de hoy» justo encima de «CADUCADOS». `clasificarEstado`
+(`panel-estado.ts:69`) decide SOLO por la edad del índice; el feed va aparte en `SaludFeed` y no toca
+el veredicto. Contradice la carta del propio módulo (`panel-estado.ts:5`: «¿me puedo fiar del dato
+que me enseña ZetaBus ahora mismo?»). Reproducido con el núcleo puro:
+```
+índice 1 h + feed CADUCADO → veredicto: al-dia
+```
+
+- ⭐ **QUÉ DIO VERDE MIENTRAS EL FALLO (2) ESTABA VIVO — la suite entera del panel.**
+  `tests/panel-estado.test.ts`, corrido hoy:
+  ```
+  Test Files  1 passed (1)
+       Tests  15 passed (15)
+  ```
+  Las 15 construyen el modelo con el mismo feed (`:46`, `estado: 'vigente'`). `:135` da `'al-dia'`
+  —correcto con ese feed—; ninguna prueba le pasa un feed caducado, porque el clasificador no lo mira.
+
+**La causa.** (1) Un layout que lee el reloj en el servidor se congela en las rutas estáticas: la
+portada se pinta una vez, en el build. (2) `clasificarEstado` solo recibe `EstadoIndice`; el feed entra
+en `construirModelo` pero no en el veredicto.
+
+**El arreglo** — ⏳ PENDIENTE. Decisiones de Antonio (10/10): el aviso del feed sale del layout —ni
+arriba ni abajo— y vive en `/estado`, que es dinámica. Y `/estado` gana un quinto veredicto,
+`caducado`, que manda sobre «al día». Commits: ⏳ PENDIENTE.
+
+*Lección viva (Ley 6 de Linaje): la prueba simuló la condición —inyectar `now`— en vez de provocarla
+—pintar con el reloj de verdad—. El texto era correcto; lo que nadie probó es CUÁNDO se calculaba.*
