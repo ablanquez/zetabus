@@ -170,7 +170,7 @@ describe('el 06/10/2026: el feed caducado', () => {
     expect(s).toMatchObject({ daysAgo: 1 });
 
     const msg = feedWarning(s, validity);
-    expect(msg).toMatch(/CADUCARON/);
+    expect(msg).toMatch(/caducaron el/);
     expect(msg).toContain('2026-10-05');
     // Un feed caducado que se sigue sirviendo miente EN SILENCIO. Este mensaje
     // es lo único que separa a ZetaBus de mentir el 6 de octubre.

@@ -117,6 +117,6 @@ export function feedWarning(s: FeedStatus, v: FeedValidity): string | null {
     case 'por-empezar':
       return `Los datos oficiales no entran en vigor hasta el ${v.startDate}. Lo que ves puede no corresponder al servicio actual.`;
     case 'CADUCADO':
-      return `⚠️ Los datos oficiales de recorrido CADUCARON el ${v.endDate} (hace ${s.daysAgo} días). Lo que ves puede estar desfasado.`;
+      return `Los horarios oficiales de Avanza caducaron el ${v.endDate}; no hay publicación posterior. Los recorridos y horarios teóricos pueden no coincidir con el servicio real.`;
   }
 }
