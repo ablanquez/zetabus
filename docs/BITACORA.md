@@ -2039,11 +2039,11 @@ Next 16 Turbopack va *«enabled by default»* (doc local, `06-cli/next.md`): tod
 anteriores ya compilaban con Turbopack en Hostinger y llegaron al final (Fase 36). Si lo cambió
 16.3.4 → 16.3.8 o lo cambió el contenedor, NO CONSTA.
 
-**El arreglo** — ⏳ PENDIENTE (commit siguiente): `next build --webpack` en el script `build`; webpack
+**El arreglo** — ⚰️ `a1be0ec`, 09/10/2026 (commit siguiente): `next build --webpack` en el script `build`; webpack
 corre PostCSS dentro del proceso del build. `next dev` se queda con Turbopack. El flag existe en
 nuestra versión: `npx next build --help` → `--webpack   Builds using webpack.`
 ⚠️ **El verde local del arreglo tampoco prueba Hostinger** (es justo esta lección). La prueba de
-verdad es el siguiente deploy allí: ⏳ PENDIENTE.
+verdad es el siguiente deploy allí: ⚰️ deploy de `87c5c35`, 10/10/2026 15:33, webpack, 6 m 25 s.
 
 **El supuesto de la Fase 36, confirmado por primera vez** («un build fallido en Hostinger deja la
 versión anterior sirviendo»): éste es el primer build que muere de verdad allí, y producción siguió
