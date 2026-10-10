@@ -5,6 +5,24 @@ Todas las novedades destacables de ZetaBus se documentan en este fichero.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el
 proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.1.0] - 2026-10-10
+
+### Cambiado
+
+- El aviso de horarios oficiales caducados deja de salir como banda en todas las páginas y
+  pasa a vivir en «Estado del servicio», que es donde se explica el estado del dato.
+- «Estado del servicio» ya no dice «Datos al día» si los horarios oficiales han caducado:
+  tiene un quinto veredicto, «Horarios oficiales caducados», que explica qué sigue al día
+  (llegadas en tiempo real, desvíos de hoy) y qué puede no coincidir (recorridos y horarios
+  teóricos). Sale solo con los desvíos de hoy al día; si la actualización nocturna ha
+  fallado, manda «Datos desactualizados».
+
+### Arreglado
+
+- El aviso de la banda se calculaba al construir la web, no al abrirla: en la portada decía
+  «hace 4 días» cuando eran 5, y entre el 6 y el 9 de octubre no avisó de la caducidad. Al
+  vivir solo en «Estado del servicio», que se calcula en cada visita, el dato es el de ahora.
+
 ## [1.0.0] - 2026-07-26
 
 Primera versión. ZetaBus está desplegado y en vivo en
@@ -51,4 +69,5 @@ corregir nada.
   cortacircuitos, cero peticiones cuando nadie mira, y un User-Agent identificable.
 - **Sin base de datos, sin cuentas, sin registro, sin cookies propias, sin analítica.**
 
+[1.1.0]: https://github.com/ablanquez/zetabus/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ablanquez/zetabus/releases/tag/v1.0.0

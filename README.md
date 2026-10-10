@@ -6,7 +6,7 @@
 
 **Dónde está tu autobús en Zaragoza, cuánto falta, y qué te están ocultando las fuentes.**
 
-[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.0.0-4E22B8)](CHANGELOG.md)
+[![Versión](https://img.shields.io/badge/versi%C3%B3n-1.1.0-4E22B8)](CHANGELOG.md)
 [![Licencia](https://img.shields.io/badge/licencia-Apache%202.0-7048E8)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org/)
@@ -210,7 +210,7 @@ haya que esconderlo: **lo justificamos.**
 - **Se pide con techo y con cortesía:** caché compartida en servidor (10 personas en la misma
   parada = **1 petición**, no 10), límite duro de peticiones por segundo, tiempo de espera,
   cortacircuitos, y **cero peticiones cuando nadie está mirando**.
-- **Vamos identificados.** Cada petición lleva `ZetaBus/1.0 (+https://github.com/ablanquez/zetabus)`:
+- **Vamos identificados.** Cada petición lleva `ZetaBus/1.1 (+https://github.com/ablanquez/zetabus)`:
   nombre, versión y la URL de este repositorio, donde está explicado todo y quién lo firma. Si
   molestamos, queremos que puedan pedirnos que paremos **antes** de tener que bloquearnos.
 - **Y el `robots.txt` no indexa las paradas** — ni por cortesía ni por ahorro: porque los minutos
