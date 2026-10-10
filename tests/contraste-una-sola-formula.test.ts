@@ -50,7 +50,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { luminancia, contrasteRgb, deHex, deCss, AA_TEXTO } from '@/core/contraste';
 import { contraste as contrasteDelChip } from '@/components/ChipLinea';
 import { lineas } from '@/engine/topologia';
@@ -95,7 +95,8 @@ const ficherosDeCodigo = (): string[] =>
     .split('\n')
     .map((f) => f.trim())
     .filter((f) => /\.(ts|tsx|mjs|js)$/.test(f))
-    .filter((f) => !SANCIONADOS.has(f));
+    .filter((f) => !SANCIONADOS.has(f))
+    .filter((f) => existsSync(f)); // un borrado aún no indexado sigue listado por `git ls-files`: no hay nada que leer
 
 describe('⭐⭐ LA FORMA: la fórmula de luminancia no está copiada fuera del núcleo', () => {
   it('la firma (0.7152 / 0.03928) aparece SOLO en los dos ficheros sancionados', () => {
