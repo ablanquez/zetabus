@@ -2113,9 +2113,9 @@ que me enseña ZetaBus ahora mismo?»). Reproducido con el núcleo puro:
 portada se pinta una vez, en el build. (2) `clasificarEstado` solo recibe `EstadoIndice`; el feed entra
 en `construirModelo` pero no en el veredicto.
 
-**El arreglo** — ⏳ PENDIENTE. Decisiones de Antonio (10/10): el aviso del feed sale del layout —ni
+**El arreglo** — `544976f` (fallo 1) · `aae447a` + `d5af778` (fallo 2). Decisiones de Antonio (10/10): el aviso del feed sale del layout —ni
 arriba ni abajo— y vive en `/estado`, que es dinámica. Y `/estado` gana un quinto veredicto,
-`caducado`, que manda sobre «al día». Commits: ⏳ PENDIENTE.
+`caducado`, que manda sobre «al día». Commits: `aae447a` · `d5af778` · `544976f` · `99ae9f0` · versión `922cb07`.
 
 *Lección viva (Ley 6 de Linaje): la prueba simuló la condición —inyectar `now`— en vez de provocarla
 —pintar con el reloj de verdad—. El texto era correcto; lo que nadie probó es CUÁNDO se calculaba.*
