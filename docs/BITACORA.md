@@ -2122,7 +2122,7 @@ arriba ni abajo— y vive en `/estado`, que es dinámica. Y `/estado` gana un qu
 
 ### Fase 58 · El rojo «de timing» de C4 era la lentitud de `/linea`, y el test sí pedía a Avanza
 
-🔴 ABIERTA · 2026-11-12 · categoría: guardián que miente sobre sí mismo
+✅ CERRADA · abierta 2026-11-12, cerrada 2026-11-12 · categoría: guardián que miente sobre sí mismo
 
 **El síntoma.** En la batería completa del push de seguridad (`7e395a5`), `[360px]
 e2e/bloque-parada.spec.ts:135` (C4, pulsar un chip → `/linea/X`) murió en
@@ -2136,7 +2136,30 @@ e2e/bloque-parada.spec.ts:135` (C4, pulsar un chip → `/linea/X`) murió en
   Avanza. Medido hoy en producción, sin caché: `/linea/35` 13,9 s y `/linea/21` 8,9 s, por
   encima o al borde de los 10 s del test.
 
-**Causa raíz.** ⏳ PENDIENTE · **Arreglo.** ⏳ PENDIENTE (va con la tanda de `/linea`) ·
+**Cómo se cazó.** Ojo humano: al leer el spec para abrir esta entrada, el `href` del chip no
+llevaba el `?fingir=` con el que el test abre la página.
+
+**Causa raíz.** Dos cosas juntas. (1) `ChipLinea` construía su enlace sin el fingimiento de la
+página, así que C4 navegaba a una `/linea/X` real que esperaba a Avanza; y esa página esperaba
+los dos sentidos y el horario uno detrás de otro (`desvios.ts`, bucle con `await` por sentido;
+`page.tsx`, `await` del horario después), hasta 24,9 s con Avanza sin responder. (2) El
+re-corrido salió verde porque encontró la ruta ya en disco: la caché del recorrido es
+`.cache/recorrido` (TTL 1 h, sobrevive entre ejecuciones), y en el PC de Antonio
+`recorrido_42_0` y `recorrido_42_1` tienen fecha 12/11 15:34:29 y 15:34:32, durante la batería
+completa. Las 5 repeticiones leyeron de ahí y no pidieron nada a Avanza.
+
+**Arreglo aplicado.** `src/engine/desvios.ts`: los sentidos se piden con `Promise.all` y se
+recorren después en el orden de siempre. `src/sources/avanza/recorrido.ts`: `obtenerNonce` con
+vuelo único (`enVuelo`). `src/app/linea/[linea]/page.tsx`: `desviosDeLinea` y `horarioDeLinea`
+en un mismo `Promise.all`. `src/components/ChipLinea.tsx` + `Itinerario.tsx`: el chip recibe
+`fingir` y lo pone en su `href`. `tests/pantalla-no-miente.test.ts`: cuenta llamadas, no
+`await`. Guardianes nuevos: `tests/motor-vivo/desvios-en-paralelo.test.ts` y
+`tests/chip-transbordo-fingir.test.ts`. Verificado: batería de `c6935ed` en el PC,
+`833 passed (4.5m)` y 0 fallos; en producción tras el despliegue, sin caché, `/linea/35`
+6,7 s y `/linea/21` 3,7 s (antes 13,9 s y 8,9 s).
+
+**Commit.** `f04a7e4` (pedir a la vez) · `c6935ed` (chip con `?fingir=`).
+
 **Ley.** SIN LEY TODAVÍA.
 
 - **2026-11-12 · nota.** Primera parte del arreglo, sin cambio visible: los dos sentidos de
