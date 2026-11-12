@@ -434,7 +434,11 @@ describe('⛔⛔ EL BARRIDO ESTÁ APARCADO, Y NO HAY NINGÚN CAMINO QUE LLEGUE A
 
     // ⚠️ EL COSTE, ATADO A UN NÚMERO. Si mañana alguien mete otra llamada, esto se
     //    pone rojo antes de que Avanza se entere.
-    const llamadas = (c.match(/await (desviosDeLinea|llegadasDePoste|barrerLinea)/g) ?? []).length;
+    // ⚠️ Se cuentan las LLAMADAS (`desviosDeLinea(`), no los `await`: desde la Fase 58
+    //    la ruta y el horario se piden juntos en un `Promise.all`, sin `await` delante.
+    //    Contar `await X` daba 0 con el coste intacto (falso rojo) y daría 0 también si
+    //    alguien metiera tres llamadas dentro de otro `Promise.all` (falso verde).
+    const llamadas = (c.match(/\b(desviosDeLinea|llegadasDePoste|barrerLinea)\(/g) ?? []).length;
     expect(llamadas, 'una sola llamada al motor por render').toBe(1);
 
     // Y el recorrido se pide a su PROPIA caché (`motorRecorrido`, TTL 1 h), no a la

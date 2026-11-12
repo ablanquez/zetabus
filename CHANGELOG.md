@@ -12,6 +12,11 @@ proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Recuento de visitas con Umami, sin cookies y con los datos en la Unión Europea. Si el
   navegador tiene activado «No rastrear», no envía nada.
 
+### Cambiado
+
+- La página de una línea carga antes cuando la web de Avanza va lenta. El recorrido de hoy
+  de los dos sentidos y el horario se piden a la vez, no uno detrás de otro.
+
 ## [1.1.0] - 2026-10-10
 
 ### Cambiado

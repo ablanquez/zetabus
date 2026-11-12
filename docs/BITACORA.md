@@ -2119,3 +2119,30 @@ arriba ni abajo— y vive en `/estado`, que es dinámica. Y `/estado` gana un qu
 
 *Lección viva (Ley 6 de Linaje): la prueba simuló la condición —inyectar `now`— en vez de provocarla
 —pintar con el reloj de verdad—. El texto era correcto; lo que nadie probó es CUÁNDO se calculaba.*
+
+### Fase 58 · El rojo «de timing» de C4 era la lentitud de `/linea`, y el test sí pedía a Avanza
+
+🔴 ABIERTA · 2026-11-12 · categoría: guardián que miente sobre sí mismo
+
+**El síntoma.** En la batería completa del push de seguridad (`7e395a5`), `[360px]
+e2e/bloque-parada.spec.ts:135` (C4, pulsar un chip → `/linea/X`) murió en
+`page.waitForURL(/linea/X/, { timeout: 10_000 })`. Lo clasifiqué como falso rojo por timing.
+
+- ⭐ **QUÉ DIO VERDE MIENTRAS EL FALLO ESTABA VIVO — el re-corrido aislado.**
+  `--repeat-each=5` sobre ese test, corrido hoy por Antonio: `5 passed (7.8s)`. Con eso lo di
+  por flaky. Y la cabecera del fichero (`:7-9`) dice que se prueba «SIN pedirle NADA a Avanza».
+- **Lo que no casa.** El test abre `/linea/35?fingir=caido`, pero el chip enlaza a
+  `/linea/X` sin `fingir` (`src/components/ChipLinea.tsx:216`). La página de destino sí pide a
+  Avanza. Medido hoy en producción, sin caché: `/linea/35` 13,9 s y `/linea/21` 8,9 s, por
+  encima o al borde de los 10 s del test.
+
+**Causa raíz.** ⏳ PENDIENTE · **Arreglo.** ⏳ PENDIENTE (va con la tanda de `/linea`) ·
+**Ley.** SIN LEY TODAVÍA.
+
+- **2026-11-12 · nota.** Primera parte del arreglo, sin cambio visible: los dos sentidos de
+  `desviosDeLinea` y el horario se piden a la vez, y el nonce va con vuelo único. Medido con
+  `?fingir=lento` (Avanza no responde): 24,9 s → 8,3 s en la 35 y en la 21. Guardián nuevo:
+  `tests/motor-vivo/desvios-en-paralelo.test.ts` (rojo antes, `expected 1 to be 2`).
+  `pantalla-no-miente.test.ts` contaba `await desviosDeLinea` y dio rojo con el coste intacto;
+  ahora cuenta las llamadas. Pendiente: que el chip de C4 no pida a Avanza, y qué se ve
+  mientras se espera (decisión de Antonio).

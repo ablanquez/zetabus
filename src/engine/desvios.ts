@@ -217,7 +217,25 @@ export async function desviosDeLinea(
   let observadoEn: string | null = null;
   const fallos: string[] = [];
 
-  for (const s of sentidosDe(lineaId)) {
+  // ⭐ LOS SENTIDOS SE PIDEN A LA VEZ. La página espera a esta función antes de pintar,
+  //    y en fila la espera era la SUMA de las dos lecturas (13,9 s medidos en /linea/35,
+  //    bitácora Fase 58). Se piden juntas y se recorren DESPUÉS en el orden de siempre:
+  //    el orden de `resultados`, de `fallos` y el desempate de `masViejo` no cambian.
+  //    Las peticiones son las mismas (una por sentido); solo cambia que no se esperan
+  //    entre sí. Guardián: `tests/motor-vivo/desvios-en-paralelo.test.ts`.
+  const sentidos = sentidosDe(lineaId);
+  const lecturas = await Promise.all(
+    sentidos.map((s) =>
+      dep.cache.obtener(`recorrido:${l.shortName}:${s.directionId}`, () =>
+        // Runtime: nonce memoizado por proceso, con reintento si caducó. El nonce NO
+        // entra en la clave de caché: el recorrido cacheado no depende de con qué
+        // nonce se leyó. Ver `leerRecorridoRuntime`.
+        leerRecorridoRuntime(l.shortName, SENTIDO_AVANZA[s.directionId], dep.transporte).then((ps) => [...ps]),
+      ),
+    ),
+  );
+
+  for (const [i, s] of sentidos.entries()) {
     // La ruta OFICIAL: la del GTFS, con nombre y todo.
     const oficial: ParadaDelDiff[] = [];
     for (const sid of s.official.stops) {
@@ -226,13 +244,7 @@ export async function desviosDeLinea(
       if (poste !== null && p) oficial.push({ poste, nombre: p.name });
     }
 
-    const clave = `recorrido:${l.shortName}:${s.directionId}`;
-    const r = await dep.cache.obtener(clave, () =>
-      // Runtime: nonce memoizado por proceso, con reintento si caducó. El nonce NO
-      // entra en la clave de caché: el recorrido cacheado no depende de con qué
-      // nonce se leyó. Ver `leerRecorridoRuntime`.
-      leerRecorridoRuntime(l.shortName, SENTIDO_AVANZA[s.directionId], dep.transporte).then((ps) => [...ps]),
-    );
+    const r = lecturas[i];
 
     let veredicto: Veredicto;
     if (r.tipo === 'fallo') {

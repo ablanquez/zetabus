@@ -162,6 +162,8 @@ export async function leerNonce(transporte: Transporte): Promise<string> {
 interface CajaNonce {
   valor: string;
   expira: number;
+  /** La petición del nonce en curso, si la hay. Vuelo único: ver `obtenerNonce`. */
+  enVuelo?: Promise<string>;
 }
 const cajaNonce = (): CajaNonce => unicoPorProceso('avz.nonce', () => ({ valor: '', expira: 0 }));
 
@@ -176,14 +178,30 @@ const cajaNonce = (): CajaNonce => unicoPorProceso('avz.nonce', () => ({ valor: 
 export async function obtenerNonce(transporte: Transporte, ahora: () => number = Date.now): Promise<string> {
   const caja = cajaNonce();
   if (caja.valor && ahora() < caja.expira) return caja.valor;
-  caja.valor = await leerNonce(transporte);
-  caja.expira = ahora() + TTL_NONCE_MS;
-  return caja.valor;
+  // ⚠️ VUELO ÚNICO. `desviosDeLinea` lee los dos sentidos a la vez: con el nonce frío,
+  //    los dos llegan aquí juntos y cada uno pedía el suyo (un GET de más por línea).
+  //    El segundo espera al primero. Si la petición falla, no se queda guardada.
+  //    Guardián: `tests/motor-vivo/desvios-en-paralelo.test.ts`.
+  if (!caja.enVuelo) {
+    const vuelo: Promise<string> = leerNonce(transporte)
+      .then((valor) => {
+        caja.valor = valor;
+        caja.expira = ahora() + TTL_NONCE_MS;
+        return valor;
+      })
+      .finally(() => {
+        if (caja.enVuelo === vuelo) caja.enVuelo = undefined;
+      });
+    caja.enVuelo = vuelo;
+  }
+  return caja.enVuelo;
 }
 
 /** Invalida el nonce memoizado → el próximo `obtenerNonce` re-pide. */
 export function invalidarNonce(): void {
-  cajaNonce().expira = 0;
+  const caja = cajaNonce();
+  caja.expira = 0;
+  caja.enVuelo = undefined;
 }
 
 /**

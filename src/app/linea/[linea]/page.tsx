@@ -128,8 +128,18 @@ export default async function LineaPage({ params, searchParams }: Props) {
     return s ? destinoDeSentido(s, rumboSents) : '';
   };
 
-  // ⭐ LA RUTA REAL. Dos peticiones, cacheadas 30 min. Ver la cabecera.
-  const desvios = await desviosDeLinea(id, motorRecorrido(transporteDe(fingir), fingir));
+  // ⭐ LA RUTA REAL (dos peticiones, cacheadas, ver la cabecera) Y EL HORARIO DE HOY (una,
+  //    cacheada un día, ver más abajo), PEDIDOS A LA VEZ. No dependen el uno del otro: el
+  //    horario solo necesita el sentido activo. En fila, la página esperaba la suma de las
+  //    dos esperas a Avanza (bitácora, Fase 58).
+  // ⚠️ EL DÍA, EN ZARAGOZA — NO en UTC. `diaCivil` es la fuente única (`feed-validity`):
+  //    `toISOString().slice(0,10)` daba el día en UTC y entre medianoche y las 01:00/02:00
+  //    de Madrid la clave se quedaba en AYER (un día entero de horario del día anterior).
+  const hoy = diaCivil(new Date());
+  const [desvios, horario] = await Promise.all([
+    desviosDeLinea(id, motorRecorrido(transporteDe(fingir), fingir)),
+    horarioDeLinea(l.shortName, activo.directionId, hoy, motorHorario(transporteDe(fingir), fingir)),
+  ]);
 
   // El sobre de desvíos, mapeado a lo que la caja necesita. `caido` = la fuente no
   // respondió para NINGÚN sentido: para el usuario es un "no lo sé" honesto, así que
@@ -161,14 +171,9 @@ export default async function LineaPage({ params, searchParams }: Props) {
     veredicto?.tipo === 'indeterminado' ||
     activo.official.geometry.length === 0;
 
-  // ⭐ LA TABLA DE HORARIOS DE HOY, de la web de Avanza. Una petición más, pero
-  //    cacheada UN DÍA (el horario no es el vivo). La clave lleva la fecha para
-  //    renovarse al cambiar de día. Ver `engine/horario.ts`.
-  // ⚠️ EL DÍA, EN ZARAGOZA — NO en UTC. `diaCivil` es la fuente única (`feed-validity`):
-  //    `toISOString().slice(0,10)` daba el día en UTC y entre medianoche y las 01:00/02:00
-  //    de Madrid la clave se quedaba en AYER (un día entero de horario del día anterior).
-  const hoy = diaCivil(new Date());
-  const horario = await horarioDeLinea(l.shortName, activo.directionId, hoy, motorHorario(transporteDe(fingir), fingir));
+  // ⭐ LA TABLA DE HORARIOS DE HOY (`horario`, pedida arriba junto a la ruta real), de la
+  //    web de Avanza. Una petición más, pero cacheada UN DÍA (el horario no es el vivo). La
+  //    clave lleva la fecha para renovarse al cambiar de día. Ver `engine/horario.ts`.
 
   // ⭐ LA VISTA DE LÍNEA es una REJILLA, como /parada: UN SOLO ÁRBOL, sin medir ancho con
   //    JS ni duplicar DOM. Por DEBAJO del corte (880, el mismo de /parada) es un bloque en
