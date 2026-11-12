@@ -2146,3 +2146,6 @@ e2e/bloque-parada.spec.ts:135` (C4, pulsar un chip → `/linea/X`) murió en
   `pantalla-no-miente.test.ts` contaba `await desviosDeLinea` y dio rojo con el coste intacto;
   ahora cuenta las llamadas. Pendiente: que el chip de C4 no pida a Avanza, y qué se ve
   mientras se espera (decisión de Antonio).
+- **2026-11-12 · nota.** El chip de transbordo conserva `?fingir=`, como los botones de sentido
+  (decisión de Antonio). Guardián nuevo: `tests/chip-transbordo-fingir.test.ts`, rojo antes
+  (`el chip /linea/42 suelta el fingimiento`). C4 deja de pedir a Avanza.

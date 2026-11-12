@@ -167,11 +167,18 @@ export function ChipLinea({
   papel,
   enlace = false,
   grande = false,
+  fingir = null,
 }: {
   linea: Line;
   papel: string;
   enlace?: boolean;
   grande?: boolean;
+  /**
+   * El fingimiento de la página donde está el chip. El enlace lo conserva, como los
+   * botones de sentido: si no, pulsar un chip en una demo salía a datos reales de
+   * Avanza (bitácora, Fase 58). Guardián: `tests/chip-transbordo-fingir.test.ts`.
+   */
+  fingir?: string | null;
 }) {
   const { fondo, texto, buho } = tonosDeChip(linea);
   /**
@@ -213,7 +220,7 @@ export function ChipLinea({
 
   return (
     <Link
-      href={`/linea/${encodeURIComponent(linea.shortName)}`}
+      href={`/linea/${encodeURIComponent(linea.shortName)}${fingir ? `?fingir=${fingir}` : ''}`}
       aria-label={`Ver el recorrido de la línea ${linea.shortName}${buho ? ', nocturna' : ''}`}
       className="block"
     >

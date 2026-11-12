@@ -227,7 +227,7 @@ export function Itinerario({
                       .sort((a, b) => Number(esBuho(a)) - Number(esBuho(b)))
                       .map((t) => (
                         <li key={String(t.id)}>
-                          <ChipLinea linea={t} papel="chip-transbordo" enlace />
+                          <ChipLinea linea={t} papel="chip-transbordo" enlace fingir={fingir} />
                         </li>
                       ))}
                   </ul>
