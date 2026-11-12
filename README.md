@@ -161,7 +161,8 @@ incluidos **los tres en que hubo que retractarse de un informe propio**.
 **Lo que ZetaBus no hace**
 - **No adivina.** Si un dato no está, dice que no está — nunca un valor por defecto.
 - **No adjudica.** Cuando dos fuentes se contradicen, enseña las dos y quién las dice.
-- **No pide nada.** Sin cuentas, sin registro, sin cookies propias, sin analítica.
+- **No pide nada.** Sin cuentas, sin registro, sin cookies. Las visitas se cuentan con Umami,
+  que no usa cookies ni guarda la IP.
 
 **Accesibilidad, y medida**
 - Ningún estado se comunica **solo con el color**: siempre hay forma o palabra. (Y hay motivo:

@@ -5,6 +5,13 @@ Todas las novedades destacables de ZetaBus se documentan en este fichero.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el
 proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Añadido
+
+- Recuento de visitas con Umami, sin cookies y con los datos en la Unión Europea. Si el
+  navegador tiene activado «No rastrear», no envía nada.
+
 ## [1.1.0] - 2026-10-10
 
 ### Cambiado

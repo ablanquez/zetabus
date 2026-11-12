@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Link from 'next/link';
+import Script from 'next/script';
 import './globals.css';
 import { Marca } from '@/components/Marca';
 import { NOMBRE_MARCA } from '@/components/marca-fuente';
@@ -214,6 +215,23 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </a>
           </div>
         </footer>
+
+        {/* Recuento de visitas con Umami Cloud (datos en la UE, sin cookies), decisión de Antonio
+            del 12/11/2026. Es la misma web de Umami que el portafolio —el plan gratuito admite una
+            sola—, y en el panel se separan por «Hostname», como indica el propio Umami.
+            · `data-domains`: solo cuenta en el dominio publicado. En local y en las pruebas
+              no envía nada (las e2e, además, cortan todo lo que sale de localhost).
+            · `data-do-not-track`: si el navegador tiene «No rastrear», no envía nada.
+            · Next cuenta solo los cambios de página del cliente: el contador vigila la History API.
+            ⚠️ La política de privacidad del portafolio (antonioblanquez.es/privacidad) lo declara:
+               si esto cambia, cambia también allí. */}
+        <Script
+          src="https://cloud.umami.is/script.js"
+          data-website-id="dcdda923-afe1-4a21-b6b1-0135b9968f8e"
+          data-domains="zetabus.antonioblanquez.es"
+          data-do-not-track="true"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
