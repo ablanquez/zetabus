@@ -2162,6 +2162,10 @@ en un mismo `Promise.all`. `src/components/ChipLinea.tsx` + `Itinerario.tsx`: el
 
 **Ley.** SIN LEY TODAVÍA.
 
+**Ley (2026-11-15, aprobada por Antonio).** Si un test falla y al repetirlo sale bien, no se da
+por hecho que fue casualidad: antes se mira si la repetición tiró de datos ya guardados (aquí,
+`.cache/recorrido`, que sobrevive entre ejecuciones).
+
 - **2026-11-12 · nota.** Primera parte del arreglo, sin cambio visible: los dos sentidos de
   `desviosDeLinea` y el horario se piden a la vez, y el nonce va con vuelo único. Medido con
   `?fingir=lento` (Avanza no responde): 24,9 s → 8,3 s en la 35 y en la 21. Guardián nuevo:
